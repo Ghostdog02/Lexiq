@@ -1,0 +1,47 @@
+@apiBaseUrl =  http://localhost:5116
+
+GET {{apiBaseUrl}}/api/userManagement
+
+###
+GET {{apiBaseUrl}}/api/userManagement/4
+
+###
+GET {{apiBaseUrl}}/api/userManagement/@gmail.com.bg
+
+###
+POST {{apiBaseUrl}}/api/userManagement
+Content-Type: application/json
+
+{
+    "email": "@gmail.com.bg",
+    "fullName": "GET",
+    "securityStamp": "sadfadsfasfasdfa",
+    "concurrencyStamp": "fadsfasfasfasdfa",
+    "phoneNumber": "1234567890",
+    "registrationDate": "2023-01-01T00:00:00Z"
+}
+
+###
+POST {{apiBaseUrl}}/api/userManagement/assignRole
+Content-Type: application/json
+
+{
+    "userId": 5,
+    "roleName": "Admin"
+}
+
+###
+PUT {{apiBaseUrl}}/api/userManagement/4
+Content-Type: application/json
+
+{
+    "email": "@.com",
+    "fullName": "Dog",
+    "securityStamp": "sadfads3424242fasfasdfa",
+    "concurrencyStamp": "fadsf42342asfasfasdfa",
+    "phoneNumber": "990900932"
+}
+
+###
+DELETE {{apiBaseUrl}}/api/userManagement/4
+
