@@ -7,6 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Database/**/*.cs" />
+    <EmbeddedResource Remove="Database/**/*" />
+    <None Remove="Database/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DotNetEnv" Version="3.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="9.0.6" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.3" />
@@ -15,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DevGuard.Database\DevGuard.Database.csproj" />
+    <ProjectReference Include=".\Database\DevGuard.Database.csproj" />
   </ItemGroup>
 
 </Project>

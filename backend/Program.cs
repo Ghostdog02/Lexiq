@@ -4,6 +4,7 @@ using Microsoft.OpenApi.Models;
 using DevGuard.Database;
 using DevGuard.Database.Entities;
 using DevGuard.Database.ExtensionClasses;
+using DotNetEnv;
 
 namespace DevGuard.Api
 {
@@ -11,12 +12,16 @@ namespace DevGuard.Api
     {
         public static async Task Main(string[] args)
         {
+            Env.Load();
+
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            var connectionString = builder.Configuration.GetConnectionString(
-                "SmartLunchConnection"
-            );
+            var dbServer = Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost";
+            var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "SmartLunchSystem";
+            var dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? "sa";
+            var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+
+            var connectionString = $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Integrated Security=false;TrustServerCertificate=True;MultipleActiveResultSets=true";
 
             builder.Services.AddDbContext<DevGuardDbContext>(
                 options =>

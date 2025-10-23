@@ -1,4 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.6" />
@@ -20,7 +28,7 @@
   </ItemGroup>
   <!-- In destination project .csproj -->
   <ItemGroup>
-    <None Include="..\DevGuard.Api\appsettings.json">
+    <None Include="..\appsettings.json">
       <Link>appsettings.json</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
