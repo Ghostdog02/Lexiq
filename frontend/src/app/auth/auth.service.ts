@@ -1,13 +1,11 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable, OnInit } from '@angular/core';
 
-import { environment } from '../../../environments/environment';
-import { AuthData } from './auth-data.model';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { FormGroup } from '@angular/forms';
 
-const BACKEND_URL = environment.apiUrl + '/auth';
+const BACKEND_URL = "environment.apiUrl" + '/auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService implements OnInit {
@@ -48,13 +46,10 @@ export class AuthService implements OnInit {
   }
 
   async loginUser(email: string, password: string) {
-    const authData: AuthData = { email: email, password: password };
-
     try {
       const response = await firstValueFrom(
         this.httpClient.post<{ message: string; expiresIn: number }>(
           BACKEND_URL + '/login',
-          authData,
           { withCredentials: true }
         )
       );
@@ -125,30 +120,6 @@ export class AuthService implements OnInit {
       this.changeAuthStatus(true);
     } catch (error) {
       this.changeAuthStatus(false);
-    }
-  }
-
-  async createUser(email: string, password: string) {
-    const authData: AuthData = { email: email, password: password };
-
-    try {
-      const response = await firstValueFrom(
-        this.httpClient.post<{ message: string; errorMessage: string }>(
-          BACKEND_URL + '/signup',
-          authData
-        )
-      );
-
-      const resErrorMessage = response.errorMessage;
-
-      if (!response) {
-        throw new Error(`An error ocurred during user creation ${resErrorMessage}`);
-      }
-
-      this.router.navigate(['/']);
-    } catch (error: any) {
-      this.changeAuthStatus(false);
-      throw new Error(`An error ocurred during user creation ${error.message}`);
     }
   }
 
