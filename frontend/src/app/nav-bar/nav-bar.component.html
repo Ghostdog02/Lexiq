@@ -14,12 +14,12 @@
 
         <li><a href=""><span class="icon">❓</span> Help</a></li>
 
-        <!-- @if (userIsAuthenticated) {
+        @if (userIsAuthenticated) {
           <li><a href=""><span class="icon">🚪</span> Logout</a></li>
         } @else {
-          <li><a href="/google-login">Login</a></li>
-        } -->
+          <li><a routerLink="/google-login">Login</a></li>
+        }
 
     </ul>
-
+    <a routerLink="/google-login">Login</a>
 </aside>

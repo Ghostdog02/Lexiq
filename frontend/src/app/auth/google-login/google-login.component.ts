@@ -15,14 +15,14 @@ export class GoogleLoginComponent implements AfterViewInit {
   authService = inject(AuthService);
   ngAfterViewInit(): void {
     google.accounts.id.initialize({
-      client_id: '285781225544-lmcfditu6npfia178di1ur3735vl9hst.apps.googleusercontent.com',
+      client_id: '751309259564-16n4ng66dqcqrulih1ihhamdrnrlbvgr.apps.googleusercontent.com',
       callback: (response: any) => this.handleCredentialResponse(response),
     });
 
-    // google.accounts.id.renderButton(
-    //   document.getElementById('g_id_onload'),
-    //   { theme: 'filled_black', size: 'large', shape: 'pill' } // customization attributes
-    // );
+    google.accounts.id.renderButton(
+      document.getElementById('g_id_onload'),
+      { theme: 'filled_black', size: 'large', shape: 'pill' }
+    );
 
     google.accounts.id.prompt();
   }
