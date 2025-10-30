@@ -22,7 +22,7 @@ namespace Lexiq.Api
             var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
 
             var connectionString =
-                $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Encrypt=True;TrustServerCertificate=True;";
+                $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";
 
             builder.Services.AddDbContext<LexiqDbContext>(
                 options => options.UseSqlServer(connectionString),
