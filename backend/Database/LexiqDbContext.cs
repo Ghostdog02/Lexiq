@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DevGuard.Database
 {
-    public class DevGuardDbContext(DbContextOptions options)
+    public class LexiqDbContext(DbContextOptions options)
         : IdentityDbContext<User, IdentityRole<int>, int>(options)
     {
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -49,6 +49,7 @@ namespace DevGuard.Database
         }
     }
 
-    public class CustomRoleStore(DevGuardDbContext context)
-        : RoleStore<IdentityRole<int>, DevGuardDbContext, int>(context) { }
+    public class CustomRoleStore(LexiqDbContext context)
+        : RoleStore<IdentityRole<int>, LexiqDbContext, int>(context)
+    { }
 }

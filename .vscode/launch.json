@@ -1,0 +1,55 @@
+
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Launch Chrome against localhost",
+      "url": "http://localhost:4200",
+      "webRoot": "/mnt/Data/Projects/Lexiq/frontend",
+      "runtimeExecutable": "/usr/bin/brave-browser-beta",
+      "sourceMaps": true,
+      "skipFiles": [
+        "/mnt/Data/Projects/Lexiq/frontend/node_modules/**/*.js",
+        "/mnt/Data/Projects/Lexiq/frontend/lib/**/*.js",
+        "<node_internals>/**",
+        "**/node_modules/**",
+        "**/node_modules/**/*.js",
+
+        // Skip Angular framework files
+        "**/@angular/**",
+        "**/rxjs/**",
+        "**/zone.js/**",
+
+        // Skip webpack and build artifacts
+        "**/webpack/**",
+        "**/main.js",
+        "**/polyfills.js",
+        "**/runtime.js",
+        "**/vendor.js",
+        "**/*.chunk.js",
+
+        // Skip generated/compiled files
+        "**/.angular/**",
+        "**/dist/**",
+        "**/*.ngfactory.js",
+        "**/*.ngstyle.js",
+
+        // Skip specific problematic files
+        "**/index.js",
+        "**/bootstrap",
+        "**/platform-browser-dynamic/**",
+
+        // Skip Chrome extension files
+        "chrome-extension://**"
+      ],
+      "smartStep": true,
+      "enableContentValidation": false,
+      "trace": false
+    }
+  ]
+}

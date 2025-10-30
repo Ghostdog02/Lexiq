@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include=".\Database\DevGuard.Database.csproj" />
+    <ProjectReference Include=".\Database\Lexiq.Database.csproj" />
   </ItemGroup>
 
 </Project>
