@@ -1,7 +1,7 @@
 ﻿using System.Security.Claims;
-using DevGuard.Api.Dtos;
+using Lexiq.Api.Dtos;
 
-namespace DevGuard.Api.Mapping
+namespace Lexiq.Api.Mapping
 {
     public static class ClaimsMapping
     {

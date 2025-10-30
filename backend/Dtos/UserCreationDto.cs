@@ -1,4 +1,4 @@
-﻿namespace DevGuard.Api.Dtos
+﻿namespace Lexiq.Api.Dtos
 {
     public record UserCreationDto(
         int Id,

@@ -1,12 +1,12 @@
-using DevGuard.Database;
-using DevGuard.Database.Entities;
-using DevGuard.Database.ExtensionClasses;
 using DotNetEnv;
+using Lexiq.Database;
+using Lexiq.Database.Entities;
+using Lexiq.Database.ExtensionClasses;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
-namespace DevGuard.Api
+namespace Lexiq.Api
 {
     public class Program
     {

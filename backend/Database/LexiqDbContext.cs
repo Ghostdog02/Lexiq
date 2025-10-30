@@ -1,9 +1,9 @@
-﻿using DevGuard.Database.Entities;
+﻿using Lexiq.Database.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace DevGuard.Database
+namespace Lexiq.Database
 {
     public class LexiqDbContext(DbContextOptions options)
         : IdentityDbContext<User, IdentityRole<int>, int>(options)

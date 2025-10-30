@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
-namespace DevGuard.Database
+namespace Lexiq.Database
 {
     public class LexiqDbContextFactory : IDesignTimeDbContextFactory<LexiqDbContext>
     {
