@@ -111,13 +111,29 @@ export class AuthService implements OnInit {
     this.isAuth = status;
   }
 
-  async loginUserWithGoogle(user: any) {
+  async loginUserWithGoogle(googleToken: any) {
     try {
       const response = await firstValueFrom(
-        this.httpClient.post(BACKEND_URL + '/google-login', user)
+        this.httpClient.post<{ message: string; expiresIn: number }>(
+          BACKEND_URL + '/google-login', 
+          googleToken,
+          {withCredentials: true}
+        )
       );
 
+      const responseMessage = response.message;
+
+      if (!response) {
+        throw new Error(`Login failed: ${responseMessage}`);
+      }
+
+      this.setExpirationDate(response.expiresIn);
+
+      this.setAuthTimer(response.expiresIn);
+
       this.changeAuthStatus(true);
+
+      this.router.navigateByUrl('/');
     } catch (error) {
       this.changeAuthStatus(false);
     }
