@@ -9,7 +9,7 @@ declare const google: any;
   standalone: true,
   providers: [],
   templateUrl: './google-login.component.html',
-  styleUrl: './google-login.component.css',
+  styleUrl: './google-login.component.scss',
 })
 export class GoogleLoginComponent implements AfterViewInit {
   authService = inject(AuthService);
@@ -30,6 +30,6 @@ export class GoogleLoginComponent implements AfterViewInit {
   handleCredentialResponse(response: any) {
     console.log('Google credential:', response.credential);
 
-    // this.authService.loginUserWithGoogle(response.credential);
+    this.authService.loginUserWithGoogle(response.credential);
   }
 }
