@@ -1,17 +1,61 @@
-<div id="g_id_onload"
-  data-client_id="285781225544-lmcfditu6npfia178di1ur3735vl9hst.apps.googleusercontent.com"
-  data-context="signin"
-  data-ux_mode="popup"
-  data-login_uri="/login"
-  data-itp_support="true">
-</div>
-<!-- Option 1: Relative path (recommended) -->
-<img src="assets/images/logo.png" alt="Logo">
-<div class="g_id_signin"
-  data-type="standard"
-  data-shape="pill"
-  data-theme="filled_black"
-  data-text="signin_with"
-  data-size="large"
-  data-logo_alignment="left">
+<!-- <button class="lexiq-google-btn" type="button" aria-label="Sign up with Google">
+  <span class="lg-icon" aria-hidden="true">
+    <img src="assets/logo.png" alt="LEXIQ logo">
+  </span>
+  <span class="lg-text">Sign up with Google</span>
+</button> -->
+
+<div class="lexiq-page" role="main">
+  <div class="lexiq-left" aria-hidden="true">
+    <div class="lexiq-mark">
+      <img src="assets/images/logo-no-background.png" alt="LEXIQ logo" />
+    </div>
+  </div>
+
+  <div class="lexiq-right" aria-label="Authentication">
+    <div class="card" role="form" aria-labelledby="heading">
+      <h1 id="heading" class="title">Happening now</h1>
+      <p class="subtitle">Join today.</p>
+
+      <div class="actions">
+        <button class="btn oauth google" type="button" aria-label="Sign up with Google">
+          <span class="icon"><img src="assets/images/logo-no-background.png" alt=""></span>
+          <span class="label">Sign up with Google</span>
+        </button>
+        <div id="g_id_onload" class="btn oauth google" type="button" aria-label="Sign up with Google"
+          data-client_id="285781225544-lmcfditu6npfia178di1ur3735vl9hst.apps.googleusercontent.com"
+          data-context="signin"
+          data-ux_mode="popup"
+          data-login_uri="/login"
+          data-itp_support="true">
+        </div>
+        <!-- <img src="assets/images/logo.png" alt="Logo"> -->
+        <div class="g_id_signin"
+          data-type="standard"
+          data-shape="pill"
+          data-theme="filled_black"
+          data-text="signin_with"
+          data-size="large"
+          data-logo_alignment="left">
+        </div>
+
+        <button class="btn oauth apple" type="button" aria-label="Sign up with Apple">
+          <span class="icon apple-mark" aria-hidden="true"></span>
+          <span class="label">Sign up with Apple</span>
+        </button>
+
+        <button class="btn primary" type="button" aria-label="Create account">Create account</button>
+      </div>
+
+      <p class="terms">
+        By signing up, you agree to our <a href="#" class="link">Terms</a>, <a href="#" class="link">Privacy Policy</a>, and <a href="#" class="link">Cookie Use</a>.
+      </p>
+
+      <div class="existing">
+        <span>Already have an account?</span>
+        <button class="link-btn" type="button" aria-label="Sign in">Sign in</button>
+        <button class="ghost-btn" type="button" aria-label="Get Lexiq">Get Lexiq</button>
+      </div>
+    </div>
+  </div>
 </div>
