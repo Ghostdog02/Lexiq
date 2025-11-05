@@ -1,6 +1,3 @@
-/* lexiq-login.component.scss - Improved */
-
-/* Variables - Enhanced Color Palette */
 $bg-dark: #0f1419;
 $bg: #1a2429;
 $panel: #1e2732;
@@ -14,25 +11,23 @@ $glass: rgba(255,255,255,0.04);
 $glass-hover: rgba(255,255,255,0.08);
 $border: rgba(255,255,255,0.08);
 $radius: 16px;
-$radius-sm: 12px;
+$radius-sm: 100px;
 $shadow: 0 20px 60px rgba(0,0,0,0.5);
 $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
 
-/* Layout */
 .lexiq-page {
   min-height: 100vh;
   width: 100%;
   display: grid;
   grid-template-columns: 1fr 520px;
   gap: 0;
-  background: linear-gradient(135deg, $bg-dark 0%, $bg 50%, darken($bg, 3%) 100%);
+  background: $bg;
   color: $white;
   align-items: center;
   padding: 0;
   position: relative;
   overflow: hidden;
 
-  // Ambient glow effect
   &::before {
     content: '';
     position: absolute;
@@ -46,18 +41,12 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
     animation: pulse 8s ease-in-out infinite;
   }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(1); }
-    50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
-  }
-
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
     padding: 0;
   }
 }
 
-/* Left brand / hero column */
 .lexiq-left {
   display: flex;
   align-items: center;
@@ -67,7 +56,6 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
   position: relative;
   background: transparent;
   z-index: 3;
-  background: linear-gradient(135deg, rgba($accent, 0.03) 0%, transparent 50%);
 
   .lexiq-mark {
     width: 100%;
@@ -85,11 +73,6 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
       filter: drop-shadow(0 20px 60px rgba($accent, 0.25));
       animation: float 6s ease-in-out infinite;
     }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-20px); }
-    }
   }
 
   @media (max-width: 1024px) {
@@ -103,28 +86,25 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
   }
 }
 
-/* Right auth column */
 .lexiq-right {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   padding: 80px 60px;
-  background: linear-gradient(180deg, rgba($panel, 0.8) 0%, rgba($panel, 0.95) 100%);
-  backdrop-filter: blur(20px);
+  background: $bg;
   border-left: 1px solid $border;
   position: relative;
   z-index: 2;
-  
-  // Extend background to cover left side
+
   &::before {
     content: '';
     position: absolute;
     top: 0;
     right: 100%;
-    width: 100vw;
+    width: 10px;
     height: 100%;
-    background: linear-gradient(180deg, rgba($panel, 0.8) 0%, rgba($panel, 0.95) 100%);
+    background: $bg;
     backdrop-filter: blur(20px);
     pointer-events: none;
   }
@@ -149,6 +129,7 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
       padding: 1px;
       background: linear-gradient(135deg, rgba($accent, 0.2), transparent 50%, rgba($accent-light, 0.1));
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
       mask-composite: exclude;
       pointer-events: none;
@@ -169,7 +150,7 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
   .subtitle {
     margin: 0 0 32px;
     color: $text-secondary;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: 500;
   }
 
@@ -183,6 +164,7 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
       align-items: center;
       gap: 14px;
       width: 100%;
+      height: 50px;
       border-radius: $radius-sm;
       padding: 14px 18px;
       font-weight: 600;
@@ -219,35 +201,26 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
 
       .label {
         flex: 1;
+        font-size: 15px;
+        text-align: center;
       }
     }
 
     .oauth {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
       background: $glass;
       border: 1px solid $border;
-      justify-content: flex-start;
 
       &:hover {
         background: $glass-hover;
         border-color: rgba(255,255,255,0.12);
       }
 
-      &.google {
-        .icon {
-          background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
-        }
-
-        img {
-          width: 24px;
-          height: 24px;
-          object-fit: contain;
-        }
-      }
-
       &.apple {
         .apple-mark {
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto;
-          font-size: 24px;
           color: $white;
         }
       }
@@ -301,50 +274,6 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
     }
   }
 
-  .existing {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    color: $text-secondary;
-    font-size: 14px;
-    flex-wrap: wrap;
-
-    .link-btn {
-      background: none;
-      border: none;
-      color: $accent-light;
-      text-decoration: none;
-      cursor: pointer;
-      font-weight: 600;
-      padding: 0;
-      transition: color 150ms ease;
-
-      &:hover {
-        color: lighten($accent-light, 8%);
-        text-decoration: underline;
-      }
-    }
-
-    .ghost-btn {
-      margin-left: auto;
-      background: $glass;
-      border: 1px solid $border;
-      color: $white;
-      padding: 10px 20px;
-      border-radius: $radius-sm;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 200ms ease;
-
-      &:hover {
-        background: $glass-hover;
-        border-color: rgba(255,255,255,0.12);
-        transform: translateY(-1px);
-      }
-    }
-  }
-
   @media (max-width: 1024px) {
     order: 1;
     min-height: 60vh;
@@ -379,22 +308,8 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
   }
 }
 
-/* Focus & accessibility */
 button:focus-visible, a:focus-visible {
   outline: 2px solid $accent;
   outline-offset: 3px;
   border-radius: $radius-sm;
-}
-
-/* Google button integration */
-.g_id_signin {
-  width: 100% !important;
-  
-  > div {
-    width: 100% !important;
-  }
-}
-
-#g_id_onload {
-  display: none;
 }

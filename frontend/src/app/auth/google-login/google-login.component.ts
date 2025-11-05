@@ -21,7 +21,12 @@ export class GoogleLoginComponent implements AfterViewInit {
 
     google.accounts.id.renderButton(
       document.getElementById('g_id_onload'),
-      { theme: 'filled_black', size: 'large', shape: 'pill' }
+      { 
+        theme: 'filled_black', 
+        size: 'large', 
+        shape: 'pill',
+        width: 320
+      }
     );
 
     google.accounts.id.prompt();
