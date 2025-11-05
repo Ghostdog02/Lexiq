@@ -257,8 +257,9 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
   .terms {
     font-size: 13px;
     color: $muted;
-    margin: 0 0 28px;
-    line-height: 1.6;
+    margin: 0 0 0px;
+    padding-top: 10px;
+    line-height: 1.8;
 
     .link {
       color: $accent-light;
