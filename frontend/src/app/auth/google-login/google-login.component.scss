@@ -1,3 +1,6 @@
+/* lexiq-login.component.scss - Improved */
+
+/* Variables - Enhanced Color Palette */
 $bg-dark: #0f1419;
 $bg: #1a2429;
 $panel: #1e2732;
@@ -62,6 +65,8 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
   min-height: 100vh;
   padding: 80px;
   position: relative;
+  background: transparent;
+  z-index: 3;
   background: linear-gradient(135deg, rgba($accent, 0.03) 0%, transparent 50%);
 
   .lexiq-mark {
@@ -71,7 +76,7 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
     align-items: center;
     justify-content: center;
     position: relative;
-    z-index: 1;
+    z-index: 3;
 
     img {
       width: 100%;
@@ -110,6 +115,19 @@ $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
   border-left: 1px solid $border;
   position: relative;
   z-index: 2;
+  
+  // Extend background to cover left side
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 100%;
+    width: 100vw;
+    height: 100%;
+    background: linear-gradient(180deg, rgba($panel, 0.8) 0%, rgba($panel, 0.95) 100%);
+    backdrop-filter: blur(20px);
+    pointer-events: none;
+  }
 
   .card {
     width: 100%;
