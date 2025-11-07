@@ -1,3 +1,4 @@
+using System.Reflection;
 using DotNetEnv;
 using Lexiq.Database;
 using Lexiq.Database.Entities;
@@ -44,7 +45,7 @@ namespace Lexiq.Api
                 .AddEntityFrameworkStores<LexiqDbContext>()
                 .AddDefaultTokenProviders();
 
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+            builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
@@ -52,9 +53,53 @@ namespace Lexiq.Api
                     "v1",
                     new OpenApiInfo
                     {
-                        Title = "My API",
+                        Title = "Lexiq API",
                         Version = "v1",
-                        Description = "Interactive API docs",
+                        Description = "Interactive API documentation for Lexiq",
+                        Contact = new OpenApiContact
+                        {
+                            Name = "Lexiq Team",
+                            Email = "support@lexiq.com",
+                        },
+                    }
+                );
+
+                // Enable XML comments for better documentation
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                if (File.Exists(xmlPath))
+                {
+                    c.IncludeXmlComments(xmlPath);
+                }
+
+                // Add JWT Authentication to Swagger UI
+                c.AddSecurityDefinition(
+                    "Bearer",
+                    new OpenApiSecurityScheme
+                    {
+                        Description =
+                            "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.ApiKey,
+                        Scheme = "Bearer",
+                    }
+                );
+
+                c.AddSecurityRequirement(
+                    new OpenApiSecurityRequirement
+                    {
+                        {
+                            new OpenApiSecurityScheme
+                            {
+                                Reference = new OpenApiReference
+                                {
+                                    Type = ReferenceType.SecurityScheme,
+                                    Id = "Bearer",
+                                },
+                            },
+                            Array.Empty<string>()
+                        },
                     }
                 );
             });
@@ -70,8 +115,11 @@ namespace Lexiq.Api
                 // Hosts Swagger UI at /swagger
                 app.UseSwaggerUI(c =>
                 {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-                    c.RoutePrefix = string.Empty; // Serve UI at root (optional)
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Lexiq API V1");
+                    c.RoutePrefix = string.Empty; // Serve UI at root
+                    c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None); // Collapse all by default
+                    c.EnableDeepLinking();
+                    c.DisplayRequestDuration();
                 });
             }
 

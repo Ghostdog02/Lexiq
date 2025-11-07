@@ -50,6 +50,28 @@
       "smartStep": true,
       "enableContentValidation": false,
       "trace": false
+    },
+    {
+      "name": ".NET Core Launch (web)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "/mnt/Data/Projects/Lexiq/backend/bin/Debug/net9.0/backend.dll",
+      "args": [],
+      "cwd": "/mnt/Data/Projects/Lexiq/backend",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+          "action": "openExternally",
+          "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    {
+      "name": ".NET Core Attach",
+      "type": "coreclr",
+      "request": "attach"
     }
   ]
 }

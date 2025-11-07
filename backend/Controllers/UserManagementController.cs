@@ -1,9 +1,10 @@
-﻿using Lexiq.Api.Dtos;
+﻿using System.IdentityModel.Tokens.Jwt;
+using Lexiq.Api.Dtos;
 using Lexiq.Api.Mapping;
 using Lexiq.Api.Services;
 using Lexiq.Database;
 using Lexiq.Database.Entities;
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -64,27 +65,33 @@ namespace Lexiq.Api.Controllers
             return Ok(dto);
         }
 
-        // POST api/userManagement
-        [HttpPost]
-        public async Task<ActionResult> PostAsync([FromBody] UserCreationDto newUser)
+        // POST api/userManagement/google-login
+        [HttpPost("google-login")]
+        public async Task<ActionResult> PostAsync([FromBody] string jwtToken)
         {
-            if (await _userManager.FindByEmailAsync(newUser.Email) != null)
-            {
-                return Conflict($"User with email {newUser.Email} already exists.");
-            }
+            // Remove the "Bearer " prefix
+            string jwtEncodedString = jwtToken.Substring(7);
 
-            User user = newUser.ToEntity();
+            var handler = new JwtSecurityTokenHandler();
+            var token = handler.ReadJwtToken(jwtEncodedString);
 
-            var result = await _userManager.CreateAsync(user);
+            // if (await _userManager.FindByEmailAsync(newUser.Email) != null)
+            // {
+            //     return Conflict($"User with email {newUser.Email} already exists.");
+            // }
 
-            if (!result.Succeeded)
-                return BadRequest(result.Errors);
+            // User user = newUser.ToEntity();
 
-            await _context.SaveChangesAsync();
+            // var result = await _userManager.CreateAsync(user);
 
-            var readDto = user.MapUserToDto();
+            // if (!result.Succeeded)
+            //     return BadRequest(result.Errors);
 
-            return CreatedAtRoute("GetUserByEmail", new { email = readDto.Email }, value: readDto);
+            // await _context.SaveChangesAsync();
+
+            // var readDto = user.MapUserToDto();
+
+            return CreatedAtRoute("GetUserByEmail", new { email = jwtToken }, value: jwtToken);
         }
 
         // POST api/userManagement/assignRole
