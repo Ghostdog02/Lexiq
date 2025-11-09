@@ -1,4 +1,3 @@
-
 {
   // Use IntelliSense to learn about possible attributes.
   // Hover to view descriptions of existing attributes.
@@ -10,12 +9,12 @@
       "request": "launch",
       "name": "Launch Chrome against localhost",
       "url": "http://localhost:4200",
-      "webRoot": "/mnt/Data/Projects/Lexiq/frontend",
-      "runtimeExecutable": "/usr/bin/brave-browser-beta",
+      "webRoot": "/mount/Projects/Lexiq/frontend",
+      "runtimeExecutable": "/usr/bin/brave-browser",
       "sourceMaps": true,
       "skipFiles": [
-        "/mnt/Data/Projects/Lexiq/frontend/node_modules/**/*.js",
-        "/mnt/Data/Projects/Lexiq/frontend/lib/**/*.js",
+        "/mount/Projects/Lexiq/frontend/node_modules/**/*.js",
+        "/mount/Projects/Lexiq/frontend/lib/**/*.js",
         "<node_internals>/**",
         "**/node_modules/**",
         "**/node_modules/**/*.js",
@@ -56,9 +55,9 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "/mnt/Data/Projects/Lexiq/backend/bin/Debug/net9.0/backend.dll",
+      "program": "/mount/Projects/Lexiq/backend/bin/Debug/net9.0/backend.dll",
       "args": [],
-      "cwd": "/mnt/Data/Projects/Lexiq/backend",
+      "cwd": "/mount/Projects/Lexiq/backend",
       "stopAtEntry": false,
       "serverReadyAction": {
           "action": "openExternally",
