@@ -55,7 +55,7 @@
       "type": "coreclr",
       "request": "launch",
       "preLaunchTask": "build",
-      "program": "/mount/Projects/Lexiq/backend/bin/Debug/net9.0/backend.dll",
+      "program": "/mount/Projects/Lexiq/backend/bin/Debug/net9.0/Backend.dll",
       "args": [],
       "cwd": "/mount/Projects/Lexiq/backend",
       "stopAtEntry": false,

@@ -1,9 +1,10 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using Backend.Database;
+using Backend.Database.Entities;
 using Backend.Dtos;
 using Backend.Mapping;
 using Backend.Services;
-using Backend.Database;
-using Backend.Database.Entities;
+using Google.Apis.Auth;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -11,6 +12,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Controllers
 {
+    public class GoogleLoginRequest
+    {
+        public string JwtToken { get; set; }
+    }
+
     [Route("api/userManagement")]
     [ApiController]
     public class UserManagementController(BackendDbContext context, UserManager<User> userManager)
@@ -67,17 +73,18 @@ namespace Backend.Api.Controllers
 
         // POST api/userManagement/google-login
         [HttpPost("google-login")]
-        public async Task<ActionResult> PostAsync([FromBody] string jwtToken)
+        public async Task<ActionResult> PostAsync([FromBody] GoogleLoginRequest request)
         {
-            // Remove the "Bearer " prefix
-            string jwtEncodedString = jwtToken.Substring(7);
+            var validPayload = await GoogleJsonWebSignature.ValidateAsync(request.JwtToken);
 
-            var handler = new JwtSecurityTokenHandler();
-            var token = handler.ReadJwtToken(jwtEncodedString);
+            if (validPayload == null)
+            {
+                return BadRequest("Invalid Google token.");
+            }
 
             // if (await _userManager.FindByEmailAsync(newUser.Email) != null)
             // {
-            //     return Conflict($"User with email {newUser.Email} already exists.");
+            //     return C onflict($"User with email {newUser.Email} already exists.");
             // }
 
             // User user = newUser.ToEntity();
@@ -91,7 +98,7 @@ namespace Backend.Api.Controllers
 
             // var readDto = user.MapUserToDto();
 
-            return CreatedAtRoute("GetUserByEmail", new { email = jwtToken }, value: jwtToken);
+            return Ok(validPayload);
         }
 
         // POST api/userManagement/assignRole

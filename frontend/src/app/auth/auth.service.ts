@@ -5,10 +5,12 @@ import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { FormGroup } from '@angular/forms';
 
-const BACKEND_URL = "environment.apiUrl" + '/auth';
+const BACKEND_URL = import.meta.env['BACKEND_URL'] + '/auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService implements OnInit {
+  
+
   private httpClient = inject(HttpClient);
   private router = inject(Router);
 
@@ -116,8 +118,8 @@ export class AuthService implements OnInit {
       const response = await firstValueFrom(
         this.httpClient.post<{ message: string; expiresIn: number }>(
           BACKEND_URL + '/google-login', 
-          googleToken,
-          {withCredentials: true}
+          { jwtToken: googleToken },
+          { withCredentials: true }
         )
       );
 

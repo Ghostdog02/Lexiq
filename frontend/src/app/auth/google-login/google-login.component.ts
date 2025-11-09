@@ -15,7 +15,7 @@ export class GoogleLoginComponent implements AfterViewInit {
   authService = inject(AuthService);
   ngAfterViewInit(): void {
     google.accounts.id.initialize({
-      client_id: '751309259564-16n4ng66dqcqrulih1ihhamdrnrlbvgr.apps.googleusercontent.com',
+      client_id: import.meta.env['GOOGLE_CLIENT_ID'],
       callback: (response: any) => this.handleCredentialResponse(response),
     });
 

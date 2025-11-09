@@ -26,8 +26,7 @@ namespace Backend.Api
                 $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";
 
             builder.Services.AddDbContext<BackendDbContext>(
-                options =>
-                    options.UseSqlServer(connectionString),
+                options => options.UseSqlServer(connectionString),
                 ServiceLifetime.Scoped
             );
 
@@ -45,6 +44,19 @@ namespace Backend.Api
                 .AddRoles<IdentityRole<int>>()
                 .AddEntityFrameworkStores<BackendDbContext>()
                 .AddDefaultTokenProviders();
+
+            builder
+                .Services.AddAuthentication()
+                .AddGoogle(googleOptions =>
+                {
+                    googleOptions.ClientId =
+                        Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")
+                        ?? throw new Exception("GOOGLE_CLIENT_ID not found");
+                    googleOptions.ClientSecret =
+                        Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET")
+                        ?? throw new Exception("GOOGLE_CLIENT_SECRET not found");
+                    googleOptions.CallbackPath = "/signin-google"; // Default callback path
+                });
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
@@ -117,6 +129,7 @@ namespace Backend.Api
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Lexiq API V1");
                     c.RoutePrefix = string.Empty;
+
                     c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None); // Collapse all by default
                     c.EnableDeepLinking();
                     c.DisplayRequestDuration();
