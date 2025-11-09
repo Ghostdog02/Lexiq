@@ -1,8 +1,8 @@
 using System.Reflection;
-using DotNetEnv;
 using Backend.Database;
 using Backend.Database.Entities;
 using Backend.Database.ExtensionClasses;
+using DotNetEnv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -26,7 +26,8 @@ namespace Backend.Api
                 $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";
 
             builder.Services.AddDbContext<BackendDbContext>(
-                options => options.UseSqlServer(connectionString),
+                options =>
+                    options.UseSqlServer(connectionString),
                 ServiceLifetime.Scoped
             );
 
@@ -45,7 +46,6 @@ namespace Backend.Api
                 .AddEntityFrameworkStores<BackendDbContext>()
                 .AddDefaultTokenProviders();
 
-            builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
@@ -116,7 +116,7 @@ namespace Backend.Api
                 app.UseSwaggerUI(c =>
                 {
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "Lexiq API V1");
-                    c.RoutePrefix = string.Empty; // Serve UI at root
+                    c.RoutePrefix = string.Empty;
                     c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None); // Collapse all by default
                     c.EnableDeepLinking();
                     c.DisplayRequestDuration();
