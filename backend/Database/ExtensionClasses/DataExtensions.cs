@@ -1,14 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Backend.Database;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Lexiq.Database.ExtensionClasses
+namespace Backend.Database.ExtensionClasses
 {
     public static class DataExtensions
     {
         public static async Task MigrateDbAsync(this IServiceProvider sp)
         {
             using var scope = sp.CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<LexiqDbContext>();
+            var dbContext = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
             await dbContext.Database.MigrateAsync();
         }
     }

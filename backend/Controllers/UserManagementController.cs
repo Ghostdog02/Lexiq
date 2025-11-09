@@ -1,22 +1,22 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
-using Lexiq.Api.Dtos;
-using Lexiq.Api.Mapping;
-using Lexiq.Api.Services;
-using Lexiq.Database;
-using Lexiq.Database.Entities;
+using Backend.Dtos;
+using Backend.Mapping;
+using Backend.Services;
+using Backend.Database;
+using Backend.Database.Entities;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Lexiq.Api.Controllers
+namespace Backend.Api.Controllers
 {
     [Route("api/userManagement")]
     [ApiController]
-    public class UserManagementController(LexiqDbContext context, UserManager<User> userManager)
+    public class UserManagementController(BackendDbContext context, UserManager<User> userManager)
         : ControllerBase
     {
-        private readonly LexiqDbContext _context = context;
+        private readonly BackendDbContext _context = context;
         private readonly UserManager<User> _userManager = userManager;
 
         // GET: api/userManagement

@@ -1,13 +1,13 @@
 using System.Reflection;
 using DotNetEnv;
-using Lexiq.Database;
-using Lexiq.Database.Entities;
-using Lexiq.Database.ExtensionClasses;
+using Backend.Database;
+using Backend.Database.Entities;
+using Backend.Database.ExtensionClasses;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
-namespace Lexiq.Api
+namespace Backend.Api
 {
     public class Program
     {
@@ -18,14 +18,14 @@ namespace Lexiq.Api
             var builder = WebApplication.CreateBuilder(args);
 
             var dbServer = Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost";
-            var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "lexiqdatabase";
+            var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "lexiq";
             var dbUser = Environment.GetEnvironmentVariable("DB_USER_ID") ?? "sa";
             var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
 
             var connectionString =
                 $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";
 
-            builder.Services.AddDbContext<LexiqDbContext>(
+            builder.Services.AddDbContext<BackendDbContext>(
                 options => options.UseSqlServer(connectionString),
                 ServiceLifetime.Scoped
             );
@@ -42,7 +42,7 @@ namespace Lexiq.Api
                     options.SignIn.RequireConfirmedAccount = true
                 )
                 .AddRoles<IdentityRole<int>>()
-                .AddEntityFrameworkStores<LexiqDbContext>()
+                .AddEntityFrameworkStores<BackendDbContext>()
                 .AddDefaultTokenProviders();
 
             builder.Services.AddEndpointsApiExplorer();
@@ -132,7 +132,7 @@ namespace Lexiq.Api
 
             var seeder = new SeedData();
 
-            //await app.Services.MigrateDbAsync();
+            await app.Services.MigrateDbAsync();
             await SeedData.InitializeAsync(app.Services);
 
             app.Run();

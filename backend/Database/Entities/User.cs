@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
-namespace Lexiq.Database.Entities
+namespace Backend.Database.Entities
 {
     public class User : IdentityUser<int>
     {

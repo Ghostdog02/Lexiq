@@ -1,8 +1,8 @@
 ﻿using System.Text;
-using Lexiq.Api.Dtos;
-using Lexiq.Database.Entities;
+using Backend.Dtos;
+using Backend.Database.Entities;
 
-namespace Lexiq.Api.Mapping
+namespace Backend.Mapping
 {
     public static class UserMapping
     {

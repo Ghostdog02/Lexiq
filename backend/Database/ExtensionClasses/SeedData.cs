@@ -1,9 +1,10 @@
-﻿using Lexiq.Database.Entities;
+﻿using Backend.Database;
+using Backend.Database.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Lexiq.Database.ExtensionClasses
+namespace Backend.Database.ExtensionClasses
 {
     public class SeedData
     {
@@ -12,7 +13,7 @@ namespace Lexiq.Database.ExtensionClasses
             try
             {
                 using var scope = serviceProvider.CreateScope();
-                var context = scope.ServiceProvider.GetRequiredService<LexiqDbContext>();
+                var context = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
 
                 await SeedRolesAsync(context, userManager);
@@ -37,7 +38,7 @@ namespace Lexiq.Database.ExtensionClasses
         }
 
         private static async Task SeedAdminUserAsync(
-            LexiqDbContext context,
+            BackendDbContext context,
             UserManager<User> userManager
         )
         {
@@ -80,7 +81,7 @@ namespace Lexiq.Database.ExtensionClasses
         }
 
         private static async Task SeedRolesAsync(
-            LexiqDbContext context,
+            BackendDbContext context,
             UserManager<User> userManager
         )
         {

@@ -1,4 +1,4 @@
-﻿namespace Lexiq.Api.Dtos
+﻿namespace Backend.Dtos
 {
     public record UserCreationDto(
         int Id,

@@ -1,8 +1,8 @@
-using Lexiq.Api.Dtos;
-using Lexiq.Database.Entities;
+using Backend.Dtos;
+using Backend.Database.Entities;
 using Microsoft.AspNetCore.Identity;
 
-namespace Lexiq.Api.Services
+namespace Backend.Services
 {
     public static class UserExtensions
     {

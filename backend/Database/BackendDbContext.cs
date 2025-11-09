@@ -1,11 +1,11 @@
-﻿using Lexiq.Database.Entities;
+﻿using Backend.Database.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace Lexiq.Database
+namespace Backend.Database
 {
-    public class LexiqDbContext(DbContextOptions options)
+    public class BackendDbContext(DbContextOptions options)
         : IdentityDbContext<User, IdentityRole<int>, int>(options)
     {
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -49,7 +49,7 @@ namespace Lexiq.Database
         }
     }
 
-    public class CustomRoleStore(LexiqDbContext context)
-        : RoleStore<IdentityRole<int>, LexiqDbContext, int>(context)
+    public class CustomRoleStore(BackendDbContext context)
+        : RoleStore<IdentityRole<int>, BackendDbContext, int>(context)
     { }
 }

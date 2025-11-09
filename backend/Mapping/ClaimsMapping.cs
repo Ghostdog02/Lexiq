@@ -1,7 +1,8 @@
 ﻿using System.Security.Claims;
-using Lexiq.Api.Dtos;
+using Backend.Dtos;
+using Backend.Database.Entities;
 
-namespace Lexiq.Api.Mapping
+namespace Backend.Mapping
 {
     public static class ClaimsMapping
     {

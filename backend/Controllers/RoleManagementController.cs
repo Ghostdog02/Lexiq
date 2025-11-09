@@ -1,18 +1,18 @@
-using Lexiq.Api.Dtos;
-using Lexiq.Database;
-using Lexiq.Database.Entities;
+using Backend.Dtos;
+using Backend.Database;
+using Backend.Database.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Lexiq.Api.Controllers
+namespace Backend.Api.Controllers
 {
     [Route("api/roleManagement")]
     [ApiController]
-    public class RoleManagementController(LexiqDbContext context, UserManager<User> userManager)
+    public class RoleManagementController(BackendDbContext context, UserManager<User> userManager)
         : ControllerBase
     {
-        private readonly LexiqDbContext _context = context;
+        private readonly BackendDbContext _context = context;
         private readonly UserManager<User> _userManager = userManager;
 
         // GET: api/roleManagement/example@example.com
