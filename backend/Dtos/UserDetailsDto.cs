@@ -1,7 +1,7 @@
 ﻿namespace Backend.Dtos
 {
     public record UserDetailsDto(
-        int Id,
+        string Id,
         string Email,
         DateTime LastLoginDate,
         string FullName,

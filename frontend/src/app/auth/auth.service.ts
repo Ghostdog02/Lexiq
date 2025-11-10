@@ -5,7 +5,9 @@ import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { FormGroup } from '@angular/forms';
 
-const BACKEND_URL = import.meta.env['BACKEND_URL'] + '/auth';
+import { environment } from '../../environment';
+
+const BACKEND_URL = environment.BACKEND_URL + '/auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService implements OnInit {

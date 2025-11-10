@@ -1,6 +1,8 @@
 import { AfterViewInit, Component, inject } from '@angular/core';
 import { AuthService } from '../auth.service';
 
+import { environment } from '../../../environment';
+
 declare const google: any;
 
 @Component({
@@ -15,7 +17,7 @@ export class GoogleLoginComponent implements AfterViewInit {
   authService = inject(AuthService);
   ngAfterViewInit(): void {
     google.accounts.id.initialize({
-        client_id: import.meta.env['GOOGLE_CLIENT_ID'],
+        client_id: environment.GOOGLE_CLIENT_ID,
       callback: (response: any) => this.handleCredentialResponse(response),
     });
 

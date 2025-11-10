@@ -17,7 +17,30 @@ namespace Backend.Api
 
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddDbContext<BackendDbContext>();
+            builder.Services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(policy =>
+                {
+                    policy
+                        .WithOrigins("http://localhost:4200", "http://localhost:5000")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
+
+            var dbServer = Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost";
+            var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "lexiq";
+            var dbUser = Environment.GetEnvironmentVariable("DB_USER_ID") ?? "sa";
+            var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+
+            var connectionString =
+                $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";
+
+            builder.Services.AddDbContext<BackendDbContext>(
+                options => options.UseSqlServer(connectionString),
+                ServiceLifetime.Scoped
+            );
 
             builder
                 .Services.AddControllers()
@@ -126,6 +149,16 @@ namespace Backend.Api
             }
 
             app.UseHttpsRedirection();
+
+            app.Use(
+                async (context, next) =>
+                {
+                    context.Response.Headers.ContentSecurityPolicy =
+                        "default-src 'self'; connect-src 'self' http://localhost:4200 ws://localhost:4200; script-src 'self'; style-src 'self' 'unsafe-inline'";
+                    await next();
+                }
+            );
+            app.UseCors();
 
             app.UseAuthentication();
             app.UseAuthorization();

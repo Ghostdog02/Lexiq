@@ -57,7 +57,7 @@ namespace Backend.Mapping
             return builder.ToString();
         }
 
-        public static User ToEntity(this UpdatedUserDto dto, int id)
+        public static User ToEntity(this UpdatedUserDto dto, string id)
         {
             return new User
             {

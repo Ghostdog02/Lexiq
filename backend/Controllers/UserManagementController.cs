@@ -1,11 +1,9 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using Backend.Database;
+﻿using Backend.Database;
 using Backend.Database.Entities;
 using Backend.Dtos;
 using Backend.Mapping;
 using Backend.Services;
 using Google.Apis.Auth;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +12,7 @@ namespace Backend.Api.Controllers
 {
     public class GoogleLoginRequest
     {
-        public string JwtToken { get; set; }
+        public required string JwtToken { get; set; }
     }
 
     [Route("api/userManagement")]
@@ -97,7 +95,7 @@ namespace Backend.Api.Controllers
             // await _context.SaveChangesAsync();
 
             // var readDto = user.MapUserToDto();
-
+            System.Console.WriteLine("Hi its working");
             return Ok(validPayload);
         }
 
