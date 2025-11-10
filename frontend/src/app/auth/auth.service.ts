@@ -7,7 +7,7 @@ import { FormGroup } from '@angular/forms';
 
 import { environment } from '../../environment';
 
-const BACKEND_URL = environment.BACKEND_URL + '/auth';
+const BACKEND_URL = environment.BACKEND_URL + '/userManagement';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService implements OnInit {
