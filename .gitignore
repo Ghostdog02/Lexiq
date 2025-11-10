@@ -5,7 +5,7 @@
 env.*
 
 #Vs code configuration
-.vscode/*
+.vscode/
 
 # Configuration files
 .config/

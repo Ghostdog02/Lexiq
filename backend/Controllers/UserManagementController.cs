@@ -82,7 +82,7 @@ namespace Backend.Api.Controllers
                 return BadRequest("Invalid Google token.");
             }
 
-            // if (await _userManager.FindByEmailAsync(newUser.Email) != null)
+            // if (await _usBackendDbContextFactoryerManager.FindByEmailAsync(newUser.Email) != null)
             // {
             //     return C onflict($"User with email {newUser.Email} already exists.");
             // }
