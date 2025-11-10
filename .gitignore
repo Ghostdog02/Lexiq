@@ -3,7 +3,7 @@
 
 #Environment files Angular
 env.*
-
+environment.*
 #Vs code configuration
 .vscode/
 
