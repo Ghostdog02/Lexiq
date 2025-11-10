@@ -2,7 +2,7 @@
 
 namespace Backend.Database.Entities
 {
-    public class User : IdentityUser<int>
+    public class User : IdentityUser
     {
         public DateTime RegistrationDate { get; set; }
 

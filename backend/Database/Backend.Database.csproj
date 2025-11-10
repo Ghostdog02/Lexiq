@@ -26,7 +26,6 @@
   <ItemGroup>
     <Folder Include="Migrations\" />
   </ItemGroup>
-  <!-- In destination project .csproj -->
   <ItemGroup>
     <None Include="..\appsettings.json">
       <Link>appsettings.json</Link>

@@ -38,10 +38,10 @@ namespace Backend.Api
                 });
 
             builder
-                .Services.AddIdentity<User, IdentityRole<int>>(options =>
+                .Services.AddIdentity<User, IdentityRole>(options =>
                     options.SignIn.RequireConfirmedAccount = true
                 )
-                .AddRoles<IdentityRole<int>>()
+                .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<BackendDbContext>()
                 .AddDefaultTokenProviders();
 

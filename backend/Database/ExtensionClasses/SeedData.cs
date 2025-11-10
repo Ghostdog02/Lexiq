@@ -1,6 +1,7 @@
 ﻿using Backend.Database;
 using Backend.Database.Entities;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -89,11 +90,11 @@ namespace Backend.Database.ExtensionClasses
 
             foreach (string currRole in roles)
             {
-                var roleStore = new CustomRoleStore(context);
+                var roleStore = new RoleStore<IdentityRole, BackendDbContext>(context);
 
                 if (!context.Roles.Any(role => role.Name == currRole))
                 {
-                    var identityRole = new IdentityRole<int>(currRole)
+                    var identityRole = new IdentityRole(currRole)
                     {
                         NormalizedName = userManager.NormalizeName(currRole),
                         ConcurrencyStamp = Guid.NewGuid().ToString("D"),

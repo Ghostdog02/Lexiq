@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Backend.Database
 {
     public class BackendDbContext(DbContextOptions options)
-        : IdentityDbContext<User, IdentityRole<int>, int>(options)
+        : IdentityDbContext<User, IdentityRole, string>(options)
     {
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -17,39 +17,35 @@ namespace Backend.Database
                 entity.ToTable("Users");
             });
 
-            modelBuilder.Entity<IdentityRole<int>>(entity =>
+            modelBuilder.Entity<IdentityRole>(entity =>
             {
                 entity.ToTable(name: "Roles");
             });
 
-            modelBuilder.Entity<IdentityUserRole<int>>(entity =>
+            modelBuilder.Entity<IdentityUserRole<string>>(entity =>
             {
                 entity.ToTable("UserRoles");
             });
 
-            modelBuilder.Entity<IdentityUserClaim<int>>(entity =>
+            modelBuilder.Entity<IdentityUserClaim<string>>(entity =>
             {
                 entity.ToTable("UserClaims");
             });
 
-            modelBuilder.Entity<IdentityUserLogin<int>>(entity =>
+            modelBuilder.Entity<IdentityUserLogin<string>>(entity =>
             {
                 entity.ToTable("UserLogins");
             });
 
-            modelBuilder.Entity<IdentityRoleClaim<int>>(entity =>
+            modelBuilder.Entity<IdentityRoleClaim<string>>(entity =>
             {
                 entity.ToTable("RoleClaims");
             });
 
-            modelBuilder.Entity<IdentityUserToken<int>>(entity =>
+            modelBuilder.Entity<IdentityUserToken<string>>(entity =>
             {
                 entity.ToTable("UserTokens");
             });
         }
     }
-
-    public class CustomRoleStore(BackendDbContext context)
-        : RoleStore<IdentityRole<int>, BackendDbContext, int>(context)
-    { }
 }
