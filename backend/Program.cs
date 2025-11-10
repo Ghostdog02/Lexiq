@@ -153,28 +153,15 @@ namespace Backend.Api
             app.Use(
                 async (context, next) =>
                 {
-                    var path = context.Request.Path.Value ?? "";
-
-                    // Skip COOP/COEP for OAuth popup flows and API auth callbacks
-                    if (!path.StartsWith("/api/auth"))
-                    {
-                        context.Response.Headers.ContentSecurityPolicy =
-                            "default-src 'self'; connect-src 'self' http://localhost:4200 ws://localhost:4200; script-src 'self'; style-src 'self' 'unsafe-inline'";
-                        context.Response.Headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups";
-                        context.Response.Headers["Cross-Origin-Embedder-Policy"] = "unsafe-none";
-                    }
-
-                    else
-                    {
-                        // No COOP/COEP for auth endpoints so popup communication works
-                        context.Response.Headers["Content-Security-Policy"] =
-                            "default-src 'self'; connect-src 'self' http://localhost:4200 ws://localhost:4200; script-src 'self'; style-src 'self' 'unsafe-inline'";
-                    }
-
+                    context.Response.Headers.AccessControlAllowOrigin = "*";
+                    context.Response.Headers.ContentSecurityPolicy =
+                        "default-src 'self'; connect-src 'self' http://localhost:4200 ws://localhost:4200; script-src 'self'; style-src 'self' 'unsafe-inline'";
+                    //context.Response.Headers["Cross-Origin-Opener-Policy"] = "restrict-properties";
+                    //context.Response.Headers["Cross-Origin-Embedder-Policy"] = "require-corp";
                     await next();
                 }
             );
-
+            
             app.UseCors();
 
             app.UseAuthentication();

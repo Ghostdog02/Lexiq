@@ -18,7 +18,8 @@ export class GoogleLoginComponent implements AfterViewInit {
   ngAfterViewInit(): void {
     google.accounts.id.initialize({
         client_id: environment.GOOGLE_CLIENT_ID,
-      callback: (response: any) => this.handleCredentialResponse(response),
+        callback: (response: any) => this.handleCredentialResponse(response),
+        ux_mode: 'popup'
     });
 
     google.accounts.id.renderButton(
@@ -27,7 +28,10 @@ export class GoogleLoginComponent implements AfterViewInit {
         theme: 'filled_black', 
         size: 'large', 
         shape: 'pill',
-        width: 320
+        width: 320,
+        type: 'standard',
+        text: 'signin_with',
+        logo_alignment: 'center'
       }
     );
 
