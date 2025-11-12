@@ -2,6 +2,7 @@ using System.Reflection;
 using Backend.Database;
 using Backend.Database.Entities;
 using Backend.Database.ExtensionClasses;
+using Backend.Services;
 using DotNetEnv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,9 @@ namespace Backend.Api
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddDbContext<BackendDbContext>();
+
+            // Register application services
+            builder.Services.AddScoped<LessonService>();
 
             builder
                 .Services.AddControllers()

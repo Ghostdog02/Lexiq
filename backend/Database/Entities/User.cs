@@ -7,5 +7,7 @@ namespace Backend.Database.Entities
         public DateTime RegistrationDate { get; set; }
 
         public DateTime LastLoginDate { get; set; }
+
+        public List<UserLanguage> UserLanguages { get; set; } = [];
     }
 }
