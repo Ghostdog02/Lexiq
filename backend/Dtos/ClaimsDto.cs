@@ -1,4 +1,3 @@
-﻿namespace Backend.Dtos
-{
-    public record ClaimsDto(string FullName, string Email);
-}
+﻿namespace Backend.Dtos;
+
+public record ClaimsDto(string FullName, string Email);

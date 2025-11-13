@@ -1,88 +1,62 @@
 using Backend.Database.Entities;
+using Backend.Dtos;
+using Backend.Mapping;
 using Backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Backend.Api.Controllers
+namespace Backend.Api.Controllers;
+
+[ApiController]
+[Route("api/auth")]
+public class AuthController(
+    IGoogleAuthService googleAuthService,
+    SignInManager<User> signInManager
+) : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class AuthController : ControllerBase
+    private readonly IGoogleAuthService _googleAuthService = googleAuthService;
+    private readonly SignInManager<User> _signInManager = signInManager;
+
+    [HttpPost("signin-google")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
     {
-        private readonly IGoogleAuthService _googleAuthService;
-        private readonly SignInManager<User> _signInManager;
-
-        public AuthController(
-            IGoogleAuthService googleAuthService,
-            SignInManager<User> signInManager
-        )
+        if (string.IsNullOrEmpty(request.IdToken))
         {
-            _googleAuthService = googleAuthService;
-            _signInManager = signInManager;
+            return BadRequest(new { message = "ID token is required" });
         }
 
-        [HttpPost("google")]
-        public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+        // Validate Google token
+        var payload = await _googleAuthService.ValidateGoogleTokenAsync(request.IdToken);
+        if (payload == null)
         {
-            if (string.IsNullOrEmpty(request.IdToken))
-            {
-                return BadRequest(new { message = "ID token is required" });
-            }
-
-            // Validate Google token
-            var payload = await _googleAuthService.ValidateGoogleTokenAsync(request.IdToken);
-            if (payload == null)
-            {
-                return Unauthorized(new { message = "Invalid Google token" });
-            }
-
-            // Get or create user
-            var user = await _googleAuthService.GetOrCreateUserFromGoogleAsync(payload);
-            if (user == null)
-            {
-                return BadRequest(new { message = "Failed to create user" });
-            }
-
-            // Sign in user and create cookie
-            await _signInManager.SignInAsync(user, isPersistent: true);
-
-            // Configure cookie options
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true, // Use HTTPS only
-                SameSite = SameSiteMode.Strict,
-                Expires = DateTimeOffset.UtcNow.AddDays(30),
-            };
-
-            Response.Cookies.Append("AuthToken", "authenticated", cookieOptions);
-
-            return Ok(
-                new
-                {
-                    message = "Login successful",
-                    user = new
-                    {
-                        id = user.Id,
-                        email = user.Email,
-                        firstName = user.FirstName,
-                        lastName = user.LastName,
-                    },
-                }
-            );
+            return Unauthorized(new { message = "Invalid Google token" });
         }
 
-        [HttpPost("logout")]
-        public async Task<IActionResult> Logout()
+        var user = await _googleAuthService.LoginUser(payload);
+        if (user == null)
         {
-            await _signInManager.SignOutAsync();
-            Response.Cookies.Delete("AuthToken");
-            return Ok(new { message = "Logout successful" });
+            return BadRequest(new { message = "Failed to create user" });
         }
+
+        await _signInManager.SignInAsync(user, isPersistent: true);
+
+        return Ok(new { message = "Login successful", user = user.ToGoogleLoginDto() });
     }
 
-    public class GoogleLoginRequest
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
     {
-        public string IdToken { get; set; } = string.Empty;
+        await _signInManager.SignOutAsync();
+        Response.Cookies.Delete("AuthToken");
+        return Ok(new { message = "Logout successful" });
     }
+}
+
+public class GoogleLoginRequest
+{
+    /// <summary>
+    /// JWT token from Google (with or without 'Bearer ' prefix)
+    /// </summary>
+    /// <example>Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiI...</example>
+    public string IdToken { get; set; } = string.Empty;
 }

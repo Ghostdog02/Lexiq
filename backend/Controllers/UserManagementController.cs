@@ -3,210 +3,151 @@ using Backend.Database.Entities;
 using Backend.Dtos;
 using Backend.Mapping;
 using Backend.Services;
-using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using DotNetEnv;
 
-namespace Backend.Api.Controllers
+namespace Backend.Api.Controllers;
+
+[Route("api/userManagement")]
+[ApiController]
+public class UserManagementController(BackendDbContext context, UserManager<User> userManager)
+    : ControllerBase
 {
-    public class GoogleLoginRequest
+    private readonly BackendDbContext _context = context;
+    private readonly UserManager<User> _userManager = userManager;
+
+    // GET: api/userManagement
+    [HttpGet]
+    public async Task<ActionResult<List<UserDetailsDto>>> GetAsync()
     {
-        public required string JwtToken { get; set; }
+        var users = await _context.Users.MapUsersToDtos().ToListAsync();
+
+        if (users == null || users.Count == 0)
+        {
+            return NotFound("No users found.");
+        }
+
+        return Ok(users);
     }
 
-    [Route("api/userManagement")]
-    [ApiController]
-    public class UserManagementController(BackendDbContext context, UserManager<User> userManager)
-        : ControllerBase
+    // GET api/userManagement/5
+    [HttpGet("{id:int}", Name = "GetUserById")]
+    public async Task<ActionResult<UserDetailsDto>> GetAsync(int id)
     {
-        private readonly BackendDbContext _context = context;
-        private readonly UserManager<User> _userManager = userManager;
+        var user = await _context.Users.FindAsync(id);
 
-        // GET: api/userManagement
-        [HttpGet]
-        public async Task<ActionResult<List<UserDetailsDto>>> GetAsync()
+        if (user == null)
         {
-            var users = await _context.Users.MapUsersToDtos().ToListAsync();
-
-            if (users == null || users.Count == 0)
-            {
-                return NotFound("No users found.");
-            }
-
-            return Ok(users);
+            return NotFound($"User with ID {id} not found.");
         }
 
-        // GET api/userManagement/5
-        [HttpGet("{id:int}", Name = "GetUserById")]
-        public async Task<ActionResult<UserDetailsDto>> GetAsync(int id)
+        UserDetailsDto dto = user.MapUserToDto();
+
+        return Ok(dto);
+    }
+
+    // GET api/userManagement/example@gmail.com
+    [HttpGet("{email}", Name = "GetUserByEmail")]
+    public async Task<ActionResult<UserDetailsDto>> GetAsync(string email)
+    {
+        User? user = await _userManager.FindByEmailAsync(email);
+
+        if (user == null)
         {
-            var user = await _context.Users.FindAsync(id);
-
-            if (user == null)
-            {
-                return NotFound($"User with ID {id} not found.");
-            }
-
-            UserDetailsDto dto = user.MapUserToDto();
-
-            return Ok(dto);
+            return NotFound($"User with ID {email} not found.");
         }
 
-        // GET api/userManagement/example@gmail.com
-        [HttpGet("{email}", Name = "GetUserByEmail")]
-        public async Task<ActionResult<UserDetailsDto>> GetAsync(string email)
+        UserDetailsDto dto = user.MapUserToDto();
+
+        return Ok(dto);
+    }
+
+    // POST api/userManagement/assignRole
+    [HttpPost("assignRole")]
+    public async Task<ActionResult> AssignRoleAsync([FromBody] UserRoleDto userRoleDto)
+    {
+        User? user = await _userManager.FindByIdAsync(userRoleDto.UserId.ToString());
+
+        if (user == null)
         {
-            User? user = await _userManager.FindByEmailAsync(email);
-
-            if (user == null)
-            {
-                return NotFound($"User with ID {email} not found.");
-            }
-
-            UserDetailsDto dto = user.MapUserToDto();
-
-            return Ok(dto);
+            return NotFound($"User with ID {userRoleDto.UserId} not found.");
         }
 
-        // POST api/userManagement/google-login
-        [HttpPost("google-login")]
-        public async Task<ActionResult> PostAsync([FromBody] GoogleLoginRequest request)
+        var rolesCount = await _userManager.GetRolesAsync(user);
+
+        if (rolesCount.Count() != 0)
         {
-            var validPayload = await GoogleJsonWebSignature.ValidateAsync(request.JwtToken);
-
-            bool isIssuerCorrect =
-                validPayload.Issuer == "https://accounts.google.com" ||
-                validPayload.Issuer == "accounts.google.com";
-
-            bool isAudienceCorrect =
-                validPayload.Audience == Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
-                
-            if (validPayload == null)
-            {
-                return BadRequest("Invalid Google token.");
-            }
-
-            string email = validPayload.Email;
-            User? user = await _userManager.FindByEmailAsync(email);
-
-            if (user == null)
-            {
-                user = validPayload.MapGooglePayloadToUser(_userManager);
-
-                IdentityResult result = await _userManager.CreateAsync(user);
-
-                if (!result.Succeeded)
-                    return BadRequest($"Creation of user has failed: {result.Errors}");
-
-                await _context.SaveChangesAsync();
-            }
-
-            CookieOptions cookieOptions = new()
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Strict,
-                MaxAge = validPayload.ExpirationTimeSeconds.HasValue
-                    ? TimeSpan.FromSeconds(validPayload.ExpirationTimeSeconds.Value)
-                    : null,
-                Path = "/",
-            };
-
-            Response.Cookies.Append("auth_token", validPayload., cookieOptions);
-
-            user.UpdateLastLoginDate();
-
-            return Ok();
-        }
-
-        // POST api/userManagement/assignRole
-        [HttpPost("assignRole")]
-        public async Task<ActionResult> AssignRoleAsync([FromBody] UserRoleDto userRoleDto)
-        {
-            User? user = await _userManager.FindByIdAsync(userRoleDto.UserId.ToString());
-
-            if (user == null)
-            {
-                return NotFound($"User with ID {userRoleDto.UserId} not found.");
-            }
-
-            var rolesCount = await _userManager.GetRolesAsync(user);
-
-            if (rolesCount.Count() != 0)
-            {
-                return NoContent();
-            }
-
-            var result = await _userManager.AddToRoleAsync(user, userRoleDto.RoleName);
-
-            if (!result.Succeeded)
-            {
-                return BadRequest(result.Errors);
-            }
-
-            await _context.SaveChangesAsync();
-
             return NoContent();
         }
 
-        // PUT api/userManagement/5
-        [HttpPut("{id}")]
-        public async Task<IResult> Put(int id, [FromBody] UpdatedUserDto dto)
+        var result = await _userManager.AddToRoleAsync(user, userRoleDto.RoleName);
+
+        if (!result.Succeeded)
         {
-            User? existingUser = await _userManager.FindByIdAsync(id.ToString());
-
-            if (existingUser == null)
-            {
-                return Results.NotFound($"User with id {id} was not found.");
-            }
-
-            existingUser.UpdateUserCredentials(dto, _userManager);
-
-            await _userManager.UpdateAsync(existingUser);
-
-            await _context.SaveChangesAsync();
-
-            return Results.NoContent();
+            return BadRequest(result.Errors);
         }
 
-        // PUT api/userManagement/updateLoginDate/5
-        [HttpPut("updateLoginDate/{id}", Name = "UpdateLastLoginDateAsync")]
-        public async Task<IResult> UpdateLastLoginDateAsync(int id)
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    // PUT api/userManagement/5
+    [HttpPut("{id}")]
+    public async Task<IResult> Put(int id, [FromBody] UpdatedUserDto dto)
+    {
+        User? existingUser = await _userManager.FindByIdAsync(id.ToString());
+
+        if (existingUser == null)
         {
-            User? existingUser = await _userManager.FindByIdAsync(id.ToString());
-
-            if (existingUser == null)
-            {
-                return Results.NotFound($"User with id {id} was not found.");
-            }
-
-            existingUser.UpdateLastLoginDate();
-
-            await _userManager.UpdateAsync(existingUser);
-
-            await _context.SaveChangesAsync();
-
-            return Results.NoContent();
+            return Results.NotFound($"User with id {id} was not found.");
         }
 
-        // DELETE api/userManagementApi/5
-        [HttpDelete("{id}")]
-        public async Task<IResult> DeleteAsync(int id)
+        existingUser.UpdateUserCredentials(dto, _userManager);
+
+        await _userManager.UpdateAsync(existingUser);
+
+        await _context.SaveChangesAsync();
+
+        return Results.NoContent();
+    }
+
+    // PUT api/userManagement/updateLoginDate/5
+    [HttpPut("updateLoginDate/{id}", Name = "UpdateLastLoginDateAsync")]
+    public async Task<IResult> UpdateLastLoginDateAsync(int id)
+    {
+        User? existingUser = await _userManager.FindByIdAsync(id.ToString());
+
+        if (existingUser == null)
         {
-            User? existingUser = await _userManager.FindByIdAsync(id.ToString());
-
-            if (existingUser == null)
-            {
-                return Results.NotFound($"User with id {id} was not found.");
-            }
-
-            await _userManager.DeleteAsync(existingUser);
-
-            await _context.SaveChangesAsync();
-
-            return Results.NoContent();
+            return Results.NotFound($"User with id {id} was not found.");
         }
+
+        existingUser.UpdateLastLoginDate();
+
+        await _userManager.UpdateAsync(existingUser);
+
+        await _context.SaveChangesAsync();
+
+        return Results.NoContent();
+    }
+
+    // DELETE api/userManagementApi/5
+    [HttpDelete("{id}")]
+    public async Task<IResult> DeleteAsync(int id)
+    {
+        User? existingUser = await _userManager.FindByIdAsync(id.ToString());
+
+        if (existingUser == null)
+        {
+            return Results.NotFound($"User with id {id} was not found.");
+        }
+
+        await _userManager.DeleteAsync(existingUser);
+
+        await _context.SaveChangesAsync();
+
+        return Results.NoContent();
     }
 }
