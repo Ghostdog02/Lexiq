@@ -1,11 +1,11 @@
 ﻿using System.Text;
-using Backend.Dtos;
 using Backend.Database.Entities;
+using Backend.Dtos;
 
 namespace Backend.Mapping
 {
     public static class UserMapping
-    {
+    {   
         public static UserDetailsDto MapUserToDto(this User user)
         {
             UserDetailsDto dto = new(

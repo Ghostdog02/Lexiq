@@ -80,21 +80,21 @@ namespace Backend.Api.Controllers
                 return BadRequest("Invalid Google token.");
             }
 
-            // if (await _usBackendDbContextFactoryerManager.FindByEmailAsync(newUser.Email) != null)
-            // {
-            //     return C onflict($"User with email {newUser.Email} already exists.");
-            // }
+            string email = validPayload.Email;
 
-            // User user = newUser.ToEntity();
+            if (await _userManager.FindByEmailAsync(email) == null)
+            {
+                IdentityResult result =  await UserService.CreateUserFromGooglePayloadAsync();
 
-            // var result = await _userManager.CreateAsync(user);
 
-            // if (!result.Succeeded)
-            //     return BadRequest(result.Errors);
+                if (!result.Succeeded)
+                    return BadRequest(result.Errors);
 
-            // await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
-            // var readDto = user.MapUserToDto();
+                var readDto = user.MapUserToDto();
+            }
+
             System.Console.WriteLine("Hi its working");
             return Ok(validPayload);
         }

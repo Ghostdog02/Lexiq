@@ -35,7 +35,7 @@ namespace Backend.Api
             var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
 
             var connectionString =
-                $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";
+                $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30";
 
             builder.Services.AddDbContext<BackendDbContext>(
                 options => options.UseSqlServer(connectionString),
