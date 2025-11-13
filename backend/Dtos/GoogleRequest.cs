@@ -1,8 +1,5 @@
-namespace Lexiq.Api.Models
+namespace Backend.Dtos
 {
-    /// <summary>
-    /// Google login request
-    /// </summary>
     public class GoogleLoginRequest
     {
         /// <summary>

@@ -1,11 +1,13 @@
 ﻿using System.Text;
 using Backend.Database.Entities;
 using Backend.Dtos;
+using Google.Apis.Auth;
+using Microsoft.AspNetCore.Identity;
 
 namespace Backend.Mapping
 {
     public static class UserMapping
-    {   
+    {
         public static UserDetailsDto MapUserToDto(this User user)
         {
             UserDetailsDto dto = new(
@@ -22,6 +24,23 @@ namespace Backend.Mapping
         public static IQueryable<UserDetailsDto> MapUsersToDtos(this IQueryable<User> users)
         {
             return users.Select(user => user.MapUserToDto());
+        }
+
+        public static User MapGooglePayloadToUser(
+            this GoogleJsonWebSignature.Payload validPayload,
+            UserManager<User> _userManager
+        )
+        {
+            User newUser = new()
+            {
+                UserName = validPayload.Name,
+                EmailConfirmed = true,
+                NormalizedEmail = _userManager.NormalizeEmail(validPayload.Email),
+                NormalizedUserName = _userManager.NormalizeEmail(validPayload.Name),
+                RegistrationDate = DateTime.UtcNow,
+            };
+
+            return newUser;
         }
 
         public static User ToEntity(this UserCreationDto dto)

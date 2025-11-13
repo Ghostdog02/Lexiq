@@ -75,28 +75,47 @@ namespace Backend.Api.Controllers
         {
             var validPayload = await GoogleJsonWebSignature.ValidateAsync(request.JwtToken);
 
+            bool isIssuerCorrect =
+                validPayload.Issuer == "https://accounts.google.com" ||
+                validPayload.Issuer == "accounts.google.com";
+
+
             if (validPayload == null)
             {
                 return BadRequest("Invalid Google token.");
             }
 
             string email = validPayload.Email;
+            User? user = await _userManager.FindByEmailAsync(email);
 
-            if (await _userManager.FindByEmailAsync(email) == null)
+            if (user == null)
             {
-                IdentityResult result =  await UserService.CreateUserFromGooglePayloadAsync();
+                user = validPayload.MapGooglePayloadToUser(_userManager);
 
+                IdentityResult result = await _userManager.CreateAsync(user);
 
                 if (!result.Succeeded)
-                    return BadRequest(result.Errors);
+                    return BadRequest($"Creation of user has failed: {result.Errors}");
 
                 await _context.SaveChangesAsync();
-
-                var readDto = user.MapUserToDto();
             }
 
-            System.Console.WriteLine("Hi its working");
-            return Ok(validPayload);
+            CookieOptions cookieOptions = new()
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Strict,
+                MaxAge = validPayload.ExpirationTimeSeconds.HasValue
+                    ? TimeSpan.FromSeconds(validPayload.ExpirationTimeSeconds.Value)
+                    : null,
+                Path = "/",
+            };
+
+            Response.Cookies.Append("auth_token", validPayload., cookieOptions);
+
+            user.UpdateLastLoginDate();
+
+            return Ok();
         }
 
         // POST api/userManagement/assignRole
