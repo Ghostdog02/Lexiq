@@ -7,6 +7,7 @@ using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using DotNetEnv;
 
 namespace Backend.Api.Controllers
 {
@@ -79,7 +80,9 @@ namespace Backend.Api.Controllers
                 validPayload.Issuer == "https://accounts.google.com" ||
                 validPayload.Issuer == "accounts.google.com";
 
-
+            bool isAudienceCorrect =
+                validPayload.Audience == Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID");
+                
             if (validPayload == null)
             {
                 return BadRequest("Invalid Google token.");

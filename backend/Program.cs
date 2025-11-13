@@ -2,6 +2,7 @@ using System.Reflection;
 using Backend.Database;
 using Backend.Database.Entities;
 using Backend.Database.ExtensionClasses;
+using Backend.Services;
 using DotNetEnv;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -41,6 +42,19 @@ namespace Backend.Api
                 options => options.UseSqlServer(connectionString),
                 ServiceLifetime.Scoped
             );
+
+            // Add before builder.Build()
+            builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+
+            // Configure cookie authentication
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.Cookie.SameSite = SameSiteMode.Strict;
+                options.ExpireTimeSpan = TimeSpan.FromDays(30);
+                options.SlidingExpiration = true;
+            });
 
             builder
                 .Services.AddControllers()
