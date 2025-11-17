@@ -9,15 +9,13 @@ namespace Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(
-    IGoogleAuthService googleAuthService,
-    SignInManager<User> signInManager
-) : ControllerBase
+public class AuthController(IGoogleAuthService googleAuthService, SignInManager<User> signInManager)
+    : ControllerBase
 {
     private readonly IGoogleAuthService _googleAuthService = googleAuthService;
     private readonly SignInManager<User> _signInManager = signInManager;
 
-    [HttpPost("signin-google")]
+    [HttpPost("google-login")]
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
     {
         if (string.IsNullOrEmpty(request.IdToken))
@@ -25,7 +23,6 @@ public class AuthController(
             return BadRequest(new { message = "ID token is required" });
         }
 
-        // Validate Google token
         var payload = await _googleAuthService.ValidateGoogleTokenAsync(request.IdToken);
         if (payload == null)
         {
@@ -40,7 +37,14 @@ public class AuthController(
 
         await _signInManager.SignInAsync(user, isPersistent: true);
 
-        return Ok(new { message = "Login successful", user = user.ToGoogleLoginDto() });
+        return Ok(
+            new
+            {
+                message = "Login successful",
+                user = user.ToGoogleLoginDto(),
+                payload.ExpirationTimeSeconds,
+            }
+        );
     }
 
     [HttpPost("logout")]
