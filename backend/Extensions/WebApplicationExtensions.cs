@@ -30,10 +30,6 @@ public static class WebApplicationExtensions
                     + "script-src 'self'; "
                     + "style-src 'self' 'unsafe-inline'";
 
-                // Uncomment if needed:
-                // context.Response.Headers["Cross-Origin-Opener-Policy"] = "restrict-properties";
-                // context.Response.Headers["Cross-Origin-Embedder-Policy"] = "require-corp";
-
                 await next();
             }
         );
