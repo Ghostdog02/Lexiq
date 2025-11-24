@@ -1,9 +1,9 @@
+using Backend.Api.Dtos;
 using Backend.Database.Entities;
-using Backend.Dtos;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 
-namespace Backend.Services;
+namespace Backend.Api.Services;
 
 public static class UserExtensions
 {

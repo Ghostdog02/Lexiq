@@ -1,8 +1,7 @@
-﻿using Backend.Database;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Backend.Database.ExtensionClasses;
+namespace Backend.Database.Extensions;
 
 public static class DataExtensions
 {

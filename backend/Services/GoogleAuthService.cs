@@ -1,9 +1,9 @@
+using Backend.Api.Mapping;
 using Backend.Database.Entities;
-using Backend.Mapping;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 
-namespace Backend.Services;
+namespace Backend.Api.Services;
 
 public interface IGoogleAuthService
 {
@@ -34,7 +34,6 @@ public class GoogleAuthService(UserManager<User> userManager, IConfiguration con
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
             return payload;
         }
-
         catch (InvalidJwtException ex)
         {
             Console.WriteLine($"Token validation failed: {ex.Message}");
@@ -60,7 +59,7 @@ public class GoogleAuthService(UserManager<User> userManager, IConfiguration con
                     Console.WriteLine(
                         $"User creation failed: {string.Join(", ", result.Errors.Select(e => e.Description))}"
                     );
-                    
+
                     return null;
                 }
             }

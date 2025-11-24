@@ -1,8 +1,8 @@
-﻿using Backend.Database;
+﻿using Backend.Api.Dtos;
+using Backend.Api.Mapping;
+using Backend.Api.Services;
+using Backend.Database;
 using Backend.Database.Entities;
-using Backend.Dtos;
-using Backend.Mapping;
-using Backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

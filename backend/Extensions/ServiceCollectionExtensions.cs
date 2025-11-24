@@ -1,13 +1,13 @@
 using System.Reflection;
+using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities;
-using Backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Backend.Extensions;
+namespace Backend.Api.Extensions;
 
 public static class ServiceCollectionExtensions
 {

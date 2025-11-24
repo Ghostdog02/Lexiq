@@ -1,8 +1,8 @@
 ﻿using System.Security.Claims;
+using Backend.Api.Dtos;
 using Backend.Database.Entities;
-using Backend.Dtos;
 
-namespace Backend.Mapping;
+namespace Backend.Api.Mapping;
 
 public static class ClaimsMapping
 {

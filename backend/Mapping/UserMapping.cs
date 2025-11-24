@@ -1,10 +1,11 @@
-﻿using System.Text;
+﻿using System.Linq;
+using System.Text;
+using Backend.Api.Dtos;
 using Backend.Database.Entities;
-using Backend.Dtos;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 
-namespace Backend.Mapping;
+namespace Backend.Api.Mapping;
 
 public static class UserMapping
 {

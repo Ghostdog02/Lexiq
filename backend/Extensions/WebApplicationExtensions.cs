@@ -1,4 +1,4 @@
-namespace Backend.Extensions;
+namespace Backend.Api.Extensions;
 
 public static class WebApplicationExtensions
 {

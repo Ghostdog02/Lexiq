@@ -1,5 +1,6 @@
+using Backend.Api.Extensions;
 using Backend.Database.ExtensionClasses;
-using Backend.Extensions;
+using Backend.Database.Extensions;
 using DotNetEnv;
 
 namespace Backend.Api;
@@ -19,7 +20,7 @@ public class Program
                 5001,
                 listenOptions =>
                 {
-                    listenOptions.UseHttps(); // Uses development certificate
+                    listenOptions.UseHttps();
                 }
             );
         });

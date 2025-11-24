@@ -25,7 +25,7 @@ partial class IntialMigration
 
         SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-        modelBuilder.Entity("Backend.Database.Entities.User", b =>
+        modelBuilder.Entity("Backend.Api.Database.Entities.User", b =>
             {
                 b.Property<string>("Id")
                     .HasColumnType("nvarchar(450)");
