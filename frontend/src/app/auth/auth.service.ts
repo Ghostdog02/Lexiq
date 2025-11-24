@@ -7,7 +7,7 @@ import { FormGroup } from '@angular/forms';
 
 import { environment } from '../../environment';
 
-const BACKEND_URL = environment.BACKEND_URL + '/userManagement';
+const BACKEND_URL = environment.BACKEND_URL + '/auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService implements OnInit {
@@ -49,37 +49,9 @@ export class AuthService implements OnInit {
     return false;
   }
 
-  async loginUser(email: string, password: string) {
-    try {
-      const response = await firstValueFrom(
-        this.httpClient.post<{ message: string; expiresIn: number }>(
-          BACKEND_URL + '/login',
-          { withCredentials: true }
-        )
-      );
-
-      const responseMessage = response.message;
-
-      if (!response) {
-        throw new Error(`Login failed: ${responseMessage}`);
-      }
-
-      this.setExpirationDate(response.expiresIn);
-
-      this.setAuthTimer(response.expiresIn);
-
-      this.changeAuthStatus(true);
-
-      this.router.navigateByUrl('/');
-    } catch (error) {
-      this.changeAuthStatus(false);
-      console.log(error);
-    }
-  }
-
   setExpirationDate(expiresIn: number) {
     const now = new Date();
-    const expirationDate = new Date(now.getTime() + expiresIn * 1000);
+    const expirationDate = new Date(now.getTime() + expiresIn);
     console.log(expirationDate);
 
     localStorage.setItem('expiration-date', expirationDate.toISOString());
@@ -118,9 +90,9 @@ export class AuthService implements OnInit {
   async loginUserWithGoogle(googleToken: any) {
     try {
       const response = await firstValueFrom(
-        this.httpClient.post<{ message: string; expiresIn: number }>(
+        this.httpClient.post<{ message: string; user: any; expiresIn: number }>(
           BACKEND_URL + '/google-login', 
-          { jwtToken: googleToken },
+          { idToken: googleToken },
           { withCredentials: true }
         )
       );

@@ -18,10 +18,11 @@ public static class ServiceCollectionExtensions
             options.AddDefaultPolicy(policy =>
             {
                 policy
-                    .WithOrigins("http://localhost:4200", "http://localhost:5000")
+                    .WithOrigins("http://localhost:4200", "https://localhost:5001")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
-                    .AllowCredentials();
+                    .AllowCredentials()
+                    .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
             });
         });
 
@@ -48,14 +49,23 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddCookieAuthentication(this IServiceCollection services)
     {
-        services.ConfigureApplicationCookie(options =>
-        {
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-            options.Cookie.SameSite = SameSiteMode.Strict;
-            options.ExpireTimeSpan = TimeSpan.FromHours(1);
-            options.SlidingExpiration = true;
-        });
+        services
+            .AddAuthentication(
+                Microsoft
+                    .AspNetCore
+                    .Authentication
+                    .Cookies
+                    .CookieAuthenticationDefaults
+                    .AuthenticationScheme
+            )
+            .AddCookie(options =>
+            {
+                options.Cookie.Name = "LexiqAuth";
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SameSite = SameSiteMode.Strict;
+                options.ExpireTimeSpan = TimeSpan.FromHours(1);
+                options.SlidingExpiration = true;
+            });
 
         return services;
     }
