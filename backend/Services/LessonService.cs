@@ -20,18 +20,19 @@ namespace Backend.Services
         /// <returns>The next lesson, or null if this is the last lesson in the course</returns>
         public async Task<Lesson?> GetNextLessonAsync(int currentLessonId)
         {
-            var currentLesson = await _context.Lessons
-                .Include(l => l.Module)
-                .ThenInclude(m => m.Course)
+            var currentLesson = await _context
+                .Lessons.Include(l => l.Module)
+                    .ThenInclude(m => m.Course)
                 .FirstOrDefaultAsync(l => l.Id == currentLessonId);
 
             if (currentLesson == null)
                 return null;
 
             // Try to find the next lesson in the same module
-            var nextLessonInModule = await _context.Lessons
-                .Where(l => l.ModuleId == currentLesson.ModuleId
-                         && l.OrderIndex > currentLesson.OrderIndex)
+            var nextLessonInModule = await _context
+                .Lessons.Where(l =>
+                    l.ModuleId == currentLesson.ModuleId && l.OrderIndex > currentLesson.OrderIndex
+                )
                 .OrderBy(l => l.OrderIndex)
                 .FirstOrDefaultAsync();
 
@@ -39,9 +40,11 @@ namespace Backend.Services
                 return nextLessonInModule;
 
             // If no next lesson in current module, find the first lesson of the next module
-            var nextModule = await _context.Modules
-                .Where(m => m.CourseId == currentLesson.Module.CourseId
-                         && m.OrderIndex > currentLesson.Module.OrderIndex)
+            var nextModule = await _context
+                .Modules.Where(m =>
+                    m.CourseId == currentLesson.Module.CourseId
+                    && m.OrderIndex > currentLesson.Module.OrderIndex
+                )
                 .OrderBy(m => m.OrderIndex)
                 .FirstOrDefaultAsync();
 
@@ -51,8 +54,8 @@ namespace Backend.Services
             //TO DO: If last module in Course change to next course
 
             // Get the first lesson of the next module
-            var firstLessonInNextModule = await _context.Lessons
-                .Where(l => l.ModuleId == nextModule.Id)
+            var firstLessonInNextModule = await _context
+                .Lessons.Where(l => l.ModuleId == nextModule.Id)
                 .OrderBy(l => l.OrderIndex)
                 .FirstOrDefaultAsync();
 
@@ -91,9 +94,9 @@ namespace Backend.Services
             if (lesson == null)
                 return false;
 
-            var hasNextLessonInModule = await _context.Lessons
-                .AnyAsync(l => l.ModuleId == lesson.ModuleId
-                            && l.OrderIndex > lesson.OrderIndex);
+            var hasNextLessonInModule = await _context.Lessons.AnyAsync(l =>
+                l.ModuleId == lesson.ModuleId && l.OrderIndex > lesson.OrderIndex
+            );
 
             return !hasNextLessonInModule;
         }
@@ -105,8 +108,8 @@ namespace Backend.Services
         /// <returns>The first lesson in the module</returns>
         public async Task<Lesson?> GetFirstLessonInModuleAsync(int moduleId)
         {
-            return await _context.Lessons
-                .Where(l => l.ModuleId == moduleId)
+            return await _context
+                .Lessons.Where(l => l.ModuleId == moduleId)
                 .OrderBy(l => l.OrderIndex)
                 .FirstOrDefaultAsync();
         }
@@ -118,8 +121,8 @@ namespace Backend.Services
         /// <returns>List of lessons in the module</returns>
         public async Task<List<Lesson>> GetLessonsByModuleAsync(int moduleId)
         {
-            return await _context.Lessons
-                .Where(l => l.ModuleId == moduleId)
+            return await _context
+                .Lessons.Where(l => l.ModuleId == moduleId)
                 .OrderBy(l => l.OrderIndex)
                 .ToListAsync();
         }
@@ -145,9 +148,9 @@ namespace Backend.Services
         /// <returns>The lesson with its module and course included</returns>
         public async Task<Lesson?> GetLessonWithDetailsAsync(int lessonId)
         {
-            return await _context.Lessons
-                .Include(l => l.Module)
-                .ThenInclude(m => m.Course)
+            return await _context
+                .Lessons.Include(l => l.Module)
+                    .ThenInclude(m => m.Course)
                 .Include(l => l.Exercises)
                 .FirstOrDefaultAsync(l => l.Id == lessonId);
         }

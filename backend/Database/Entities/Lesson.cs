@@ -36,9 +36,9 @@ namespace Backend.Database.Entities
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        [ForeignKey(nameof(ModuleId))]
-        public Module Module { get; set; } = null!;
+        [ForeignKey(nameof(CourseId))]
+        public Course Course { get; set; } = null!;
 
-        public ICollection<Exercise> Exercises { get; set; } = [];
+        public List<Exercise> Exercises { get; set; } = [];
     }
 }

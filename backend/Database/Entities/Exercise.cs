@@ -3,6 +3,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.Database.Entities
 {
+    public enum DifficultyLevel
+    {
+        Beginner,
+        Intermediate,
+        Advanced
+    }
 
     public class Exercise
     {

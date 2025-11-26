@@ -31,12 +31,9 @@ namespace Backend.Database.Entities
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        [ForeignKey(nameof(LanguageId))]
-        public Language Language { get; set; } = null!;
-
         [ForeignKey(nameof(CreatedById))]
         public User CreatedBy { get; set; } = null!;
 
-        public List<Module> Modules { get; set; } = [];
+        public List<Lesson> Lessons { get; set; } = [];
     }
 }
