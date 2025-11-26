@@ -1,5 +1,9 @@
+using System.Reflection;
 using Backend.Api.Extensions;
+using Backend.Database;
+using Backend.Database.Entities;
 using Backend.Database.Extensions;
+using Backend.Services;
 using DotNetEnv;
 
 namespace Backend.Api;
@@ -47,6 +51,7 @@ public class Program
             options.RedirectStatusCode = 307;
             options.HttpsPort = 5001;
         });
+        
         services.AddCorsPolicy();
         services.AddDatabaseContext();
         services.AddApplicationServices();
