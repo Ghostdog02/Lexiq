@@ -1,11 +1,10 @@
-﻿using Backend.Database;
-using Backend.Database.Entities;
+﻿using Backend.Database.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Backend.Database.ExtensionClasses;
+namespace Backend.Database.Extensions;
 
 public class SeedData
 {

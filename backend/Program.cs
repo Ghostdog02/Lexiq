@@ -1,5 +1,4 @@
 using Backend.Api.Extensions;
-using Backend.Database.ExtensionClasses;
 using Backend.Database.Extensions;
 using DotNetEnv;
 

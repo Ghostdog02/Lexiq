@@ -34,6 +34,7 @@ public class GoogleAuthService(UserManager<User> userManager, IConfiguration con
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
             return payload;
         }
+
         catch (InvalidJwtException ex)
         {
             Console.WriteLine($"Token validation failed: {ex.Message}");
