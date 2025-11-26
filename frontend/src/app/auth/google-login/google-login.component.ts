@@ -1,6 +1,5 @@
 import { AfterViewInit, Component, inject } from '@angular/core';
 import { AuthService } from '../auth.service';
-
 import { environment } from '../../../environment';
 
 declare const google: any;

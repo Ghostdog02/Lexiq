@@ -1,0 +1,149 @@
+<main>
+<div class="courses-container">
+  <header class="courses-header">
+    <h1>Italian Language Path</h1>
+    <p class="subtitle">Master Italian through structured learning</p>
+  </header>
+
+  <div class="learning-path">
+    @for (skillLevel of skillLevels; track skillLevel.level) {
+      <section class="skill-level-section">
+        <div class="level-header">
+          <div class="level-badge" [class]="'badge-' + skillLevel.level.toLowerCase()">
+            <span class="level-icon">
+              @if (skillLevel.level === 'Beginner') { 🌱 }
+              @if (skillLevel.level === 'Intermediate') { 🌿 }
+              @if (skillLevel.level === 'Advanced') { 🌳 }
+            </span>
+            <span class="level-text">{{ skillLevel.level }}</span>
+          </div>
+        </div>
+
+        <div class="courses-roadmap">
+          @for (course of skillLevel.courses; track course.id; let i = $index; let isLast = $last) {
+            <div class="course-node-wrapper">
+              <div class="course-node"
+                   [class.locked]="course.isLocked"
+                   [class.completed]="course.progress === 100"
+                   [class.in-progress]="course.progress > 0 && course.progress < 100">
+
+                <div class="course-icon">
+                  <span>{{ course.icon }}</span>
+                  @if (course.isLocked) {
+                    <span class="lock-overlay">🔒</span>
+                  }
+                  @if (course.progress === 100) {
+                    <span class="check-overlay">✓</span>
+                  }
+                </div>
+
+                <div class="course-content">
+                  <div class="course-header">
+                    <h3 class="course-title">{{ course.title }}</h3>
+                    <div class="course-meta">
+                      <span class="difficulty-badge" [class]="'difficulty-' + course.difficulty.toLowerCase()">
+                        {{ course.difficulty }}
+                      </span>
+                      <span class="estimated-hours">
+                        ⏱️ {{ course.estimatedHours }}h
+                      </span>
+                    </div>
+                  </div>
+
+                  <p class="course-description">{{ course.description }}</p>
+
+                  @if (!course.isLocked) {
+                    <div class="progress-section">
+                      <div class="progress-bar-container">
+                        <div class="progress-bar" [style.width.%]="course.progress"></div>
+                      </div>
+                      <span class="progress-text">{{ course.progress }}%</span>
+                    </div>
+                  }
+
+                  <button class="course-button" [disabled]="course.isLocked">
+                    @if (course.isLocked) {
+                      Locked
+                    } @else if (course.progress === 100) {
+                      Review
+                    } @else if (course.progress > 0) {
+                      Continue
+                    } @else {
+                      Start Course
+                    }
+                  </button>
+                </div>
+              </div>
+
+              @if (!isLast) {
+                <div class="path-connector" [class.locked]="course.isLocked"></div>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    }
+  </div>
+</div>
+
+<aside class="courses-sidebar">
+  <!-- User Stats -->
+  <article class="sidebar-card stats-card">
+    <div class="stat-item">
+      <div class="stat-icon">⭐</div>
+      <div class="stat-content">
+        <h3>Total XP</h3>
+        <p class="stat-value">{{ userXP }}</p>
+      </div>
+    </div>
+    <div class="stat-divider"></div>
+    <div class="stat-item">
+      <div class="stat-icon">🔥</div>
+      <div class="stat-content">
+        <h3>Day Streak</h3>
+        <p class="stat-value">{{ userStreak }} days</p>
+      </div>
+    </div>
+  </article>
+
+  <!-- Leaderboard Preview -->
+  <article class="sidebar-card leaderboard-card">
+    <h3 class="card-title">🏆 Leaderboard</h3>
+    <div class="leaderboard-preview">
+      <div class="user-rank">
+        <span class="rank-badge">#{{ userLeaderboardPosition }}</span>
+        <span class="rank-text">Your Rank</span>
+      </div>
+      <button class="leaderboard-button">View Full Leaderboard</button>
+    </div>
+  </article>
+
+  <!-- Daily Quests -->
+  <article class="sidebar-card quests-card">
+    <h3 class="card-title">📋 Daily Quests</h3>
+    <div class="quests-list">
+      @for (quest of dailyQuests; track quest.id) {
+        <div class="quest-item" [class.completed]="quest.progress === quest.maxProgress">
+          <div class="quest-header">
+            <span class="quest-icon">{{ quest.icon }}</span>
+            <div class="quest-info">
+              <h4 class="quest-title">{{ quest.title }}</h4>
+              <p class="quest-description">{{ quest.description }}</p>
+            </div>
+            <span class="quest-reward">+{{ quest.xpReward }} XP</span>
+          </div>
+          <div class="quest-progress">
+            <div class="quest-progress-bar">
+              <div class="quest-progress-fill"
+                   [style.width.%]="(quest.progress / quest.maxProgress) * 100">
+              </div>
+            </div>
+            <span class="quest-progress-text">{{ quest.progress }}/{{ quest.maxProgress }}</span>
+          </div>
+        </div>
+      }
+    </div>
+  </article>
+</aside>
+
+</main>

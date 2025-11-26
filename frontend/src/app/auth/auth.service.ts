@@ -11,7 +11,7 @@ const BACKEND_URL = environment.BACKEND_URL + '/auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService implements OnInit {
-  
+    
 
   private httpClient = inject(HttpClient);
   private router = inject(Router);
