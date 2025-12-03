@@ -1,6 +1,9 @@
 name: "Example"
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - Ghostdog02-patch-1
 
 jobs:
   create-runner:
