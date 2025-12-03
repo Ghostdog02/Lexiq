@@ -1,0 +1,69 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Angular Debug",
+      "url": "http://localhost:4200",
+      "webRoot": "/mnt/Data/Projects/Lexiq/frontend",
+      "runtimeExecutable": "/usr/bin/brave-browser",
+      "skipFiles": [
+        // Skip node_modules
+        "<node_internals>/**",
+        "/mnt/Data/Projects/Lexiq/frontend/node_modules/**",
+        
+        // Skip webpack internal files - these are the runtime URLs
+        "webpack-internal:///**",
+        "webpack://@angular/**",
+        "webpack://rxjs/**",
+        "webpack://zone.js/**",
+        "webpack:///webpack/**",
+        
+        // Skip by URL pattern (what debugger sees)
+        "http://localhost:4200/node_modules/**",
+        "http://localhost:4200/vendor.js",
+        "http://localhost:4200/polyfills.js",
+        "http://localhost:4200/runtime.js",
+        "http://localhost:4200/main.js",
+        
+        // Skip Chrome extensions
+        "chrome-extension://**"
+      ],
+      "smartStep": true,
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "webpack:///./*": "/mnt/Data/Projects/Lexiq/frontend/*",
+        "webpack:///src/*": "/mnt/Data/Projects/Lexiq/frontend/src/*",
+        "webpack:///*": "*",
+        "webpack:///./~/*": "/mnt/Data/Projects/Lexiq/frontend/node_modules/*"
+      }
+    },
+    {
+      "name": ".NET Core Launch (web)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build",
+      "program": "/mnt/Data/Projects/Lexiq/backend/bin/Debug/net9.0/Backend.dll",
+      "requireExactSource": false,
+      "args": [],
+      "cwd": "/mnt/Data/Projects/Lexiq/backend",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+          "action": "openExternally",
+          "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    {
+      "name": ".NET Core Attach",
+      "type": "coreclr",
+      "request": "attach"
+    }
+  ]
+}
