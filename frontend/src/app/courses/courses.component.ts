@@ -2,8 +2,9 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CoursesService } from './courses.service';
 import { ScrollingModule } from '@angular/cdk/scrolling';
+import { Subject, takeUntil } from 'rxjs';
 
-interface Course {
+export interface Course {
   id: number;
   title: string;
   description: string;
@@ -32,7 +33,7 @@ interface DailyQuest {
 @Component({
   selector: 'app-courses',
   standalone: true,
-  imports: [CommonModule, ScrollingModule],
+  imports: [CommonModule, ScrollingModule], // TODO make the scrolling module work
   templateUrl: './courses.component.html',
   styleUrl: './courses.component.scss'
 })
@@ -41,12 +42,26 @@ export class CoursesComponent implements OnInit{
 
   courses: Course[] = [];
   
+  destroy$ = new Subject<void>();
+
   ngOnInit() {
     this.loadCourses();
   }
 
   loadCourses() {
+    this.courseService.getAllCourses()
+    .pipe(
+      takeUntil(this.destroy$)
+    )
+    .subscribe({
+      next: (courses: Course[]) => {
+        this.courses = courses;
+      },
 
+      // make it global
+      error: (errorObject) => {
+      }
+    });
   }
 
 
