@@ -166,6 +166,8 @@ jobs:
               docker compose logs
               exit 1
             fi
+
+
             
   cleanup-ci-runner:
     name: "Cleanup CI Runner"
