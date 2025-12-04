@@ -2,5 +2,29 @@
 :root {
     --background-color: #1a2429;
     --primary-color: #dbe5eb;
-    --font-family: "Bricolage Grotesque", sans-serif; 
+    --font-family: "Bricolage Grotesque", sans-serif;
+
+    /* Design System Colors */
+    --bg-dark: #0f1419;
+    --bg: #1a2429;
+    --panel: #1e2732;
+    --accent: #7c5cff;
+    --accent-light: #9178ff;
+    --accent-dark: #5a3ce6;
+    --muted: #8b98a5;
+    --text-secondary: #b8c4cf;
+    --white: #ffffff;
+
+    /* Glass Effects */
+    --glass: rgba(255,255,255,0.04);
+    --glass-hover: rgba(255,255,255,0.08);
+    --border: rgba(255,255,255,0.08);
+
+    /* Border Radius */
+    --radius: 16px;
+    --radius-sm: 100px;
+
+    /* Shadows */
+    --shadow: 0 20px 60px rgba(0,0,0,0.5);
+    --shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
 }
