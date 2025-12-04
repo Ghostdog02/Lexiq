@@ -1,0 +1,104 @@
+name: "CI/CD - Hybrid Approach"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - Ghostdog02-patch-1
+      - master
+  pull_request:
+    branches:
+      - Ghostdog02-patch-1
+      - master
+
+jobs:
+  ci-on-hetzner:
+    name: "CI on Ephemeral Hetzner Runner"
+    runs-on: ubuntu-latest
+    outputs:
+      label: ${{ steps.create-runner.outputs.label }}
+      server_id: ${{ steps.create-runner.outputs.server_id }}
+    
+    steps:
+      - name: Create temporary Hetzner runner
+        id: create-runner
+        uses: Cyclenerd/hcloud-github-runner@v1
+        with:
+          mode: create
+          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          server_type: cx22
+          location: nbg1  # Nuremberg, Germany
+          image: rocky-9 # Rocky Linux 9
+
+  run-ci-tasks:
+    name: "Build and Test"
+    needs: ci-on-hetzner
+    runs-on: ${{ needs.ci-on-hetzner.outputs.label }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          dnf install nodejs npm -y
+          npm ci
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Build application
+        run: npm run build
+      
+      - name: Run integration tests with Podman
+        run: |
+          dnf install podman -y
+          # Run your containerized tests
+          podman run your-test-image
+
+  # Delete the ephemeral CI runner
+  cleanup-ci-runner:
+    name: "Cleanup CI Runner"
+    needs:
+      - ci-on-hetzner
+      - run-ci-tasks
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    
+    steps:
+      - name: Delete temporary runner
+        uses: Cyclenerd/hcloud-github-runner@v1
+        with:
+          mode: delete
+          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          name: ${{ needs.ci-on-hetzner.outputs.label }}
+          server_id: ${{ needs.ci-on-hetzner.outputs.server_id }}
+
+  # Deploy to persistent production server
+  deploy-to-production:
+    name: "Deploy to Persistent Production Server"
+    needs: run-ci-tasks  # Only deploy if CI passes
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to persistent Hetzner server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HETZNER_PROD_HOST }}
+          username: ${{ secrets.HETZNER_PROD_USERNAME }}
+          key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
+          script: |
+            echo "🚀 Deploying to PERSISTENT production server..."
+            
+            cd ~/app/current
+            git pull origin Ghostdog02-patch-1
+            npm ci --production
+            npm run migrate
+            pm2 reload myapp
+            
+            echo "✅ Deployed to persistent server (stays running)"
