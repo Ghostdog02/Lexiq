@@ -1,4 +1,4 @@
-name: "CI/CD - Hybrid Approach"
+name: "CI/CD - Docker Compose Deployment"
 
 on:
   workflow_dispatch:
@@ -28,11 +28,11 @@ jobs:
           github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
           server_type: cx22
-          location: nbg1  # Nuremberg, Germany
-          image: rocky-9 # Rocky Linux 9
+          location: nbg1
+          image: debian-13  # Using Debian 13
 
-  run-ci-tasks:
-    name: "Build and Test"
+  build-and-test:
+    name: "Build and Test with Docker"
     needs: ci-on-hetzner
     runs-on: ${{ needs.ci-on-hetzner.outputs.label }}
     
@@ -40,29 +40,71 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Install dependencies
+      - name: Install Docker on Debian 13
         run: |
-          dnf install nodejs npm -y
-          npm ci
+          # Update package index
+          apt-get update
+          
+          # Install prerequisites
+          apt-get install -y ca-certificates curl gnupg lsb-release
+          
+          # Add Docker's official GPG key
+          install -m 0755 -d /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          chmod a+r /etc/apt/keyrings/docker.gpg
+          
+          # Set up the Docker repository
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
+            $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+          
+          # Install Docker Engine
+          apt-get update
+          apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+          
+          # Start Docker service
+          systemctl start docker
+          systemctl enable docker
+          
+          # Verify installation
+          docker --version
+          docker compose version
       
-      - name: Run tests
-        run: npm test
-      
-      - name: Build application
-        run: npm run build
-      
-      - name: Run integration tests with Podman
+      - name: Build Docker images
         run: |
-          dnf install podman -y
-          # Run your containerized tests
-          podman run your-test-image
+          docker compose build
+      
+      - name: Run tests in Docker containers
+        run: |
+          # Run tests within Docker containers
+          docker compose run --rm web npm test
+          # Or if you have a separate test service
+          # docker compose run --rm test
+      
+      - name: Login to Docker Registry
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          # Or for GitHub Container Registry:
+          # echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      
+      - name: Tag and Push Docker images
+        run: |
+          # Tag images with commit SHA
+          docker compose build
+          docker tag ${{ secrets.DOCKER_USERNAME }}/myapp-web:latest ${{ secrets.DOCKER_USERNAME }}/myapp-web:${{ github.sha }}
+          docker tag ${{ secrets.DOCKER_USERNAME }}/myapp-api:latest ${{ secrets.DOCKER_USERNAME }}/myapp-api:${{ github.sha }}
+          
+          # Push both tags
+          docker push ${{ secrets.DOCKER_USERNAME }}/myapp-web:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/myapp-web:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/myapp-api:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/myapp-api:${{ github.sha }}
 
-  # Delete the ephemeral CI runner
   cleanup-ci-runner:
     name: "Cleanup CI Runner"
     needs:
       - ci-on-hetzner
-      - run-ci-tasks
+      - build-and-test
     runs-on: ubuntu-latest
     if: ${{ always() }}
     
@@ -76,29 +118,67 @@ jobs:
           name: ${{ needs.ci-on-hetzner.outputs.label }}
           server_id: ${{ needs.ci-on-hetzner.outputs.server_id }}
 
-  # Deploy to persistent production server
   deploy-to-production:
     name: "Deploy to Persistent Production Server"
-    needs: run-ci-tasks  # Only deploy if CI passes
+    needs: build-and-test
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/Ghostdog02-patch-1'
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Deploy to persistent Hetzner server
+      - name: Deploy with Docker Compose to Hetzner (Debian 13)
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
           key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
           script: |
-            echo "🚀 Deploying to PERSISTENT production server..."
+            echo "🚀 Deploying to production server with Docker Compose..."
             
+            # Navigate to app directory
             cd ~/app/current
-            git pull origin Ghostdog02-patch-1
-            npm ci --production
-            npm run migrate
-            pm2 reload myapp
             
-            echo "✅ Deployed to persistent server (stays running)"
+            # Pull latest code and docker-compose.yml
+            git pull origin ${{ github.ref_name }}
+            
+            # Login to Docker registry
+            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+            
+            # Pull latest images
+            docker compose pull
+            
+            # Stop and remove old containers
+            docker compose down
+            
+            # Start new containers in detached mode
+            docker compose up -d
+            
+            # Clean up unused images
+            docker image prune -f
+            
+            # Show running containers
+            docker compose ps
+            
+            echo "✅ Deployment complete!"
+      
+      - name: Health check
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HETZNER_PROD_HOST }}
+          username: ${{ secrets.HETZNER_PROD_USERNAME }}
+          key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
+          script: |
+            # Wait a few seconds for containers to start
+            sleep 10
+            
+            # Check if containers are running
+            cd ~/app/current
+            if docker compose ps | grep -q "Up"; then
+              echo "✅ Containers are running"
+            else
+              echo "❌ Deployment failed - containers not running"
+              docker compose logs
+              exit 1
+            fi
