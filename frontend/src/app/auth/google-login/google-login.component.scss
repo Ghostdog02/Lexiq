@@ -1,91 +1,91 @@
-// $bg-dark: #0f1419;
-// $bg: #1a2429;
-// $panel: #1e2732;
-// $accent: #7c5cff;
-// $accent-light: #9178ff;
-// $accent-dark: #5a3ce6;
-// $muted: #8b98a5;
-// $text-secondary: #b8c4cf;
-// $white: #ffffff;
-// $glass: rgba(255,255,255,0.04);
-// $glass-hover: rgba(255,255,255,0.08);
-// $border: rgba(255,255,255,0.08);
-// $radius: 16px;
-// $radius-sm: 100px;
-// $shadow: 0 20px 60px rgba(0,0,0,0.5);
-// $shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
+$bg-dark: #0f1419;
+$bg: #1a2429;
+$panel: #1e2732;
+$accent: #7c5cff;
+$accent-light: #9178ff;
+$accent-dark: #5a3ce6;
+$muted: #8b98a5;
+$text-secondary: #b8c4cf;
+$white: #ffffff;
+$glass: rgba(255,255,255,0.04);
+$glass-hover: rgba(255,255,255,0.08);
+$border: rgba(255,255,255,0.08);
+$radius: 16px;
+$radius-sm: 100px;
+$shadow: 0 20px 60px rgba(0,0,0,0.5);
+$shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
 
-// .lexiq-page {
-//   min-height: 100vh;
-//   width: 100%;
-//   display: grid;
-//   grid-template-columns: 1fr 520px;
-//   gap: 0;
-//   background: $bg;
-//   color: $white;
-//   align-items: center;
-//   padding: 0;
-//   position: relative;
-//   overflow: hidden;
+.lexiq-page {
+  min-height: 100vh;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 520px;
+  gap: 0;
+  background: $bg;
+  color: $white;
+  align-items: center;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
 
-//   &::before {
-//     content: '';
-//     position: absolute;
-//     width: 800px;
-//     height: 800px;
-//     background: radial-gradient(circle, rgba($accent, 0.1) 0%, transparent 40%);
-//     top: 50%;
-//     left: 24%;
-//     transform: translate(-50%, -50%);
-//     pointer-events: none;
-//     animation: pulse 8s ease-in-out infinite;
-//     // filter: blur(300px);
-//   }
+  &::before {
+    content: '';
+    position: absolute;
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba($accent, 0.1) 0%, transparent 40%);
+    top: 50%;
+    left: 24%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    animation: pulse 8s ease-in-out infinite;
+    // filter: blur(300px);
+  }
 
-//   @media (max-width: 1024px) {
-//     grid-template-columns: 1fr;
-//     padding: 0;
-//   }
-// }
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
+}
 
-// .lexiq-left {
-//   display: flex;
-//   align-items: center;
-//   justify-content: center;
-//   min-height: 100vh;
-//   padding: 80px;
-//   position: relative;
-//   background: transparent;
-//   z-index: 3;
+.lexiq-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 80px;
+  position: relative;
+  background: transparent;
+  z-index: 3;
 
-//   .lexiq-mark {
-//     width: 100%;
-//     max-width: 600px;
-//     display: flex;
-//     align-items: center;
-//     justify-content: center;
-//     position: relative;
-//     z-index: 3;
+  .lexiq-mark {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 3;
 
-//     img {
-//       width: 100%;
-//       height: auto;
-//       object-fit: contain;
-//       filter: drop-shadow(0 20px 60px rgba($accent, 0.25));
-//       animation: float 6s ease-in-out infinite;
-//     }
-//   }
+    img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 20px 60px rgba($accent, 0.25));
+      animation: float 6s ease-in-out infinite;
+    }
+  }
 
-//   @media (max-width: 1024px) {
-//     min-height: 40vh;
-//     padding: 60px 40px;
-//     order: 2;
+  @media (max-width: 1024px) {
+    min-height: 40vh;
+    padding: 60px 40px;
+    order: 2;
 
-//     .lexiq-mark {
-//       max-width: 300px;
-//     }
-//   }
-// }
+    .lexiq-mark {
+      max-width: 300px;
+    }
+  }
+}
 
 // .lexiq-right {
 //   display: flex;
