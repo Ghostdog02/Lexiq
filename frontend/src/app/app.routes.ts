@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
+import { GoogleLoginComponent } from './auth/google-login/google-login.component';
 
 export const routes: Routes = [
     {
@@ -8,9 +9,9 @@ export const routes: Routes = [
         title: "Home"
     },
     {
-        path: "register",
-        loadComponent: () => import('./register/register.component').then(m => m.RegisterComponent),
-        title: "Register"
+        path:'google-login',
+        component: GoogleLoginComponent,
+        title: "Google-Login"
     },
     {
         path: '**',

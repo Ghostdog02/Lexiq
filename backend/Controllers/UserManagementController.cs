@@ -1,23 +1,21 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Lexiq.Api.Dtos;
+using Lexiq.Api.Mapping;
+using Lexiq.Api.Services;
+using Lexiq.Database;
+using Lexiq.Database.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using DevGuard.Api.Dtos;
-using DevGuard.Api.Mapping;
-using DevGuard.Api.Services;
-using DevGuard.Database;
-using DevGuard.Database.Entities;
 
-namespace DevGuard.Api.Controllers
+namespace Lexiq.Api.Controllers
 {
     [Route("api/userManagement")]
     [ApiController]
-    public class UserManagementController(
-        DevGuardDbContext context,
-        UserManager<User> userManager
-    ) : ControllerBase
+    public class UserManagementController(LexiqDbContext context, UserManager<User> userManager)
+        : ControllerBase
     {
-        private readonly DevGuardDbContext _context = context;
+        private readonly LexiqDbContext _context = context;
         private readonly UserManager<User> _userManager = userManager;
 
         // GET: api/userManagement
@@ -101,7 +99,6 @@ namespace DevGuard.Api.Controllers
             }
 
             var rolesCount = await _userManager.GetRolesAsync(user);
-
 
             if (rolesCount.Count() != 0)
             {

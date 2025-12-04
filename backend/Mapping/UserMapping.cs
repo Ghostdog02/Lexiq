@@ -1,8 +1,8 @@
 ﻿using System.Text;
-using DevGuard.Api.Dtos;
-using DevGuard.Database.Entities;
+using Lexiq.Api.Dtos;
+using Lexiq.Database.Entities;
 
-namespace DevGuard.Api.Mapping
+namespace Lexiq.Api.Mapping
 {
     public static class UserMapping
     {

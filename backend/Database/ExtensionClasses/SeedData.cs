@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Lexiq.Database.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using DevGuard.Database.Entities;
 
-namespace DevGuard.Database.ExtensionClasses
+namespace Lexiq.Database.ExtensionClasses
 {
     public class SeedData
     {
@@ -12,28 +12,24 @@ namespace DevGuard.Database.ExtensionClasses
             try
             {
                 using var scope = serviceProvider.CreateScope();
-                var context = scope.ServiceProvider.GetRequiredService<DevGuardDbContext>();
+                var context = scope.ServiceProvider.GetRequiredService<LexiqDbContext>();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
 
                 await SeedRolesAsync(context, userManager);
                 await SeedAdminUserAsync(context, userManager);
             }
-
             catch (DbUpdateException ex)
             {
                 throw new Exception("A database error occurred while saving data.", ex);
             }
-
             catch (InvalidOperationException ex)
             {
                 throw new Exception("An invalid operation occurred during user processing.", ex);
             }
-
             catch (ArgumentNullException ex)
             {
                 throw new Exception("A null parameter has been passed during seeding roles", ex);
             }
-
             catch (Exception ex)
             {
                 throw new Exception("An unexpected error occurred during user initialization.", ex);
@@ -41,7 +37,7 @@ namespace DevGuard.Database.ExtensionClasses
         }
 
         private static async Task SeedAdminUserAsync(
-            DevGuardDbContext context,
+            LexiqDbContext context,
             UserManager<User> userManager
         )
         {
@@ -63,7 +59,7 @@ namespace DevGuard.Database.ExtensionClasses
                 LockoutEnabled = false,
                 LastLoginDate = today,
                 RegistrationDate = today,
-                NormalizedEmail = userName.Normalize()
+                NormalizedEmail = userName.Normalize(),
             };
 
             var creationResult = await userManager.CreateAsync(user);
@@ -83,8 +79,10 @@ namespace DevGuard.Database.ExtensionClasses
             await context.SaveChangesAsync();
         }
 
-        private static async Task SeedRolesAsync(DevGuardDbContext context,
-            UserManager<User> userManager)
+        private static async Task SeedRolesAsync(
+            LexiqDbContext context,
+            UserManager<User> userManager
+        )
         {
             string[] roles = ["Admin", "NormalUser", "SuperUser"];
 
@@ -97,7 +95,7 @@ namespace DevGuard.Database.ExtensionClasses
                     var identityRole = new IdentityRole<int>(currRole)
                     {
                         NormalizedName = userManager.NormalizeName(currRole),
-                        ConcurrencyStamp = Guid.NewGuid().ToString("D")
+                        ConcurrencyStamp = Guid.NewGuid().ToString("D"),
                     };
 
                     await roleStore.CreateAsync(identityRole);

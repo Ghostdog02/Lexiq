@@ -2,13 +2,13 @@
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 
-namespace DevGuard.Database
+namespace Lexiq.Database
 {
-    public class DevGuardDbContextFactory : IDesignTimeDbContextFactory<DevGuardDbContext>
+    public class LexiqDbContextFactory : IDesignTimeDbContextFactory<LexiqDbContext>
     {
-        public DevGuardDbContext CreateDbContext(string[] args)
+        public LexiqDbContext CreateDbContext(string[] args)
         {
-            var optionsBuilder = new DbContextOptionsBuilder<DevGuardDbContext>();
+            var optionsBuilder = new DbContextOptionsBuilder<LexiqDbContext>();
 
             var basePath = Path.GetFullPath(
                 Path.Combine(Directory.GetCurrentDirectory(), "..", "DevGuard.Api")
@@ -22,7 +22,7 @@ namespace DevGuard.Database
             var connectionString = configuration.GetConnectionString("DevGuardConnection");
             optionsBuilder.UseSqlServer(connectionString);
 
-            return new DevGuardDbContext(optionsBuilder.Options);
+            return new LexiqDbContext(optionsBuilder.Options);
         }
     }
 }

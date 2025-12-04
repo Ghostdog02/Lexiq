@@ -1,0 +1,41 @@
+#mainAside{
+    border-right: 2px solid #3b4951;
+    padding: 1.5em 2.2em 1em 1.3em;
+    height: 100vh;
+    width: 18em;
+}
+
+.sideBarLinks{
+    display: flex;
+    flex-direction: column;
+    margin-top: 1.5em;
+    list-style: none;
+    padding-left: 0em;
+
+    li{    
+        display: flex;
+        gap: .5em;
+
+        a{
+            display: flex;
+            align-items: center;
+            text-transform: uppercase;
+            padding: .8em 1em;
+            display: flex;
+            gap: 1.2em;    
+            text-decoration: none;
+            color: var(--primary-color);
+            font-weight: 700;
+            letter-spacing: .08px;
+        }
+
+        .icon {
+            font-size: 1.2em;
+        }
+    }
+
+    li:hover{
+        background-color: #3b4951;
+        border-radius: 5%;
+    }
+}

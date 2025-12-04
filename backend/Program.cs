@@ -1,12 +1,12 @@
+using DotNetEnv;
+using Lexiq.Database;
+using Lexiq.Database.Entities;
+using Lexiq.Database.ExtensionClasses;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
-using DevGuard.Database;
-using DevGuard.Database.Entities;
-using DevGuard.Database.ExtensionClasses;
-using DotNetEnv;
 
-namespace DevGuard.Api
+namespace Lexiq.Api
 {
     public class Program
     {
@@ -17,15 +17,15 @@ namespace DevGuard.Api
             var builder = WebApplication.CreateBuilder(args);
 
             var dbServer = Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost";
-            var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "SmartLunchSystem";
-            var dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? "sa";
+            var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "lexiqdatabase";
+            var dbUser = Environment.GetEnvironmentVariable("DB_USER_ID") ?? "sa";
             var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
 
-            var connectionString = $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Integrated Security=false;TrustServerCertificate=True;MultipleActiveResultSets=true";
+            var connectionString =
+                $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";
 
-            builder.Services.AddDbContext<DevGuardDbContext>(
-                options =>
-                    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()),
+            builder.Services.AddDbContext<LexiqDbContext>(
+                options => options.UseSqlServer(connectionString),
                 ServiceLifetime.Scoped
             );
 
@@ -41,7 +41,7 @@ namespace DevGuard.Api
                     options.SignIn.RequireConfirmedAccount = true
                 )
                 .AddRoles<IdentityRole<int>>()
-                .AddEntityFrameworkStores<DevGuardDbContext>()
+                .AddEntityFrameworkStores<LexiqDbContext>()
                 .AddDefaultTokenProviders();
 
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -84,7 +84,7 @@ namespace DevGuard.Api
 
             var seeder = new SeedData();
 
-            await app.Services.MigrateDbAsync();
+            //await app.Services.MigrateDbAsync();
             await SeedData.InitializeAsync(app.Services);
 
             app.Run();

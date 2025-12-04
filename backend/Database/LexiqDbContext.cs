@@ -1,11 +1,11 @@
-﻿using DevGuard.Database.Entities;
+﻿using Lexiq.Database.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-namespace DevGuard.Database
+namespace Lexiq.Database
 {
-    public class DevGuardDbContext(DbContextOptions options)
+    public class LexiqDbContext(DbContextOptions options)
         : IdentityDbContext<User, IdentityRole<int>, int>(options)
     {
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -49,6 +49,7 @@ namespace DevGuard.Database
         }
     }
 
-    public class CustomRoleStore(DevGuardDbContext context)
-        : RoleStore<IdentityRole<int>, DevGuardDbContext, int>(context) { }
+    public class CustomRoleStore(LexiqDbContext context)
+        : RoleStore<IdentityRole<int>, LexiqDbContext, int>(context)
+    { }
 }
