@@ -42,6 +42,9 @@ jobs:
       
       - name: Install Docker on Debian 13
         run: |
+          #Uninstall all conflicting packages:
+          sudo apt remove $(dpkg --get-selections docker.io docker-compose docker-doc podman-docker containerd runc | cut -f1)
+
           # Update package index
           apt-get update
           
@@ -61,12 +64,10 @@ jobs:
           # Install Docker Engine
           apt-get update
           apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-          
-          # Start Docker service
+
           systemctl start docker
           systemctl enable docker
-          
-          # Verify installation
+
           docker --version
           docker compose version
       
@@ -100,23 +101,7 @@ jobs:
           docker push ${{ secrets.DOCKER_USERNAME }}/myapp-api:latest
           docker push ${{ secrets.DOCKER_USERNAME }}/myapp-api:${{ github.sha }}
 
-  cleanup-ci-runner:
-    name: "Cleanup CI Runner"
-    needs:
-      - ci-on-hetzner
-      - build-and-test
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    
-    steps:
-      - name: Delete temporary runner
-        uses: Cyclenerd/hcloud-github-runner@v1
-        with:
-          mode: delete
-          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
-          name: ${{ needs.ci-on-hetzner.outputs.label }}
-          server_id: ${{ needs.ci-on-hetzner.outputs.server_id }}
+  
 
   deploy-to-production:
     name: "Deploy to Persistent Production Server"
@@ -140,7 +125,6 @@ jobs:
             # Navigate to app directory
             cd ~/app/current
             
-            # Pull latest code and docker-compose.yml
             git pull origin ${{ github.ref_name }}
             
             # Login to Docker registry
@@ -182,3 +166,21 @@ jobs:
               docker compose logs
               exit 1
             fi
+            
+  cleanup-ci-runner:
+    name: "Cleanup CI Runner"
+    needs:
+      - ci-on-hetzner
+      - build-and-test
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    
+    steps:
+      - name: Delete temporary runner
+        uses: Cyclenerd/hcloud-github-runner@v1
+        with:
+          mode: delete
+          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          name: ${{ needs.ci-on-hetzner.outputs.label }}
+          server_id: ${{ needs.ci-on-hetzner.outputs.server_id }}
