@@ -11,7 +11,26 @@ services:
       MSSQL_SA_PASSWORD: "8PJqTImEUx3RD8ZRTx0T"
     volumes:
       - db-data:/var/opt/mssql
+  
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: lexiq-backend
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: lexiq-frontend
+    ports:
+      - "4200:4200"
+    depends_on:
+      - backend
 
 volumes:
   db-data:
