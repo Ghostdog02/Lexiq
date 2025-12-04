@@ -15,7 +15,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: DOCKERFILE
     container_name: lexiq-backend
     ports:
       - "5000:5000"
@@ -25,7 +25,7 @@ services:
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: DOCKERFILE
     container_name: lexiq-frontend
     ports:
       - "4200:4200"
