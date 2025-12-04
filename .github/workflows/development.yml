@@ -94,15 +94,12 @@ jobs:
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
           key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
           script: |
-            echo "🚀 Deploying to production server with Docker Compose..."
+            echo "Deploying to production server with Docker Compose..."
             
             # Navigate to app directory
             cd ~/app/current
             
             git pull origin ${{ github.ref_name }}
-            
-            # Login to Docker registry
-            echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
             
             # Pull latest images
             docker compose pull
@@ -119,7 +116,7 @@ jobs:
             # Show running containers
             docker compose ps
             
-            echo "✅ Deployment complete!"
+            echo "Deployment complete!"
       
       - name: Health check
         uses: appleboy/ssh-action@v1.0.0
@@ -134,9 +131,9 @@ jobs:
             # Check if containers are running
             cd ~/app/current
             if docker compose ps | grep -q "Up"; then
-              echo "✅ Containers are running"
+              echo "Containers are running"
             else
-              echo "❌ Deployment failed - containers not running"
+              echo "Deployment failed - containers not running"
               docker compose logs
               exit 1
             fi
