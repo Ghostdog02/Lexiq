@@ -157,3 +157,4 @@ jobs:
           hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
           name: ${{ needs.ci-on-hetzner.outputs.label }}
           server_id: ${{ needs.ci-on-hetzner.outputs.server_id }}
+          
