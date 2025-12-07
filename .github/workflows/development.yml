@@ -88,11 +88,13 @@ jobs:
         uses: actions/checkout@v4
       
       - name: Deploy with Docker Compose to Hetzner (Debian 13)
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.2.4
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
           key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
+          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           script: |
             echo "Deploying to production server with Docker Compose..."
             
@@ -125,6 +127,7 @@ jobs:
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
           key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           script: |
             # Wait a few seconds for containers to start
             sleep 10
