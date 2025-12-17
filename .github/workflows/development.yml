@@ -95,7 +95,7 @@ jobs:
           key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          script_stop: true
+          envs: GITHUB_TOKEN
           script: |
             set -e  # Exit on any error
             set -o pipefail  # Fail if any command in a pipe fails
@@ -105,7 +105,13 @@ jobs:
             # Navigate to app directory
             cd ~/production || { echo "Failed to cd to ~/production"; exit 1; }
             
+            # Config GitHub PAT
+            git config --global url."https://$GITHUB_TOKEN@github.com/".insteadOf "https://github.com/"
+            
             git pull origin ${{ github.ref_name }} || { echo "Git pull failed"; exit 1; }
+            
+            # Clear GitHub PAT
+            git config --global --unset url."https://$GITHUB_TOKEN@github.com/".insteadOf
             
             # Pull latest images
             docker compose pull || { echo "Docker compose pull failed"; exit 1; }
@@ -132,7 +138,6 @@ jobs:
           key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          script_stop: true
           script: |
             set -e
             set -o pipefail
@@ -154,8 +159,11 @@ jobs:
               exit 1
             fi
 
-            echo "Success: $RUNNING container(s) running"
             docker compose ps
+
+            echo "Deployment complete!"
+          env:
+            GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
             
   cleanup-ci-runner:
     name: "Cleanup CI Runner"
