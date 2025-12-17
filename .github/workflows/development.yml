@@ -95,22 +95,26 @@ jobs:
           key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          script_stop: true
           script: |
+            set -e  # Exit on any error
+            set -o pipefail  # Fail if any command in a pipe fails
+            
             echo "Deploying to production server with Docker Compose..."
             
             # Navigate to app directory
-            cd ~/production
+            cd ~/production || { echo "Failed to cd to ~/production"; exit 1; }
             
-            git pull origin ${{ github.ref_name }}
+            git pull origin ${{ github.ref_name }} || { echo "Git pull failed"; exit 1; }
             
             # Pull latest images
-            docker compose pull
+            docker compose pull || { echo "Docker compose pull failed"; exit 1; }
             
             # Stop and remove old containers
-            docker compose down
+            docker compose down || { echo "Docker compose down failed"; exit 1; }
             
             # Start new containers in detached mode
-            docker compose up -d
+            docker compose up -d || { echo "Docker compose up failed"; exit 1; }
             
             # Clean up unused images
             docker image prune -f
@@ -128,21 +132,30 @@ jobs:
           key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          script_stop: true
           script: |
+            set -e
+            set -o pipefail
+          
             # Wait a few seconds for containers to start
             sleep 10
             
             # Check if containers are running
             cd ~/production
-            if docker compose ps | grep -q "Up"; then
-              echo "Containers are running"
-            else
-              echo "Deployment failed - containers not running"
-              docker compose logs
+
+            
+            # Get container status
+            RUNNING=$(docker compose ps --status running --quiet | wc -l)
+            
+            if [ "$RUNNING" -eq 0 ]; then
+              echo "ERROR: No containers are running!"
+              docker compose ps
+              docker compose logs --tail=50
               exit 1
             fi
 
-
+            echo "Success: $RUNNING container(s) running"
+            docker compose ps
             
   cleanup-ci-runner:
     name: "Cleanup CI Runner"
