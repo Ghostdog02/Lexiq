@@ -129,7 +129,8 @@ jobs:
             docker compose ps
             
             echo "Deployment complete!"
-      
+        env:
+            GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       - name: Health check
         uses: appleboy/ssh-action@v1.2.4
         with:
@@ -162,8 +163,6 @@ jobs:
             docker compose ps
 
             echo "Deployment complete!"
-          env:
-            GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
             
   cleanup-ci-runner:
     name: "Cleanup CI Runner"
