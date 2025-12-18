@@ -102,32 +102,39 @@ jobs:
             
             echo "Deploying to production server with Docker Compose..."
             
+            sudo apt update
+            sudo apt upgrade -y
+
             # Navigate to app directory
             cd ~/production || { echo "Failed to cd to ~/production"; exit 1; }
             
-            # Configure git user
-            git config --global user.name ${{ secrets.GIT_USER_NAME }}
-            git config --global user.email ${{ secrets.GIT_USER_EMAIL }}
-            git config --global user.password ${{ secrets.GIT_USER_PASSWORD }}
-
-            # Config GitHub PAT
-            git config --global url."https://$GITHUB_TOKEN@github.com/".insteadOf "https://github.com/"
-
-            git clone ${{ github.repository }}
+            if command -v git >/dev/null 2>&1; then
+                echo "Git is installed"
+            else
+                sudo apt install -y git || { echo "Git installation failed"; exit 1; }
+            fi
 
             output=$(git remote -v)
             if [[ -n "$output" ]]; then
-                echo "Remotes exist"
+                # Configure git user
+                git config --global user.name ${{ secrets.GIT_USER_NAME }}
+                git config --global user.email ${{ secrets.GIT_USER_EMAIL }}
+                git config --global user.password ${{ secrets.GIT_USER_PASSWORD }}
+
+                # Config GitHub PAT
+                git config --global url."https://$GITHUB_TOKEN@github.com/".insteadOf "https://github.com/"
+
+                git clone ${{ github.repository }}
+
+                git checkout -b ${{ github.ref_name }} origin/${{ github.ref_name }}
+
+                # Clear GitHub PAT
+                git config --global --unset url."https://$GITHUB_TOKEN@github.com/".insteadOf
             else
                 
                 # git pull origin ${{ github.ref_name }} || { echo "Git pull failed"; exit 1; }
             fi   
 
-            git checkout -b ${{ github.ref_name }} origin/${{ github.ref_name }}
-
-            # Clear GitHub PAT
-            git config --global --unset url."https://$GITHUB_TOKEN@github.com/".insteadOf
-            
             # Pull latest images
             docker compose pull || { echo "Docker compose pull failed"; exit 1; }
             
