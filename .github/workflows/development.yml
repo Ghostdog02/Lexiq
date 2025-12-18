@@ -105,16 +105,26 @@ jobs:
             # Navigate to app directory
             cd ~/production || { echo "Failed to cd to ~/production"; exit 1; }
             
-            #Configure git user
+            # Configure git user
             git config --global user.name ${{ secrets.GIT_USER_NAME }}
             git config --global user.email ${{ secrets.GIT_USER_EMAIL }}
             git config --global user.password ${{ secrets.GIT_USER_PASSWORD }}
 
             # Config GitHub PAT
             git config --global url."https://$GITHUB_TOKEN@github.com/".insteadOf "https://github.com/"
-            
-            git pull origin ${{ github.ref_name }} || { echo "Git pull failed"; exit 1; }
-            
+
+            git clone ${{ github.repository }}
+
+            output=$(git remote -v)
+            if [[ -n "$output" ]]; then
+                echo "Remotes exist"
+            else
+                
+                # git pull origin ${{ github.ref_name }} || { echo "Git pull failed"; exit 1; }
+            fi   
+
+            git checkout -b ${{ github.ref_name }} origin/${{ github.ref_name }}
+
             # Clear GitHub PAT
             git config --global --unset url."https://$GITHUB_TOKEN@github.com/".insteadOf
             
