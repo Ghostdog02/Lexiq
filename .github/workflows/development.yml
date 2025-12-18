@@ -94,7 +94,7 @@ jobs:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
           key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          password: ${{ secrets.HETZNER_PROD_PASSWORD }}
+          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}  
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           script: |
             set -e
