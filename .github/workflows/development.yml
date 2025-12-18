@@ -92,7 +92,7 @@ jobs:
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
+          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           envs: GITHUB_TOKEN
@@ -151,7 +151,7 @@ jobs:
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
+          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY}}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           script: |
