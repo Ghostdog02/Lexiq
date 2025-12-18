@@ -15,56 +15,27 @@ jobs:
   build-and-test:
     name: "Build and Test with Docker"
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Install Docker on Debian 13
-        run: |
-          #Uninstall all conflicting packages:
-          sudo apt remove "$(dpkg --get-selections docker.io docker-compose docker-doc podman-docker containerd runc | cut -f1)"
 
-          # Update package index
-          apt-get update
-          
-          # Install prerequisites
-          apt-get install -y ca-certificates curl gnupg lsb-release
-          
-          # Add Docker's official GPG key
-          install -m 0755 -d /etc/apt/keyrings
-          curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-          chmod a+r /etc/apt/keyrings/docker.gpg
-          
-          # Set up the Docker repository
-          echo \
-            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
-            $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-          
-          # Install Docker Engine
-          apt-get update
-          apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-          systemctl start docker
-          systemctl enable docker
-
-          docker --version
-          docker compose version
-      
       - name: Build Docker images
-        run: |
-          docker compose build
+        run: docker compose build
 
   deploy-to-production:
     name: "Deploy to Persistent Production Server"
     needs: build-and-test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/Ghostdog02-patch-1'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Deploy with Docker Compose to Hetzner (Debian 13)
         uses: appleboy/ssh-action@v1.2.4
         with:
@@ -75,87 +46,66 @@ jobs:
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           envs: GITHUB_TOKEN
           script: |
-            set -e  # Exit on any error
-            set -o pipefail  # Fail if any command in a pipe fails
-            
-            echo "Deploying to production server with Docker Compose..."
-            
-            echo ${{ secrets.HETZNER_PROD_DEVELOPER_PASSWORD }} | sudo -S update
+            set -euo pipefail
 
-            sudo apt update
+            echo "Deploying to production server with Docker Compose..."
+
+            # Use apt with sudo and correct command
+            echo "${{ secrets.HETZNER_PROD_DEVELOPER_PASSWORD }}" | sudo -S apt update
             sudo apt upgrade -y
 
-            # Navigate to app directory
             cd ~/production || { echo "Failed to cd to ~/production"; exit 1; }
-            
-            if command -v git >/dev/null 2>&1; then
-                echo "Git is installed"
-            else
-                sudo apt install -y git || { echo "Git installation failed"; exit 1; }
+
+            # Ensure git is installed
+            if ! command -v git >/dev/null 2>&1; then
+              sudo apt install -y git
             fi
 
-            output=$(git remote -v)
-            if [[ -n "$output" ]]; then
-                # Configure git user
-                git config --global user.name ${{ secrets.GIT_USER_NAME }}
-                git config --global user.email ${{ secrets.GIT_USER_EMAIL }}
-                git config --global user.password ${{ secrets.GIT_USER_PASSWORD }}
-
-                # Config GitHub PAT
-                git config --global url."https://$GITHUB_TOKEN@github.com/".insteadOf "https://github.com/"
-
-                git clone ${{ github.repository }}
-
-                git checkout -b ${{ github.ref_name }} origin/${{ github.ref_name }}
-
-                # Clear GitHub PAT
-                git config --global --unset url."https://$GITHUB_TOKEN@github.com/".insteadOf
+            # If repo exists, pull; otherwise clone
+            if [ -d .git ]; then
+              git fetch --all --prune
+              git checkout "${{ github.ref_name }}" || git checkout -b "${{ github.ref_name }}"
+              git pull origin "${{ github.ref_name }}"
             else
-                
-                # git pull origin ${{ github.ref_name }} || { echo "Git pull failed"; exit 1; }
-            fi   
+              # Configure temporary PAT for clone
+              git config --global url."https://$GITHUB_TOKEN@github.com/".insteadOf "https://github.com/"
+              git clone "https://github.com/${{ github.repository }}.git" .
+              git checkout -b "${{ github.ref_name }}" origin/"${{ github.ref_name }}" || true
+              git config --global --unset url."https://$GITHUB_TOKEN@github.com/".insteadOf
+            fi
 
-            # Pull latest images
-            docker compose pull || { echo "Docker compose pull failed"; exit 1; }
-            
-            # Stop and remove old containers
-            docker compose down || { echo "Docker compose down failed"; exit 1; }
-            
-            # Start new containers in detached mode
-            docker compose up -d || { echo "Docker compose up failed"; exit 1; }
-            
-            # Clean up unused images
+            # Pull, stop, and start containers
+            docker compose pull
+            docker compose down
+            docker compose up -d
+
             docker image prune -f
-            
-            # Show running containers
             docker compose ps
-            
             echo "Deployment complete!"
         env:
-            GITHUB_TOKEN: ${{ secrets.GIT_READONLY_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GIT_READONLY_TOKEN }}
+
       - name: Health check
         uses: appleboy/ssh-action@v1.2.4
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY}}
+          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
           # passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           password: ${{ secrets.HETZNER_PROD_PASSWORD }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           script: |
             set -e
             set -o pipefail
-          
+
             # Wait a few seconds for containers to start
             sleep 10
-            
-            # Check if containers are running
+
             cd ~/production
 
-            
             # Get container status
             RUNNING=$(docker compose ps --status running --quiet | wc -l)
-            
+
             if [ "$RUNNING" -eq 0 ]; then
               echo "ERROR: No containers are running!"
               docker compose ps
