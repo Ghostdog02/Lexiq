@@ -102,6 +102,8 @@ jobs:
             
             echo "Deploying to production server with Docker Compose..."
             
+            echo ${{ secrets.HETZNER_PROD_DEVELOPER_PASSWORD }} | sudo -S update
+
             sudo apt update
             sudo apt upgrade -y
 
