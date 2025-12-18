@@ -25,7 +25,7 @@ jobs:
         uses: Cyclenerd/hcloud-github-runner@v1
         with:
           mode: create
-          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          github_token: ${{ secrets.RUNNER_TOKEN }}
           hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
           server_type: cx22
           location: nbg1
@@ -130,7 +130,7 @@ jobs:
             
             echo "Deployment complete!"
         env:
-            GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+            GITHUB_TOKEN: ${{ secrets.GIT_READONLY_TOKEN }}
       - name: Health check
         uses: appleboy/ssh-action@v1.2.4
         with:
@@ -177,7 +177,7 @@ jobs:
         uses: Cyclenerd/hcloud-github-runner@v1
         with:
           mode: delete
-          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          github_token: ${{ secrets.RUNNER_TOKEN }}
           hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
           name: ${{ needs.ci-on-hetzner.outputs.label }}
           server_id: ${{ needs.ci-on-hetzner.outputs.server_id }}
