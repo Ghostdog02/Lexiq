@@ -69,11 +69,8 @@ jobs:
               git checkout "${{ github.ref_name }}" || git checkout -b "${{ github.ref_name }}"
               git pull origin "${{ github.ref_name }}"
             else
-              # Configure temporary PAT for clone
-              git config --global url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-              git clone "https://github.com/${{ github.repository }}.git" .
+              git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" .
               git checkout -b "${{ github.ref_name }}" origin/"${{ github.ref_name }}" || true
-              git config --global --unset url."https://${GITHUB_TOKEN}@github.com/".insteadOf
             fi
 
             # Pull, stop, and start containers
