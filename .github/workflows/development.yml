@@ -12,29 +12,9 @@ on:
       - master
 
 jobs:
-  ci-on-hetzner:
-    name: "CI on Ephemeral Hetzner Runner"
-    runs-on: ubuntu-latest
-    outputs:
-      label: ${{ steps.create-runner.outputs.label }}
-      server_id: ${{ steps.create-runner.outputs.server_id }}
-    
-    steps:
-      - name: Create temporary Hetzner runner
-        id: create-runner
-        uses: Cyclenerd/hcloud-github-runner@v1
-        with:
-          mode: create
-          github_token: ${{ secrets.RUNNER_TOKEN }}
-          hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
-          server_type: cx22
-          location: nbg1
-          image: debian-13  # Using Debian 13
-
   build-and-test:
     name: "Build and Test with Docker"
-    needs: ci-on-hetzner
-    runs-on: ${{ needs.ci-on-hetzner.outputs.label }}
+    runs-on: ubuntu-latest
     
     steps:
       - name: Checkout code
@@ -43,7 +23,7 @@ jobs:
       - name: Install Docker on Debian 13
         run: |
           #Uninstall all conflicting packages:
-          sudo apt remove $(dpkg --get-selections docker.io docker-compose docker-doc podman-docker containerd runc | cut -f1)
+          sudo apt remove "$(dpkg --get-selections docker.io docker-compose docker-doc podman-docker containerd runc | cut -f1)"
 
           # Update package index
           apt-get update
@@ -74,8 +54,6 @@ jobs:
       - name: Build Docker images
         run: |
           docker compose build
-      
-
 
   deploy-to-production:
     name: "Deploy to Persistent Production Server"
@@ -188,22 +166,3 @@ jobs:
             docker compose ps
 
             echo "Deployment complete!"
-            
-  cleanup-ci-runner:
-    name: "Cleanup CI Runner"
-    needs:
-      - ci-on-hetzner
-      - build-and-test
-    runs-on: ubuntu-latest
-    if: ${{ always() }}
-    
-    steps:
-      - name: Delete temporary runner
-        uses: Cyclenerd/hcloud-github-runner@v1
-        with:
-          mode: delete
-          github_token: ${{ secrets.RUNNER_TOKEN }}
-          hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
-          name: ${{ needs.ci-on-hetzner.outputs.label }}
-          server_id: ${{ needs.ci-on-hetzner.outputs.server_id }}
-          
