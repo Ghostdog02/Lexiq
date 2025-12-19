@@ -18,13 +18,26 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker images
-        run: docker compose build
+        run: |
+          set -x  # Enable command echoing
+          echo "::group::Building Docker images"
+          docker compose build 2>&1 | tee build.log
+          echo "::endgroup::"
+        continue-on-error: false
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: build.log
+          retention-days: 7
 
   deploy-to-production:
     name: "Deploy to Persistent Production Server"
@@ -34,7 +47,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Deploy with Docker Compose to Hetzner (Debian 13)
         uses: appleboy/ssh-action@v1.2.4
@@ -47,48 +60,123 @@ jobs:
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           envs: GITHUB_TOKEN
+          command_timeout: 30m
+          script_stop: true
           script: |
             set -euo pipefail
+            set -x  # Enable command echoing for debugging
 
-            echo "Deploying to production server with Docker Compose..."
+            # Create log directory
+            LOG_DIR=~/production/deployment-logs
+            mkdir -p "$LOG_DIR"
+            LOG_FILE="$LOG_DIR/deploy-$(date +%Y%m%d-%H%M%S).log"
 
-            # Use apt with sudo and correct command
-            echo "${{ secrets.HETZNER_PROD_DEVELOPER_PASSWORD }}" | sudo -S apt update
-            sudo apt upgrade -y
+            # Function to log with timestamp
+            log() {
+              echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+            }
 
-            cd ~/production || { echo "Failed to cd to ~/production"; exit 1; }
+            # Trap errors and log them with context
+            trap 'log "ERROR: Command failed at line $LINENO with exit code $?"; log "Last command: $BASH_COMMAND"' ERR
+
+            log "===== Starting deployment to production server ====="
+            log "Branch: ${{ github.ref_name }}"
+            log "Commit: ${{ github.sha }}"
+            log "Triggered by: ${{ github.actor }}"
+
+            # System updates with error handling
+            log "Updating system packages..."
+            if echo "${{ secrets.HETZNER_PROD_DEVELOPER_PASSWORD }}" | sudo -S apt update 2>&1 | tee -a "$LOG_FILE"; then
+              log "System update successful"
+            else
+              log "ERROR: System update failed"
+              exit 1
+            fi
+
+            if sudo apt upgrade -y 2>&1 | tee -a "$LOG_FILE"; then
+              log "System upgrade successful"
+            else
+              log "WARNING: System upgrade had issues (non-critical)"
+            fi
+
+            # Navigate to production directory
+            log "Navigating to production directory..."
+            cd ~/production || { log "ERROR: Failed to cd to ~/production"; exit 1; }
 
             # Ensure git is installed
             if ! command -v git >/dev/null 2>&1; then
-              sudo apt install -y git
+              log "Installing git..."
+              sudo apt install -y git 2>&1 | tee -a "$LOG_FILE"
             fi
 
-            # If repo exists, pull; otherwise clone
+            # Git operations with detailed logging
+            log "Performing git operations..."
             if [ -d .git ]; then
-              # Update remote URL to include token
+              log "Repository exists, updating..."
+              
+              # Show current state
+              log "Current branch: $(git branch --show-current)"
+              log "Current commit: $(git rev-parse HEAD)"
+              
               git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
-
-              git fetch --all --prune
-              git checkout "${{ github.ref_name }}" || git checkout -b "${{ github.ref_name }}"
-              git pull origin "${{ github.ref_name }}"
-
-              # Remove token from remote URL for security
+              
+              if git fetch --all --prune 2>&1 | tee -a "$LOG_FILE"; then
+                log "Git fetch successful"
+              else
+                log "ERROR: Git fetch failed"
+                exit 1
+              fi
+              
+              git checkout "${{ github.ref_name }}" 2>&1 | tee -a "$LOG_FILE" || git checkout -b "${{ github.ref_name }}" 2>&1 | tee -a "$LOG_FILE"
+              git pull origin "${{ github.ref_name }}" 2>&1 | tee -a "$LOG_FILE"
+              
               git remote set-url origin "https://github.com/${{ github.repository }}.git"
+              
+              log "Updated to commit: $(git rev-parse HEAD)"
             else
-              git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" .
-              git checkout -b "${{ github.ref_name }}" origin/"${{ github.ref_name }}" || true
+              log "Cloning repository..."
+              git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" . 2>&1 | tee -a "$LOG_FILE"
+              git checkout -b "${{ github.ref_name }}" origin/"${{ github.ref_name }}" 2>&1 | tee -a "$LOG_FILE" || true
             fi
 
-            # Pull, stop, and start containers
-            docker compose pull
-            docker compose down
-            docker compose up -d
+            # Docker operations with detailed logging
+            log "Pulling latest Docker images..."
+            if docker compose pull 2>&1 | tee -a "$LOG_FILE"; then
+              log "Docker pull successful"
+            else
+              log "ERROR: Docker pull failed"
+              exit 1
+            fi
 
-            docker image prune -f
-            docker compose ps
-            echo "Deployment complete!"
+            log "Stopping existing containers..."
+            if docker compose down 2>&1 | tee -a "$LOG_FILE"; then
+              log "Containers stopped successfully"
+            else
+              log "WARNING: Issue stopping containers"
+            fi
 
-      - name: Health check
+            log "Starting containers..."
+            if docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
+              log "Containers started successfully"
+            else
+              log "ERROR: Failed to start containers"
+              docker compose logs --tail=100 2>&1 | tee -a "$LOG_FILE"
+              exit 1
+            fi
+
+            # Cleanup
+            log "Cleaning up unused Docker images..."
+            docker image prune -f 2>&1 | tee -a "$LOG_FILE"
+
+            # Show container status
+            log "Current container status:"
+            docker compose ps 2>&1 | tee -a "$LOG_FILE"
+
+            log "===== Deployment complete ====="
+            log "Log file saved to: $LOG_FILE"
+
+      - name: Health check with detailed logging
+        if: success()
         uses: appleboy/ssh-action@v1.2.4
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
@@ -96,25 +184,122 @@ jobs:
           key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}  
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          script_stop: true
           script: |
             set -e
             set -o pipefail
+            set -x
 
-            # Wait a few seconds for containers to start
+            LOG_DIR=~/production/deployment-logs
+            LOG_FILE="$LOG_DIR/healthcheck-$(date +%Y%m%d-%H%M%S).log"
+
+            log() {
+              echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
+            }
+
+            log "===== Starting health check ====="
+
+            # Wait for containers to stabilize
+            log "Waiting 10 seconds for containers to start..."
             sleep 10
 
             cd ~/production
 
-            # Get container status
+            # Get detailed container status
+            log "Container status:"
+            docker compose ps 2>&1 | tee -a "$LOG_FILE"
+
+            # Count running containers
             RUNNING=$(docker compose ps --status running --quiet | wc -l)
+            TOTAL=$(docker compose ps --quiet | wc -l)
+            log "Running containers: $RUNNING / $TOTAL"
 
             if [ "$RUNNING" -eq 0 ]; then
-              echo "ERROR: No containers are running!"
-              docker compose ps
-              docker compose logs --tail=50
+              log "ERROR: No containers are running!"
+              
+              # Get logs from all containers
+              log "Retrieving container logs..."
+              docker compose logs --tail=100 2>&1 | tee -a "$LOG_FILE"
+              
+              # Check for common issues
+              log "Checking Docker daemon status..."
+              sudo systemctl status docker --no-pager 2>&1 | tee -a "$LOG_FILE"
+              
+              log "Checking disk space..."
+              df -h 2>&1 | tee -a "$LOG_FILE"
+              
+              log "Checking Docker disk usage..."
+              docker system df 2>&1 | tee -a "$LOG_FILE"
+              
               exit 1
             fi
 
-            docker compose ps
+            # Check individual container health
+            log "Checking individual container health..."
+            for container in $(docker compose ps --quiet); do
+              CONTAINER_NAME=$(docker inspect --format='{{.Name}}' "$container" | sed 's/^\///')
+              CONTAINER_STATUS=$(docker inspect --format='{{.State.Status}}' "$container")
+              CONTAINER_HEALTH=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no healthcheck{{end}}' "$container")
+              
+              log "Container: $CONTAINER_NAME"
+              log "  Status: $CONTAINER_STATUS"
+              log "  Health: $CONTAINER_HEALTH"
+              
+              if [ "$CONTAINER_STATUS" != "running" ]; then
+                log "  ERROR: Container not running, showing logs:"
+                docker logs --tail=50 "$container" 2>&1 | tee -a "$LOG_FILE"
+              fi
+            done
 
-            echo "Deployment complete!"
+            log "===== Health check complete ====="
+            log "Health check log saved to: $LOG_FILE"
+
+      - name: Collect and upload deployment logs on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.HETZNER_PROD_HOST }}
+          username: ${{ secrets.HETZNER_PROD_USERNAME }}
+          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          script: |
+            cd ~/production
+            
+            # Create comprehensive failure report
+            REPORT_FILE="deployment-logs/failure-report-$(date +%Y%m%d-%H%M%S).txt"
+            
+            echo "===== DEPLOYMENT FAILURE REPORT =====" > "$REPORT_FILE"
+            echo "Time: $(date)" >> "$REPORT_FILE"
+            echo "Branch: ${{ github.ref_name }}" >> "$REPORT_FILE"
+            echo "Commit: ${{ github.sha }}" >> "$REPORT_FILE"
+            echo "" >> "$REPORT_FILE"
+            
+            echo "===== CONTAINER STATUS =====" >> "$REPORT_FILE"
+            docker compose ps >> "$REPORT_FILE" 2>&1
+            echo "" >> "$REPORT_FILE"
+            
+            echo "===== RECENT LOGS (last 200 lines) =====" >> "$REPORT_FILE"
+            docker compose logs --tail=200 >> "$REPORT_FILE" 2>&1
+            echo "" >> "$REPORT_FILE"
+            
+            echo "===== SYSTEM RESOURCES =====" >> "$REPORT_FILE"
+            echo "Disk space:" >> "$REPORT_FILE"
+            df -h >> "$REPORT_FILE" 2>&1
+            echo "" >> "$REPORT_FILE"
+            echo "Memory:" >> "$REPORT_FILE"
+            free -h >> "$REPORT_FILE" 2>&1
+            echo "" >> "$REPORT_FILE"
+            
+            echo "Failure report saved to: $REPORT_FILE"
+            cat "$REPORT_FILE"
+
+      - name: Notify on deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment successful for branch ${{ github.ref_name }}"
+          else
+            echo "❌ Deployment failed for branch ${{ github.ref_name }}"
+            echo "Check the logs above for detailed error information"
+          fi
