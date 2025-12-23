@@ -32,7 +32,6 @@ services:
     depends_on:
       - backend
     volumes:
-      - /etc/nginx/nginx.conf:/etc/nginx/nginx.conf
       - /usr/share/nginx/html:/usr/share/nginx/html
       - /etc/letsencrypt:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
