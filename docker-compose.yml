@@ -34,7 +34,7 @@ services:
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-    user: root 
+    user: nginx 
 
 volumes:
   db-data:
