@@ -79,7 +79,7 @@ jobs:
             }
 
             # Trap errors and log them with context
-            trap 'log "ERROR: Command failed at line $LINENO with exit code $?"; log "Last command: $BASH_COMMAND"' ERR
+            trap 'log "ERROR: Command failed at line ${BASH_LINENO[0]} with exit code $?"; log "Last command: $BASH_COMMAND"' ERR
 
             log "===== Starting deployment to production server ====="
             log "Branch: ${{ github.ref_name }}"
@@ -88,7 +88,7 @@ jobs:
 
             # System updates with error handling
             log "Updating system packages..."
-            if echo "${{ secrets.HETZNER_PROD_DEVELOPER_PASSWORD }}" | sudo -S apt update 2>&1 | tee -a "$LOG_FILE"; then
+            if sudo -S apt update 2>&1 | tee -a "$LOG_FILE"; then
               log "System update successful"
             else
               log "ERROR: System update failed"
@@ -211,47 +211,18 @@ jobs:
             log "Container status:"
             docker compose ps 2>&1 | tee -a "$LOG_FILE"
 
-            # Count running containers
-            RUNNING=$(docker compose ps --status running --quiet | wc -l)
-            TOTAL=$(docker compose ps --quiet | wc -l)
-            log "Running containers: $RUNNING / $TOTAL"
+            containers=("lexiq-frontend" "lexiq-backend" "lexiq-database")
 
-            if [ "$RUNNING" -eq 0 ]; then
-              log "ERROR: No containers are running!"
-              
-              # Get logs from all containers
-              log "Retrieving container logs..."
-              docker compose logs --tail=100 2>&1 | tee -a "$LOG_FILE"
-              
-              # Check for common issues
-              log "Checking Docker daemon status..."
-              sudo systemctl status docker --no-pager 2>&1 | tee -a "$LOG_FILE"
-              
-              log "Checking disk space..."
-              df -h 2>&1 | tee -a "$LOG_FILE"
-              
-              log "Checking Docker disk usage..."
-              sudo docker system df 2>&1 | tee -a "$LOG_FILE"
-              
-              exit 1
-            fi
-
-            # Check individual container health
-            log "Checking individual container health..."
-            for container in $(sudo docker compose ps --quiet); do
-              CONTAINER_NAME=$(sudo docker inspect --format='{{.Name}}' "$container" | sed 's/^\///')
-              CONTAINER_STATUS=$(sudo docker inspect --format='{{.State.Status}}' "$container")
-              CONTAINER_HEALTH=$(sudo docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no healthcheck{{end}}' "$container")
-              
-              log "Container: $CONTAINER_NAME"
-              log "  Status: $CONTAINER_STATUS"
-              log "  Health: $CONTAINER_HEALTH"
-              
-              if [ "$CONTAINER_STATUS" != "running" ]; then
-                log "  ERROR: Container not running, showing logs:"
-                sudo docker logs --tail=50 "$container" 2>&1 | tee -a "$LOG_FILE"
-              fi
-            done
+            check_container() {
+              for name in "${containers[@]}"; do
+                log "Checking container: $name"
+                if ! docker ps -q -f name="^${container}$" | grep -q .; then
+                    log "ERROR: Container '$container' is not running or does not exist"
+                    exit 1
+                fi
+                log "✓ Container '$name' is running"
+              done
+            }
 
             log "===== Health check complete ====="
             log "Health check log saved to: $LOG_FILE"
