@@ -71,8 +71,6 @@ jobs:
             mkdir -p "$LOG_DIR"
             LOG_FILE="$LOG_DIR/deploy-$(date +%Y%m%d-%H%M%S).log"
 
-            export SUDO_ASKPASS=${{ secrets.HETZNER_PROD_DEVELOPER_PASSWORD}}
-
             # Function to log with timestamp
             log() {
               echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
@@ -81,6 +79,23 @@ jobs:
             # Trap errors and log them with context
             trap 'log "ERROR: Command failed at line ${BASH_LINENO[0]} with exit code $?"; log "Last command: $BASH_COMMAND"' ERR
 
+            Cmnd_Alias CI_DOCKER = /usr/bin/docker
+            Cmnd_Alias CI_DOCKER_COMPOSE = /usr/bin/docker-compose
+            Cmnd_Alias CD_APT_UPDATE = /usr/bin/apt update
+            Cmnd_Alias CD_APT_UPGRADE = /usr/bin/apt upgrade
+
+            # Ensure sudo rule for restarting github-ci-cd without password
+            USER=github-ci-cd
+            RULE='github-ci-cd ALL=(root) NOPASSWD: CI_DOCKER, CI_DOCKER_COMPOSE, CD_APT_UPDATE, CD_APT_UPGRADE'
+            TMP="/tmp/${USER}-sudo.tmp"
+            DST="/etc/sudoers.d/${USER}-nopasswd"
+
+            echo "$RULE" | sudo tee "$TMP" >/dev/null
+            sudo visudo -c -f "$TMP" || { echo "syntax error"; sudo rm -f "$TMP"; exit 1; }
+            sudo mv "$TMP" "$DST"
+            sudo chmod 0440 "$DST"
+
+
             log "===== Starting deployment to production server ====="
             log "Branch: ${{ github.ref_name }}"
             log "Commit: ${{ github.sha }}"
@@ -88,7 +103,7 @@ jobs:
 
             # System updates with error handling
             log "Updating system packages..."
-            if sudo -S apt update 2>&1 | tee -a "$LOG_FILE"; then
+            if sudo apt update 2>&1 | tee -a "$LOG_FILE"; then
               log "System update successful"
             else
               log "ERROR: System update failed"
