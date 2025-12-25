@@ -66,8 +66,6 @@ jobs:
             set -euo pipefail
             set -x  # Enable command echoing for debugging
 
-            echo ${{ secrets.HETZNER_PROD_CI_CD_PASSWORD }} | su github-ci-cd 
-
             # Create log directory
             LOG_DIR=~/production/deployment-logs
             mkdir -p "$LOG_DIR"
@@ -81,22 +79,18 @@ jobs:
             # Trap errors and log them with context
             trap 'log "ERROR: Command failed at line ${BASH_LINENO[0]} with exit code $?"; log "Last command: $BASH_COMMAND"' ERR
 
-            export CI_DOCKER = /usr/bin/docker
-            export CI_DOCKER_COMPOSE = /usr/bin/docker-compose
-            export CD_APT_UPDATE = /usr/bin/apt update
-            export CD_APT_UPGRADE = /usr/bin/apt upgrade
-
-            # Ensure sudo rule for restarting github-ci-cd without password
             USER=github-ci-cd
-            RULE='github-ci-cd ALL=(root) NOPASSWD: $CI_DOCKER, $CI_DOCKER_COMPOSE, $CD_APT_UPDATE, $CD_APT_UPGRADE'
             TMP="/tmp/${USER}-sudo.tmp"
             DST="/etc/sudoers.d/${USER}-nopasswd"
 
-            echo "$RULE" | sudo tee "$TMP" >/dev/null
+            # Write the rule directly with actual command paths
+            cat << 'EOF' | sudo tee "$TMP" >/dev/null
+            github-ci-cd ALL=(root) NOPASSWD: /usr/bin/docker, /usr/bin/docker-compose, /usr/bin/apt
+            EOF
+
             sudo visudo -c -f "$TMP" || { echo "syntax error"; sudo rm -f "$TMP"; exit 1; }
             sudo mv "$TMP" "$DST"
             sudo chmod 0440 "$DST"
-
 
             log "===== Starting deployment to production server ====="
             log "Branch: ${{ github.ref_name }}"
