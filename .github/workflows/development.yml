@@ -224,7 +224,7 @@ jobs:
             check_container() {
               for containerName in "${containers[@]}"; do
                 log "Checking container: $containerName"
-                if ! docker ps -q -f name="^${containerName}$" | grep -q .; then
+                if [ -z "$(docker ps -q -f "name=^${containerName}$")" ]; then
                     log "ERROR: Container '$containerName' is not running or does not exist"
                     exit 1
                 fi
