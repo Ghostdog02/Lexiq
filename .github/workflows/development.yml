@@ -222,15 +222,22 @@ jobs:
             containers=("lexiq-frontend" "lexiq-backend" "lexiq-database")
 
             check_container() {
+              local failed=0
+
               for containerName in "${containers[@]}"; do
                 log "Checking container: $containerName"
                 status=$(docker inspect -f '{{.State.Status}}' "$containerName" 2>/dev/null || echo "notfound")
                 if [ ! "$status" = "running" ]; then
                     log "ERROR: Container '$containerName' is not running or does not exist"
                     echo "ERROR: Container '$containerName' is not running or does not exist" >&2; exit 1
+                    failed=1
                 fi
                 log "✓ Container '$containerName' is running"
               done
+
+              if [ $failed -eq 1 ]; then
+                return 1
+              fi
             }
 
             log "===== Health check complete ====="
