@@ -123,7 +123,7 @@ jobs:
               log "Current commit: $(git rev-parse HEAD)"
 
               cd ~/production || { log "ERROR: Failed to cd to ~/production"; exit 1; }
-              
+
               git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
               
               if git fetch --all --prune 2>&1 | tee -a "$LOG_FILE"; then
@@ -222,13 +222,13 @@ jobs:
             containers=("lexiq-frontend" "lexiq-backend" "lexiq-database")
 
             check_container() {
-              for name in "${containers[@]}"; do
-                log "Checking container: $name"
-                if ! docker ps -q -f name="^${container}$" | grep -q .; then
-                    log "ERROR: Container '$container' is not running or does not exist"
+              for containerName in "${containers[@]}"; do
+                log "Checking container: $containerName"
+                if ! docker ps -q -f name="^${containerName}$" | grep -q .; then
+                    log "ERROR: Container '$containerName' is not running or does not exist"
                     exit 1
                 fi
-                log "✓ Container '$name' is running"
+                log "✓ Container '$containerName' is running"
               done
             }
 
