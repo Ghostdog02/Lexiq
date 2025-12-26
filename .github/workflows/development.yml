@@ -221,8 +221,8 @@ jobs:
 
             containers=("lexiq-frontend" "lexiq-backend" "lexiq-database")
 
-            check_container() {
-              local failed=0
+            is_container_failed() {
+              local failed=false
 
               for containerName in "${containers[@]}"; do
                 log "Checking container: $containerName"
@@ -230,15 +230,18 @@ jobs:
                 if [ ! "$status" = "running" ]; then
                     log "ERROR: Container '$containerName' is not running or does not exist"
                     echo "ERROR: Container '$containerName' is not running or does not exist" >&2; exit 1
-                    failed=1
+                    failed=true
                 fi
                 log "✓ Container '$containerName' is running"
               done
 
-              if [ $failed -eq 1 ]; then
-                return 1
-              fi
+              return $failed
             }
+
+            if is_container_failed; then
+              echo "Container check failed - exiting"
+              exit 1
+            fi
 
             log "===== Health check complete ====="
             log "Health check log saved to: $LOG_FILE"
