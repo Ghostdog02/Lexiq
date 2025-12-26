@@ -224,9 +224,10 @@ jobs:
             check_container() {
               for containerName in "${containers[@]}"; do
                 log "Checking container: $containerName"
-                if [ -z "$(docker ps -q -f "name=^${containerName}$")" ]; then
+                status=$(docker inspect -f '{{.State.Status}}' "$containerName" 2>/dev/null || echo "notfound")
+                if [ ! "$status" = "running" ]; then
                     log "ERROR: Container '$containerName' is not running or does not exist"
-                    exit 1
+                    echo "ERROR: Container '$containerName' is not running or does not exist" >&2; exit 1
                 fi
                 log "✓ Container '$containerName' is running"
               done
