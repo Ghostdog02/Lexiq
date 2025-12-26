@@ -79,19 +79,6 @@ jobs:
             # Trap errors and log them with context
             trap 'log "ERROR: Command failed at line ${BASH_LINENO[0]} with exit code $?"; log "Last command: $BASH_COMMAND"' ERR
 
-            USER=github-ci-cd
-            TMP="/tmp/${USER}-sudo.tmp"
-            DST="/etc/sudoers.d/${USER}-nopasswd"
-
-            # Write the rule directly with actual command paths
-            cat << 'EOF' | sudo tee "$TMP" >/dev/null
-            github-ci-cd ALL=(root) NOPASSWD: /usr/bin/docker, /usr/bin/docker-compose, /usr/bin/apt
-            EOF
-
-            sudo visudo -c -f "$TMP" || { echo "syntax error"; sudo rm -f "$TMP"; exit 1; }
-            sudo mv "$TMP" "$DST"
-            sudo chmod 0440 "$DST"
-
             log "===== Starting deployment to production server ====="
             log "Branch: ${{ github.ref_name }}"
             log "Commit: ${{ github.sha }}"
