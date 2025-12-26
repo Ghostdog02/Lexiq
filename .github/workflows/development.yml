@@ -67,7 +67,7 @@ jobs:
             set -x  # Enable command echoing for debugging
 
             # Create log directory
-            LOG_DIR=~/production/deployment-logs
+            LOG_DIR=~/deployment-logs
             mkdir -p "$LOG_DIR"
             LOG_FILE="$LOG_DIR/deploy-$(date +%Y%m%d-%H%M%S).log"
 
@@ -99,10 +99,6 @@ jobs:
               log "WARNING: System upgrade had issues (non-critical)"
             fi
 
-            # Navigate to production directory
-            log "Navigating to production directory..."
-            cd ~/production || { log "ERROR: Failed to cd to ~/production"; exit 1; }
-
             # Ensure git is installed
             if ! command -v git >/dev/null 2>&1; then
               log "Installing git..."
@@ -111,7 +107,7 @@ jobs:
 
             # Git operations with detailed logging
             log "Performing git operations..."
-            if [ -d .git ]; then
+            if [ -d "production/.git" ]; then
               log "Repository exists, updating..."
               
               # Show current state
@@ -138,6 +134,10 @@ jobs:
               git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" . 2>&1 | tee -a "$LOG_FILE"
               git checkout -b "${{ github.ref_name }}" origin/"${{ github.ref_name }}" 2>&1 | tee -a "$LOG_FILE" || true
             fi
+
+            # Navigate to production directory
+            log "Navigating to production directory..."
+            cd ~/production || { log "ERROR: Failed to cd to ~/production"; exit 1; }
 
             # Docker operations with detailed logging
             log "Pulling latest Docker images..."
