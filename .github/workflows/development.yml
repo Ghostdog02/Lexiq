@@ -121,6 +121,8 @@ jobs:
               # Show current state
               log "Current branch: $(git branch --show-current)"
               log "Current commit: $(git rev-parse HEAD)"
+
+              cd ~/production || { log "ERROR: Failed to cd to ~/production"; exit 1; }
               
               git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
               
