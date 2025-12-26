@@ -66,10 +66,10 @@ jobs:
             set -euo pipefail
             set -x  # Enable command echoing for debugging
 
-            LOG_DIR=~/deployment-logs
+            LOG_DIR=/var/log/lexiq/deployment
 
-            if [! -d ~/deployment-logs]; then
-              mkdir -p "$LOG_DIR"
+            if [ ! -d "$LOG_DIR" ]; then
+              sudo mkdir -p "$LOG_DIR"
             fi
 
             LOG_FILE="$LOG_DIR/deploy-$(date +%Y%m%d-%H%M%S).log"
@@ -197,7 +197,7 @@ jobs:
             set -o pipefail
             set -x
 
-            LOG_DIR=~/production/deployment-logs
+            LOG_DIR=/var/log/lexiq/deployment
             LOG_FILE="$LOG_DIR/healthcheck-$(date +%Y%m%d-%H%M%S).log"
 
             log() {
@@ -242,11 +242,11 @@ jobs:
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           script: |
-            cd ~/production
-            
+            LOG_DIR=/var/log/lexiq/deployment
+
             # Create comprehensive failure report
-            REPORT_FILE="deployment-logs/failure-report-$(date +%Y%m%d-%H%M%S).txt"
-            
+            REPORT_FILE="$LOG_DIR/failure-report-$(date +%Y%m%d-%H%M%S).txt"
+
             echo "===== DEPLOYMENT FAILURE REPORT =====" > "$REPORT_FILE"
             echo "Time: $(date)" >> "$REPORT_FILE"
             echo "Branch: ${{ github.ref_name }}" >> "$REPORT_FILE"
