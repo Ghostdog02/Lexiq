@@ -34,6 +34,9 @@ services:
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
     user: nginx 
 
 volumes:
