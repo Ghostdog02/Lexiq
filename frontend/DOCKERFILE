@@ -1,5 +1,5 @@
 ARG NODE_VERSION=24.8.0-alpine
-ARG NGINX_VERSION=nginxinc/nginx-unprivileged:stable-alpine
+ARG NGINX_VERSION=stable-alpine
 
 FROM node:${NODE_VERSION} AS builder
 WORKDIR /app
@@ -8,15 +8,16 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY . .
 RUN npm run build
 
-FROM nginx:${NGINX_VERSION} AS runner
+FROM nginxinc/nginx-unprivileged:${NGINX_VERSION} AS runner
 USER root
+
+
+RUN sudo mkdir -p /var/cache/nginx/{client_temp,proxy_temp,fastcgi_temp,uwsgi_temp,scgi_temp} \
+sudo chown -R nginx:nginx /var/cache/nginx \
+sudo chmod -R 750 /var/cache/nginx
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY --chown=nginx:nginx --from=builder /app/dist/*/browser /usr/share/nginx/html
-
-RUN sudo mkdir -p /var/cache/nginx/{client_temp,proxy_temp,fastcgi_temp,uwsgi_temp,scgi_temp} \
-    sudo chown -R nginx:nginx /var/cache/nginx \
-    sudo chmod -R 750 /var/cache/nginx
 
 USER nginx
 
