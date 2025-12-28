@@ -1,5 +1,5 @@
 ARG NODE_VERSION=24.8.0-alpine
-ARG NGINX_VERSION=alpine3.23
+ARG NGINX_VERSION=nginxinc/nginx-unprivileged:alpine
 
 FROM node:${NODE_VERSION} AS builder
 WORKDIR /app
@@ -13,13 +13,6 @@ USER root
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY --chown=nginx:nginx --from=builder /app/dist/*/browser /usr/share/nginx/html
-
-RUN chown -R nginx:nginx /etc/nginx && \
-    chmod -R 755 /etc/nginx
-
-RUN mkdir -p /etc/letsencrypt && \
-    chown -R nginx:nginx /etc/letsencrypt && \
-    chmod -R 755 /etc/letsencrypt
 
 USER nginx
 
