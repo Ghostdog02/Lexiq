@@ -1,5 +1,5 @@
 ARG NODE_VERSION=24.8.0-alpine
-ARG NGINX_VERSION=nginxinc/nginx-unprivileged:alpine
+ARG NGINX_VERSION=nginxinc/nginx-unprivileged:stable-alpine
 
 FROM node:${NODE_VERSION} AS builder
 WORKDIR /app
