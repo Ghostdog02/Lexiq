@@ -12,7 +12,7 @@ namespace Lexiq.Api
     {
         public static async Task Main(string[] args)
         {
-            Env.Load();
+            Env.Load("/run/secrets/backend_env");
 
             var builder = WebApplication.CreateBuilder(args);
             Console.WriteLine(Directory.GetCurrentDirectory());

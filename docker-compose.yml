@@ -1,5 +1,11 @@
 version: '3.8'
 
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  backend_env:
+    file: ./secrets/backend/.env
+
 services:
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -17,8 +23,8 @@ services:
       context: ./backend
       dockerfile: DOCKERFILE
     container_name: lexiq-backend
-    env_file: 
-      - .env
+    secrets: 
+      - backend_env
     ports:
       - "5000:5000"
     depends_on:
