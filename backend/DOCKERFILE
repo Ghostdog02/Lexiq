@@ -5,6 +5,7 @@ WORKDIR /app
 
 # copy csproj and restore as distinct layers
 COPY *.csproj ./backend/
+COPY ./Database/Lexiq.Database.csproj ./backend/
 COPY *.sln .
 RUN dotnet restore ./backend/backend.csproj
 
