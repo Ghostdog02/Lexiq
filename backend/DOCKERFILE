@@ -5,14 +5,14 @@ WORKDIR /app
 
 # copy csproj and restore as distinct layers
 COPY *.csproj ./backend/
-COPY ./Database/Lexiq.Database.csproj ./backend/
+COPY ./Database/Lexiq.Database.csproj ./backend/Database/
 COPY *.sln .
 RUN dotnet restore ./backend/backend.csproj
 
 # copy everything else and build app
 COPY . ./backend/
 WORKDIR /app/backend
-RUN dotnet publish -c Release -o /app/publish
+RUN dotnet publish ./backend.csproj -c Debug -o /app/publish
 
 # final stage/image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
