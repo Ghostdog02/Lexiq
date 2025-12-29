@@ -15,7 +15,8 @@ namespace Lexiq.Api
             Env.Load();
 
             var builder = WebApplication.CreateBuilder(args);
-
+            Console.WriteLine(Directory.GetCurrentDirectory());
+            System.Console.WriteLine(Environment.GetEnvironmentVariable("DB_SERVER"));
             var dbServer = Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost";
             var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "lexiqdatabase";
             var dbUser = Environment.GetEnvironmentVariable("DB_USER_ID") ?? "sa";
