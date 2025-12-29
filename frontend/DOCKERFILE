@@ -11,7 +11,8 @@ RUN npm run build
 FROM nginxinc/nginx-unprivileged:${NGINX_VERSION} AS runner
 USER root
 
-RUN mkdir -p /var/cache/nginx/{client_temp,proxy_temp,fastcgi_temp,uwsgi_temp,scgi_temp} && \
+RUN mkdir -p /var/cache/nginx && \
+    mkdir -p /var/cache/nginx/{client_temp,proxy_temp,fastcgi_temp,uwsgi_temp,scgi_temp} && \
     chown -R nginx:nginx /var/cache/nginx && \
     chown -R nginx:nginx /var/cache/nginx/client_temp && \
     chmod -R 750 /var/cache/nginx && \
