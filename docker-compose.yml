@@ -8,7 +8,7 @@ services:
     container_name: lexiq-database
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "8PJqTImEUx3RD8ZRTx0T"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
     volumes:
       - db-data:/var/opt/mssql
   
@@ -17,6 +17,8 @@ services:
       context: ./backend
       dockerfile: DOCKERFILE
     container_name: lexiq-backend
+    env_file: 
+      - .env
     ports:
       - "5000:5000"
     depends_on:
