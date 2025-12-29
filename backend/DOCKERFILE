@@ -1,24 +1,24 @@
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
+# https://hub.docker.com/_/microsoft-dotnet
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS publish
+ARG csharpProjectLocation="backend.csproj"
 WORKDIR /app
-EXPOSE 80
-EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-ARG csharpProjectLocation="backend.csproj"
-WORKDIR /src
-
-COPY ${csharpProjectLocation} "."
+# copy csproj and restore as distinct layers
+COPY backend/*.csproj ./backend/
+COPY *.sln .
 RUN dotnet restore
-COPY . . 
-RUN dotnet build "${csharpProjectLocation}" -c Release -o /app/build
 
-FROM build as publish
-ARG csharpProjectLocation="backend.csproj"
-RUN dotnet publish "${csharpProjectLocation}" -c Release -o /app/publish
+# copy everything else and build app
+COPY backend/. ./backend/
+WORKDIR /app/backend
+RUN dotnet publish -c Release -o /app/publish
 
-FROM base AS final
+# final stage/image
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
 
-ARG csharpProjectLocation="backend.csproj"
-ENTRYPOINT ["dotnet", csharpProjectLocation]
+EXPOSE 80
+EXPOSE 443
+
+ENTRYPOINT ["dotnet", "backend.dll"]
