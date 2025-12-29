@@ -164,6 +164,24 @@ jobs:
             else
               log "WARNING: Issue stopping containers"
             fi
+            
+            if [ "${{ github.event_name }}" == "pull_request" ]; then
+              CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
+              if echo "$CHANGED_FILES" | grep -qE "(Dockerfile|docker-compose\.yml|\.dockerignore)"; then
+                sudo docker compose build --no-cache
+              else
+                sudo docker compose build
+              fi
+            fi
+
+            if [ "${{ github.event_name }}" == "push" ]; then
+              git fetch origin ${{ github.ref_name }}
+              if git diff --name-only origin/${{ github.ref_name }}...HEAD | grep -qE "(Dockerfile|docker-compose\.yml|\.dockerignore)"; then
+                sudo docker compose build --no-cache
+              else
+                sudo docker compose build
+              fi
+            fi
 
             log "Starting containers..."
             if sudo docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
