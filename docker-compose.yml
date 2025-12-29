@@ -23,7 +23,7 @@ services:
         /opt/mssql/bin/sqlservr
     healthcheck:
       test: >
-        /opt/mssql-tools/bin/sqlcmd -S localhost -U sa 
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa 
         -P "$$(cat /run/secrets/db_password)" 
         -Q "SELECT 1" -C || exit 1
       interval: 10s
