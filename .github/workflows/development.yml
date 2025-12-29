@@ -175,7 +175,6 @@ jobs:
             fi
 
             if [ "${{ github.event_name }}" == "push" ]; then
-              git fetch origin ${{ github.ref_name }}
               if git diff --name-only origin/${{ github.ref_name }}...HEAD | grep -qE "(Dockerfile|docker-compose\.yml|\.dockerignore)"; then
                 sudo docker compose build --no-cache
               else
