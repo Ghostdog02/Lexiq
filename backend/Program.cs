@@ -15,8 +15,7 @@ namespace Lexiq.Api
             Env.Load("/run/secrets/backend_env");
 
             var builder = WebApplication.CreateBuilder(args);
-            Console.WriteLine(Directory.GetCurrentDirectory());
-            System.Console.WriteLine(Environment.GetEnvironmentVariable("DB_SERVER"));
+
             var dbServer = Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost";
             var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "lexiqdatabase";
             var dbUser = Environment.GetEnvironmentVariable("DB_USER_ID") ?? "sa";
@@ -61,6 +60,13 @@ namespace Lexiq.Api
             });
 
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<LexiqDbContext>();
+
+                dbContext.Database.EnsureCreated();
+            }
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
