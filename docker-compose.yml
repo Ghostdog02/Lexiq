@@ -2,7 +2,7 @@ version: '3.8'
 
 secrets:
   db_password:
-    file: ./secrets/db_password.txt
+    file: ./secrets/database/password.txt
   backend_env:
     file: ./secrets/backend/.env
 
@@ -12,7 +12,10 @@ services:
     container_name: lexiq-database
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      #MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      MSSQL_SA_PASSWORD_FILE: /run/secrets/db_password
+    secrets: 
+      - db_password
     volumes:
       - db-data:/var/opt/mssql
     healthcheck:
