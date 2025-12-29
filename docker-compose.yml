@@ -18,8 +18,13 @@ services:
       - db_password
     volumes:
       - db-data:/var/opt/mssql
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        export MSSQL_SA_PASSWORD=$$(cat /run/secrets/db_password)
+        /opt/mssql/bin/sqlservr
     healthcheck:
-      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "${MSSQL_SA_PASSWORD}" -Q "SELECT 1" -C || exit 1
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$(cat /run/secrets/db_password)" -Q "SELECT 1" -C || exit 1
       interval: 10s
       retries: 10
       start_period: 10s
