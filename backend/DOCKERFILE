@@ -1,18 +1,19 @@
-ARG csharpProjectLocation="backend.csproj"
-
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+ARG csharpProjectLocation="backend.csproj"
 WORKDIR /src
+
 COPY ${csharpProjectLocation} "."
 RUN dotnet restore
 COPY . . 
 RUN dotnet build "${csharpProjectLocation}" -c Release -o /app/build
 
 FROM build as publish
+ARG csharpProjectLocation="backend.csproj"
 RUN dotnet publish "${csharpProjectLocation}" -c Release -o /app/publish
 
 FROM base AS final
