@@ -152,9 +152,9 @@ public static class ServiceCollectionExtensions
 
     private static string BuildConnectionString()
     {
-        var dbServer = Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost";
-        var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "lexiq";
-        var dbUser = Environment.GetEnvironmentVariable("DB_USER_ID") ?? "sa";
+        var dbServer = Environment.GetEnvironmentVariable("DB_SERVER");
+        var dbName = Environment.GetEnvironmentVariable("DB_NAME");
+        var dbUser = Environment.GetEnvironmentVariable("DB_USER_ID");
         var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
 
         return $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};"

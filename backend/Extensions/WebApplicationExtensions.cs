@@ -20,14 +20,14 @@ public static class WebApplicationExtensions
         return app;
     }
 
-    public static WebApplication WaitForDatabaseCreation(this WebApplication app)
-    {
-        using var scope = app.Services.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
-        dbContext.Database.EnsureCreated();
+    // public static WebApplication WaitForDatabaseCreation(this WebApplication app)
+    // {
+    //     using var scope = app.Services.CreateScope();
+    //     var dbContext = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
+    //     dbContext.Database.EnsureCreated();
 
-        return app;
-    }
+    //     return app;
+    // }
 
     public static WebApplication UseSecurityHeaders(this WebApplication app)
     {
