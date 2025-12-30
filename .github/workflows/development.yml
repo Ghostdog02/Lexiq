@@ -165,6 +165,10 @@ jobs:
               log "WARNING: Issue stopping containers"
             fi
             
+            # Enable Docker BuildKit
+            export DOCKER_BUILDKIT=1
+            export COMPOSE_DOCKER_CLI_BUILD=1
+
             if [ "${{ github.event_name }}" == "pull_request" ]; then
               CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
               if echo "$CHANGED_FILES" | grep -qE "(Dockerfile|docker-compose\.yml|\.dockerignore)"; then
