@@ -1,4 +1,5 @@
 using Backend.Api.Extensions;
+using Backend.Database;
 using Backend.Database.Extensions;
 using DotNetEnv;
 
@@ -16,11 +17,9 @@ public class Program
 
         var app = builder.Build();
 
-        app.WaitForDatabaseCreation();
-
         ConfigureMiddleware(app);
 
-        await InitializeDatabaseAsync(app.Services);
+        await app.InitializeDatabaseAsync();
 
         app.Run();
     }
@@ -45,11 +44,5 @@ public class Program
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
-    }
-
-    private static async Task InitializeDatabaseAsync(IServiceProvider services)
-    {
-        await services.MigrateDbAsync();
-        await SeedData.InitializeAsync(services);
     }
 }

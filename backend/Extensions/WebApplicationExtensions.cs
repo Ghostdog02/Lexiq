@@ -1,4 +1,6 @@
 using Backend.Database;
+using Backend.Database.Extensions;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Extensions;
 
@@ -20,14 +22,15 @@ public static class WebApplicationExtensions
         return app;
     }
 
-    // public static WebApplication WaitForDatabaseCreation(this WebApplication app)
-    // {
-    //     using var scope = app.Services.CreateScope();
-    //     var dbContext = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
-    //     dbContext.Database.EnsureCreated();
+    public static async Task InitializeDatabaseAsync(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-    //     return app;
-    // }
+        await dbContext.Database.MigrateAsync();
+
+        await SeedData.InitializeAsync(scope.ServiceProvider);
+    }
 
     public static WebApplication UseSecurityHeaders(this WebApplication app)
     {
