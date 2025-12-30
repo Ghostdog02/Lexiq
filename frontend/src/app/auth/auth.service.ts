@@ -5,7 +5,7 @@ import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { FormGroup } from '@angular/forms';
 
-import { environment } from '../../environment';
+import { environment } from '/run/secrets/frontend_env';
 
 const BACKEND_URL = environment.BACKEND_URL + '/auth';
 

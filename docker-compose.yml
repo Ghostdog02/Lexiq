@@ -5,6 +5,8 @@ secrets:
     file: ./secrets/database/password.txt
   backend_env:
     file: ./secrets/backend/.env
+  frontend_env:
+    file: ./secrets/backend/environment.ts
 
 services:
   db:
@@ -47,6 +49,8 @@ services:
       context: ./frontend
       dockerfile: DOCKERFILE
     container_name: lexiq-frontend
+    secrets:
+      - frontend_env
     ports:
       - "8080:8080"
     depends_on:

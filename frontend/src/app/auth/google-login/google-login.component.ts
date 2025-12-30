@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, inject } from '@angular/core';
 import { AuthService } from '../auth.service';
 
-import { environment } from '../../../environment';
+import { environment } from '/run/secrets/frontend_env';
 
 declare const google: any;
 
