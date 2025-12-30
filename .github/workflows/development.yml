@@ -43,7 +43,7 @@ jobs:
     name: "Deploy to Persistent Production Server"
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/feature/ci-cd
+    if: contains(fromJSON('["refs/heads/master", "refs/heads/feature/ci-cd"]'), github.ref)
 
     steps:
       - name: Checkout code
