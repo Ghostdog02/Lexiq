@@ -5,10 +5,14 @@ import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { FormGroup } from '@angular/forms';
 
-const BACKEND_URL = "environment.apiUrl" + '/auth';
+import { environment } from '../../environment';
+
+const BACKEND_URL = environment.BACKEND_URL + '/auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService implements OnInit {
+  
+
   private httpClient = inject(HttpClient);
   private router = inject(Router);
 
@@ -45,37 +49,9 @@ export class AuthService implements OnInit {
     return false;
   }
 
-  async loginUser(email: string, password: string) {
-    try {
-      const response = await firstValueFrom(
-        this.httpClient.post<{ message: string; expiresIn: number }>(
-          BACKEND_URL + '/login',
-          { withCredentials: true }
-        )
-      );
-
-      const responseMessage = response.message;
-
-      if (!response) {
-        throw new Error(`Login failed: ${responseMessage}`);
-      }
-
-      this.setExpirationDate(response.expiresIn);
-
-      this.setAuthTimer(response.expiresIn);
-
-      this.changeAuthStatus(true);
-
-      this.router.navigateByUrl('/');
-    } catch (error) {
-      this.changeAuthStatus(false);
-      console.log(error);
-    }
-  }
-
   setExpirationDate(expiresIn: number) {
     const now = new Date();
-    const expirationDate = new Date(now.getTime() + expiresIn * 1000);
+    const expirationDate = new Date(now.getTime() + expiresIn);
     console.log(expirationDate);
 
     localStorage.setItem('expiration-date', expirationDate.toISOString());
@@ -114,10 +90,10 @@ export class AuthService implements OnInit {
   async loginUserWithGoogle(googleToken: any) {
     try {
       const response = await firstValueFrom(
-        this.httpClient.post<{ message: string; expiresIn: number }>(
+        this.httpClient.post<{ message: string; user: any; expiresIn: number }>(
           BACKEND_URL + '/google-login', 
-          googleToken,
-          {withCredentials: true}
+          { idToken: googleToken },
+          { withCredentials: true }
         )
       );
 

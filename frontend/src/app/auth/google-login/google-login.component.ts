@@ -1,6 +1,8 @@
 import { AfterViewInit, Component, inject } from '@angular/core';
 import { AuthService } from '../auth.service';
 
+import { environment } from '../../../environment';
+
 declare const google: any;
 
 @Component({
@@ -15,8 +17,9 @@ export class GoogleLoginComponent implements AfterViewInit {
   authService = inject(AuthService);
   ngAfterViewInit(): void {
     google.accounts.id.initialize({
-      client_id: '751309259564-16n4ng66dqcqrulih1ihhamdrnrlbvgr.apps.googleusercontent.com',
-      callback: (response: any) => this.handleCredentialResponse(response),
+        client_id: environment.GOOGLE_CLIENT_ID,
+        callback: (response: any) => this.handleCredentialResponse(response),
+        ux_mode: 'popup'
     });
 
     google.accounts.id.renderButton(
@@ -25,7 +28,10 @@ export class GoogleLoginComponent implements AfterViewInit {
         theme: 'filled_black', 
         size: 'large', 
         shape: 'pill',
-        width: 320
+        width: 320,
+        type: 'standard',
+        text: 'signin_with',
+        logo_alignment: 'center'
       }
     );
 

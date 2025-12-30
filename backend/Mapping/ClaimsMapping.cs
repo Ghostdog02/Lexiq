@@ -1,49 +1,45 @@
 ﻿using System.Security.Claims;
-using Lexiq.Api.Dtos;
+using Backend.Api.Dtos;
+using Backend.Database.Entities;
 
-namespace Lexiq.Api.Mapping
+namespace Backend.Api.Mapping;
+
+public static class ClaimsMapping
 {
-    public static class ClaimsMapping
+    public static ClaimsDto ToClaimsDto(this IEnumerable<Claim> claims)
     {
-        public static ClaimsDto ToClaimsDto(this IEnumerable<Claim> claims)
+        if (!claims.Any())
         {
-            if (!claims.Any())
-            {
-                throw new ArgumentException($"Given claims are either null or empty");
-            }
-
-            var nameClaim = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name);
-            var emailClaim = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
-
-            if (nameClaim == null)
-            {
-                throw new ArgumentException("Required claim name is missing.");
-            }
-
-            if (emailClaim == null)
-            {
-                throw new ArgumentException("Required claim email is missing.");
-            }
-
-            return new ClaimsDto(
-                nameClaim.Value,
-                emailClaim.Value
-            );
+            throw new ArgumentException($"Given claims are either null or empty");
         }
 
-        public static UserCreationDto ToUserCreationDto(this ClaimsDto dto)
-        {
-            var userCreationDto = new UserCreationDto(
-                0, // Id will be set later
-                dto.Email!,
-                dto.FullName!,
-                Guid.NewGuid().ToString(), // SecurityStamp
-                Guid.NewGuid().ToString(), // ConcurrencyStamp
-                string.Empty,
-                DateTime.Now
-            );
+        var nameClaim = claims.FirstOrDefault(c => c.Type == ClaimTypes.Name);
+        var emailClaim = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email);
 
-            return userCreationDto;
+        if (nameClaim == null)
+        {
+            throw new ArgumentException("Required claim name is missing.");
         }
+
+        if (emailClaim == null)
+        {
+            throw new ArgumentException("Required claim email is missing.");
+        }
+
+        return new ClaimsDto(nameClaim.Value, emailClaim.Value);
+    }
+
+    public static UserCreationDto ToUserCreationDto(this ClaimsDto dto)
+    {
+        var userCreationDto = new UserCreationDto(
+            dto.Email!,
+            dto.FullName!,
+            Guid.NewGuid().ToString(), // SecurityStamp
+            Guid.NewGuid().ToString(), // ConcurrencyStamp
+            string.Empty,
+            DateTime.Now
+        );
+
+        return userCreationDto;
     }
 }

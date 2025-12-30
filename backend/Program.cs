@@ -1,100 +1,80 @@
+using Backend.Api.Extensions;
+using Backend.Database.Extensions;
 using DotNetEnv;
-using Lexiq.Database;
-using Lexiq.Database.Entities;
-using Lexiq.Database.ExtensionClasses;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
 
-namespace Lexiq.Api
+namespace Backend.Api;
+
+public class Program
 {
-    public class Program
+    public static async Task Main(string[] args)
     {
-        public static async Task Main(string[] args)
+        Env.Load("/run/secrets/backend_env");
+
+        var builder = WebApplication.CreateBuilder(args);
+
+        builder.WebHost.ConfigureKestrel(serverOptions =>
         {
-            Env.Load("/run/secrets/backend_env");
-
-            var builder = WebApplication.CreateBuilder(args);
-
-            var dbServer = Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost";
-            var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "lexiqdatabase";
-            var dbUser = Environment.GetEnvironmentVariable("DB_USER_ID") ?? "sa";
-            var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
-
-            var connectionString =
-                $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Encrypt=True;TrustServerCertificate=True;Connection Timeout=30;";
-
-            builder.Services.AddDbContext<LexiqDbContext>(
-                options => options.UseSqlServer(connectionString),
-                ServiceLifetime.Scoped
+            serverOptions.ListenLocalhost(5000); // HTTP
+            serverOptions.ListenLocalhost(
+                5001,
+                listenOptions =>
+                {
+                    listenOptions.UseHttps();
+                }
             );
+        });
 
-            builder
-                .Services.AddControllers()
-                .ConfigureApiBehaviorOptions(options =>
-                {
-                    options.SuppressModelStateInvalidFilter = true;
-                });
+        ConfigureServices(builder.Services);
 
-            builder
-                .Services.AddIdentity<User, IdentityRole<int>>(options =>
-                    options.SignIn.RequireConfirmedAccount = true
-                )
-                .AddRoles<IdentityRole<int>>()
-                .AddEntityFrameworkStores<LexiqDbContext>()
-                .AddDefaultTokenProviders();
+        var app = builder.Build();
 
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc(
-                    "v1",
-                    new OpenApiInfo
-                    {
-                        Title = "My API",
-                        Version = "v1",
-                        Description = "Interactive API docs",
-                    }
-                );
-            });
+        app.WaitForDatabaseCreation();
 
-            var app = builder.Build();
+        ConfigureMiddleware(app);
 
-            using (var scope = app.Services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<LexiqDbContext>();
+        await InitializeDatabaseAsync(app.Services);
 
-                dbContext.Database.EnsureCreated();
-            }
+        app.Run();
+    }
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                // Serves /swagger/v1/swagger.json
-                app.UseSwagger();
+    private static void ConfigureServices(IServiceCollection services)
+    {
+        services.AddHsts(options =>
+        {
+            options.Preload = true;
+            options.IncludeSubDomains = true;
+        });
 
-                // Hosts Swagger UI at /swagger
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-                    c.RoutePrefix = string.Empty; // Serve UI at root (optional)
-                });
-            }
+        services.AddHttpsRedirection(options =>
+        {
+            options.RedirectStatusCode = 307;
+            options.HttpsPort = 5001;
+        });
 
-            app.UseHttpsRedirection();
+        services.AddCorsPolicy();
+        services.AddDatabaseContext();
+        services.AddApplicationServices();
+        services.AddCookieAuthentication();
+        services.AddControllersWithOptions();
+        services.AddIdentityConfiguration();
+        services.AddGoogleAuthentication();
+        services.AddSwaggerDocumentation();
+    }
 
-            app.UseAuthentication();
-            app.UseAuthorization();
+    private static void ConfigureMiddleware(WebApplication app)
+    {
+        app.UseHttpsRedirection();
+        app.UseCors();
+        app.UseSecurityHeaders();
+        app.UseSwaggerWithUI();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.MapControllers();
+    }
 
-            app.MapControllers();
-
-            var seeder = new SeedData();
-
-            //await app.Services.MigrateDbAsync();
-            await SeedData.InitializeAsync(app.Services);
-
-            app.Run();
-        }
+    private static async Task InitializeDatabaseAsync(IServiceProvider services)
+    {
+        await services.MigrateDbAsync();
+        await SeedData.InitializeAsync(services);
     }
 }
