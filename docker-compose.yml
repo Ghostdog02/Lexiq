@@ -38,8 +38,6 @@ services:
     container_name: lexiq-backend
     secrets: 
       - backend_env
-    ports:
-      - "5000:5000"
     depends_on:
       db: 
         condition: service_healthy
