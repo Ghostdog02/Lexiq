@@ -48,8 +48,9 @@ services:
     build:
       context: ./frontend
       dockerfile: DOCKERFILE
-      secrets:
-      - frontend_env
+      args:
+        - NG_GOOGLE_CLIENT_ID=751309259564-16n4ng66dqcqrulih1ihhamdrnrlbvgr.apps.googleusercontent.com
+        - BACKEND_URL=http://backend:5000
     container_name: lexiq-frontend
     ports:
       - "8080:8080"

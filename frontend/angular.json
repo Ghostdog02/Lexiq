@@ -37,7 +37,7 @@
             ],
             "scripts": [],
             "ngxEnv": {
-              "root": ".env",
+              "root": "",
               "prefix": "(BACKEND|NG)_"
             }
           },
