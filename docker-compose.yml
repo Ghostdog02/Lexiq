@@ -6,7 +6,7 @@ secrets:
   backend_env:
     file: ./secrets/backend/.env
   frontend_env:
-    file: ./secrets/backend/environment.ts
+    file: ./secrets/frontend/environment.ts
 
 services:
   db:
@@ -51,6 +51,8 @@ services:
       secrets:
       - frontend_env
     container_name: lexiq-frontend
+    secrets:
+      - frontend_env
     ports:
       - "8080:8080"
     depends_on:
