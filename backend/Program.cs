@@ -38,6 +38,7 @@ public class Program
 
     private static void ConfigureMiddleware(WebApplication app)
     {
+        app.ConfigureHttpPort();
         app.UseCors();
         app.UseSecurityHeaders();
         app.UseSwaggerWithUI();

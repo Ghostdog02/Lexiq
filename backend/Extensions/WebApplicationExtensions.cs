@@ -22,6 +22,17 @@ public static class WebApplicationExtensions
         return app;
     }
 
+    public static WebApplication ConfigureHttpPort(this WebApplication app)
+    {
+        var httpPort = Environment.GetEnvironmentVariable("ASPNETCORE_HTTP_PORT");
+        if (!string.IsNullOrEmpty(httpPort))
+        {
+            app.Urls.Add(httpPort);
+        }
+
+        return app;
+    }
+
     public static WebApplication UseSecurityHeaders(this WebApplication app)
     {
         app.Use(

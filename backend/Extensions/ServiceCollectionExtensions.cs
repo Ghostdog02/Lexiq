@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
             options.AddDefaultPolicy(policy =>
             {
                 policy
-                    .WithOrigins("http://localhost:4200", "https://localhost:5001")
+                    .WithOrigins("http://localhost:4200", "https://localhost:5000")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials()

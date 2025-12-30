@@ -36,6 +36,8 @@ services:
       context: ./backend
       dockerfile: DOCKERFILE
     container_name: lexiq-backend
+    ports: 
+      - "5000:5000"
     secrets: 
       - backend_env
     depends_on:
