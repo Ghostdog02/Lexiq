@@ -37,7 +37,7 @@
             ],
             "scripts": [],
             "ngxEnv": {
-              "root": "/run/secrets/frontend_env",
+              "root": ".env",
               "prefix": "(BACKEND|NG)_"
             }
           },
