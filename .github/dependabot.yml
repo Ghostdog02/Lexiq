@@ -10,12 +10,14 @@ updates:
     directory: "/frontend"  # Path to frontend Dockerfile
     schedule:
       interval: "weekly"
+    target-branch: "feature/ci-cd"
     open-pull-requests-limit: 3
 
   - package-ecosystem: "docker"
     directory: "/backend"  # Path to backend Dockerfile
     schedule:
       interval: "weekly"
+    target-branch: "feature/ci-cd"
     open-pull-requests-limit: 3
 
   # Angular/npm dependencies
@@ -23,6 +25,7 @@ updates:
     directory: "/frontend" 
     schedule:
       interval: "weekly"
+    target-branch: "feature/ci-cd"
     open-pull-requests-limit: 5
     ignore:
       - dependency-name: "*"
@@ -32,6 +35,7 @@ updates:
     directory: "/backend"
     schedule:
       interval: "weekly"
+    target-branch: "feature/ci-cd"
     open-pull-requests-limit: 5
     ignore:
       - dependency-name: "*"
@@ -41,4 +45,5 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    target-branch: "feature/ci-cd"
     open-pull-requests-limit: 3

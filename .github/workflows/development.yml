@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - Ghostdog02-patch-1
+      - feature/ci-cd
       - master
   pull_request:
     branches:
-      - Ghostdog02-patch-1
+      - feature/ci-cd
       - master
 
 jobs:
