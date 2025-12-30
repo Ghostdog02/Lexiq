@@ -48,9 +48,9 @@ services:
     build:
       context: ./frontend
       dockerfile: DOCKERFILE
-    container_name: lexiq-frontend
-    secrets:
+      secrets:
       - frontend_env
+    container_name: lexiq-frontend
     ports:
       - "8080:8080"
     depends_on:
