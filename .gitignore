@@ -3,6 +3,7 @@
 
 #Environment files Angular
 env.*
+!env.d.ts
 environment.*
 #Vs code configuration
 .vscode/

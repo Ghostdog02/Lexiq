@@ -1,5 +1,3 @@
-version: '3.8'
-
 secrets:
   db_password:
     file: ./secrets/database/password.txt
