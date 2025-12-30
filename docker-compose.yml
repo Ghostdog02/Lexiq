@@ -6,7 +6,7 @@ secrets:
   backend_env:
     file: ./secrets/backend/.env
   frontend_env:
-    file: ./secrets/frontend/environment.ts
+    file: ./secrets/frontend/.env
 
 services:
   db:
@@ -48,8 +48,6 @@ services:
     build:
       context: ./frontend
       dockerfile: DOCKERFILE
-      secrets:
-      - frontend_env
     container_name: lexiq-frontend
     secrets:
       - frontend_env
