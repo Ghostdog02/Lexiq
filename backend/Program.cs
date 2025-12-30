@@ -12,18 +12,6 @@ public class Program
 
         var builder = WebApplication.CreateBuilder(args);
 
-        builder.WebHost.ConfigureKestrel(serverOptions =>
-        {
-            serverOptions.ListenLocalhost(5000); // HTTP
-            serverOptions.ListenLocalhost(
-                5001,
-                listenOptions =>
-                {
-                    listenOptions.UseHttps();
-                }
-            );
-        });
-
         ConfigureServices(builder.Services);
 
         var app = builder.Build();
@@ -39,18 +27,6 @@ public class Program
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        services.AddHsts(options =>
-        {
-            options.Preload = true;
-            options.IncludeSubDomains = true;
-        });
-
-        services.AddHttpsRedirection(options =>
-        {
-            options.RedirectStatusCode = 307;
-            options.HttpsPort = 5001;
-        });
-
         services.AddCorsPolicy();
         services.AddDatabaseContext();
         services.AddApplicationServices();
@@ -63,7 +39,6 @@ public class Program
 
     private static void ConfigureMiddleware(WebApplication app)
     {
-        app.UseHttpsRedirection();
         app.UseCors();
         app.UseSecurityHeaders();
         app.UseSwaggerWithUI();
