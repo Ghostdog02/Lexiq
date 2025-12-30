@@ -250,8 +250,9 @@ jobs:
                 status=$(docker inspect -f '{{.State.Status}}' "$containerName" 2>/dev/null || echo "notfound")
                 if [ ! "$status" = "running" ]; then
                     log "ERROR: Container '$containerName' is not running or does not exist"
-                    echo "ERROR: Container '$containerName' is not running or does not exist" >&2; exit 1
+                    sudo docker logs $containerName
                     failed=true
+                    exit 1
                 fi
                 log "✓ Container '$containerName' is running"
               done

@@ -19,7 +19,7 @@ public class Program
 
         ConfigureMiddleware(app);
 
-        await app.InitializeDatabaseAsync();
+        await InitializeDatabaseAsync(app.Services);
 
         app.Run();
     }
@@ -44,5 +44,11 @@ public class Program
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
+    }
+
+    private static async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
+    {
+        await serviceProvider.MigrateDbAsync();
+        await SeedData.InitializeAsync(serviceProvider);
     }
 }

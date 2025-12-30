@@ -9,6 +9,11 @@ public static class DataExtensions
     {
         using var scope = sp.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
-        await dbContext.Database.MigrateAsync();
+
+        var pendingMigrations = dbContext.Database.GetPendingMigrations();
+        if (pendingMigrations.Any())
+        {
+            await dbContext.Database.MigrateAsync();
+        }
     }
 }
