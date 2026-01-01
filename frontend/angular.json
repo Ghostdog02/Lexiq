@@ -29,8 +29,10 @@
                 "glob": "**/*",
                 "input": "public"
               },
-              "src/favicon.ico",
-              "src/assets"
+              "src/assets",
+              "src/assets/images",
+              "src/favicon.png",
+              "src/manifest.json"
             ],
             "styles": [
               "src/styles.scss"
