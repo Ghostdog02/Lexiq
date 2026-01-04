@@ -57,7 +57,6 @@ jobs:
     with:
       config-path: .github/workflows/continious-delivery.yml
     secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       HETZNER_PROD_SSH_KEY: ${{ secrets.HETZNER_PROD_SSH_KEY }}
       HETZNER_PROD_HOST: ${{ secrets.HETZNER_PROD_HOST }}
       HETZNER_PROD_USERNAME: ${{ secrets.HETZNER_PROD_USERNAME }}
