@@ -34,6 +34,11 @@ jobs:
       - name: Set lowercase repo name
         run: echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
       
+      - name: Replace all slashesh with dashes
+        run:  BRANCH="${{ github.ref_name }}"
+              BRANCH="${BRANCH//\//-}"
+              echo "BRANCH=$BRANCH" >> $GITHUB_ENV
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3.5.0
         with:
@@ -43,13 +48,13 @@ jobs:
 
       - name: Pull and test frontend
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ github.ref_name }}
-          docker run --rm ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ github.ref_name }} echo "Frontend running"
+          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ env.BRANCH }}
+          docker run --rm ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ env.BRANCH }} echo "Frontend running"
 
       - name: Pull and test backend
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ github.ref_name }}
-          docker run --rm ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ github.ref_name }} echo "Backend running"
+          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ env.BRANCH }}
+          docker run --rm ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ env.BRANCH }} echo "Backend running"
   
   continious-delivery:
     needs: pull-and-test
