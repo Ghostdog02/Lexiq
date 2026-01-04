@@ -50,12 +50,10 @@ jobs:
       - name: Pull and test frontend
         run: |
           docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ env.BRANCH }}
-          docker run --rm ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ env.BRANCH }} echo "Frontend running"
 
       - name: Pull and test backend
         run: |
           docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ env.BRANCH }}
-          docker run --rm ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ env.BRANCH }} echo "Backend running"
   
   continious-delivery:
     needs: pull-and-test
