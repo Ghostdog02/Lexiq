@@ -22,36 +22,10 @@ jobs:
     uses: Ghostdog02/Lexiq/.github/workflows/build-and-push-docker.yml@feature/ci-cd
     with:
       config-path: .github/workflows/build-and-push-docker.yml
-    secrets:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      
-  run-and-test:
-    name: "Run and Test Docker Containers"
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker images
-        run: |
-          set -x  # Enable command echoing
-          echo "::group::Building Docker images"
-          docker compose build 2>&1 | tee build.log
-          echo "::endgroup::"
-        continue-on-error: false
-
-      - name: Upload build logs on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-logs
-          path: build.log
-          retention-days: 7
-
+    permissions:
+      contents: read
+      packages: write
+    
   pull-and-test:
     needs: build-and-push-docker
     runs-on: ubuntu-latest
@@ -61,7 +35,7 @@ jobs:
     
     steps:
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3.5.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}

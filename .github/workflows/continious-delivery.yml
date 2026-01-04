@@ -24,14 +24,14 @@ jobs:
     
     steps:
       - name: Checkout deployment script
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           sparse-checkout: |
             scripts/deploy.sh
           sparse-checkout-cone-mode: false
 
       - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.8.0
+        uses: webfactory/ssh-agent@v0.9.1
         with:
           ssh-private-key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
 
@@ -72,7 +72,7 @@ jobs:
 
       - name: Notify on failure
         if: failure()
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             github.rest.issues.createComment({
