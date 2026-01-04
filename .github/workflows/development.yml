@@ -47,13 +47,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      
+
       - name: Pull and test frontend
         run: |
           docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ env.BRANCH }}
-
+          docker run --rm --entrypoint nginx \
+            ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ env.BRANCH }} -t
+            
       - name: Pull and test backend
         run: |
           docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ env.BRANCH }}
+          docker run --rm ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ env.BRANCH }} echo "Backend running"
   
   continious-delivery:
     needs: pull-and-test
