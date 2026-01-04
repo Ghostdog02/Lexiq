@@ -2,19 +2,17 @@ name: Deploy to Production
 
 on:
   workflow_call:
-
-  inputs:
-    config-path:
-      required: true
-      type: string
-
-  secrets:
-    HETZNER_PROD_SSH_KEY:
-      required: true
-    HETZNER_PROD_HOST:
-      required: true
-    HETZNER_PROD_USERNAME:
-      required: true
+    inputs:
+      config-path:
+        required: true
+        type: string
+    secrets:
+      HETZNER_PROD_SSH_KEY:
+        required: true
+      HETZNER_PROD_HOST:
+        required: true
+      HETZNER_PROD_USERNAME:
+        required: true
 
 env:
   DEPLOY_ENV: production
