@@ -12,8 +12,6 @@ on:
       - master
 
 env:
-  ABSOLUTE_WORKFLOW_PATH: Ghostdog02/Lexiq/.github/workflows
-  RELATIVE_WORKFLOW_PATH: .github/workflows
   REGISTRY: ghcr.io
   REPO: ${{ github.repository }}
 
