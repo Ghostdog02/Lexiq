@@ -2,16 +2,14 @@ name: Docker Build and Push
 
 on:
   workflow_call:
-  inputs:
-    config-path:
-      required: true
-      type: string
-  secrets:
-    GITHUB_TOKEN:
-      required: true
-  env:
-    REGISTRY: ghcr.io
-    REPO: ${{ github.repository }}
+    inputs:
+      config-path:
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  REPO: ${{ github.repository }}
 
 jobs:
   build-and-push-frontend:

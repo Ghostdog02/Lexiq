@@ -9,15 +9,11 @@ on:
       type: string
 
   secrets:
-    GITHUB_TOKEN:
-      required: true
     HETZNER_PROD_SSH_KEY:
       required: true
     HETZNER_PROD_HOST:
       required: true
     HETZNER_PROD_USERNAME:
-      required: true
-    GITHUB_TOKEN:
       required: true
 
 env:
