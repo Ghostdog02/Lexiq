@@ -11,9 +11,22 @@ on:
       - feature/ci-cd
       - master
 
+env:
+  ABSOLUTE_WORKFLOW_PATH: Ghostdog02/Lexiq/.github/workflows
+  RELATIVE_WORKFLOW_PATH: .github/workflows
+  REGISTRY: ghcr.io
+  REPO: ${{ github.repository }}
+
 jobs:
-  build-and-test:
-    name: "Build and Test with Docker"
+  build-and-push-docker:
+    uses: ${{ env.ABSOLUTE_WORKFLOW_PATH }}/build-and-push-docker.yml@${{ github.github.ref_name }}
+    with:
+      config-path: ${{ env.RELATIVE_WORKFLOW_PATH }}/build-and-push-docker.yml
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+  run-and-test:
+    name: "Run and Test Docker Containers"
     runs-on: ubuntu-latest
 
     steps:
@@ -39,281 +52,40 @@ jobs:
           path: build.log
           retention-days: 7
 
-  deploy-to-production:
-    name: "Deploy to Persistent Production Server"
-    needs: build-and-test
+  pull-and-test:
+    needs: build-and-push-docker
     runs-on: ubuntu-latest
-    if: contains(fromJSON('["refs/heads/master", "refs/heads/feature/ci-cd"]'), github.ref)
-
+    permissions:
+      contents: read
+      packages: read
+    
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Deploy with Docker Compose to Hetzner (Debian 13)
-        uses: appleboy/ssh-action@v1.2.4
-        env:
-          GITHUB_TOKEN: ${{ secrets.GIT_READONLY_TOKEN }}
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
         with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          envs: GITHUB_TOKEN
-          command_timeout: 30m
-          script_stop: true
-          script: |
-            set -euo pipefail
-            set -x  # Enable command echoing for debugging
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-            LOG_DIR=/var/log/lexiq/deployment
-
-            if [ ! -d "$LOG_DIR" ]; then
-              sudo mkdir -p "$LOG_DIR"
-            fi
-
-            LOG_FILE="$LOG_DIR/deploy-$(date +%Y%m%d-%H%M%S).log"
-
-            # Function to log with timestamp
-            log() {
-              echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
-            }
-
-            # Trap errors and log them with context
-            set -o errtrace
-            trap 'rc=$?; lineno=${BASH_LINENO[0]:-?}; cmd=${BASH_COMMAND:-}; \ 
-            log "ERROR: Command failed at line $lineno with exit code $rc"; \ 
-            log "Last command: $cmd"' ERR
-
-            log "===== Starting deployment to production server ====="
-            log "Branch: ${{ github.ref_name }}"
-            log "Commit: ${{ github.sha }}"
-            log "Triggered by: ${{ github.actor }}"
-
-            # System updates with error handling
-            log "Updating system packages..."
-            if sudo apt update 2>&1 | tee -a "$LOG_FILE"; then
-              log "System update successful"
-            else
-              log "ERROR: System update failed"
-              exit 1
-            fi
-
-            if sudo apt upgrade -y 2>&1 | tee -a "$LOG_FILE"; then
-              log "System upgrade successful"
-            else
-              log "WARNING: System upgrade had issues (non-critical)"
-            fi
-
-            # Ensure git is installed
-            if ! command -v git >/dev/null 2>&1; then
-              log "Installing git..."
-              sudo apt install -y git 2>&1 | tee -a "$LOG_FILE"
-            fi
-
-            cd ~
-            HOME=/home/${{ secrets.HETZNER_PROD_USERNAME }}
-            # Git operations with detailed logging
-            log "Performing git operations..."
-            if git -C production rev-parse --git-dir >/dev/null 2>&1; then
-              log "Repository exists, updating..."
-              
-              # Show current state
-              log "Current branch: $(git branch --show-current)"
-              log "Current commit: $(git rev-parse HEAD)"
-
-              cd ~/production || { log "ERROR: Failed to cd to ~/production"; exit 1; }
-
-              git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
-              
-              if git fetch --all --prune 2>&1 | tee -a "$LOG_FILE"; then
-                log "Git fetch successful"
-              else
-                log "ERROR: Git fetch failed"
-                exit 1
-              fi
-              
-              git checkout "${{ github.ref_name }}" 2>&1 | tee -a "$LOG_FILE" || git checkout -b "${{ github.ref_name }}" 2>&1 | tee -a "$LOG_FILE"
-              git pull origin "${{ github.ref_name }}" 2>&1 | tee -a "$LOG_FILE"
-              
-              git remote set-url origin "https://github.com/${{ github.repository }}.git"
-              
-              log "Updated to commit: $(git rev-parse HEAD)"
-            else
-              log "Cloning repository..."
-              git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" "$HOME/production" 2>&1 | tee -a "$LOG_FILE"
-              git checkout -b "${{ github.ref_name }}" origin/"${{ github.ref_name }}" 2>&1 | tee -a "$LOG_FILE" || true
-            fi
-
-            # Navigate to production directory
-            log "Navigating to production directory..."
-            cd ~/production || { log "ERROR: Failed to cd to ~/production"; exit 1; }
-
-            # Docker operations with detailed logging
-            log "Pulling latest Docker images..."
-            if sudo docker compose pull 2>&1 | tee -a "$LOG_FILE"; then
-              log "Docker pull successful"
-            else
-              log "ERROR: Docker pull failed"
-              exit 1
-            fi
-
-            log "Stopping existing containers..."
-            if sudo docker compose down 2>&1 | tee -a "$LOG_FILE"; then
-              log "Containers stopped successfully"
-            else
-              log "WARNING: Issue stopping containers"
-            fi
-            
-            # Enable Docker BuildKit
-            export DOCKER_BUILDKIT=1
-            export COMPOSE_DOCKER_CLI_BUILD=1
-
-            if [ "${{ github.event_name }}" == "pull_request" ]; then
-              CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
-              if echo "$CHANGED_FILES" | grep -qE "(Dockerfile|docker-compose\.yml|\.dockerignore)"; then
-                sudo docker compose build --no-cache
-              else
-                sudo docker compose build
-              fi
-            fi
-
-            if [ "${{ github.event_name }}" == "push" ]; then
-              if git diff --name-only origin/${{ github.ref_name }}...HEAD | grep -qE "(Dockerfile|docker-compose\.yml|\.dockerignore)"; then
-                sudo docker compose build --no-cache
-              else
-                sudo docker compose build
-              fi
-            fi
-
-            log "Starting containers..."
-            if sudo docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
-              log "Containers started successfully"
-            else
-              log "ERROR: Failed to start containers"
-              sudo docker compose logs --tail=100 2>&1 | tee -a "$LOG_FILE"
-              exit 1
-            fi
-
-            # Cleanup
-            log "Cleaning up unused Docker images..."
-            sudo docker image prune -f 2>&1 | tee -a "$LOG_FILE"
-
-            # Show container status
-            log "Current container status:"
-            sudo docker compose ps 2>&1 | tee -a "$LOG_FILE"
-
-            log "===== Deployment complete ====="
-            log "Log file saved to: $LOG_FILE"
-
-      - name: Health check with detailed logging
-        if: success()
-        uses: appleboy/ssh-action@v1.2.4
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}  
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          script_stop: true
-          script: |
-            set -e
-            set -o pipefail
-            set -x
-
-            LOG_DIR=/var/log/lexiq/deployment
-            LOG_FILE="$LOG_DIR/healthcheck-$(date +%Y%m%d-%H%M%S).log"
-
-            log() {
-              echo "[$(date +'%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
-            }
-
-            log "===== Starting health check ====="
-
-            # Wait for containers to stabilize
-            log "Waiting 10 seconds for containers to start..."
-            sleep 10
-
-            cd ~/production
-
-            # Get detailed container status
-            log "Container status:"
-            docker compose ps 2>&1 | tee -a "$LOG_FILE"
-
-            containers=("lexiq-frontend" "lexiq-backend" "lexiq-database")
-
-            is_container_failed() {
-              local failed=false
-
-              for containerName in "${containers[@]}"; do
-                log "Checking container: $containerName"
-                status=$(docker inspect -f '{{.State.Status}}' "$containerName" 2>/dev/null || echo "notfound")
-                if [ ! "$status" = "running" ]; then
-                    log "ERROR: Container '$containerName' is not running or does not exist"
-                    sudo docker logs $containerName
-                    failed=true
-                    exit 1
-                fi
-                log "✓ Container '$containerName' is running"
-              done
-
-              return $failed
-            }
-
-            if is_container_failed; then
-              echo "Container check failed - exiting"
-              exit 1
-            fi
-
-            log "===== Health check complete ====="
-            log "Health check log saved to: $LOG_FILE"
-
-      - name: Collect and upload deployment logs on failure
-        if: failure()
-        uses: appleboy/ssh-action@v1.2.4
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          script: |
-            LOG_DIR=/var/log/lexiq/deployment
-
-            # Create comprehensive failure report
-            REPORT_FILE="$LOG_DIR/failure-report-$(date +%Y%m%d-%H%M%S).txt"
-
-            echo "===== DEPLOYMENT FAILURE REPORT =====" > "$REPORT_FILE"
-            echo "Time: $(date)" >> "$REPORT_FILE"
-            echo "Branch: ${{ github.ref_name }}" >> "$REPORT_FILE"
-            echo "Commit: ${{ github.sha }}" >> "$REPORT_FILE"
-            echo "" >> "$REPORT_FILE"
-            
-            echo "===== CONTAINER STATUS =====" >> "$REPORT_FILE"
-            sudo docker compose ps >> "$REPORT_FILE" 2>&1
-            echo "" >> "$REPORT_FILE"
-            
-            echo "===== RECENT LOGS (last 200 lines) =====" >> "$REPORT_FILE"
-            sudo docker compose logs --tail=200 >> "$REPORT_FILE" 2>&1
-            echo "" >> "$REPORT_FILE"
-            
-            echo "===== SYSTEM RESOURCES =====" >> "$REPORT_FILE"
-            echo "Disk space:" >> "$REPORT_FILE"
-            df -h >> "$REPORT_FILE" 2>&1
-            echo "" >> "$REPORT_FILE"
-            echo "Memory:" >> "$REPORT_FILE"
-            free -h >> "$REPORT_FILE" 2>&1
-            echo "" >> "$REPORT_FILE"
-            
-            echo "Failure report saved to: $REPORT_FILE"
-            cat "$REPORT_FILE"
-
-      - name: Notify on deployment status
-        if: always()
+      - name: Pull and test frontend
         run: |
-          if [ "${{ job.status }}" == "success" ]; then
-            echo "✅ Deployment successful for branch ${{ github.ref_name }}"
-          else
-            echo "❌ Deployment failed for branch ${{ github.ref_name }}"
-            echo "Check the logs above for detailed error information"
-          fi
+          docker pull ${{ env.REGISTRY }}/${{ env.REPO }}-frontend:${{ github.ref_name }}
+          docker run --rm ${{ env.REGISTRY }}/${{ env.REPO }}-frontend:${{ github.ref_name }} echo "Frontend running"
+
+      - name: Pull and test backend
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.REPO }}-backend:${{ github.ref_name }}
+          docker run --rm ${{ env.REGISTRY }}/${{ env.REPO }}-backend:${{ github.ref_name }} echo "Backend running"
+  
+  continious-delivery:
+    needs: pull-and-test
+    uses: ${{ env.GITHUB-WORKFLOW-DIRECTORY }}/reusable-workflow.yml@main
+    with:
+      config-path: .github/workflows/build-and-push-docker.yml
+    secrets:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      HETZNER_PROD_SSH_KEY: ${{ secrets.HETZNER_PROD_SSH_KEY }}
+      HETZNER_PROD_HOST: ${{ secrets.HETZNER_PROD_HOST }}
+      HETZNER_PROD_USERNAME: ${{ secrets.HETZNER_PROD_USERNAME }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

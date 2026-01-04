@@ -1,0 +1,89 @@
+name: Deploy to Production
+
+on:
+  workflow_call:
+
+  inputs:
+    config-path:
+      required: true
+      type: string
+
+  secrets:
+    GITHUB_TOKEN:
+      required: true
+    HETZNER_PROD_SSH_KEY:
+      required: true
+    HETZNER_PROD_HOST:
+      required: true
+    HETZNER_PROD_USERNAME:
+      required: true
+    GITHUB_TOKEN:
+      required: true
+
+env:
+  DEPLOY_ENV: production
+
+jobs:
+  deploy:
+    name: Deploy to Hetzner
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout deployment script
+        uses: actions/checkout@v3
+        with:
+          sparse-checkout: |
+            scripts/deploy.sh
+          sparse-checkout-cone-mode: false
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.HETZNER_PROD_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copy deployment script to server
+        run: |
+          scp scripts/deploy.sh ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}:/tmp/deploy.sh
+
+      - name: Execute deployment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ssh ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }} << 'ENDSSH'
+            export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+            chmod +x /tmp/deploy.sh
+            /tmp/deploy.sh
+          ENDSSH
+
+      - name: Cleanup
+        if: always()
+        run: |
+          ssh ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }} \
+            "rm -f /tmp/deploy.sh"
+
+      - name: Deployment Status
+        if: always()
+        run: |
+          if [ $? -eq 0 ]; then
+            echo "::notice::✅ Deployment successful!"
+          else
+            echo "::error::❌ Deployment failed!"
+            exit 1
+          fi
+
+      - name: Notify on failure
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Deployment failed! Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.'
+            })

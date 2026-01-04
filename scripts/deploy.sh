@@ -1,0 +1,469 @@
+#!/bin/bash
+
+set -euo pipefail
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+readonly REPO="${{ github.repository }}"
+readonly BRANCH="${{ github.ref_name }}"
+readonly COMMIT="${{ github.sha }}"
+readonly ACTOR="${{ github.actor }}"
+readonly EVENT="${{ github.event_name }}"
+readonly USERNAME="${{ secrets.HETZNER_PROD_USERNAME }}"
+readonly HOME_DIR="/home/${USERNAME}"
+readonly DEPLOY_DIR="${HOME_DIR}/production"
+readonly LOG_DIR="/var/log/lexiq/deployment"
+readonly LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"
+
+# Exit codes
+readonly EXIT_SUCCESS=0
+readonly EXIT_SYSTEM_UPDATE_FAILED=1
+readonly EXIT_GIT_FAILED=2
+readonly EXIT_DOCKER_PULL_FAILED=3
+readonly EXIT_DOCKER_START_FAILED=4
+
+# ============================================================================
+# GITHUB ACTIONS LOGGING HELPERS
+# ============================================================================
+
+log() {
+  local level="$1"      # First argument: "error", "warning", or "notice"
+  shift                 # Remove first argument, leaving only the message parts
+  local message="$*"    # Combine all remaining arguments into one string
+  local timestamp="$(date +'%Y-%m-%d %H:%M:%S')"
+  
+  echo "[${timestamp}] ${message}" | tee -a "$LOG_FILE"
+  
+  # Send GitHub Actions annotations
+  case "$level" in
+    error)
+      echo "::error::${message}"
+      ;;
+    warning)
+      echo "::warning::${message}"
+      ;;
+    notice)
+      echo "::notice::${message}"
+      ;;
+  esac
+}
+
+log_info() {
+  log "info" "$@" # Preserves spaces/arguments separately
+}
+
+log_error() {
+  log "error" "$@"
+}
+
+log_warning() {
+  log "warning" "$@"
+}
+
+log_success() {
+  log "notice" "✅ $*"
+}
+
+start_group() {
+  echo "::group::$1"
+  log_info "===== $1 ====="
+}
+
+end_group() {
+  echo "::endgroup::"
+}
+
+# ============================================================================
+# ERROR HANDLING
+# ============================================================================
+
+trap_error() {
+  local exit_code=$?
+  local line_number=${BASH_LINENO[0]:-?}
+  local command=${BASH_COMMAND:-}
+  
+  log_error "Command failed at line ${line_number} with exit code ${exit_code}"
+  log_error "Failed command: ${command}"
+  
+  # Show last 20 lines of log
+  if [ -f "$LOG_FILE" ]; then
+    echo "::group::Last 20 log lines"
+    tail -20 "$LOG_FILE"
+    echo "::endgroup::"
+  fi
+  
+  exit "$exit_code"
+}
+
+trap trap_error ERR
+
+# ============================================================================
+# INITIALIZATION
+# ============================================================================
+
+initialize() {
+  start_group "Initialization"
+  
+  log_info "Branch: ${BRANCH}"
+  log_info "Commit: ${COMMIT}"
+  log_info "Triggered by: ${ACTOR}"
+  log_info "Event: ${EVENT}"
+  
+  # Create log directory
+  if [ ! -d "$LOG_DIR" ]; then
+    sudo mkdir -p "$LOG_DIR"
+    log_info "Created log directory: ${LOG_DIR}"
+  fi
+  
+  log_info "Log file: ${LOG_FILE}"
+  
+  end_group
+}
+
+# ============================================================================
+# SYSTEM OPERATIONS
+# ============================================================================
+
+update_system() {
+  start_group "System Updates"
+  
+  log_info "Updating system packages..."
+  if sudo apt update 2>&1 | tee -a "$LOG_FILE"; then
+    log_success "System package list updated"
+  else
+    log_error "System update failed"
+    end_group
+    exit $EXIT_SYSTEM_UPDATE_FAILED
+  fi
+  
+  log_info "Upgrading system packages..."
+  if sudo apt upgrade -y 2>&1 | tee -a "$LOG_FILE"; then
+    log_success "System packages upgraded"
+  else
+    log_warning "System upgrade had issues (non-critical)"
+  fi
+  
+  end_group
+}
+
+install_dependencies() {
+  start_group "Installing Dependencies"
+  
+  if ! command -v git >/dev/null 2>&1; then
+    log_info "Installing git..."
+    if sudo apt install -y git 2>&1 | tee -a "$LOG_FILE"; then
+      log_success "Git installed"
+    else
+      log_error "Failed to install git"
+      end_group
+      exit $EXIT_SYSTEM_UPDATE_FAILED
+    fi
+  else
+    log_info "Git already installed"
+  fi
+  
+  end_group
+}
+
+# ============================================================================
+# GIT OPERATIONS
+# ============================================================================
+
+setup_git_credentials() {
+  log_info "Setting up Git credentials..."
+  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
+  log_success "Git credentials configured"
+}
+
+cleanup_git_credentials() {
+  log_info "Cleaning up Git credentials..."
+  git remote set-url origin "https://github.com/${REPO}.git"
+  log_success "Git credentials removed"
+}
+
+clone_repository() {
+  start_group "Cloning Repository"
+  
+  log_info "Cloning ${REPO}..."
+  if git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git" "$DEPLOY_DIR" 2>&1 | tee -a "$LOG_FILE"; then
+    log_success "Repository cloned"
+    
+    cd "$DEPLOY_DIR" || exit $EXIT_GIT_FAILED
+    
+    if git checkout -b "$BRANCH" "origin/${BRANCH}" 2>&1 | tee -a "$LOG_FILE"; then
+      log_success "Checked out branch: ${BRANCH}"
+    fi
+    
+    cleanup_git_credentials
+  else
+    log_error "Failed to clone repository"
+    end_group
+    exit $EXIT_GIT_FAILED
+  fi
+  
+  end_group
+}
+
+update_repository() {
+  start_group "Updating Repository"
+  
+  cd "$DEPLOY_DIR" || exit $EXIT_GIT_FAILED
+  
+  log_info "Current branch: $(git branch --show-current)"
+  log_info "Current commit: $(git rev-parse HEAD)"
+  
+  setup_git_credentials
+  
+  log_info "Fetching latest changes..."
+  if git fetch --all --prune 2>&1 | tee -a "$LOG_FILE"; then
+    log_success "Fetch successful"
+  else
+    log_error "Git fetch failed"
+    cleanup_git_credentials
+    end_group
+    exit $EXIT_GIT_FAILED
+  fi
+  
+  log_info "Checking out branch: ${BRANCH}"
+  git checkout "$BRANCH" 2>&1 | tee -a "$LOG_FILE" || \
+    git checkout -b "$BRANCH" 2>&1 | tee -a "$LOG_FILE"
+  
+  log_info "Pulling latest changes..."
+  if git pull origin "$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
+    log_success "Pull successful"
+    log_info "Updated to commit: $(git rev-parse HEAD)"
+  else
+    log_error "Git pull failed"
+    cleanup_git_credentials
+    end_group
+    exit $EXIT_GIT_FAILED
+  fi
+  
+  cleanup_git_credentials
+  
+  end_group
+}
+
+sync_repository() {
+  start_group "Git Operations"
+  
+  cd "$HOME_DIR" || exit $EXIT_GIT_FAILED
+  
+  if git -C "$DEPLOY_DIR" rev-parse --git-dir >/dev/null 2>&1; then
+    log_info "Repository exists, updating..."
+    update_repository
+  else
+    log_info "Repository not found, cloning..."
+    clone_repository
+  fi
+  
+  end_group
+}
+
+# ============================================================================
+# DOCKER OPERATIONS
+# ============================================================================
+
+pull_docker_images() {
+  start_group "Pulling Docker Images"
+  
+  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_PULL_FAILED
+  
+  log_info "Pulling latest Docker images..."
+  if sudo docker compose pull 2>&1 | tee -a "$LOG_FILE"; then
+    log_success "Docker images pulled"
+  else
+    log_error "Docker pull failed"
+    end_group
+    exit $EXIT_DOCKER_PULL_FAILED
+  fi
+  
+  end_group
+}
+
+stop_containers() {
+  start_group "Stopping Containers"
+  
+  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
+  
+  log_info "Stopping existing containers..."
+  if sudo docker compose down 2>&1 | tee -a "$LOG_FILE"; then
+    log_success "Containers stopped"
+  else
+    log_warning "Issue stopping containers"
+  fi
+  
+  end_group
+}
+
+should_rebuild_nocache() {
+  local changed_files=""
+  
+  if [ "$EVENT" == "pull_request" ]; then
+    changed_files=$(git diff --name-only HEAD~1 HEAD)
+  elif [ "$EVENT" == "push" ]; then
+    changed_files=$(git diff --name-only "origin/${BRANCH}...HEAD")
+  else
+    return 1
+  fi
+  
+  if echo "$changed_files" | grep -qE "(Dockerfile|docker-compose\.yml|\.dockerignore)"; then
+    return 0
+  fi
+  
+  return 1
+}
+
+build_containers() {
+  start_group "Building Containers"
+  
+  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
+  
+  # Enable Docker BuildKit
+  export DOCKER_BUILDKIT=1
+  export COMPOSE_DOCKER_CLI_BUILD=1
+  
+  if should_rebuild_nocache; then
+    log_info "Docker configuration changed, rebuilding without cache..."
+    if sudo docker compose build --no-cache 2>&1 | tee -a "$LOG_FILE"; then
+      log_success "Build (no-cache) successful"
+    else
+      log_error "Build failed"
+      end_group
+      exit $EXIT_DOCKER_START_FAILED
+    fi
+  else
+    log_info "Building Docker images..."
+    if sudo docker compose build 2>&1 | tee -a "$LOG_FILE"; then
+      log_success "Build successful"
+    else
+      log_error "Build failed"
+      end_group
+      exit $EXIT_DOCKER_START_FAILED
+    fi
+  fi
+  
+  end_group
+}
+
+start_containers() {
+  start_group "Starting Containers"
+  
+  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
+  
+  log_info "Starting containers..."
+  if sudo docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
+    log_success "Containers started"
+  else
+    log_error "Failed to start containers"
+    
+    echo "::group::Container Logs"
+    sudo docker compose logs --tail=100 2>&1 | tee -a "$LOG_FILE"
+    echo "::endgroup::"
+    
+    end_group
+    exit $EXIT_DOCKER_START_FAILED
+  fi
+  
+  end_group
+}
+
+cleanup_docker() {
+  start_group "Docker Cleanup"
+  
+  log_info "Cleaning up unused Docker images..."
+  if sudo docker image prune -f 2>&1 | tee -a "$LOG_FILE"; then
+    log_success "Docker cleanup complete"
+  else
+    log_warning "Docker cleanup had issues"
+  fi
+  
+  end_group
+}
+
+show_container_status() {
+  start_group "Container Status"
+  
+  cd "$DEPLOY_DIR" || return
+  
+  log_info "Current container status:"
+  sudo docker compose ps 2>&1 | tee -a "$LOG_FILE"
+  
+  end_group
+}
+
+# ============================================================================
+# HEALTH CHECKS
+# ============================================================================
+
+verify_deployment() {
+  start_group "Deployment Verification"
+  
+  cd "$DEPLOY_DIR" || return
+  
+  log_info "Checking container health..."
+  
+  local healthy=true
+  local containers=$(sudo docker compose ps --format json | jq -r '.Name')
+  
+  for container in $containers; do
+    local state=$(sudo docker inspect --format='{{.State.Status}}' "$container" 2>/dev/null || echo "not found")
+    
+    if [ "$state" == "running" ]; then
+      log_success "Container ${container} is running"
+    else
+      log_error "Container ${container} is ${state}"
+      healthy=false
+    fi
+  done
+  
+  if [ "$healthy" = true ]; then
+    log_success "All containers are healthy"
+  else
+    log_error "Some containers are unhealthy"
+  fi
+  
+  end_group
+}
+
+# ============================================================================
+# MAIN DEPLOYMENT FLOW
+# ============================================================================
+
+main() {
+  local start_time=$(date +%s)
+  
+  initialize
+  
+  update_system
+  install_dependencies
+  sync_repository
+  
+  pull_docker_images
+  stop_containers
+  build_containers
+  start_containers
+  
+  cleanup_docker
+  show_container_status
+  verify_deployment
+  
+  local end_time=$(date +%s)
+  local duration=$((end_time - start_time))
+  
+  start_group "Deployment Summary"
+  log_success "Deployment completed successfully"
+  log_info "Duration: ${duration} seconds"
+  log_info "Log file: ${LOG_FILE}"
+  end_group
+  
+  exit $EXIT_SUCCESS
+}
+
+# ============================================================================
+# SCRIPT ENTRY POINT
+# ============================================================================
+
+main "$@"
