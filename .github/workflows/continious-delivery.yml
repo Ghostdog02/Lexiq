@@ -7,7 +7,7 @@ on:
         required: true
         type: string
     secrets:
-      HETZNER_PROD_PRIVATE_SSH_KEY:
+      HETZNER_PROD_SSH_KEY:
         required: true
       HETZNER_PROD_SSH_KEY_PASSPHRASE:
         required: true
@@ -74,9 +74,15 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: |
-          ssh ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }} \
-            "rm -f /tmp/deploy.sh"
+        uses: appleboy/ssh-action@v1.2.4
+        with:
+          host: ${{ secrets.HETZNER_PROD_HOST }}
+          username: ${{ secrets.HETZNER_PROD_USERNAME }}
+          key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
+          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          script: |
+            rm -f /tmp/deploy.sh
 
       - name: Deployment Status
         if: always()
