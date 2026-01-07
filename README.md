@@ -4,15 +4,7 @@ Your project description...
 
 ## 🤝 Contributors
 
-Thanks to these wonderful people:
-
 [![Contributors](https://contrib.rocks/image?repo=Ghostdog02/Lexiq)](https://github.com/Ghostdog02/Lexiq/graphs/contributors)
-
-## 👥 Contributors
-
-<a href="https://github.com/Ghostdog02/Lexiq/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=Ghostdog02/Lexiq" />
-</a>
 
 ### Core Team
 - [@Ghostdog02](https://github.com/Ghostdog02) - Project Lead
