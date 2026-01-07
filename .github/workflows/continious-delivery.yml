@@ -46,8 +46,7 @@ jobs:
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           envs: GITHUB_TOKEN
           command_timeout: 30m
-          script_stop: true
-          script_path: ../../scripts/deploy.sh
+          script_path: scripts/deploy.sh
 
       - name: Add server to known hosts
         run: |
