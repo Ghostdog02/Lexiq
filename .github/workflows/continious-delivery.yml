@@ -17,9 +17,6 @@ on:
         required: true
       HETZNER_PROD_SSH_PORT:
         required: true
-      GITHUB_TOKEN:
-        required: true
-      
 
 env:
   DEPLOY_ENV: production
