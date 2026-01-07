@@ -103,24 +103,38 @@
               rm -f /tmp/scripts/deploy.sh
               rm -f /tmp/.deploy.env
 
-        - name: Deployment Status
-          if: always()
+        - name: Deployment Success Notice
+          if: success() 
+          run: echo "::notice::✅ Deployment successful!"
+
+        - name: Deployment Failure Notice
+          if: failure()
           run: |
-            if [ $? -eq 0 ]; then
-              echo "::notice::✅ Deployment successful!"
-            else
-              echo "::error::❌ Deployment failed!"
-              exit 1
-            fi
+            echo "::error::❌ Deployment failed!"
 
         - name: Notify on failure
           if: failure()
-          uses: actions/github-script@v8
+          uses: actions/github-script@v7
           with:
             script: |
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: '❌ Deployment failed! Check the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.'
-              })
+              const repoUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+              const message = `❌ **Deployment failed!**\n\nCheck the [workflow logs](${repoUrl}) for details.`;
+              
+              // If it's a Pull Request, comment on the PR
+              if (context.payload.pull_request) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.payload.pull_request.number,
+                  body: message
+                });
+              } 
+              // Otherwise, comment on the Commit
+              else {
+                await github.rest.repos.createCommitComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  commit_sha: context.sha,
+                  body: message
+                });
+              }
