@@ -42,7 +42,7 @@
             passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
             port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
             source: "scripts/deploy.sh"
-            target: "/tmp/scripts"
+            target: "/tmp/"
 
         - name: Copy docker-compose and nginx files to server
           uses: appleboy/scp-action@v0.1.7
@@ -69,7 +69,7 @@
             command_timeout: 30m
             script: |
               chmod +x /tmp/deploy.sh
-              mv /home/${{ secrets.HETZNER_PROD_USERNAME }}/docker-compose.prod.yml/production /home/${{ secrets.HETZNER_PROD_USERNAME }}/docker-compose.yml/production
+              mv /home/${{ secrets.HETZNER_PROD_USERNAME }}/production/docker-compose.prod.yml /home/${{ secrets.HETZNER_PROD_USERNAME }}/production/docker-compose.yml
               /tmp/scripts/deploy.sh
 
         - name: Cleanup
