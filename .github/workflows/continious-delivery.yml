@@ -62,8 +62,8 @@ jobs:
           key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          source: "docker-compose.prod.yml,nginx.prod.conf"
-          target: "/home/${{ secrets.HETZNER_PROD_USERNAME }}/"
+          source: "docker-compose.prod.yml,nginx.conf"
+          target: "/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
 
       - name: Deploy with Docker Compose to Hetzner (Debian 13)
         uses: appleboy/ssh-action@v1.2.4
@@ -80,7 +80,6 @@ jobs:
           script: |
             chmod +x /tmp/deploy.sh
             mv /home/${{ secrets.HETZNER_PROD_USERNAME }}/docker-compose.prod.yml /home/${{ secrets.HETZNER_PROD_USERNAME }}/docker-compose.yml
-            mv /home/${{ secrets.HETZNER_PROD_USERNAME }}/nginx.prod.conf /home/${{ secrets.HETZNER_PROD_USERNAME }}/nginx.conf
             /tmp/deploy.sh
 
       - name: Cleanup
