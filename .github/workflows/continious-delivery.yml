@@ -68,9 +68,16 @@
             envs: GITHUB_TOKEN
             command_timeout: 30m
             script: |
-              # Rename docker-compose file
-              mv /home/${{ secrets.HETZNER_PROD_USERNAME }}/production/docker-compose.prod.yml /home/${{ secrets.HETZNER_PROD_USERNAME }}/production/docker-compose.yml
+              TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+              # Rename the file safely (only if the source exists)
+              if [ -f "$TARGET_DIR/docker-compose.prod.yml" ]; then
+                mv "$TARGET_DIR/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
+              fi
+              else
+                echo "Source file does not exist: $TARGET_DIR/docker-compose.prod.yml"
+              fi
               cat > /tmp/.deploy.env << EOF
+              HOME_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}"
               BRANCH="${{ github.ref_name }}"
               REPO="${{ github.repository }}"
               COMMIT="${{ github.sha }}"

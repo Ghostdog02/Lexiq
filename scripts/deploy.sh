@@ -6,7 +6,6 @@ set -euo pipefail
 # CONFIGURATION
 # ============================================================================
 
-readonly HOME_DIR="/home/${USERNAME}"
 readonly DEPLOY_DIR="${HOME_DIR}/production"
 readonly LOG_DIR="/var/log/lexiq/deployment"
 readonly LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"
@@ -14,6 +13,7 @@ readonly LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"
 # Exit codes
 readonly EXIT_SUCCESS=0
 readonly EXIT_SYSTEM_UPDATE_FAILED=1
+readonly EXIT_FILE_NOT_FOUND=1
 readonly EXIT_GIT_FAILED=2
 readonly EXIT_DOCKER_PULL_FAILED=3
 readonly EXIT_DOCKER_START_FAILED=4
@@ -70,6 +70,23 @@ end_group() {
 }
 
 # ============================================================================
+# LOAD ENVIRONMENT VARIABLES
+# ============================================================================
+load_env() {
+  start_group "Loading Environment Variables"
+
+  if [ -f "/tmp/.deploy.env" ]; then
+    source /tmp/.deploy.env
+    log_info "Loaded environment variables from /tmp/.deploy.env"
+  else
+    log_error "Environment file /tmp/.deploy.env not found"
+    exit $EXIT_FILE_NOT_FOUND
+  fi
+
+  end_group
+}
+
+# ============================================================================
 # ERROR HANDLING
 # ============================================================================
 
@@ -97,6 +114,21 @@ trap trap_error ERR
 # INITIALIZATION
 # ============================================================================
 
+copy_docker_compose_file() {
+  start_group "Copying Docker Compose File"
+  local source_file="${DEPLOY_DIR}/docker-compose.prod.yml"
+  local target_file="${DEPLOY_DIR}/docker-compose.yml"
+
+  if [ -f "$source_file" ]; then
+    mv "$source_file" "$target_file"
+    log_info "Renamed ${source_file} to ${target_file}"
+  else
+    log_warning "Source file does not exist: ${source_file}"
+  fi
+  
+  end_group
+}
+
 initialize() {
   start_group "Initialization"
   
@@ -112,7 +144,9 @@ initialize() {
   fi
   
   log_info "Log file: ${LOG_FILE}"
-  
+
+  copy_docker_compose_file
+
   end_group
 }
 
@@ -267,7 +301,7 @@ verify_deployment() {
   log_info "Checking container health..."
   
   local healthy=true
-  local containers=$(sudo docker compose ps --format json | jq -r '.Name')
+  local containers=$(sudo docker compose ps -a --format json | jq -r '.Name')
   
   for container in $containers; do
     local state=$(sudo docker inspect --format='{{.State.Status}}' "$container" 2>/dev/null || echo "not found")
@@ -295,7 +329,9 @@ verify_deployment() {
 
 main() {
   local start_time=$(date +%s)
-  
+
+  load_env
+
   initialize
   
   update_system
