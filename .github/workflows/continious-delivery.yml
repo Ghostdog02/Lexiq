@@ -7,12 +7,17 @@ on:
         required: true
         type: string
     secrets:
-      HETZNER_PROD_SSH_KEY:
+      HETZNER_PROD_PRIVATE_SSH_KEY:
+        required: true
+      HETZNER_PROD_SSH_KEY_PASSPHRASE:
         required: true
       HETZNER_PROD_HOST:
         required: true
       HETZNER_PROD_USERNAME:
         required: true
+      HETZNER_PROD_SSH_PORT:
+        required: true
+      
 
 env:
   DEPLOY_ENV: production
@@ -41,7 +46,7 @@ jobs:
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+          key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           envs: GITHUB_TOKEN
