@@ -72,7 +72,6 @@
               # Rename the file safely (only if the source exists)
               if [ -f "$TARGET_DIR/docker-compose.prod.yml" ]; then
                 mv "$TARGET_DIR/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
-              fi
               else
                 echo "Source file does not exist: $TARGET_DIR/docker-compose.prod.yml"
               fi

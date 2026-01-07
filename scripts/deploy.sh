@@ -326,6 +326,60 @@ verify_deployment() {
   end_group
 }
 
+verify_deployment() {
+  start_group "Deployment Verification"
+  
+  # Ensure DEPLOY_DIR is valid
+  if [ -z "$DEPLOY_DIR" ] || [ ! -d "$DEPLOY_DIR" ]; then
+    log_error "Deployment directory $DEPLOY_DIR not found"
+    return 1
+  fi
+
+  cd "$DEPLOY_DIR" || return
+  
+  log_info "Checking container health..."
+  
+  local healthy=true
+  
+  local container_ids=$(sudo docker compose ps -q)
+  
+  if [ -z "$container_ids" ]; then
+    log_error "No containers found for this project."
+    end_group
+    return 1
+  fi
+
+  for id in $container_ids; do
+    # Get Name, Status, and Health in one go
+    local info=$(sudo docker inspect --format='{{.Name}}|{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$id")
+    
+    local name=$(echo "$info" | cut -d'|' -f1 | sed 's/\///')
+    local status=$(echo "$info" | cut -d'|' -f2)
+    local health=$(echo "$info" | cut -d'|' -f3)
+    
+    if [ "$status" = "running" ]; then
+      if [ "$health" = "unhealthy" ]; then
+        log_error "Container $name is RUNNING but UNHEALTHY"
+        healthy=false
+      else
+        log_success "Container $name is $status ($health)"
+      fi
+    else
+      log_error "Container $name is NOT running (State: $status)"
+      healthy=false
+    fi
+  done
+  
+  if [ "$healthy" = true ]; then
+    log_success "All containers are healthy"
+  else
+    log_error "Some containers failed health checks"
+    exit 1
+  fi
+  
+  end_group
+}
+
 # ============================================================================
 # MAIN DEPLOYMENT FLOW
 # ============================================================================
