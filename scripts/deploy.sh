@@ -9,6 +9,7 @@ set -euo pipefail
 readonly DEPLOY_DIR="${HOME_DIR}/production"
 readonly LOG_DIR="/var/log/lexiq/deployment"
 readonly LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"
+readonly ENVIRONMENT_FILE="/tmp/.deploy.env"
 
 # Exit codes
 readonly EXIT_SUCCESS=0
@@ -75,11 +76,11 @@ end_group() {
 load_env() {
   start_group "Loading Environment Variables"
 
-  if [ -f "/tmp/.deploy.env" ]; then
-    source /tmp/.deploy.env
-    log_info "Loaded environment variables from /tmp/.deploy.env"
+  if [ -f "$ENVIRONMENT_FILE" ]; then
+    . "$ENVIRONMENT_FILE"
+    log_info "Loaded environment variables from $ENVIRONMENT_FILE"
   else
-    log_error "Environment file /tmp/.deploy.env not found"
+    log_error "Environment file $ENVIRONMENT_FILE not found"
     exit $EXIT_FILE_NOT_FOUND
   fi
 
@@ -121,11 +122,13 @@ copy_docker_compose_file() {
 
   if [ -f "$source_file" ]; then
     mv "$source_file" "$target_file"
-    log_info "Renamed ${source_file} to ${target_file}"
+    log_info "Renamed $source_file to $target_file"
+  elif [ -f "$target_file" ]; then
+    log_info "File $target_file already exists. No rename needed."
   else
-    log_warning "Source file does not exist: ${source_file}"
+    log_warning "Source file not found: $source_file"
   fi
-  
+
   end_group
 }
 
