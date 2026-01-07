@@ -43,6 +43,10 @@ jobs:
       - name: Copy deployment script to server
         run: |
           scp scripts/deploy.sh ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}:/tmp/deploy.sh
+        
+      - name: Copy docker-compose file to server
+        run: |
+          scp docker-compose.prod.yml ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}:/tmp/docker-compose.yml
 
       - name: Execute deployment
         env:

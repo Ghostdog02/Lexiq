@@ -168,103 +168,23 @@ install_dependencies() {
 }
 
 # ============================================================================
-# GIT OPERATIONS
-# ============================================================================
-
-setup_git_credentials() {
-  log_info "Setting up Git credentials..."
-  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
-  log_success "Git credentials configured"
-}
-
-cleanup_git_credentials() {
-  log_info "Cleaning up Git credentials..."
-  git remote set-url origin "https://github.com/${REPO}.git"
-  log_success "Git credentials removed"
-}
-
-clone_repository() {
-  start_group "Cloning Repository"
-  
-  log_info "Cloning ${REPO}..."
-  if git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git" "$DEPLOY_DIR" 2>&1 | tee -a "$LOG_FILE"; then
-    log_success "Repository cloned"
-    
-    cd "$DEPLOY_DIR" || exit $EXIT_GIT_FAILED
-    
-    if git checkout -b "$BRANCH" "origin/${BRANCH}" 2>&1 | tee -a "$LOG_FILE"; then
-      log_success "Checked out branch: ${BRANCH}"
-    fi
-    
-    cleanup_git_credentials
-  else
-    log_error "Failed to clone repository"
-    end_group
-    exit $EXIT_GIT_FAILED
-  fi
-  
-  end_group
-}
-
-update_repository() {
-  start_group "Updating Repository"
-  
-  cd "$DEPLOY_DIR" || exit $EXIT_GIT_FAILED
-  
-  log_info "Current branch: $(git branch --show-current)"
-  log_info "Current commit: $(git rev-parse HEAD)"
-  
-  setup_git_credentials
-  
-  log_info "Fetching latest changes..."
-  if git fetch --all --prune 2>&1 | tee -a "$LOG_FILE"; then
-    log_success "Fetch successful"
-  else
-    log_error "Git fetch failed"
-    cleanup_git_credentials
-    end_group
-    exit $EXIT_GIT_FAILED
-  fi
-  
-  log_info "Checking out branch: ${BRANCH}"
-  git checkout "$BRANCH" 2>&1 | tee -a "$LOG_FILE" || \
-    git checkout -b "$BRANCH" 2>&1 | tee -a "$LOG_FILE"
-  
-  log_info "Pulling latest changes..."
-  if git pull origin "$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
-    log_success "Pull successful"
-    log_info "Updated to commit: $(git rev-parse HEAD)"
-  else
-    log_error "Git pull failed"
-    cleanup_git_credentials
-    end_group
-    exit $EXIT_GIT_FAILED
-  fi
-  
-  cleanup_git_credentials
-  
-  end_group
-}
-
-sync_repository() {
-  start_group "Git Operations"
-  
-  cd "$HOME_DIR" || exit $EXIT_GIT_FAILED
-  
-  if git -C "$DEPLOY_DIR" rev-parse --git-dir >/dev/null 2>&1; then
-    log_info "Repository exists, updating..."
-    update_repository
-  else
-    log_info "Repository not found, cloning..."
-    clone_repository
-  fi
-  
-  end_group
-}
-
-# ============================================================================
 # DOCKER OPERATIONS
 # ============================================================================
+
+copy_docker_compose_file() {
+  start_group "Copying Docker Compose File"
+  
+  log_info "Copying docker-compose.yml to deployment directory..."
+  if sudo cp /tmp/docker-compose.yml "$DEPLOY_DIR/docker-compose.yml" 2>&1 | tee -a "$LOG_FILE"; then
+    log_success "Docker Compose file copied"
+  else
+    log_error "Failed to copy Docker Compose file"
+    end_group
+    exit $EXIT_DOCKER_PULL_FAILED
+  fi
+  
+  end_group
+}
 
 pull_docker_images() {
   start_group "Pulling Docker Images"
@@ -320,10 +240,6 @@ build_containers() {
   start_group "Building Containers"
   
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
-  
-  # Enable Docker BuildKit
-  export DOCKER_BUILDKIT=1
-  export COMPOSE_DOCKER_CLI_BUILD=1
   
   if should_rebuild_nocache; then
     log_info "Docker configuration changed, rebuilding without cache..."
@@ -439,7 +355,6 @@ main() {
   
   update_system
   install_dependencies
-  sync_repository
   
   pull_docker_images
   stop_containers
