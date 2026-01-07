@@ -83,6 +83,10 @@
               ACTOR="${{ github.actor }}"
               EVENT="${{ github.event_name }}"
               USERNAME="${{ secrets.HETZNER_PROD_USERNAME }}"
+              # Use \$ to prevent GitHub from expanding these locally
+              DEPLOY_DIR="\$HOME_DIR/production"
+              LOG_DIR="/var/log/lexiq/deployment"
+              LOG_FILE="\$LOG_DIR/deploy-\$(date +%Y%m%d-%H%M%S).log"
               EOF
               chmod 600 /tmp/.deploy.env
 

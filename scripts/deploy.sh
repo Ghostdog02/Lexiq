@@ -5,12 +5,6 @@ set -euo pipefail
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-
-readonly DEPLOY_DIR="${HOME_DIR}/production"
-readonly LOG_DIR="/var/log/lexiq/deployment"
-readonly LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"
-readonly ENVIRONMENT_FILE="/tmp/.deploy.env"
-
 # Exit codes
 readonly EXIT_SUCCESS=0
 readonly EXIT_SYSTEM_UPDATE_FAILED=1
@@ -295,36 +289,6 @@ show_container_status() {
 # ============================================================================
 # HEALTH CHECKS
 # ============================================================================
-
-verify_deployment() {
-  start_group "Deployment Verification"
-  
-  cd "$DEPLOY_DIR" || return
-  
-  log_info "Checking container health..."
-  
-  local healthy=true
-  local containers=$(sudo docker compose ps -a --format json | jq -r '.Name')
-  
-  for container in $containers; do
-    local state=$(sudo docker inspect --format='{{.State.Status}}' "$container" 2>/dev/null || echo "not found")
-    
-    if [ "$state" == "running" ]; then
-      log_success "Container ${container} is running"
-    else
-      log_error "Container ${container} is ${state}"
-      healthy=false
-    fi
-  done
-  
-  if [ "$healthy" = true ]; then
-    log_success "All containers are healthy"
-  else
-    log_error "Some containers are unhealthy"
-  fi
-  
-  end_group
-}
 
 verify_deployment() {
   start_group "Deployment Verification"
