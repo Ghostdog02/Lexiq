@@ -33,7 +33,7 @@ jobs:
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.1
         with:
-          ssh-private-key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY}}
+          ssh-private-key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
 
       - name: Add server to known hosts
         run: |
