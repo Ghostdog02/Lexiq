@@ -145,19 +145,15 @@ update_system() {
 install_dependencies() {
   start_group "Installing Dependencies"
   
-  if ! command -v git >/dev/null 2>&1; then
-    log_info "Installing git..."
-    if sudo apt install -y git 2>&1 | tee -a "$LOG_FILE"; then
-      log_success "Git installed"
-    else
-      log_error "Failed to install git"
+  echo "Checking docker installation"
+  if command -v docker &> /dev/null; then
+      log_info "Docker is already installed"
+  else
+      log_error "Docker is not installed"
       end_group
       exit $EXIT_SYSTEM_UPDATE_FAILED
-    fi
-  else
-    log_info "Git already installed"
-  fi
-  
+  fi   
+
   end_group
 }
 

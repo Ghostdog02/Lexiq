@@ -20,30 +20,6 @@ services:
     build:
       context: ./backend
       dockerfile: DOCKERFILE
-
-  frontend:
-    image: ghcr.io/ghostdog02/lexiq-frontend:${TAG:-latest}
-    build:
-      context: ./frontend
-      dockerfile: DOCKERFILE
-      args:
-        - NG_GOOGLE_CLIENT_ID=751309259564-16n4ng66dqcqrulih1ihhamdrnrlbvgr.apps.googleusercontent.com
-        - BACKEND_URL=http://backend:5000
-      - db-data:/var/opt/mssql
-    entrypoint: ["/bin/bash", "-c"]
-    command:
-      - |
-        export MSSQL_SA_PASSWORD=$$(cat /run/secrets/db_password)
-        /opt/mssql/bin/sqlservr
-    healthcheck:
-      test: >
-        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa 
-        -P "$$(cat /run/secrets/db_password)" 
-        -Q "SELECT 1" -C || exit 1
-      interval: 10s
-      retries: 10
-      start_period: 30s
-      timeout: 3s
   
   backend:
     image: ghcr.io/ghostdog02/lexiq-backend:${TAG}
