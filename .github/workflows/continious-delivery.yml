@@ -68,6 +68,8 @@
             envs: GITHUB_TOKEN
             command_timeout: 30m
             script: |
+              # Rename docker-compose file
+              mv /home/${{ secrets.HETZNER_PROD_USERNAME }}/production/docker-compose.prod.yml /home/${{ secrets.HETZNER_PROD_USERNAME }}/production/docker-compose.yml
               cat > /tmp/.deploy.env << EOF
               BRANCH="${{ github.ref_name }}"
               REPO="${{ github.repository }}"
