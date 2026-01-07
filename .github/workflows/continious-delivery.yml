@@ -68,7 +68,7 @@
             envs: GITHUB_TOKEN
             command_timeout: 30m
             script: |
-              chmod +x /tmp/deploy.sh
+              chmod +x /tmp/scripts/deploy.sh
               mv /home/${{ secrets.HETZNER_PROD_USERNAME }}/production/docker-compose.prod.yml /home/${{ secrets.HETZNER_PROD_USERNAME }}/production/docker-compose.yml
               /tmp/scripts/deploy.sh
 
