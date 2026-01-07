@@ -171,21 +171,6 @@ install_dependencies() {
 # DOCKER OPERATIONS
 # ============================================================================
 
-copy_docker_compose_file() {
-  start_group "Copying Docker Compose File"
-  
-  log_info "Copying docker-compose.yml to deployment directory..."
-  if sudo cp /tmp/docker-compose.yml "$DEPLOY_DIR/docker-compose.yml" 2>&1 | tee -a "$LOG_FILE"; then
-    log_success "Docker Compose file copied"
-  else
-    log_error "Failed to copy Docker Compose file"
-    end_group
-    exit $EXIT_DOCKER_PULL_FAILED
-  fi
-  
-  end_group
-}
-
 pull_docker_images() {
   start_group "Pulling Docker Images"
   
@@ -218,47 +203,17 @@ stop_containers() {
   end_group
 }
 
-should_rebuild_nocache() {
-  local changed_files=""
-  
-  if [ "$EVENT" == "pull_request" ]; then
-    changed_files=$(git diff --name-only HEAD~1 HEAD)
-  elif [ "$EVENT" == "push" ]; then
-    changed_files=$(git diff --name-only "origin/${BRANCH}...HEAD")
-  else
-    return 1
-  fi
-  
-  if echo "$changed_files" | grep -qE "(Dockerfile|docker-compose\.yml|\.dockerignore)"; then
-    return 0
-  fi
-  
-  return 1
-}
-
 build_containers() {
   start_group "Building Containers"
   
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
   
-  if should_rebuild_nocache; then
-    log_info "Docker configuration changed, rebuilding without cache..."
-    if sudo docker compose build --no-cache 2>&1 | tee -a "$LOG_FILE"; then
-      log_success "Build (no-cache) successful"
-    else
-      log_error "Build failed"
-      end_group
-      exit $EXIT_DOCKER_START_FAILED
-    fi
-  else
-    log_info "Building Docker images..."
-    if sudo docker compose build 2>&1 | tee -a "$LOG_FILE"; then
+  if sudo docker compose build 2>&1 | tee -a "$LOG_FILE"; then
       log_success "Build successful"
-    else
-      log_error "Build failed"
-      end_group
-      exit $EXIT_DOCKER_START_FAILED
-    fi
+  else
+    log_error "Build failed"
+    end_group
+    exit $EXIT_DOCKER_START_FAILED
   fi
   
   end_group

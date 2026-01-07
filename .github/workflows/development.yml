@@ -47,13 +47,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run tests in Docker Compose
-        run: |
-          docker-compose -f docker-compose.prod.yml pull
-          docker-compose -f docker-compose.prod.yml up -d
-          # Add your test commands here
-          docker-compose -f docker-compose.prod.yml down
-
   continious-delivery:
     needs: pull-and-test
     uses: Ghostdog02/Lexiq/.github/workflows/continious-delivery.yml@feature/ci-cd

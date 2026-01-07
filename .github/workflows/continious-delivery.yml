@@ -46,7 +46,11 @@ jobs:
         
       - name: Copy docker-compose file to server
         run: |
-          scp docker-compose.prod.yml ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}:/tmp/docker-compose.yml
+          scp docker-compose.prod.yml ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}:/home/${{ secrets.HETZNER_PROD_USERNAME }}/docker-compose.yml
+
+      - name: Copy nginx.conf to server
+        run: |
+          scp nginx.prod.conf ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}:/home/${{ secrets.HETZNER_PROD_USERNAME }}/nginx.conf
 
       - name: Execute deployment
         env:
