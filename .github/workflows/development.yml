@@ -59,3 +59,16 @@ jobs:
       HETZNER_PROD_SSH_PORT: ${{ secrets.HETZNER_PROD_SSH_PORT }}
       HETZNER_PROD_SSH_KEY_PASSPHRASE: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
 
+  continious-delivery:
+    needs: pull-and-test
+    uses: Ghostdog02/Lexiq/.github/workflows/continious-delivery.yml@feature/ci-cd
+    with:
+      config-path: .github/workflows/continious-delivery.yml
+    secrets:
+      HETZNER_PROD_PRIVATE_SSH_KEY: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+      HETZNER_PROD_HOST: ${{ secrets.HETZNER_PROD_HOST }}
+      HETZNER_PROD_USERNAME: ${{ secrets.HETZNER_PROD_USERNAME }}
+      HETZNER_PROD_SSH_PORT: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+      HETZNER_PROD_SSH_KEY_PASSPHRASE: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

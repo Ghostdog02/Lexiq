@@ -17,6 +17,8 @@ on:
         required: true
       HETZNER_PROD_SSH_PORT:
         required: true
+      GITHUB_TOKEN:
+        required: true
       
 
 env:
@@ -28,16 +30,40 @@ jobs:
       contents: read
       packages: read
 
+   jobs:
+  deploy:
+    permissions:
+      contents: read
+      packages: read
+
     name: Deploy to Hetzner
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout deployment script
+      - name: Checkout code
         uses: actions/checkout@v6
+
+      - name: Copy deployment script to server
+        uses: appleboy/scp-action@v0.1.7
         with:
-          sparse-checkout: |
-            scripts/deploy.sh
-          sparse-checkout-cone-mode: false
+          host: ${{ secrets.HETZNER_PROD_HOST }}
+          username: ${{ secrets.HETZNER_PROD_USERNAME }}
+          key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
+          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          source: "scripts/deploy.sh"
+          target: "/tmp/"
+
+      - name: Copy docker-compose and nginx files to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HETZNER_PROD_HOST }}
+          username: ${{ secrets.HETZNER_PROD_USERNAME }}
+          key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
+          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          source: "docker-compose.prod.yml,nginx.prod.conf"
+          target: "/home/${{ secrets.HETZNER_PROD_USERNAME }}/"
 
       - name: Deploy with Docker Compose to Hetzner (Debian 13)
         uses: appleboy/ssh-action@v1.2.4
@@ -51,34 +77,11 @@ jobs:
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           envs: GITHUB_TOKEN
           command_timeout: 30m
-          script_path: scripts/deploy.sh
-
-      - name: Add server to known hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.HETZNER_PROD_HOST }} >> ~/.ssh/known_hosts
-
-      - name: Copy deployment script to server
-        run: |
-          scp scripts/deploy.sh ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}:/tmp/deploy.sh
-        
-      - name: Copy docker-compose file to server
-        run: |
-          scp docker-compose.prod.yml ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}:/home/${{ secrets.HETZNER_PROD_USERNAME }}/docker-compose.yml
-
-      - name: Copy nginx.conf to server
-        run: |
-          scp nginx.prod.conf ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}:/home/${{ secrets.HETZNER_PROD_USERNAME }}/nginx.conf
-
-      - name: Execute deployment
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ssh ${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }} << 'ENDSSH'
-            export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          script: |
             chmod +x /tmp/deploy.sh
+            mv /home/${{ secrets.HETZNER_PROD_USERNAME }}/docker-compose.prod.yml /home/${{ secrets.HETZNER_PROD_USERNAME }}/docker-compose.yml
+            mv /home/${{ secrets.HETZNER_PROD_USERNAME }}/nginx.prod.conf /home/${{ secrets.HETZNER_PROD_USERNAME }}/nginx.conf
             /tmp/deploy.sh
-          ENDSSH
 
       - name: Cleanup
         if: always()
