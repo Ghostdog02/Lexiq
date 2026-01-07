@@ -83,6 +83,8 @@
               ACTOR="${{ github.actor }}"
               EVENT="${{ github.event_name }}"
               USERNAME="${{ secrets.HETZNER_PROD_USERNAME }}"
+              DOCKER_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
+              DOCKER_USERNAME="${{ github.actor }}"
               # Use \$ to prevent GitHub from expanding these locally
               DEPLOY_DIR="\$HOME_DIR/production"
               LOG_DIR="/var/log/lexiq/deployment"

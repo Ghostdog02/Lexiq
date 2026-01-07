@@ -11,6 +11,7 @@ readonly EXIT_SYSTEM_UPDATE_FAILED=1
 readonly EXIT_FILE_NOT_FOUND=1
 readonly EXIT_GIT_FAILED=2
 readonly EXIT_DOCKER_PULL_FAILED=3
+readonly EXIT_DOCKER_AUTH_FAILED=3
 readonly EXIT_DOCKER_START_FAILED=4
 
 # ============================================================================
@@ -192,6 +193,28 @@ install_dependencies() {
 # DOCKER OPERATIONS
 # ============================================================================
 
+authenticate_docker_registry() {
+  start_group "Docker Registry Authentication"
+  
+  if [ -n "${DOCKER_USERNAME:-}" ] && [ -n "${DOCKER_PASSWORD:-}" ]; then
+    log_info "Authenticating to Docker registry..."
+   if sudo docker login --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1 <<EOF
+$DOCKER_PASSWORD
+EOF
+    then
+      log_success "Docker registry authentication successful"
+    else
+      log_error "Docker registry authentication failed"
+      end_group
+      exit $EXIT_DOCKER_AUTH_FAILED
+    fi
+  else
+    log_warning "Docker registry credentials not provided; skipping authentication"
+  fi
+  
+  end_group
+}
+
 pull_docker_images() {
   start_group "Pulling Docker Images"
   
@@ -358,6 +381,7 @@ main() {
   update_system
   install_dependencies
   
+  authenticate_docker_registry
   pull_docker_images
   stop_containers
   build_containers
