@@ -10,8 +10,8 @@ Thanks to these wonderful people:
 
 ## 👥 Contributors
 
-<a href="https://github.com/YOUR-USERNAME/YOUR-REPO/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=YOUR-USERNAME/YOUR-REPO" />
+<a href="https://github.com/Ghostdog02/Lexiq/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Ghostdog02/Lexiq" />
 </a>
 
 ### Core Team
