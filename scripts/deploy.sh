@@ -6,12 +6,6 @@ set -euo pipefail
 # CONFIGURATION
 # ============================================================================
 
-readonly REPO="${{ github.repository }}"
-readonly BRANCH="${{ github.ref_name }}"
-readonly COMMIT="${{ github.sha }}"
-readonly ACTOR="${{ github.actor }}"
-readonly EVENT="${{ github.event_name }}"
-readonly USERNAME="${{ secrets.HETZNER_PROD_USERNAME }}"
 readonly HOME_DIR="/home/${USERNAME}"
 readonly DEPLOY_DIR="${HOME_DIR}/production"
 readonly LOG_DIR="/var/log/lexiq/deployment"

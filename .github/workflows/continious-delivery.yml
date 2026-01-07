@@ -68,9 +68,15 @@
             envs: GITHUB_TOKEN
             command_timeout: 30m
             script: |
-              chmod +x /tmp/scripts/deploy.sh
-              mv /home/${{ secrets.HETZNER_PROD_USERNAME }}/production/docker-compose.prod.yml /home/${{ secrets.HETZNER_PROD_USERNAME }}/production/docker-compose.yml
-              /tmp/scripts/deploy.sh
+              cat > /tmp/.deploy.env << EOF
+              BRANCH="${{ github.ref_name }}"
+              REPO="${{ github.repository }}"
+              COMMIT="${{ github.sha }}"
+              ACTOR="${{ github.actor }}"
+              EVENT="${{ github.event_name }}"
+              USERNAME="${{ secrets.HETZNER_PROD_USERNAME }}"
+              EOF
+              chmod 600 /tmp/.deploy.env
 
         - name: Cleanup
           if: always()
@@ -83,6 +89,7 @@
             port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
             script: |
               rm -f /tmp/scripts/deploy.sh
+              rm -f /tmp/.deploy.env
 
         - name: Deployment Status
           if: always()
