@@ -10,20 +10,20 @@ updates:
     directory: "/frontend"  # Path to frontend Dockerfile
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 2
 
   - package-ecosystem: "docker"
     directory: "/backend"  # Path to backend Dockerfile
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 2
 
   # Angular/npm dependencies
   - package-ecosystem: "npm"
     directory: "/frontend" 
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]  # Ignore major updates
@@ -32,7 +32,7 @@ updates:
     directory: "/backend"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
@@ -41,4 +41,4 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 2
