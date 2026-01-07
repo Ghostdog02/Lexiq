@@ -19,6 +19,10 @@ env:
 
 jobs:
   deploy:
+    permissions:
+      contents: read
+      packages: read
+
     name: Deploy to Hetzner
     runs-on: ubuntu-latest
     
@@ -30,10 +34,25 @@ jobs:
             scripts/deploy.sh
           sparse-checkout-cone-mode: false
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.1
+      - name: Deploy with Docker Compose to Hetzner (Debian 13)
+        uses: appleboy/ssh-action@v1.2.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          ssh-private-key: ${{ secrets.HETZNER_PROD_SSH_KEY }}
+          host: ${{ secrets.HETZNER_PROD_HOST }}
+          username: ${{ secrets.HETZNER_PROD_USERNAME }}
+          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          envs: GITHUB_TOKEN
+          command_timeout: 30m
+          script_stop: true
+          script_path: ../../scripts/deploy.sh
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.HETZNER_PROD_HOST }} >> ~/.ssh/known_hosts
 
       - name: Copy deployment script to server
         run: |
