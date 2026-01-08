@@ -253,29 +253,13 @@ stop_containers() {
   end_group
 }
 
-build_containers() {
-  start_group "Building Containers"
-  
-  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
-  
-  if docker compose build 2>&1 | tee -a "$LOG_FILE"; then
-      log_success "Build successful"
-  else
-    log_error "Build failed"
-    end_group
-    exit $EXIT_DOCKER_START_FAILED
-  fi
-  
-  end_group
-}
-
 start_containers() {
   start_group "Starting Containers"
   
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
   
   log_info "Starting containers..."
-  if docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
+  if docker compose up -d --wait 2>&1 | tee -a "$LOG_FILE"; then
     log_success "Containers started"
   else
     log_error "Failed to start containers"
@@ -334,7 +318,7 @@ verify_deployment() {
   
   local healthy=true
   
-  local container_ids=$(sudo docker compose ps -q)
+  local container_ids=$(docker compose ps -aq)
   
   if [ -z "$container_ids" ]; then
     log_error "No containers found for this project."
@@ -392,7 +376,6 @@ main() {
   authenticate_docker_registry
   pull_docker_images
   stop_containers
-  build_containers
   start_containers
   
   cleanup_docker
