@@ -83,6 +83,9 @@
               if [ -f "$TARGET_DIR/docker-compose.prod.yml" ]; then
                 mv "$TARGET_DIR/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
                 echo "✅ Renamed docker-compose.prod.yml to docker-compose.yml"
+              elseif [ -f "$TARGET_DIR/docker-compose.yml" ]; then
+                rm "$TARGET_DIR/docker-compose.yml"
+                mv "$TARGET_DIR/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
               else
                 echo "Source file does not exist: $TARGET_DIR/docker-compose.prod.yml"
               fi

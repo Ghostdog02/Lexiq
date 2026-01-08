@@ -121,22 +121,6 @@ trap trap_error ERR
 # INITIALIZATION
 # ============================================================================
 
-copy_docker_compose_file() {
-  start_group "Copying Docker Compose File"
-  local source_file="${DEPLOY_DIR}/docker-compose.prod.yml"
-  local target_file="${DEPLOY_DIR}/docker-compose.yml"
-
-  if [ -f "$source_file" ]; then
-    rm -f "$target_file"
-    mv "$source_file" "$target_file"
-    log_info "Renamed $source_file to $target_file"
-  else
-    log_warning "Source file not found: $source_file"
-  fi
-
-  end_group
-}
-
 initialize() {
   start_group "Initialization"
   
