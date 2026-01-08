@@ -227,7 +227,7 @@ pull_docker_images() {
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_PULL_FAILED
   
   log_info "Pulling latest Docker images..."
-  if sudo -E docker compose pull 2>&1 | tee -a "$LOG_FILE"; then
+  if docker compose pull 2>&1 | tee -a "$LOG_FILE"; then
     log_success "Docker images pulled"
   else
     log_error "Docker pull failed"
@@ -244,7 +244,7 @@ stop_containers() {
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
   
   log_info "Stopping existing containers..."
-  if sudo docker compose down 2>&1 | tee -a "$LOG_FILE"; then
+  if docker compose down 2>&1 | tee -a "$LOG_FILE"; then
     log_success "Containers stopped"
   else
     log_warning "Issue stopping containers"
@@ -258,7 +258,7 @@ build_containers() {
   
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
   
-  if sudo -E docker compose build 2>&1 | tee -a "$LOG_FILE"; then
+  if docker compose build 2>&1 | tee -a "$LOG_FILE"; then
       log_success "Build successful"
   else
     log_error "Build failed"
@@ -275,7 +275,7 @@ start_containers() {
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
   
   log_info "Starting containers..."
-  if sudo -E docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
+  if docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
     log_success "Containers started"
   else
     log_error "Failed to start containers"
@@ -295,7 +295,7 @@ cleanup_docker() {
   start_group "Docker Cleanup"
   
   log_info "Cleaning up unused Docker images..."
-  if sudo docker image prune -f 2>&1 | tee -a "$LOG_FILE"; then
+  if docker image prune -f 2>&1 | tee -a "$LOG_FILE"; then
     log_success "Docker cleanup complete"
   else
     log_warning "Docker cleanup had issues"
