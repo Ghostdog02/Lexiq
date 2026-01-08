@@ -198,14 +198,16 @@ install_dependencies() {
 # DOCKER OPERATIONS
 # ============================================================================
 
+run_docker_login() {
+  echo "$DOCKER_PASSWORD" | sudo docker login "${REGISTRY}/${REPO_LOWER}" --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1
+}
+
 authenticate_docker_registry() {
   start_group "Docker Registry Authentication"
   
   if [ -n "${DOCKER_USERNAME:-}" ] && [ -n "${DOCKER_PASSWORD:-}" ]; then
     log_info "Authenticating to Docker registry as ${DOCKER_USERNAME}..."
-    login=$(echo "$DOCKER_PASSWORD" | sudo docker login "${REGISTRY}/${REPO_LOWER}" --username "$DOCKER_USERNAME" --password-stdin)
-
-    if login > /dev/null 2>&1; then
+    if run_docker_login; then
       log_success "Docker registry authentication successful"
     else
       log_error "Docker registry authentication failed"
