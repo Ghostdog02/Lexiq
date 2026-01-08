@@ -47,11 +47,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-  continious-delivery:
+  continuous-delivery:
     needs: pull-and-test
-    uses: Ghostdog02/Lexiq/.github/workflows/continious-delivery.yml@feature/ci-cd
+    uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@feature/ci-cd
     with:
-      config-path: .github/workflows/continious-delivery.yml
+      config-path: .github/workflows/continuous-delivery.yml
     secrets:
       HETZNER_PROD_PRIVATE_SSH_KEY: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
       HETZNER_PROD_HOST: ${{ secrets.HETZNER_PROD_HOST }}

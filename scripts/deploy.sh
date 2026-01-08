@@ -209,7 +209,7 @@ authenticate_docker_registry() {
   
   if [ -n "${DOCKER_USERNAME:-}" ] && [ -n "${DOCKER_PASSWORD:-}" ]; then
     log_info "Authenticating to Docker registry..."
-   if sudo docker login --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1 <<"EOF"
+   if echo "$DOCKER_PASSWORD" | sudo docker login --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1; then
 $DOCKER_PASSWORD
 EOF
     then

@@ -1,4 +1,4 @@
-  name: Deploy to Production
+  name: "Continuous Delivery"
 
   on:
     workflow_call:
@@ -25,6 +25,8 @@
     deploy:
       permissions:
         packages: read
+        issues: write
+        contents: write
 
       name: Deploy to Hetzner
       runs-on: ubuntu-latest
