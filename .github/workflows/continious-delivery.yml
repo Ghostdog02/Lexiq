@@ -56,39 +56,43 @@
 
         - name: Deploy with Docker Compose to Hetzner (Debian 13)
           uses: appleboy/ssh-action@v1.2.4
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
             host: ${{ secrets.HETZNER_PROD_HOST }}
             username: ${{ secrets.HETZNER_PROD_USERNAME }}
             key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
             passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
             port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-            envs: GITHUB_TOKEN
             command_timeout: 30m
             script: |
+              set
               TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+
+              mkdir -p "$TARGET_DIR"
+              sudo mkdir -p /var/log/lexiq/deployment
+              sudo chown -R ${{ secrets.HETZNER_PROD_USERNAME }}:${{ secrets.HETZNER_PROD_USERNAME }} /var/log/lexiq
+
               # Rename the file safely (only if the source exists)
               if [ -f "$TARGET_DIR/docker-compose.prod.yml" ]; then
                 mv "$TARGET_DIR/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
+                echo "✅ Renamed docker-compose.prod.yml to docker-compose.yml"
               else
                 echo "Source file does not exist: $TARGET_DIR/docker-compose.prod.yml"
               fi
+
               cat > /tmp/.deploy.env << EOF
               HOME_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}"
               BRANCH="${{ github.ref_name }}"
               REPO="${{ github.repository }}"
               COMMIT="${{ github.sha }}"
               ACTOR="${{ github.actor }}"
-              EVENT="${{ github.event_name }}"
               USERNAME="${{ secrets.HETZNER_PROD_USERNAME }}"
               DOCKER_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
               DOCKER_USERNAME="${{ github.actor }}"
-              # Use \$ to prevent GitHub from expanding these locally
-              DEPLOY_DIR="\$HOME_DIR/production"
+              DEPLOY_DIR="${TARGET_DIR}"
               LOG_DIR="/var/log/lexiq/deployment"
-              LOG_FILE="\$LOG_DIR/deploy-\$(date +%Y%m%d-%H%M%S).log"
+              LOG_FILE="\${LOG_DIR}/deploy-\$(date +%Y%m%d-%H%M%S).log"
               EOF
+              
               chmod 600 /tmp/.deploy.env
               bash /tmp/scripts/deploy.sh
 
