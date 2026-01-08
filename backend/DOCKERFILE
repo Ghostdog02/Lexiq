@@ -17,6 +17,11 @@ RUN dotnet publish ./Backend.Api.csproj -c Debug -o /app/publish
 # final stage/image
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
 COPY --from=publish /app/publish .
 
 EXPOSE 80

@@ -127,10 +127,9 @@ copy_docker_compose_file() {
   local target_file="${DEPLOY_DIR}/docker-compose.yml"
 
   if [ -f "$source_file" ]; then
+    rm -f "$target_file"
     mv "$source_file" "$target_file"
     log_info "Renamed $source_file to $target_file"
-  elif [ -f "$target_file" ]; then
-    log_info "File $target_file already exists. No rename needed."
   else
     log_warning "Source file not found: $source_file"
   fi
