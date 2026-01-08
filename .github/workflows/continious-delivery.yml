@@ -24,7 +24,6 @@
   jobs:
     deploy:
       permissions:
-        contents: read
         packages: read
 
       name: Deploy to Hetzner

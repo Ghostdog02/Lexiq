@@ -5,6 +5,8 @@ set -euo pipefail
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
+readonly ENVIRONMENT_FILE="/tmp/.deploy.env"
+
 # Exit codes
 readonly EXIT_SUCCESS=0
 readonly EXIT_SYSTEM_UPDATE_FAILED=1
@@ -198,7 +200,7 @@ authenticate_docker_registry() {
   
   if [ -n "${DOCKER_USERNAME:-}" ] && [ -n "${DOCKER_PASSWORD:-}" ]; then
     log_info "Authenticating to Docker registry..."
-   if sudo docker login --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1 <<EOF
+   if sudo docker login --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1 <<"EOF"
 $DOCKER_PASSWORD
 EOF
     then
