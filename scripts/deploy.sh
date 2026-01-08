@@ -227,7 +227,7 @@ pull_docker_images() {
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_PULL_FAILED
   
   log_info "Pulling latest Docker images..."
-  if TAG=${BRANCH} sudo docker compose pull 2>&1 | tee -a "$LOG_FILE"; then
+  if sudo -E docker compose pull 2>&1 | tee -a "$LOG_FILE"; then
     log_success "Docker images pulled"
   else
     log_error "Docker pull failed"
@@ -258,7 +258,7 @@ build_containers() {
   
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
   
-  if TAG=${BRANCH} sudo docker compose build 2>&1 | tee -a "$LOG_FILE"; then
+  if sudo -E docker compose build 2>&1 | tee -a "$LOG_FILE"; then
       log_success "Build successful"
   else
     log_error "Build failed"
@@ -275,7 +275,7 @@ start_containers() {
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
   
   log_info "Starting containers..."
-  if TAG=${BRANCH} sudo docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
+  if sudo -E docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
     log_success "Containers started"
   else
     log_error "Failed to start containers"
