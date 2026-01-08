@@ -48,6 +48,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
   continuous-delivery:
+    permissions:
+      packages: read
+      issues: write
+      contents: write
+      
     needs: pull-and-test
     uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@feature/ci-cd
     with:

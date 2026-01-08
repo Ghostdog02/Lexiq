@@ -23,11 +23,6 @@
 
   jobs:
     deploy:
-      permissions:
-        packages: read
-        issues: write
-        contents: write
-
       name: Deploy to Hetzner
       runs-on: ubuntu-latest
       steps:
