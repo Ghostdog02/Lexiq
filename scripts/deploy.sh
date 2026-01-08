@@ -202,8 +202,8 @@ authenticate_docker_registry() {
   start_group "Docker Registry Authentication"
   
   if [ -n "${DOCKER_USERNAME:-}" ] && [ -n "${DOCKER_PASSWORD:-}" ]; then
-    log_info "Authenticating to Docker registry..."
-    if echo "$DOCKER_PASSWORD" | sudo docker login --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1; then
+    log_info "Authenticating to Docker registry as ${DOCKER_USERNAME}..."
+    if echo "$DOCKER_PASSWORD" | sudo docker login ghcr.io/"${REPO_LOWER}" --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1; then
       log_success "Docker registry authentication successful"
     else
       log_error "Docker registry authentication failed"
