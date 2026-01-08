@@ -199,7 +199,7 @@ install_dependencies() {
 # ============================================================================
 
 run_docker_login() {
-  echo "$DOCKER_PASSWORD" | sudo docker login "${REGISTRY}/${REPO_LOWER}" --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1
+  echo "$DOCKER_PASSWORD" | docker login "${REGISTRY}/${REPO_LOWER}" --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1
 }
 
 authenticate_docker_registry() {
@@ -281,7 +281,7 @@ start_containers() {
     log_error "Failed to start containers"
     
     echo "::group::Container Logs"
-    sudo docker compose logs --tail=100 2>&1 | tee -a "$LOG_FILE"
+    docker compose logs --tail=100 2>&1 | tee -a "$LOG_FILE"
     echo "::endgroup::"
     
     end_group
@@ -310,7 +310,7 @@ show_container_status() {
   cd "$DEPLOY_DIR" || return
   
   log_info "Current container status:"
-  sudo docker compose ps 2>&1 | tee -a "$LOG_FILE"
+  docker compose ps 2>&1 | tee -a "$LOG_FILE"
   
   end_group
 }
