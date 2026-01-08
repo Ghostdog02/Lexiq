@@ -90,7 +90,7 @@
               LOG_FILE="\$LOG_DIR/deploy-\$(date +%Y%m%d-%H%M%S).log"
               EOF
               chmod 600 /tmp/.deploy.env
-              bash /tmp/deploy.sh
+              bash /tmp/scripts/deploy.sh
 
         - name: Cleanup
           if: always()
