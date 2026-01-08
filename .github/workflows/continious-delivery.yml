@@ -89,8 +89,6 @@
               DOCKER_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
               DOCKER_USERNAME="${{ github.actor }}"
               DEPLOY_DIR="${TARGET_DIR}"
-              LOG_DIR="/var/log/lexiq/deployment"
-              LOG_FILE="${LOG_DIR}/deploy-\$(date +%Y%m%d-%H%M%S).log"
               EOF
               
               chmod 600 /tmp/.deploy.env

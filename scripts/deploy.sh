@@ -6,6 +6,9 @@ set -euo pipefail
 # CONFIGURATION
 # ============================================================================
 readonly ENVIRONMENT_FILE="/tmp/.deploy.env"
+LOG_DIR="/var/log/lexiq/deployment"
+LOG_FILE=""
+
 
 # Exit codes
 readonly EXIT_SUCCESS=0
@@ -80,6 +83,9 @@ load_env() {
     log_error "Environment file $ENVIRONMENT_FILE not found"
     exit $EXIT_FILE_NOT_FOUND
   fi
+
+  # Set global variables
+  LOG_FILE="${LOG_DIR}/deploy-\$(date +%Y%m%d-%H%M%S).log"
 
   end_group
 }
