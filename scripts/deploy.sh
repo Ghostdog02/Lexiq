@@ -73,7 +73,11 @@ end_group() {
 # ============================================================================
 # LOAD ENVIRONMENT VARIABLES
 # ============================================================================
+
 load_env() {
+  # Set global variables
+  LOG_FILE="${LOG_DIR}/deploy-\$(date +%Y%m%d-%H%M%S).log"
+  
   start_group "Loading Environment Variables"
 
   if [ -f "$ENVIRONMENT_FILE" ]; then
@@ -83,9 +87,6 @@ load_env() {
     log_error "Environment file $ENVIRONMENT_FILE not found"
     exit $EXIT_FILE_NOT_FOUND
   fi
-
-  # Set global variables
-  LOG_FILE="${LOG_DIR}/deploy-\$(date +%Y%m%d-%H%M%S).log"
 
   end_group
 }
