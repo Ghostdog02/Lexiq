@@ -85,6 +85,7 @@
               REPO="${{ github.repository }}"
               COMMIT="${{ github.sha }}"
               ACTOR="${{ github.actor }}"
+              EVENT="${{ github.event_name }}"
               USERNAME="${{ secrets.HETZNER_PROD_USERNAME }}"
               DOCKER_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
               DOCKER_USERNAME="${{ github.actor }}"

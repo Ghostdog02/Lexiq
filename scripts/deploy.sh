@@ -7,7 +7,7 @@ set -euo pipefail
 # ============================================================================
 readonly ENVIRONMENT_FILE="/tmp/.deploy.env"
 LOG_DIR="/var/log/lexiq/deployment"
-LOG_FILE=""
+LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"  
 
 
 # Exit codes
@@ -75,10 +75,12 @@ end_group() {
 # ============================================================================
 
 load_env() {
-  # Set global variables
-  LOG_FILE="${LOG_DIR}/deploy-\$(date +%Y%m%d-%H%M%S).log"
-  
   start_group "Loading Environment Variables"
+
+  if [ ! -d "$LOG_DIR" ]; then
+    sudo mkdir -p "$LOG_DIR"
+    log_info "Created log directory: ${LOG_DIR}"
+  fi
 
   if [ -f "$ENVIRONMENT_FILE" ]; then
     . "$ENVIRONMENT_FILE"
