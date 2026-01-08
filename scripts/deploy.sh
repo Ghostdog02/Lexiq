@@ -203,7 +203,9 @@ authenticate_docker_registry() {
   
   if [ -n "${DOCKER_USERNAME:-}" ] && [ -n "${DOCKER_PASSWORD:-}" ]; then
     log_info "Authenticating to Docker registry as ${DOCKER_USERNAME}..."
-    if echo "$DOCKER_PASSWORD" | sudo docker login ghcr.io/"${REPO_LOWER}" --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1; then
+    login=$(echo "$DOCKER_PASSWORD" | sudo docker login "${REGISTRY}/${REPO_LOWER}" --username "$DOCKER_USERNAME" --password-stdin)
+
+    if login > /dev/null 2>&1; then
       log_success "Docker registry authentication successful"
     else
       log_error "Docker registry authentication failed"
@@ -223,7 +225,7 @@ pull_docker_images() {
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_PULL_FAILED
   
   log_info "Pulling latest Docker images..."
-  if sudo docker compose pull 2>&1 | tee -a "$LOG_FILE"; then
+  if TAG=${BRANCH} sudo docker compose pull 2>&1 | tee -a "$LOG_FILE"; then
     log_success "Docker images pulled"
   else
     log_error "Docker pull failed"
@@ -254,7 +256,7 @@ build_containers() {
   
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
   
-  if sudo docker compose build 2>&1 | tee -a "$LOG_FILE"; then
+  if TAG=${BRANCH} sudo docker compose build 2>&1 | tee -a "$LOG_FILE"; then
       log_success "Build successful"
   else
     log_error "Build failed"
@@ -271,7 +273,7 @@ start_containers() {
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
   
   log_info "Starting containers..."
-  if sudo docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
+  if TAG=${BRANCH} sudo docker compose up -d 2>&1 | tee -a "$LOG_FILE"; then
     log_success "Containers started"
   else
     log_error "Failed to start containers"
@@ -379,6 +381,8 @@ main() {
   load_env
 
   initialize
+  
+  export TAG="${BRANCH}"
   
   update_system
   install_dependencies

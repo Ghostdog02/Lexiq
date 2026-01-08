@@ -34,6 +34,12 @@
         - name: Set lowercase repo name
           run: echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+        - name: Replace all slashesh with dashes
+          run: |
+            BRANCH="${{ github.ref_name }}"
+            BRANCH="${BRANCH//\//-}"
+            echo "BRANCH=$BRANCH" >> $GITHUB_ENV
+
         - name: Copy deployment script to server
           uses: appleboy/scp-action@v0.1.7
           with:
@@ -94,6 +100,7 @@
               DEPLOY_DIR="${TARGET_DIR}"
               REGISTRY=${{ env.REGISTRY }}
               REPO_LOWER=${{ env.REPO_LOWER }}
+              BRANCH=${{ env.BRANCH }}
               EOF
               
               chmod 600 /tmp/.deploy.env
