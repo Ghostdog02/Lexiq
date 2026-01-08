@@ -146,12 +146,6 @@ initialize() {
   log_info "Triggered by: ${ACTOR}"
   log_info "Event: ${EVENT}"
   
-  # Create log directory
-  if [ ! -d "$LOG_DIR" ]; then
-    sudo mkdir -p "$LOG_DIR"
-    log_info "Created log directory: ${LOG_DIR}"
-  fi
-  
   log_info "Log file: ${LOG_FILE}"
 
   copy_docker_compose_file
@@ -209,10 +203,7 @@ authenticate_docker_registry() {
   
   if [ -n "${DOCKER_USERNAME:-}" ] && [ -n "${DOCKER_PASSWORD:-}" ]; then
     log_info "Authenticating to Docker registry..."
-   if echo "$DOCKER_PASSWORD" | sudo docker login --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1; then
-$DOCKER_PASSWORD
-EOF
-    then
+    if echo "$DOCKER_PASSWORD" | sudo docker login --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1; then
       log_success "Docker registry authentication successful"
     else
       log_error "Docker registry authentication failed"
