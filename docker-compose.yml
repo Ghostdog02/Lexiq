@@ -12,17 +12,20 @@ services:
     container_name: lexiq-database
     environment:
       ACCEPT_EULA: "Y"
+      SA_PASSWORD: /run/secrets/db_password
     secrets: 
       - db_password
-    volumes:services:
+    volumes:
+      - db-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "$$(cat /run/secrets/db_password)", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
   backend:
     image: ghcr.io/ghostdog02/lexiq-backend:${TAG:-latest}
-    build:
-      context: ./backend
-      dockerfile: DOCKERFILE
-  
-  backend:
-    image: ghcr.io/ghostdog02/lexiq-backend:${TAG}
     build:
       context: ./backend
       dockerfile: DOCKERFILE
@@ -41,7 +44,7 @@ services:
       retries: 3
 
   frontend:
-    image: ghcr.io/ghostdog02/lexiq-frontend:${TAG}
+    image: ghcr.io/ghostdog02/lexiq-frontend:${TAG:-latest}
     build:
       context: ./frontend
       dockerfile: DOCKERFILE
