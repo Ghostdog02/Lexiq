@@ -75,19 +75,12 @@
               set
               TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
 
-              mkdir -p "$TARGET_DIR"
-              sudo mkdir -p /var/log/lexiq/deployment
-              sudo chown -R ${{ secrets.HETZNER_PROD_USERNAME }}:${{ secrets.HETZNER_PROD_USERNAME }} /var/log/lexiq
-
-              # Rename the file safely (only if the source exists)
               if [ -f "$TARGET_DIR/docker-compose.prod.yml" ]; then
-                mv "$TARGET_DIR/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
-                echo "✅ Renamed docker-compose.prod.yml to docker-compose.yml"
-              elseif [ -f "$TARGET_DIR/docker-compose.yml" ]; then
-                rm "$TARGET_DIR/docker-compose.yml"
-                mv "$TARGET_DIR/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
+                mv -f "$TARGET_DIR/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
+                echo "✅ Deployed docker-compose.yml"
               else
-                echo "Source file does not exist: $TARGET_DIR/docker-compose.prod.yml"
+                echo "❌ Error: docker-compose.prod.yml not found"
+                exit 1
               fi
 
               cat > /tmp/.deploy.env << EOF

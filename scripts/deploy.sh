@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -eEuo pipefail
 
 # ============================================================================
 # CONFIGURATION
@@ -14,7 +14,6 @@ LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"
 readonly EXIT_SUCCESS=0
 readonly EXIT_SYSTEM_UPDATE_FAILED=1
 readonly EXIT_FILE_NOT_FOUND=1
-readonly EXIT_GIT_FAILED=2
 readonly EXIT_DOCKER_PULL_FAILED=3
 readonly EXIT_DOCKER_AUTH_FAILED=3
 readonly EXIT_DOCKER_START_FAILED=4
@@ -27,7 +26,8 @@ log() {
   local level="$1"      # First argument: "error", "warning", or "notice"
   shift                 # Remove first argument, leaving only the message parts
   local message="$*"    # Combine all remaining arguments into one string
-  local timestamp="$(date +'%Y-%m-%d %H:%M:%S')"
+  local timestamp
+  timestamp=$(date +"%Y-%m-%d %H:%M:%S")
   
   echo "[${timestamp}] ${message}" | tee -a "$LOG_FILE"
   
@@ -301,7 +301,8 @@ verify_deployment() {
   
   local healthy=true
   
-  local container_ids=$(docker compose ps -aq)
+  local container_ids
+  container_ids=$(sudo docker compose ps -q)
   
   if [ -z "$container_ids" ]; then
     log_error "No containers found for this project."
@@ -311,11 +312,15 @@ verify_deployment() {
 
   for id in $container_ids; do
     # Get Name, Status, and Health in one go
-    local info=$(sudo docker inspect --format='{{.Name}}|{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$id")
+    local info
+    info=$(sudo docker inspect --format='{{.Name}}|{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$id")
     
-    local name=$(echo "$info" | cut -d'|' -f1 | sed 's/\///')
-    local status=$(echo "$info" | cut -d'|' -f2)
-    local health=$(echo "$info" | cut -d'|' -f3)
+    local name
+    name=$(echo "$info" | cut -d'|' -f1 | sed 's/\///')
+    local status
+    status=$(echo "$info" | cut -d'|' -f2)
+    local health
+    health=$(echo "$info" | cut -d'|' -f3)
     
     if [ "$status" = "running" ]; then
       if [ "$health" = "unhealthy" ]; then
@@ -345,14 +350,16 @@ verify_deployment() {
 # ============================================================================
 
 main() {
-  local start_time=$(date +%s)
+  local start_time
+  start_time=$(date +%s)
 
   load_env
 
   initialize
   
-  export TAG="${BRANCH}"
-  
+  TAG="${BRANCH}"
+  export TAG
+
   update_system
   install_dependencies
   
@@ -365,8 +372,10 @@ main() {
   show_container_status
   verify_deployment
   
-  local end_time=$(date +%s)
-  local duration=$((end_time - start_time))
+  local end_time
+  end_time=$(date +%s)
+  local duration
+  duration=$((end_time - start_time))
   
   start_group "Deployment Summary"
   log_success "Deployment completed successfully"
