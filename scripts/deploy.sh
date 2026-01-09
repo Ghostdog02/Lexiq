@@ -131,8 +131,6 @@ initialize() {
   
   log_info "Log file: ${LOG_FILE}"
 
-  copy_docker_compose_file
-
   end_group
 }
 
