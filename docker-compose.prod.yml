@@ -42,7 +42,7 @@ services:
       db: 
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:5000/ || exit 1"]
+      test: ["CMD-SHELL", "curl --fail --silent http://backend:5000/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -61,7 +61,7 @@ services:
       - ./certbot/www:/var/www/certbot
     user: nginx
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent http://127.0.0.1:8080/ || exit 1"]
+      test: ["CMD-SHELL", "curl --fail --silent http://frontend:8080/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
