@@ -355,9 +355,8 @@ main() {
 
   initialize
   
-  TAG="${BRANCH}"
-  export TAG
-
+  export TAG="${BRANCH}"
+  
   update_system
   install_dependencies
   
