@@ -102,6 +102,17 @@
               chmod 600 /tmp/.deploy.env
               bash /tmp/scripts/deploy.sh
 
+        - name: Verify Deployment
+          if: always()
+          uses: appleboy/ssh-action@v1.2.4
+          with:
+            host: ${{ secrets.HETZNER_PROD_HOST }}
+            username: ${{ secrets.HETZNER_PROD_USERNAME }}
+            key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+            passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+            port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+            script_path: ./scripts/verify_deployment.sh
+
         - name: Cleanup
           if: always()
           uses: appleboy/ssh-action@v1.2.4
@@ -114,6 +125,15 @@
             script: |
               rm -f /tmp/scripts/deploy.sh
               rm -f /tmp/.deploy.env
+
+              echo "::group::Docker Cleanup"
+              echo "Cleaning up unused Docker images..."
+              if docker image prune -f; then
+                echo "✅ Docker cleanup complete"
+              else
+                echo "⚠️ Docker cleanup had issues"
+              fi
+              echo "::endgroup::"
 
         - name: Deployment Success Notice
           if: success() 

@@ -256,96 +256,6 @@ start_containers() {
   end_group
 }
 
-cleanup_docker() {
-  start_group "Docker Cleanup"
-  
-  log_info "Cleaning up unused Docker images..."
-  if docker image prune -f 2>&1 | tee -a "$LOG_FILE"; then
-    log_success "Docker cleanup complete"
-  else
-    log_warning "Docker cleanup had issues"
-  fi
-  
-  end_group
-}
-
-show_container_status() {
-  start_group "Container Status"
-  
-  cd "$DEPLOY_DIR" || return
-  
-  log_info "Current container status:"
-  docker compose ps 2>&1 | tee -a "$LOG_FILE"
-  
-  end_group
-}
-
-# ============================================================================
-# HEALTH CHECKS
-# ============================================================================
-
-verify_deployment() {
-  start_group "Deployment Verification"
-  
-  # Ensure DEPLOY_DIR is valid
-  if [ -z "$DEPLOY_DIR" ] || [ ! -d "$DEPLOY_DIR" ]; then
-    log_error "Deployment directory $DEPLOY_DIR not found"
-    return 1
-  fi
-
-  cd "$DEPLOY_DIR" || return
-  
-  log_info "Checking container health..."
-  
-  local healthy=true
-  
-  local container_ids
-  container_ids=$(sudo docker compose ps -q)
-  
-  if [ -z "$container_ids" ]; then
-    log_error "No containers found for this project."
-    end_group
-    return 1
-  fi
-
-  for id in $container_ids; do
-    # Get Name, Status, and Health in one go
-    local info
-    info=$(sudo docker inspect --format='{{.Name}}|{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$id")
-    
-    local name
-    name=$(echo "$info" | cut -d'|' -f1 | sed 's/\///')
-    local status
-    status=$(echo "$info" | cut -d'|' -f2)
-    local health
-    health=$(echo "$info" | cut -d'|' -f3)
-    
-    if [ "$status" = "running" ]; then
-      if [ "$health" = "unhealthy" ]; then
-        log_error "Container $name is RUNNING but UNHEALTHY"
-        healthy=false
-        echo "::group::Logs for container $name"
-        sudo docker logs "$id" 2>&1 | tee -a "$LOG_FILE"
-        echo "::endgroup::"
-      else
-        log_success "Container $name is $status ($health)"
-      fi
-    else
-      log_error "Container $name is NOT running (State: $status)"
-      healthy=false
-    fi
-  done
-  
-  if [ "$healthy" = true ]; then
-    log_success "All containers are healthy"
-  else
-    log_error "Some containers failed health checks"
-    exit 1
-  fi
-  
-  end_group
-}
-
 # ============================================================================
 # MAIN DEPLOYMENT FLOW
 # ============================================================================
@@ -367,11 +277,7 @@ main() {
   pull_docker_images
   stop_containers
   start_containers
-  
-  cleanup_docker
-  show_container_status
-  verify_deployment
-  
+
   local end_time
   end_time=$(date +%s)
   local duration
