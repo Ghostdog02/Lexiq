@@ -324,6 +324,9 @@ verify_deployment() {
       if [ "$health" = "unhealthy" ]; then
         log_error "Container $name is RUNNING but UNHEALTHY"
         healthy=false
+        echo "::group::Logs for container $name"
+        sudo docker logs "$id" 2>&1 | tee -a "$LOG_FILE"
+        echo "::endgroup::"
       else
         log_success "Container $name is $status ($health)"
       fi
