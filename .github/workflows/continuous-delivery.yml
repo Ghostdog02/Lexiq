@@ -59,7 +59,7 @@
             key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
             passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
             port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-            source: "scripts/verify_deployment.sh"
+            source: "scripts/verify-deployment.sh"
             target: "/tmp/"
 
         - name: Copy docker-compose and nginx files to server
