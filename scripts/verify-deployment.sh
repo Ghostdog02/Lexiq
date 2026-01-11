@@ -99,7 +99,7 @@ verify_deployment() {
     
     if [ "$status" = "running" ]; then
       if [ "$health" = "unhealthy" ]; then
-        log_error "Container $name is RUNNING but UNHEALTHY"
+        log_warning "Container $name is RUNNING but UNHEALTHY"
         healthy=false
         
         start_group "Logs for container $name"
@@ -113,7 +113,7 @@ verify_deployment() {
         log_success "Container $name is $status ($health)"
       fi
     else
-      log_error "Container $name is NOT running (State: $status)"
+      log_warning "Container $name is NOT running (State: $status)"
       healthy=false
 
       start_group "Logs for failed container $name"
@@ -125,7 +125,7 @@ verify_deployment() {
   if [ "$healthy" = true ]; then
     log_success "All containers are healthy"
   else
-    log_error "Some containers failed health checks"
+    log_warning "Some containers failed health checks"
     
     start_group "Overall Container Status"
     docker compose ps -a

@@ -3,8 +3,6 @@ secrets:
     file: ./secrets/database/password.txt
   backend_env:
     file: ./secrets/backend/.env
-  frontend_env:
-    file: ./secrets/frontend/.env
 
 services:
   db:
@@ -30,6 +28,7 @@ services:
       retries: 10
       start_period: 30s
       timeout: 3s
+    restart: unless-stopped
   
   backend:
     image: ghcr.io/ghostdog02/lexiq-backend:${TAG:-latest}
@@ -47,6 +46,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    restart: unless-stopped
 
   frontend:
     image: ghcr.io/ghostdog02/lexiq-frontend:${TAG:-latest}
@@ -58,15 +58,15 @@ services:
       backend: 
         condition: service_healthy
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    user: nginx
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent --insecure https://localhost:8080/ || exit 1"]
+      test: ["CMD-SHELL", "curl --fail --silent --insecure https://localhost:443/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+    restart: unless-stopped 
 
 volumes:
   db-data:
