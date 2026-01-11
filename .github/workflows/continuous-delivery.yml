@@ -123,8 +123,8 @@
             passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
             port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
             script: |
-              export TARRGET_DIR
-              TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+              DEPLOY_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+              export DEPLOY_DIR
 
               bash /tmp/scripts/verify-deployment.sh
 
