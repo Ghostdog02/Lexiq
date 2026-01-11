@@ -61,7 +61,7 @@ services:
       - ./certbot/www:/var/www/certbot
     user: nginx
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent http://frontend:8080/ || exit 1"]
+      test: ["CMD-SHELL", "curl --fail --silent --insecure https://localhost:8080/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
