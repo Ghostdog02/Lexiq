@@ -122,7 +122,11 @@
             key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
             passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
             port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-            script_path: ./scripts/verify-deployment.sh
+            script: |
+              export TARRGET_DIR
+              TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+
+              bash /tmp/scripts/verify-deployment.sh
 
         - name: Cleanup
           if: always()
