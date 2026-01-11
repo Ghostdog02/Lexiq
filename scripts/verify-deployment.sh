@@ -57,21 +57,6 @@ end_group() {
 }
 
 # ============================================================================
-# CONTAINER STATUS
-# ============================================================================
-
-show_container_status() {
-  start_group "Container Status"
-  
-  cd "$DEPLOY_DIR" || return
-  
-  log_info "Current container status:"
-  docker compose ps -a 2>&1 | tee -a "$LOG_FILE"
-  
-  end_group
-}
-
-# ============================================================================
 # HEALTH CHECKS
 # ============================================================================
 
@@ -92,7 +77,7 @@ verify_deployment() {
   healthy=true
   
   local container_ids
-  container_ids=$(sudo docker compose ps -q)
+  container_ids=$(docker compose ps -q)
   
   if [ -z "$container_ids" ]; then
     log_error "No containers found for this project."
@@ -103,7 +88,7 @@ verify_deployment() {
   for id in $container_ids; do
     # Get Name, Status, and Health in one go
     local info
-    info=$(sudo docker inspect --format='{{.Name}}|{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$id")
+    info=$(docker inspect --format='{{.Name}}|{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' "$id")
     
     local name
     name=$(echo "$info" | cut -d'|' -f1 | sed 's/\///')
@@ -116,15 +101,24 @@ verify_deployment() {
       if [ "$health" = "unhealthy" ]; then
         log_error "Container $name is RUNNING but UNHEALTHY"
         healthy=false
-        echo "::group::Logs for container $name"
-        sudo docker logs "$id" 2>&1 | tee -a "$LOG_FILE"
-        echo "::endgroup::"
+        
+        start_group "Logs for container $name"
+        docker logs --tail 100 "$id" 2>&1 || echo "Failed to retrieve logs"
+        end_group
+        
+        start_group "Health check details for $name"
+        docker inspect --format='{{json .State.Health}}' "$id" | jq '.' || echo "No health check info"
+        end_group
       else
         log_success "Container $name is $status ($health)"
       fi
     else
       log_error "Container $name is NOT running (State: $status)"
       healthy=false
+
+      start_group "Logs for failed container $name"
+      docker logs --tail 100 "$id" 2>&1 || echo "Failed to retrieve logs"
+      end_group
     fi
   done
   
@@ -132,6 +126,11 @@ verify_deployment() {
     log_success "All containers are healthy"
   else
     log_error "Some containers failed health checks"
+    
+    start_group "Overall Container Status"
+    docker compose ps -a
+    end_group
+    
     exit 1
   fi
   
