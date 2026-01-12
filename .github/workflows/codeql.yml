@@ -54,12 +54,12 @@ jobs:
     
     - name: Build
       if: matrix.language == 'csharp'
-      working-directory: Backend
+      working-directory: backend
       run: dotnet build Backend.Api.csproj --configuration Release --no-restore
     
     - name: Test
       if: matrix.language == 'csharp'
-      working-directory: Backend
+      working-directory: backend
       run: dotnet test --no-restore --verbosity normal
       
     - name: Perform CodeQL Analysis
