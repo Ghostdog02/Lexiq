@@ -50,7 +50,7 @@ jobs:
     # Restore NuGet packages
     - name: Restore dependencies
       if: matrix.language == 'csharp'
-      run: dotnet restore --use-lock-file
+      run: dotnet restore backend/Backend.Api.csproj --use-lock-file
     
     # Build the ASP.NET project
     - name: Build ASP.NET application
