@@ -9,14 +9,18 @@ public class BackendDbContext(DbContextOptions options)
     : IdentityDbContext<User, IdentityRole, string>(options)
 {
     public DbSet<Language> Languages { get; set; }
-    public DbSet<Course> Courses { get; set; }
-    public DbSet<Module> Modules { get; set; }
-    public DbSet<Lesson> Lessons { get; set; }
-    public DbSet<Exercise> Exercises { get; set; }
-    public DbSet<Question> Questions { get; set; }
-    public DbSet<QuestionOption> QuestionOptions { get; set; }
-    public DbSet<UserLanguage> UserLanguages { get; set; }
 
+    public DbSet<Course> Courses { get; set; }
+
+    public DbSet<Lesson> Lessons { get; set; }
+
+    public DbSet<Exercise> Exercises { get; set; }
+
+    public DbSet<Question> Questions { get; set; }
+
+    public DbSet<QuestionOption> QuestionOptions { get; set; }
+
+    public DbSet<UserLanguage> UserLanguages { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -56,7 +60,7 @@ public class BackendDbContext(DbContextOptions options)
         {
             entity.ToTable("UserTokens");
         });
-        
+
         modelBuilder.Entity<IdentityRoleClaim<string>>(entity =>
         {
             entity.ToTable("RoleClaims");
@@ -71,12 +75,14 @@ public class BackendDbContext(DbContextOptions options)
         {
             entity.HasKey(ul => new { ul.UserId, ul.LanguageId });
 
-            entity.HasOne(ul => ul.User)
+            entity
+                .HasOne(ul => ul.User)
                 .WithMany(u => u.UserLanguages)
                 .HasForeignKey(ul => ul.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(ul => ul.Language)
+            entity
+                .HasOne(ul => ul.Language)
                 .WithMany(l => l.UserLanguages)
                 .HasForeignKey(ul => ul.LanguageId)
                 .OnDelete(DeleteBehavior.Cascade);
