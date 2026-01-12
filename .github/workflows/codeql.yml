@@ -1,0 +1,62 @@
+name: "CodeQL Advanced"
+
+on:
+  push:
+    branches: [ "master", "feature/lexiq-api" ]
+  pull_request:
+    branches: [ "master", "feature/lexiq-api" ]
+  schedule:
+    - cron: '39 19 * * 6'
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    permissions:
+      security-events: write
+      packages: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - language: csharp
+          build-mode: manual
+        - language: javascript-typescript
+          build-mode: none
+    env:
+        NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v4
+      with:
+        languages: ${{ matrix.language }}
+        build-mode: ${{ matrix.build-mode }}
+
+    - name: Setup .NET
+      if: matrix.language == 'csharp'
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: '10.0.x'
+        dotnet-quality: 'validated'
+        cache: true
+    
+    # Restore NuGet packages
+    - name: Restore dependencies
+      if: matrix.language == 'csharp'
+      run: dotnet restore
+    
+    # Build the ASP.NET project
+    - name: Build ASP.NET application
+      if: matrix.language == 'csharp'
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v4
+      with:
+        category: "/language:${{matrix.language}}"

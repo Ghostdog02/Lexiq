@@ -37,8 +37,6 @@ export class GoogleLoginComponent implements AfterViewInit {
   }
 
   handleCredentialResponse(response: any) {
-    console.log('Google credential:', response.credential);
-
     this.authService.loginUserWithGoogle(response.credential);
   }
 }

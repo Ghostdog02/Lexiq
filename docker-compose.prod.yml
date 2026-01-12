@@ -35,13 +35,11 @@ services:
     container_name: lexiq-backend
     ports: 
       - "5000:5000"
-    secrets: 
-      - backend_env
     depends_on:
       db: 
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent http://localhost:5000/health || exit 1"]
+      test: ["CMD-SHELL", "curl --fail --silent http://backend:5000/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -54,6 +52,8 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    secrets:
+      - frontend_env
     depends_on:
       backend: 
         condition: service_healthy
@@ -61,7 +61,7 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - ./certbot/www:/var/www/certbot:ro
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent --insecure https://localhost:443/ || exit 1"]
+      test: ["CMD-SHELL", "curl --fail --silent --insecure https://frontend:443/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
