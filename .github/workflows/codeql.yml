@@ -46,17 +46,22 @@ jobs:
         dotnet-quality: 'preview'
         cache: true
         cache-dependency-path: '**/*.csproj'
-    
-    # Restore NuGet packages
+
     - name: Restore dependencies
       if: matrix.language == 'csharp'
-      run: dotnet restore backend/Backend.Api.csproj --use-lock-file
+      working-directory: backend
+      run: dotnet restore Backend.Api.csproj --use-lock-file
     
-    # Build the ASP.NET project
-    - name: Build ASP.NET application
+    - name: Build
       if: matrix.language == 'csharp'
-      run: dotnet build --configuration Release --no-restore
-
+      working-directory: Backend
+      run: dotnet build Backend.Api.csproj --configuration Release --no-restore
+    
+    - name: Test
+      if: matrix.language == 'csharp'
+      working-directory: Backend
+      run: dotnet test --no-restore --verbosity normal
+      
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4
       with:
