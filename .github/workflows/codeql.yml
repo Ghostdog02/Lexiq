@@ -60,7 +60,7 @@ jobs:
     - name: Test
       if: matrix.language == 'csharp'
       working-directory: backend
-      run: dotnet test --no-restore --verbosity normal
+      run: dotnet test Backend.Api.csproj --no-restore --verbosity normal
       
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4
