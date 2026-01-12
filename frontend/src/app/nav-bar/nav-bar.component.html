@@ -1,9 +1,24 @@
-<section>
+<aside id="mainAside">
 
     <h1>LingoBuddy</h1>
 
-    <h2>The Header is here</h2>
+    <ul class="sideBarLinks">
 
+        <li><a href=""><span class="icon">🏠</span> Home</a></li>
 
+        <li><a href=""><span class="icon">📚</span> Courses</a></li>
 
-</section>
+        <li><a href=""><span class="icon">🏆</span> Leaderboard</a></li>
+
+        <li><a href=""><span class="icon">👤</span> Profile</a></li>
+
+        <li><a href=""><span class="icon">❓</span> Help</a></li>
+
+        @if (userIsAuthenticated) {
+          <li><a href=""><span class="icon">🚪</span> Logout</a></li>
+        } @else {
+          <li><a routerLink="/google-login">Login</a></li>
+        }
+
+    </ul>
+</aside>

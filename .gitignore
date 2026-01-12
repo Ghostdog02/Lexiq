@@ -1,6 +1,13 @@
 # Created by https://www.toptal.com/developers/gitignore/api/angular,aspnetcore,csharp,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=angular,aspnetcore,csharp,visualstudiocode
 
+#Environment files Angular
+env.*
+!env.d.ts
+environment.*
+#Vs code configuration
+.vscode/
+
 # Configuration files
 .config/
 

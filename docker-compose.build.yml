@@ -1,0 +1,15 @@
+services:
+  backend:
+    image: ghcr.io/ghostdog02/lexiq-backend:${TAG:-latest}
+    build:
+      context: ./backend
+      dockerfile: DOCKERFILE
+
+  frontend:
+    image: ghcr.io/ghostdog02/lexiq-frontend:${TAG:-latest}
+    build:
+      context: ./frontend
+      dockerfile: DOCKERFILE
+      args:
+        - NG_GOOGLE_CLIENT_ID=751309259564-16n4ng66dqcqrulih1ihhamdrnrlbvgr.apps.googleusercontent.com
+        - BACKEND_URL=http://backend:5000

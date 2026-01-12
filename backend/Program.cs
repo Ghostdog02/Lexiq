@@ -1,93 +1,57 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
-using DevGuard.Database;
-using DevGuard.Database.Entities;
-using DevGuard.Database.ExtensionClasses;
+using Backend.Api.Extensions;
+using Backend.Database;
+using Backend.Database.Extensions;
 using DotNetEnv;
 
-namespace DevGuard.Api
+namespace Backend.Api;
+
+public class Program
 {
-    public class Program
+    public static async Task Main(string[] args)
     {
-        public static async Task Main(string[] args)
-        {
-            Env.Load();
+        Env.Load("/run/secrets/backend_env");
 
-            var builder = WebApplication.CreateBuilder(args);
+        var builder = WebApplication.CreateBuilder(args);
 
-            var dbServer = Environment.GetEnvironmentVariable("DB_SERVER") ?? "localhost";
-            var dbName = Environment.GetEnvironmentVariable("DB_NAME") ?? "SmartLunchSystem";
-            var dbUser = Environment.GetEnvironmentVariable("DB_USER") ?? "sa";
-            var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+        ConfigureServices(builder.Services);
 
-            var connectionString = $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};Integrated Security=false;TrustServerCertificate=True;MultipleActiveResultSets=true";
+        var app = builder.Build();
 
-            builder.Services.AddDbContext<DevGuardDbContext>(
-                options =>
-                    options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure()),
-                ServiceLifetime.Scoped
-            );
+        ConfigureMiddleware(app);
 
-            builder
-                .Services.AddControllers()
-                .ConfigureApiBehaviorOptions(options =>
-                {
-                    options.SuppressModelStateInvalidFilter = true;
-                });
+        await InitializeDatabaseAsync(app.Services);
 
-            builder
-                .Services.AddIdentity<User, IdentityRole<int>>(options =>
-                    options.SignIn.RequireConfirmedAccount = true
-                )
-                .AddRoles<IdentityRole<int>>()
-                .AddEntityFrameworkStores<DevGuardDbContext>()
-                .AddDefaultTokenProviders();
+        app.Run();
+    }
 
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc(
-                    "v1",
-                    new OpenApiInfo
-                    {
-                        Title = "My API",
-                        Version = "v1",
-                        Description = "Interactive API docs",
-                    }
-                );
-            });
+    private static void ConfigureServices(IServiceCollection services)
+    {
+        services.AddCorsPolicy();
+        services.AddDatabaseContext();
+        services.AddApplicationServices();
+        services.AddCookieAuthentication();
+        services.AddControllersWithOptions();
+        services.AddIdentityConfiguration();
+        services.AddGoogleAuthentication();
+        services.AddSwaggerDocumentation();
+        services.AddHealthChecks();
+    }
 
-            var app = builder.Build();
+    private static void ConfigureMiddleware(WebApplication app)
+    {
+        app.ConfigureHttpPort();
+        app.UseCors();
+        app.UseSecurityHeaders();
+        app.UseSwaggerWithUI();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.MapHealthChecks("/health");
+        app.MapControllers();
+    }
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
-            {
-                // Serves /swagger/v1/swagger.json
-                app.UseSwagger();
-
-                // Hosts Swagger UI at /swagger
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-                    c.RoutePrefix = string.Empty; // Serve UI at root (optional)
-                });
-            }
-
-            app.UseHttpsRedirection();
-
-            app.UseAuthentication();
-            app.UseAuthorization();
-
-            app.MapControllers();
-
-            var seeder = new SeedData();
-
-            await app.Services.MigrateDbAsync();
-            await SeedData.InitializeAsync(app.Services);
-
-            app.Run();
-        }
+    private static async Task InitializeDatabaseAsync(IServiceProvider serviceProvider)
+    {
+        await serviceProvider.MigrateDbAsync();
+        await SeedData.InitializeAsync(serviceProvider);
     }
 }

@@ -1,0 +1,10 @@
+{
+  "name": "Lexiq",
+  "icons": [
+    {
+      "src": "assets/favicon.png",
+      "sizes": "300x300",
+      "type": "image/png"
+    }
+  ]
+}
