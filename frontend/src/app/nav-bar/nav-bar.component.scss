@@ -3,6 +3,8 @@
     padding: 1.5em 2.2em 1em 1.3em;
     height: 100vh;
     width: 18em;
+    position: sticky;
+    top: 0;
 }
 
 .sideBarLinks{
@@ -21,6 +23,7 @@
             align-items: center;
             text-transform: uppercase;
             padding: .8em 1em;
+            width: 100%;
             display: flex;
             gap: 1.2em;    
             text-decoration: none;
@@ -30,7 +33,7 @@
         }
 
         .icon {
-            font-size: 1.2em;
+            font-size: var(--icon-size-md);
         }
     }
 

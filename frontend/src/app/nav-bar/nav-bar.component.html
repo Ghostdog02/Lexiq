@@ -4,20 +4,20 @@
 
     <ul class="sideBarLinks">
 
-        <li><a href=""><span class="icon">🏠</span> Home</a></li>
+        <li><a routerLink="/"><span class="icon">🏠</span> Home</a></li>
 
-        <li><a href=""><span class="icon">📚</span> Courses</a></li>
+        <li><a routerLink=""><span class="icon">📚</span> Courses</a></li>
 
-        <li><a href=""><span class="icon">🏆</span> Leaderboard</a></li>
+        <li><a routerLink=""><span class="icon">🏆</span> Leaderboard</a></li>
 
-        <li><a href=""><span class="icon">👤</span> Profile</a></li>
+        <li><a routerLink=""><span class="icon">👤</span> Profile</a></li>
 
-        <li><a href=""><span class="icon">❓</span> Help</a></li>
+        <li><a routerLink=""><span class="icon">❓</span> Help</a></li>
 
         @if (userIsAuthenticated) {
-          <li><a href=""><span class="icon">🚪</span> Logout</a></li>
+          <li><a routerLink=""><span class="icon">🚪</span> Logout</a></li>
         } @else {
-          <li><a routerLink="/google-login">Login</a></li>
+          <li><a routerLink="/google-login"><span class="icon">🔑</span> Login</a></li>
         }
 
     </ul>

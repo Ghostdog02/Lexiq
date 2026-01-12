@@ -1,1 +1,175 @@
-<p>home works!</p>
+<div class="learning-path-container">
+  <div class="home-grid">
+    <!-- Learning Path -->
+    <div class="path-wrapper">
+      <div class="path-content">
+        <!-- SVG Path Line -->
+        <svg class="path-line" [attr.viewBox]="'0 0 200 ' + (getAllLessons().length * 180 + 200)" preserveAspectRatio="xMidYMin meet">
+          <defs>
+            <linearGradient id="pathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color: var(--accent); stop-opacity: 0.8" />
+              <stop offset="100%" style="stop-color: var(--accent-dark); stop-opacity: 0.4" />
+            </linearGradient>
+          </defs>
+          <path
+            [attr.d]="getPathPoints()"
+            fill="none"
+            stroke="url(#pathGradient)"
+            stroke-width="4"
+            stroke-linecap="round"
+            stroke-dasharray="8,8"
+            class="animated-path"
+          />
+        </svg>
+
+        <!-- Units and Lessons -->
+        <div class="units-container">
+          <ng-container *ngFor="let unit of units; let unitIndex = index">
+            <!-- Unit Header -->
+            <div class="unit-header" [style.--unit-color]="unit.color">
+              <div class="unit-number">Unit {{ unit.id }}</div>
+              <h2 class="unit-title">{{ unit.title }}</h2>
+              <p class="unit-description">{{ unit.description }}</p>
+            </div>
+
+            <!-- Lessons in Unit -->
+            <div class="lessons-grid">
+              <ng-container *ngFor="let lesson of unit.lessons; let lessonIndex = index">
+                <div
+                  [id]="'lesson-' + lesson.id"
+                  class="lesson-node"
+                  [class.completed]="lesson.status === 'completed'"
+                  [class.in-progress]="lesson.status === 'in-progress'"
+                  [class.available]="lesson.status === 'available'"
+                  [class.locked]="lesson.status === 'locked'"
+                  [class.current]="lesson.id === currentLessonId"
+                  (click)="onLessonClick(lesson)"
+                >
+                  <div class="lesson-icon-wrapper">
+                    <div class="lesson-icon">{{ lesson.icon }}</div>
+
+                    <!-- Progress ring for in-progress lessons -->
+                    <svg *ngIf="lesson.status === 'in-progress'" class="progress-ring" width="90" height="90">
+                      <circle
+                        cx="45"
+                        cy="45"
+                        r="42"
+                        stroke="rgba(124, 92, 255, 0.2)"
+                        stroke-width="3"
+                        fill="none"
+                      />
+                      <circle
+                        cx="45"
+                        cy="45"
+                        r="42"
+                        stroke="var(--accent)"
+                        stroke-width="3"
+                        fill="none"
+                        [style.stroke-dasharray]="'263.89'"
+                        [style.stroke-dashoffset]="263.89 - (263.89 * (lesson.progress || 0) / 100)"
+                        stroke-linecap="round"
+                        class="progress-circle"
+                      />
+                    </svg>
+
+                    <!-- Checkmark for completed lessons -->
+                    <div *ngIf="lesson.status === 'completed'" class="checkmark">✓</div>
+
+                    <!-- Lock icon for locked lessons -->
+                    <div *ngIf="lesson.status === 'locked'" class="lock-overlay">
+                      <span class="lock-icon">🔒</span>
+                    </div>
+                  </div>
+
+                  <div class="lesson-info">
+                    <h3 class="lesson-title">{{ lesson.title }}</h3>
+                    <p class="lesson-description">{{ lesson.description }}</p>
+                    <div class="lesson-xp">
+                      <span class="xp-badge">{{ lesson.xp }} XP</span>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <!-- Header with stats -->
+      <div class="header-stats">
+        <div class="stat-card">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-content">
+            <div class="stat-value">{{ currentStreak }}</div>
+            <div class="stat-label">Day streak</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-content">
+            <div class="stat-value">{{ totalXp }}</div>
+            <div class="stat-label">Total XP</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Daily Quests -->
+      <div class="daily-quests">
+        <h3 class="quests-title">Daily Quests</h3>
+        <ul class="quests-list">
+          <li>
+            <div class="quest-icon">🎯</div>
+            <div class="quest-content">
+              <p class="quest-description">Complete 3 lessons</p>
+              <div class="quest-progress">
+                <div class="progress-bar" style="width: 66%;"></div>
+                <span class="progress-text">2/3</span>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="quest-icon">⭐</div>
+            <div class="quest-content">
+              <p class="quest-description">Earn 100 XP</p>
+              <div class="quest-progress">
+                <div class="progress-bar" style="width: 25%;"></div>
+                <span class="progress-text">25/100</span>
+              </div>
+            </div>
+          </li>
+          <li>
+            <div class="quest-icon">🗣️</div>
+            <div class="quest-content">
+              <p class="quest-description">Practice speaking for 5 minutes</p>
+              <div class="quest-progress">
+                <div class="progress-bar" style="width: 80%;"></div>
+                <span class="progress-text">4/5</span>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidebar-buttons">
+        <!-- Floating "Jump to current" button -->
+        <button
+          class="jump-button"
+          (click)="scrollToCurrentLesson()"
+          aria-label="Jump to current lesson"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path *ngIf="!isUserBelowLesson" d="M12 5V19M12 19L19 12M12 19L5 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path *ngIf="isUserBelowLesson" d="M12 19V5M12 5L19 12M12 5L5 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <!-- Button to add a new unit -->
+        <button class="add-unit-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-plus"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
