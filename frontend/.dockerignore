@@ -69,3 +69,5 @@ wwwroot
 **/bin
 **/obj
 www
+secrets/
+certbot/

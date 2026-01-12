@@ -52,7 +52,6 @@ RUN apt-get update && \
 
 COPY --from=publish /app/publish .
 
-EXPOSE 80
-EXPOSE 443
+EXPOSE 5000
 
 ENTRYPOINT ["dotnet", "Backend.Api.dll"]

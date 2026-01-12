@@ -1,10 +1,10 @@
 secrets:
   db_password:
-    file: ./secrets/database/password.txt
+    file: ./backend/database/password.txt
   backend_env:
-    file: ./secrets/backend/.env
+    file: ./backend/.env
   frontend_env:
-    file: ./secrets/frontend/.env
+    file: ./frontend/.env
 
 services:
   db:
@@ -25,7 +25,7 @@ services:
       start_period: 10s
 
   backend:
-    image: ghcr.io/ghostdog02/lexiq-backend:${TAG:-latest}
+    image: backend
     build:
       context: ./backend
       dockerfile: DOCKERFILE
@@ -44,7 +44,7 @@ services:
       retries: 3
 
   frontend:
-    image: ghcr.io/ghostdog02/lexiq-frontend:${TAG:-latest}
+    image: frontend
     build:
       context: ./frontend
       dockerfile: DOCKERFILE

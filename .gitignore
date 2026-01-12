@@ -580,6 +580,11 @@ FodyWeavers.xsd
 .history
 .ionide
 
+**/password.txt
+
+# Nginx configuration swap files
+.nginf.conf.txt.kate-swp
+
 # End of https://www.toptal.com/developers/gitignore/api/angular,aspnetcore,csharp,visualstudiocode
 
 /backend/Database/ENTITIES_DOCUMENTATION.md
