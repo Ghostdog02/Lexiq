@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Component HTML Structure</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="profile-container">
+  
+  <!-- PROFILE HEADER SECTION -->
+  <div class="profile-header">
+    
+    <!-- User Info Card -->
+    <div class="user-info">
+      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="Alex Rodriguez" class="avatar">
+      <div class="user-details">
+        <h1 class="title">Alex Rodriguez</h1>
+        <p class="email">alex.rodriguez@example.com</p>
+        <p class="join-date">Member since Jan 15, 2024 · 363 days</p>
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+      
+      <!-- Total XP Card -->
+      <div class="stat-card">
+        <div class="stat-icon">✨</div>
+        <div class="stat-content">
+          <div class="stat-value">12,450</div>
+          <div class="stat-label">Total XP</div>
+        </div>
+      </div>
+
+      <!-- Current Streak Card -->
+      <div class="stat-card streak">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-content">
+          <div class="stat-value">47</div>
+          <div class="stat-label">Day Streak</div>
+        </div>
+      </div>
+
+      <!-- Best Streak Card -->
+      <div class="stat-card">
+        <div class="stat-icon">🎯</div>
+        <div class="stat-content">
+          <div class="stat-value">89</div>
+          <div class="stat-label">Best Streak</div>
+        </div>
+      </div>
+
+      <!-- Achievements Progress Card -->
+      <div class="stat-card">
+        <div class="stat-icon">🏅</div>
+        <div class="stat-content">
+          <div class="stat-value">6/8</div>
+          <div class="stat-label">Achievements</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT GRID -->
+  <div class="content-grid">
+    
+    <!-- LEFT COLUMN: ENROLLED LANGUAGES -->
+    <section class="languages-section">
+      <h2 class="section-title">Enrolled Languages</h2>
+      
+      <div class="languages-list">
+        
+        <!-- Language Card 1: Spanish -->
+        <div class="language-card">
+          <div class="language-header">
+            <div class="language-info">
+              <span class="flag">🇪🇸</span>
+              <div class="language-details">
+                <h3 class="language-name">Spanish</h3>
+                <div class="level-badge">Level 8</div>
+              </div>
+            </div>
+            <div class="language-xp">
+              <div class="xp-value">4,250 XP</div>
+            </div>
+          </div>
+          <div class="progress-section">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 75%"></div>
+            </div>
+            <div class="progress-text">450/4,500 XP to level 9</div>
+          </div>
+        </div>
+
+        <!-- Language Card 2: French -->
+        <div class="language-card">
+          <div class="language-header">
+            <div class="language-info">
+              <span class="flag">🇫🇷</span>
+              <div class="language-details">
+                <h3 class="language-name">French</h3>
+                <div class="level-badge">Level 5</div>
+              </div>
+            </div>
+            <div class="language-xp">
+              <div class="xp-value">2,800 XP</div>
+            </div>
+          </div>
+          <div class="progress-section">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 56%"></div>
+            </div>
+            <div class="progress-text">280/3,000 XP to level 6</div>
+          </div>
+        </div>
+
+        <!-- Language Card 3: Japanese -->
+        <div class="language-card">
+          <div class="language-header">
+            <div class="language-info">
+              <span class="flag">🇯🇵</span>
+              <div class="language-details">
+                <h3 class="language-name">Japanese</h3>
+                <div class="level-badge">Level 3</div>
+              </div>
+            </div>
+            <div class="language-xp">
+              <div class="xp-value">1,400 XP</div>
+            </div>
+          </div>
+          <div class="progress-section">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: 24%"></div>
+            </div>
+            <div class="progress-text">120/2,000 XP to level 4</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: ACHIEVEMENTS -->
+    <section class="achievements-section">
+      <h2 class="section-title">Achievements</h2>
+      
+      <!-- UNLOCKED ACHIEVEMENTS -->
+      <div class="achievements-subsection">
+        <h3 class="subsection-title">Unlocked (6)</h3>
+        
+        <div class="achievements-grid">
+          
+          <!-- Achievement 1: First Steps -->
+          <div class="achievement-card unlocked">
+            <div class="achievement-icon">🌱</div>
+            <div class="achievement-content">
+              <h4 class="achievement-name">First Steps</h4>
+              <p class="achievement-description">Earned your first 100 XP</p>
+              <div class="achievement-meta">
+                <span class="achievement-xp">100 XP</span>
+                <span class="achievement-date">Jan 16, 2024</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Achievement 2: Getting Started -->
+          <div class="achievement-card unlocked">
+            <div class="achievement-icon">🚀</div>
+            <div class="achievement-content">
+              <h4 class="achievement-name">Getting Started</h4>
+              <p class="achievement-description">Reached 500 XP</p>
+              <div class="achievement-meta">
+                <span class="achievement-xp">500 XP</span>
+                <span class="achievement-date">Jan 25, 2024</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Achievement 3: Dedicated Learner -->
+          <div class="achievement-card unlocked">
+            <div class="achievement-icon">📚</div>
+            <div class="achievement-content">
+              <h4 class="achievement-name">Dedicated Learner</h4>
+              <p class="achievement-description">Accumulated 1,000 XP</p>
+              <div class="achievement-meta">
+                <span class="achievement-xp">1,000 XP</span>
+                <span class="achievement-date">Feb 10, 2024</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Achievement 4: Rising Star -->
+          <div class="achievement-card unlocked">
+            <div class="achievement-icon">⭐</div>
+            <div class="achievement-content">
+              <h4 class="achievement-name">Rising Star</h4>
+              <p class="achievement-description">Reached 2,500 XP</p>
+              <div class="achievement-meta">
+                <span class="achievement-xp">2,500 XP</span>
+                <span class="achievement-date">Mar 5, 2024</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Achievement 5: Expert Explorer -->
+          <div class="achievement-card unlocked">
+            <div class="achievement-icon">🏆</div>
+            <div class="achievement-content">
+              <h4 class="achievement-name">Expert Explorer</h4>
+              <p class="achievement-description">Achieved 5,000 XP</p>
+              <div class="achievement-meta">
+                <span class="achievement-xp">5,000 XP</span>
+                <span class="achievement-date">Apr 20, 2024</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Achievement 6: Master Linguist -->
+          <div class="achievement-card unlocked">
+            <div class="achievement-icon">👑</div>
+            <div class="achievement-content">
+              <h4 class="achievement-name">Master Linguist</h4>
+              <p class="achievement-description">Accumulated 10,000 XP</p>
+              <div class="achievement-meta">
+                <span class="achievement-xp">10,000 XP</span>
+                <span class="achievement-date">Jun 15, 2024</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- LOCKED ACHIEVEMENTS -->
+      <div class="achievements-subsection">
+        <h3 class="subsection-title">Locked (2)</h3>
+        
+        <div class="achievements-grid">
+          
+          <!-- Achievement 7: Legend (Locked) -->
+          <div class="achievement-card locked">
+            <div class="achievement-icon">💎</div>
+            <div class="achievement-content">
+              <h4 class="achievement-name">Legend</h4>
+              <p class="achievement-description">Reached 25,000 XP</p>
+              <div class="achievement-meta">
+                <span class="achievement-xp">25,000 XP</span>
+              </div>
+              <div class="progress-section">
+                <div class="progress-bar locked-progress">
+                  <div class="progress-fill" style="width: 49.8%"></div>
+                </div>
+                <div class="progress-text">12,450/25,000 XP</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Achievement 8: Polyglot Pro (Locked) -->
+          <div class="achievement-card locked">
+            <div class="achievement-icon">🌟</div>
+            <div class="achievement-content">
+              <h4 class="achievement-name">Polyglot Pro</h4>
+              <p class="achievement-description">Earned 50,000 XP</p>
+              <div class="achievement-meta">
+                <span class="achievement-xp">50,000 XP</span>
+              </div>
+              <div class="progress-section">
+                <div class="progress-bar locked-progress">
+                  <div class="progress-fill" style="width: 24.9%"></div>
+                </div>
+                <div class="progress-text">12,450/50,000 XP</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+</div>
+
+</body>
+</html>
