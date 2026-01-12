@@ -53,7 +53,7 @@ services:
         - BACKEND_URL=http://backend:5000
     container_name: lexiq-frontend
     ports:
-      - "8080:8080"
+      - "443:443"
     depends_on:
       - backend
     volumes:
@@ -61,7 +61,7 @@ services:
       - ./certbot/www:/var/www/certbot
     user: nginx
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:443"]
       interval: 30s
       timeout: 10s
       retries: 3
