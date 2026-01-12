@@ -43,13 +43,14 @@ jobs:
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '10.0.x'
-        dotnet-quality: 'daily'
+        dotnet-quality: 'preview'
         cache: true
+        cache-dependency-path: '**/*.csproj'
     
     # Restore NuGet packages
     - name: Restore dependencies
       if: matrix.language == 'csharp'
-      run: dotnet restore
+      run: dotnet restore --use-lock-file
     
     # Build the ASP.NET project
     - name: Build ASP.NET application
