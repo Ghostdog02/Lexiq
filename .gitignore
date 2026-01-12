@@ -581,3 +581,5 @@ FodyWeavers.xsd
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/angular,aspnetcore,csharp,visualstudiocode
+
+/backend/Database/ENTITIES_DOCUMENTATION.md
