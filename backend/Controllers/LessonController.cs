@@ -36,23 +36,27 @@ namespace Backend.Controllers
             // Get the next lesson details
             var nextLesson = await _lessonService.GetNextLessonAsync(lessonId);
 
-            // Check if this was the last lesson in the module
-            var isLastInModule = await _lessonService.IsLastLessonInModuleAsync(lessonId);
+            // Check if this was the last lesson in the course
+            var isLastInCourse = await _lessonService.IsLastLessonInCourseAsync(lessonId);
 
-            return Ok(new
-            {
-                message = "Lesson completed successfully",
-                currentLessonId = lessonId,
-                isLastInModule = isLastInModule,
-                nextLesson = nextLesson != null ? new
+            return Ok(
+                new
                 {
-                    id = nextLesson.Id,
-                    title = nextLesson.Title,
-                    moduleId = nextLesson.ModuleId,
-                    wasUnlocked = wasUnlocked,
-                    isLocked = nextLesson.IsLocked
-                } : null
-            });
+                    message = "Lesson completed successfully",
+                    currentLessonId = lessonId,
+                    isLastInCourse = isLastInCourse,
+                    nextLesson = nextLesson != null
+                        ? new
+                        {
+                            id = nextLesson.Id,
+                            title = nextLesson.Title,
+                            courseId = nextLesson.CourseId,
+                            wasUnlocked = wasUnlocked,
+                            isLocked = nextLesson.IsLocked,
+                        }
+                        : null,
+                }
+            );
         }
 
         /// <summary>
@@ -66,20 +70,20 @@ namespace Backend.Controllers
 
             if (nextLesson == null)
             {
-                return Ok(new { message = "This is the last lesson in the course" });
+                return Ok(new { message = "This is the last lesson in the language" });
             }
 
             return Ok(nextLesson);
         }
 
         /// <summary>
-        /// Gets all lessons for a specific module
+        /// Gets all lessons for a specific course
         /// </summary>
-        /// <param name="moduleId">The module ID</param>
-        [HttpGet("module/{moduleId}")]
-        public async Task<IActionResult> GetLessonsByModule(int moduleId)
+        /// <param name="courseId">The course ID</param>
+        [HttpGet("course/{courseId}")]
+        public async Task<IActionResult> GetLessonsByCourse(int courseId)
         {
-            var lessons = await _lessonService.GetLessonsByModuleAsync(moduleId);
+            var lessons = await _lessonService.GetLessonsByCourseAsync(courseId);
             return Ok(lessons);
         }
 

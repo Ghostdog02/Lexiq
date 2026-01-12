@@ -14,52 +14,51 @@ namespace Backend.Services
         }
 
         /// <summary>
-        /// Gets the next lesson after the current one, even if it's in the next module
+        /// Gets the next lesson after the current one, even if it's in the next course
         /// </summary>
         /// <param name="currentLessonId">The ID of the current lesson</param>
-        /// <returns>The next lesson, or null if this is the last lesson in the course</returns>
+        /// <returns>The next lesson, or null if this is the last lesson in the language</returns>
         public async Task<Lesson?> GetNextLessonAsync(int currentLessonId)
         {
             var currentLesson = await _context
-                .Lessons.Include(l => l.Module)
-                    .ThenInclude(m => m.Course)
+                .Lessons
+                    .Include(l => l.Course)
+                        .ThenInclude(c => c.LanguageId)
                 .FirstOrDefaultAsync(l => l.Id == currentLessonId);
 
             if (currentLesson == null)
                 return null;
 
-            // Try to find the next lesson in the same module
-            var nextLessonInModule = await _context
+            // Try to find the next lesson in the same course
+            var nextLessonInCourse = await _context
                 .Lessons.Where(l =>
-                    l.ModuleId == currentLesson.ModuleId && l.OrderIndex > currentLesson.OrderIndex
+                    l.CourseId == currentLesson.CourseId && l.OrderIndex > currentLesson.OrderIndex
                 )
                 .OrderBy(l => l.OrderIndex)
                 .FirstOrDefaultAsync();
 
-            if (nextLessonInModule != null)
-                return nextLessonInModule;
+            if (nextLessonInCourse != null)
+                return nextLessonInCourse;
 
-            // If no next lesson in current module, find the first lesson of the next module
-            var nextModule = await _context
-                .Modules.Where(m =>
-                    m.CourseId == currentLesson.Module.CourseId
-                    && m.OrderIndex > currentLesson.Module.OrderIndex
+            // If no next lesson in current course, find the first lesson of the next course
+            var nextCourse = await _context
+                .Courses.Where(c =>
+                    c.LanguageId == currentLesson.Course.LanguageId
+                    && c.OrderIndex > currentLesson.Course.OrderIndex
                 )
-                .OrderBy(m => m.OrderIndex)
+                .OrderBy(c => c.OrderIndex)
                 .FirstOrDefaultAsync();
 
-            if (nextModule == null)
-                return null; // No next module, this is the last lesson in the course
+            if (nextCourse == null)
+                return null; // No next course, this is the last lesson in the language
 
-            //TO DO: If last module in Course change to next course
-
-            // Get the first lesson of the next module
-            var firstLessonInNextModule = await _context
-                .Lessons.Where(l => l.ModuleId == nextModule.Id)
+            // Get the first lesson of the next course
+            var firstLessonInNextCourse = await _context
+                .Lessons.Where(l => l.CourseId == nextCourse.Id)
                 .OrderBy(l => l.OrderIndex)
                 .FirstOrDefaultAsync();
 
-            return firstLessonInNextModule;
+            return firstLessonInNextCourse;
         }
 
         /// <summary>
@@ -84,45 +83,45 @@ namespace Backend.Services
         }
 
         /// <summary>
-        /// Checks if a lesson is the last one in its module
+        /// Checks if a lesson is the last one in its course
         /// </summary>
         /// <param name="lessonId">The ID of the lesson to check</param>
-        /// <returns>True if this is the last lesson in the module</returns>
-        public async Task<bool> IsLastLessonInModuleAsync(int lessonId)
+        /// <returns>True if this is the last lesson in the course</returns>
+        public async Task<bool> IsLastLessonInCourseAsync(int lessonId)
         {
             var lesson = await _context.Lessons.FindAsync(lessonId);
             if (lesson == null)
                 return false;
 
-            var hasNextLessonInModule = await _context.Lessons.AnyAsync(l =>
-                l.ModuleId == lesson.ModuleId && l.OrderIndex > lesson.OrderIndex
+            var hasNextLessonInCourse = await _context.Lessons.AnyAsync(l =>
+                l.CourseId == lesson.CourseId && l.OrderIndex > lesson.OrderIndex
             );
 
-            return !hasNextLessonInModule;
+            return !hasNextLessonInCourse;
         }
 
         /// <summary>
-        /// Gets the first lesson of a specific module
+        /// Gets the first lesson of a specific course
         /// </summary>
-        /// <param name="moduleId">The ID of the module</param>
-        /// <returns>The first lesson in the module</returns>
-        public async Task<Lesson?> GetFirstLessonInModuleAsync(int moduleId)
+        /// <param name="courseId">The ID of the course</param>
+        /// <returns>The first lesson in the course</returns>
+        public async Task<Lesson?> GetFirstLessonInCourseAsync(int courseId)
         {
             return await _context
-                .Lessons.Where(l => l.ModuleId == moduleId)
+                .Lessons.Where(l => l.CourseId == courseId)
                 .OrderBy(l => l.OrderIndex)
                 .FirstOrDefaultAsync();
         }
 
         /// <summary>
-        /// Gets all lessons for a specific module, ordered by OrderIndex
+        /// Gets all lessons for a specific course, ordered by OrderIndex
         /// </summary>
-        /// <param name="moduleId">The ID of the module</param>
-        /// <returns>List of lessons in the module</returns>
-        public async Task<List<Lesson>> GetLessonsByModuleAsync(int moduleId)
+        /// <param name="courseId">The ID of the course</param>
+        /// <returns>List of lessons in the course</returns>
+        public async Task<List<Lesson>> GetLessonsByCourseAsync(int courseId)
         {
             return await _context
-                .Lessons.Where(l => l.ModuleId == moduleId)
+                .Lessons.Where(l => l.CourseId == courseId)
                 .OrderBy(l => l.OrderIndex)
                 .ToListAsync();
         }
@@ -145,13 +144,14 @@ namespace Backend.Services
         /// Gets the lesson with full navigation properties
         /// </summary>
         /// <param name="lessonId">The ID of the lesson</param>
-        /// <returns>The lesson with its module and course included</returns>
+        /// <returns>The lesson with its course and language included</returns>
         public async Task<Lesson?> GetLessonWithDetailsAsync(int lessonId)
         {
             return await _context
-                .Lessons.Include(l => l.Module)
-                    .ThenInclude(m => m.Course)
-                .Include(l => l.Exercises)
+                .Lessons
+                    .Include(l => l.Course)
+                        .ThenInclude(c => c.LanguageId)
+                    .Include(l => l.Exercises)
                 .FirstOrDefaultAsync(l => l.Id == lessonId);
         }
     }

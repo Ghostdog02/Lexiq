@@ -28,3 +28,31 @@ EXPOSE 80
 EXPOSE 443
 
 ENTRYPOINT ["dotnet", "Backend.Api.dll"]
+
+# https://hub.docker.com/_/microsoft-dotnet
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS publish
+WORKDIR /src
+
+COPY *.sln ./
+COPY Backend.Api.csproj ./
+COPY Database/Backend.Database.csproj ./Database/
+
+RUN dotnet restore ./Backend.Api.csproj
+
+COPY . .
+
+RUN dotnet publish "Backend.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=publish /app/publish .
+
+EXPOSE 80
+EXPOSE 443
+
+ENTRYPOINT ["dotnet", "Backend.Api.dll"]

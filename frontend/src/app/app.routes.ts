@@ -1,7 +1,6 @@
 import { Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
 import { GoogleLoginComponent } from './auth/google-login/google-login.component';
-import { CoursesComponent } from './courses/courses.component';
 
 export const routes: Routes = [
     {
@@ -13,11 +12,6 @@ export const routes: Routes = [
         path:'google-login',
         component: GoogleLoginComponent,
         title: "Google-Login"
-    },
-    {
-      path:'courses',
-      component: CoursesComponent,
-      title: "Courses"  
     },
     {
         path: '**',
