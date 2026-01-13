@@ -161,7 +161,7 @@
 
         - name: Notify on failure
           if: failure()
-          uses: actions/github-script@v7
+          uses: actions/github-script@v8
           with:
             script: |
               const repoUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
