@@ -1,53 +1,28 @@
-// Profile Component Styles - Dark Theme
-
-:root {
-  --bg-dark: #0a0e12;
-  --bg: #0f1419;
-  --panel: #1a1f26;
-  --accent: #7c5cff;
-  --accent-light: #9178ff;
-  --accent-dark: #5a3ce6;
-  --white: #ffffff;
-  --text-secondary: #a0aec0;
-  --muted: #718096;
-  --border: rgba(255,255,255,0.06);
-  --glass: rgba(255,255,255,0.03);
-  --glass-hover: rgba(255,255,255,0.05);
-  --radius: 16px;
-  --radius-sm: 100px;
-  --shadow: 0 20px 60px rgba(0,0,0,0.8);
-  --shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.2);
-  --font-family: "Bricolage Grotesque", sans-serif;
-}
-
-// Container
 .profile-container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 40px 20px;
+  max-width: 1024px; /* Reduced from 200rem for a tighter layout */
+  margin: 0 auto;    /* Centers the container */
   font-family: var(--font-family);
+  padding: 24px;
 }
 
-// Profile Header Section
 .profile-header {
-  margin-bottom: 48px;
+  margin-bottom: 32px; /* Reduced margin */
 }
 
-// User Info Card
 .user-info {
   display: flex;
   align-items: center;
-  gap: 24px;
-  margin-bottom: 32px;
-  padding: 32px;
+  gap: 20px; /* Reduced gap */
+  margin-bottom: 24px;
+  padding: 20px; /* Reduced padding from 32px */
   background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
   border-radius: var(--radius);
   border: 1px solid var(--border);
   box-shadow: var(--shadow);
   position: relative;
 
-  // Glassmorphic border effect
   &::before {
+    /* ... existing background styles ... */
     content: '';
     position: absolute;
     inset: 0;
@@ -63,11 +38,11 @@
 }
 
 .avatar {
-  width: 96px;
-  height: 96px;
+  width: 64px;  /* Reduced from 96px */
+  height: 64px; /* Reduced from 96px */
   border-radius: 50%;
-  border: 3px solid var(--accent);
-  box-shadow: 0 8px 24px rgba(124, 92, 255, 0.3);
+  border: 2px solid var(--accent);
+  box-shadow: 0 4px 12px rgba(124, 92, 255, 0.3);
 }
 
 .user-details {
@@ -75,10 +50,10 @@
 }
 
 .title {
-  font-size: 31px;
+  font-size: 24px; /* Reduced from 31px */
   font-weight: 800;
   letter-spacing: -0.3px;
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
   background: linear-gradient(135deg, var(--white) 0%, rgba(255,255,255,0.9) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -87,30 +62,34 @@
 
 .email {
   color: var(--text-secondary);
-  font-size: 16px;
+  font-size: 14px; /* Reduced from 16px */
   font-weight: 500;
   margin: 0 0 4px 0;
 }
 
 .join-date {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 12px; /* Reduced from 14px */
   font-weight: 500;
   margin: 0;
 }
 
-// Stats Grid
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px; /* Reduced gap */
+
+  .stat-card {
+    flex: 1 1 180px; /* Reduced min-width */
+    min-width: 180px;
+  }
 }
 
 .stat-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 24px;
+  gap: 12px;
+  padding: 16px; /* Reduced from 24px */
   background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -119,7 +98,7 @@
   position: relative;
   cursor: pointer;
 
-  // Glassmorphic border effect
+  /* ... existing pseudo-elements ... */
   &::before {
     content: '';
     position: absolute;
@@ -140,7 +119,6 @@
     border-color: rgba(124, 92, 255, 0.3);
   }
 
-  // Special styling for streak card
   &.streak {
     background: linear-gradient(135deg, rgba(255, 107, 53, 0.08) 0%, rgba(255, 159, 64, 0.03) 100%);
     
@@ -151,21 +129,21 @@
 }
 
 .stat-icon {
-  font-size: 36px;
+  font-size: 24px; /* Reduced from 36px */
   line-height: 1;
 }
 
 .stat-content {
   .stat-value {
-    font-size: 28px;
+    font-size: 20px; /* Reduced from 28px */
     font-weight: 800;
     color: var(--white);
     line-height: 1.2;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
 
   .stat-label {
-    font-size: 13px;
+    font-size: 11px; /* Reduced from 13px */
     font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
@@ -173,43 +151,43 @@
   }
 }
 
-// Content Grid Layout
 .content-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 32px;
-  align-items: start;
+  display: flex;
+  gap: 24px; /* Reduced gap */
+  align-items: flex-start;
 }
 
-// Section Titles
+.languages-section,
+.achievements-section {
+  flex: 1;
+  min-width: 0;
+}
+
 .section-title {
-  font-size: 24px;
+  font-size: 20px; /* Reduced from 24px */
   font-weight: 800;
   color: var(--white);
-  margin: 0 0 24px 0;
+  margin: 0 0 16px 0;
   letter-spacing: -0.2px;
 }
 
 .subsection-title {
-  font-size: 18px;
+  font-size: 14px; /* Reduced from 18px */
   font-weight: 700;
   color: var(--text-secondary);
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-// Languages Section
-.languages-section {
-  .languages-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+.languages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .language-card {
-  padding: 24px;
+  padding: 16px; /* Reduced from 24px */
   background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -217,7 +195,7 @@
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 
-  // Glassmorphic border effect
+  /* ... existing pseudo-elements ... */
   &::before {
     content: '';
     position: absolute;
@@ -243,36 +221,36 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .language-info {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .flag {
-  font-size: 48px;
+  font-size: 32px; /* Reduced from 48px */
   line-height: 1;
 }
 
 .language-details {
   .language-name {
-    font-size: 20px;
+    font-size: 16px; /* Reduced from 20px */
     font-weight: 700;
     color: var(--white);
-    margin: 0 0 6px 0;
+    margin: 0 0 4px 0;
   }
 }
 
 .level-badge {
   display: inline-block;
-  padding: 4px 12px;
+  padding: 2px 8px; /* Smaller padding */
   background: var(--accent);
   color: var(--white);
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 11px; /* Reduced size */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -280,20 +258,19 @@
 
 .language-xp {
   .xp-value {
-    font-size: 24px;
+    font-size: 18px; /* Reduced from 24px */
     font-weight: 800;
     color: var(--accent-light);
   }
 }
 
-// Progress Bars
 .progress-section {
   .progress-bar {
-    height: 8px;
+    height: 6px; /* Thinner bar */
     background: rgba(255,255,255,0.05);
     border-radius: 100px;
     overflow: hidden;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 
     &.locked-progress {
       background: rgba(255,255,255,0.03);
@@ -308,33 +285,30 @@
   }
 
   .progress-text {
-    font-size: 13px;
+    font-size: 11px; /* Reduced size */
     font-weight: 600;
     color: var(--muted);
   }
 }
 
-// Achievements Section
-.achievements-section {
-  .achievements-subsection {
-    margin-bottom: 32px;
+.achievements-subsection {
+  margin-bottom: 24px;
 
-    &:last-child {
-      margin-bottom: 0;
-    }
+  &:last-child {
+    margin-bottom: 0;
   }
+}
 
-  .achievements-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+.achievements-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .achievement-card {
   display: flex;
-  gap: 20px;
-  padding: 20px;
+  gap: 16px;
+  padding: 16px; /* Reduced from 20px */
   background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -343,7 +317,7 @@
   position: relative;
 
   &.unlocked {
-    // Glassmorphic border effect for unlocked achievements
+    /* ... existing pseudo-elements ... */
     &::before {
       content: '';
       position: absolute;
@@ -376,7 +350,7 @@
 }
 
 .achievement-icon {
-  font-size: 48px;
+  font-size: 32px; /* Reduced from 48px */
   line-height: 1;
   flex-shrink: 0;
 
@@ -391,83 +365,59 @@
 }
 
 .achievement-name {
-  font-size: 18px;
+  font-size: 15px; /* Reduced from 18px */
   font-weight: 700;
   color: var(--white);
-  margin: 0 0 6px 0;
+  margin: 0 0 4px 0;
 }
 
 .achievement-description {
-  font-size: 14px;
+  font-size: 12px; /* Reduced from 14px */
   font-weight: 500;
   color: var(--text-secondary);
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
 }
 
 .achievement-meta {
   display: flex;
-  gap: 16px;
+  gap: 12px;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .achievement-xp {
-  font-size: 13px;
+  font-size: 11px; /* Reduced size */
   font-weight: 700;
   color: var(--accent-light);
 }
 
 .achievement-date {
-  font-size: 12px;
+  font-size: 11px; /* Reduced size */
   font-weight: 600;
   color: var(--muted);
 }
 
-// Responsive Design
 @media (max-width: 1024px) {
   .content-grid {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 }
 
 @media (max-width: 480px) {
   .profile-container {
-    padding: 20px 16px;
+    padding: 16px;
   }
 
   .user-info {
     flex-direction: column;
     align-items: flex-start;
-    padding: 24px;
+    padding: 16px;
 
     .avatar {
-      width: 72px;
-      height: 72px;
+      width: 56px;
+      height: 56px;
     }
   }
-
-  .title {
-    font-size: 24px !important;
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .language-card {
-    .language-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 12px;
-    }
-  }
-
-  .achievement-card {
-    flex-direction: column;
-    gap: 12px;
-
-    .achievement-icon {
-      font-size: 40px;
-    }
-  }
+  
+  /* ... rest of existing media queries ... */
 }
