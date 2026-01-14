@@ -1,7 +1,7 @@
 <div class="profile-container">
   <div class="profile-header">
     <div class="user-info">
-      <img [src]="user.avatar" [alt]="user.name" class="avatar">
+      <img id="profile-icon" [src]="user.avatar" [alt]="user.name" class="avatar">
       <div class="user-details">
         <h1 class="title">{{ user.name }}</h1>
         <p class="email">{{ user.email }}</p>
@@ -73,10 +73,8 @@
     </section>
 
     <section class="achievements-section">
-      <h2 class="section-title">Achievements</h2>
-      
+      <h2 class="section-title">Achievements</h2>  
       <div class="achievements-subsection">
-        <h3 class="subsection-title">Unlocked ({{ unlockedAchievements.length }})</h3>
         <div class="achievements-grid">
           <div *ngFor="let achievement of unlockedAchievements | slice:0:3" class="achievement-card unlocked">
             <div class="achievement-icon">{{ achievement.icon }}</div>
@@ -91,28 +89,31 @@
           </div>
         </div>
       </div>
-
-      <div class="achievements-subsection" *ngIf="lockedAchievements.length > 0">
-        <h3 class="subsection-title">Locked ({{ lockedAchievements.length }})</h3>
-        <div class="achievements-grid">
-          <div *ngFor="let achievement of lockedAchievements | slice:0:3" class="achievement-card locked">
-            <div class="achievement-icon locked-icon">{{ achievement.icon }}</div>
-            <div class="achievement-content">
-              <h4 class="achievement-name">{{ achievement.name }}</h4>
-              <p class="achievement-description">{{ achievement.description }}</p>
-              <div class="achievement-meta">
-                <span class="achievement-xp">{{ achievement.xpRequired.toLocaleString() }} XP</span>
-              </div>
-              <div class="progress-section">
-                <div class="progress-bar locked-progress">
-                  <div class="progress-fill" [style.width.%]="getXpProgress(achievement)"></div>
+    </section>
+  </div>
+   <div class="content-grid">
+      <section class="achievements-section"> 
+        <div class="achievements-subsection" *ngIf="lockedAchievements.length > 0">
+          <h3 class="subsection-title">Locked Achievements ({{ lockedAchievements.length }})</h3>
+          <div class="achievements-grid">
+            <div *ngFor="let achievement of lockedAchievements | slice:0:3" class="achievement-card locked">
+              <div class="achievement-icon locked-icon">{{ achievement.icon }}</div>
+              <div class="achievement-content">
+                <h4 class="achievement-name">{{ achievement.name }}</h4>
+                <p class="achievement-description">{{ achievement.description }}</p>
+                <div class="achievement-meta">
+                  <span class="achievement-xp">{{ achievement.xpRequired.toLocaleString() }} XP</span>
                 </div>
-                <div class="progress-text">{{ user.totalXp.toLocaleString() }}/{{ achievement.xpRequired.toLocaleString() }} XP</div>
+                <div class="progress-section">
+                  <div class="progress-bar locked-progress">
+                    <div class="progress-fill" [style.width.%]="getXpProgress(achievement)"></div>
+                  </div>
+                  <div class="progress-text">{{ user.totalXp.toLocaleString() }}/{{ achievement.xpRequired.toLocaleString() }} XP</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
-  </div>
+      </section>
+   </div>
 </div>
