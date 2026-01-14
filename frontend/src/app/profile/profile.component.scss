@@ -175,7 +175,6 @@
 .achievements-section {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
   flex: 1;
   min-width: 0;
   padding-bottom: 40px;
@@ -195,7 +194,7 @@
   align-self: center;
   font-weight: 700;
   color: var(--text-secondary);
-  margin: 0 0 12px 0;
+  margin: 0 0 16px 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -252,13 +251,13 @@
 }
 
 .flag {
-  font-size: 40px;
+  font-size: 40px; /* Reduced from 48px */
   line-height: 1;
 }
 
 .language-details {
   .language-name {
-    font-size: 20px;
+    font-size: 20px; /* Reduced from 20px */
     font-weight: 700;
     color: var(--white);
     margin: 0 0 4px 0;
@@ -271,7 +270,7 @@
   background: var(--accent);
   color: var(--white);
   border-radius: var(--radius-sm);
-  font-size: 11px; /* Reduced size */
+  font-size: 12px; /* Reduced size */
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -306,7 +305,7 @@
   }
 
   .progress-text {
-    font-size: 11px; /* Reduced size */
+    font-size: 16px; /* Reduced size */
     font-weight: 600;
     color: var(--muted);
   }
@@ -316,6 +315,7 @@
   display: flex;
   flex-direction: column;
   margin-bottom: 24px;
+  flex: 1;
 
   &:last-child {
     margin-bottom: 0;
@@ -323,18 +323,25 @@
 }
 
 .achievements-grid {
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  justify-content: center;
+}
+
+.locked-achievements-grid {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
 }
 
 .achievement-card {
   display: flex;
   flex-direction: row;
+  flex: 1;
   gap: 16px;
   padding: 16px;
   align-items: center;
-  min-height: 130px;
-  width: 100%;
+  min-height: 135px;
   background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -365,6 +372,8 @@
   }
 
   &.locked {
+    display: flex;
+    flex-direction: row;
     opacity: 0.6; 
     .achievement-icon {
       filter: grayscale(1);
@@ -374,8 +383,8 @@
 }
 
 .achievement-icon {
-  align-self: center;
   font-size: 40px;
+  margin-right: 10px;
   line-height: 1;
   flex-shrink: 0;
 
@@ -387,12 +396,6 @@
 
 .achievement-content {
   flex: 1;
-}
-
-@media (max-width: 768px) {
-  .achievements-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .achievement-name {
