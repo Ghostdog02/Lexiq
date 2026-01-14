@@ -1,0 +1,268 @@
+// Import usually happens via global styles, but assuming vars are available in :root
+
+.page-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  min-height: 100vh;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 48px;
+
+  .title {
+    //
+    font-size: 42px; // Slightly larger for page title
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    background: linear-gradient(135deg, var(--white) 0%, rgba(255,255,255,0.9) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+
+  .subtitle {
+    //
+    color: var(--text-secondary);
+    font-size: 18px;
+    font-weight: 500;
+  }
+}
+
+// --- PODIUM SECTION ---
+
+.podium-grid {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end; // Align bottom so Rank 1 stands tall
+  gap: 24px;
+  margin-bottom: 48px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
+.podium-card {
+  // Utilizing the Glass Morphism Pattern
+  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
+  border-radius: var(--radius);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  width: 200px;
+  position: relative;
+  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  // Inner glow effect
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(124, 92, 255, 0.2), transparent 50%, rgba(145, 120, 255, 0.1));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  // Hover Interaction
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  // Rank Styling
+  &.rank-1 {
+    width: 240px;
+    padding: 32px 24px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255,255,255,0.02) 100%);
+    border-color: rgba(255, 215, 0, 0.3);
+    order: 2; // Center in flex
+    z-index: 2;
+    
+    .avatar-wrapper {
+      width: 90px;
+      height: 90px;
+      border-color: #FFD700;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    }
+  }
+
+  &.rank-2 {
+    order: 1;
+    .avatar-wrapper { border-color: #C0C0C0; }
+  }
+
+  &.rank-3 {
+    order: 3;
+    .avatar-wrapper { border-color: #CD7F32; }
+  }
+}
+
+.avatar-wrapper {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: 3px solid var(--accent);
+  margin-bottom: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-dark);
+
+  .avatar-placeholder {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--white);
+  }
+}
+
+.user-info {
+  text-align: center;
+  
+  .username {
+    color: var(--white);
+    font-weight: 700;
+    font-size: 18px;
+    margin: 0 0 4px 0;
+  }
+
+  .xp {
+    display: block;
+    color: var(--accent-light);
+    font-weight: 800;
+    font-size: 16px;
+  }
+
+  .lang-tag {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
+    display: block;
+  }
+}
+
+.crown-icon {
+  font-size: 32px;
+  margin-bottom: -10px;
+  z-index: 10;
+  filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+}
+
+.streak-badge {
+  margin-top: 16px;
+  background: rgba(255, 107, 53, 0.2);
+  color: #ff9f40;
+  padding: 4px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid rgba(255, 107, 53, 0.3);
+}
+
+// --- LIST SECTION ---
+
+.list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.list-item {
+  // Base .card styles are applied via HTML class, 
+  // adding specific overrides for list layout
+  display: flex;
+  align-items: center;
+  padding: 16px 24px; // Compact padding compared to main cards
+  min-height: 80px;
+
+  &.current-user {
+    background: linear-gradient(135deg, rgba(124, 92, 255, 0.15) 0%, rgba(124, 92, 255, 0.05) 100%);
+    border-color: var(--accent);
+  }
+
+  .rank-col {
+    width: 60px;
+    .rank-number {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--muted);
+      font-family: var(--font-family);
+    }
+  }
+
+  .user-col {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .avatar-mini {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--bg-dark);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      font-weight: 700;
+    }
+
+    .details {
+      display: flex;
+      flex-direction: column;
+      
+      .name {
+        color: var(--white);
+        font-weight: 600;
+        font-size: 16px;
+      }
+      .lang {
+        color: var(--muted);
+        font-size: 13px;
+      }
+    }
+  }
+
+  .stats-col {
+    display: flex;
+    gap: 32px;
+    text-align: right;
+
+    .stat {
+      display: flex;
+      flex-direction: column;
+
+      .value {
+        font-weight: 700;
+        color: var(--white);
+        font-size: 16px;
+      }
+      .label {
+        font-size: 12px;
+        color: var(--muted);
+        text-transform: uppercase;
+      }
+
+      &.xp-stat .value {
+        color: var(--accent-light);
+      }
+    }
+  }
+}

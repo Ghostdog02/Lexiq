@@ -1,0 +1,76 @@
+<div class="page-container">
+  <header class="header">
+    <h1 class="title">Global Leaderboard</h1>
+    <p class="subtitle">Top learners this week. Keep the streak alive!</p>
+  </header>
+
+  <section class="podium-grid">
+    <div class="podium-card rank-2" *ngIf="topThree[1]">
+      <div class="rank-badge">2</div>
+      <div class="avatar-wrapper">
+        <div class="avatar-placeholder">{{ topThree[1].username.charAt(0) }}</div>
+      </div>
+      <div class="user-info">
+        <h3 class="username">{{ topThree[1].username }}</h3>
+        <span class="xp">{{ topThree[1].xp | number }} XP</span>
+        <span class="lang-tag">{{ topThree[1].language }}</span>
+      </div>
+    </div>
+
+    <div class="podium-card rank-1" *ngIf="topThree[0]">
+      <div class="crown-icon">👑</div>
+      <div class="avatar-wrapper">
+        <div class="avatar-placeholder">{{ topThree[0].username.charAt(0) }}</div>
+      </div>
+      <div class="user-info">
+        <h3 class="username">{{ topThree[0].username }}</h3>
+        <span class="xp">{{ topThree[0].xp | number }} XP</span>
+        <span class="lang-tag">{{ topThree[0].language }}</span>
+      </div>
+      <div class="streak-badge">🔥 {{ topThree[0].streak }} Day Streak</div>
+    </div>
+
+    <div class="podium-card rank-3" *ngIf="topThree[2]">
+      <div class="rank-badge">3</div>
+      <div class="avatar-wrapper">
+        <div class="avatar-placeholder">{{ topThree[2].username.charAt(0) }}</div>
+      </div>
+      <div class="user-info">
+        <h3 class="username">{{ topThree[2].username }}</h3>
+        <span class="xp">{{ topThree[2].xp | number }} XP</span>
+        <span class="lang-tag">{{ topThree[2].language }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="list-container">
+    <div 
+      class="list-item card" 
+      *ngFor="let user of restOfList"
+      [class.current-user]="user.isCurrentUser"
+    >
+      <div class="rank-col">
+        <span class="rank-number">#{{ user.rank }}</span>
+      </div>
+      
+      <div class="user-col">
+        <div class="avatar-mini">{{ user.username.charAt(0) }}</div>
+        <div class="details">
+          <span class="name">{{ user.username }}</span>
+          <span class="lang">{{ user.language }}</span>
+        </div>
+      </div>
+
+      <div class="stats-col">
+        <div class="stat">
+          <span class="value">{{ user.streak }}</span>
+          <span class="label">Streak</span>
+        </div>
+        <div class="stat xp-stat">
+          <span class="value">{{ user.xp | number }}</span>
+          <span class="label">XP</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

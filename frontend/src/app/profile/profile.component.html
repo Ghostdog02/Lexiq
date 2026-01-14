@@ -46,7 +46,7 @@
 
   <div class="content-grid">
     <section class="languages-section">
-      <span class="languages-section-header">
+      <span class="section-header">
         <h2 class="section-title">Enrolled Languages</h2>
         <p>See more</p>
       </span>
@@ -76,7 +76,10 @@
     </section>
 
     <section class="achievements-section">
-      <h2 class="section-title">Achievements</h2>  
+      <span class="section-header">
+        <h2 class="section-title">Achievements</h2>
+        <p>See all</p>
+      </span>
       <div class="achievements-subsection">
         <div class="achievements-grid">
           <div *ngFor="let achievement of unlockedAchievements | slice:0:3" class="achievement-card unlocked">
