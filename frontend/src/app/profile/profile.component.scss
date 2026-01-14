@@ -180,6 +180,24 @@
   padding-bottom: 40px;
 }
 
+.languages-section-header {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+
+  p {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    transition: color 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      color: var(--accent-light);
+    }
+  }
+}
+
 .section-title {
   font-size: 24px;
   align-self: center;

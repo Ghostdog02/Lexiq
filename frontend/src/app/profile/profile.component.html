@@ -46,7 +46,10 @@
 
   <div class="content-grid">
     <section class="languages-section">
-      <h2 class="section-title">Enrolled Languages</h2>
+      <span class="languages-section-header">
+        <h2 class="section-title">Enrolled Languages</h2>
+        <p>See more</p>
+      </span>
       <div class="languages-list">
         <div *ngFor="let language of enrolledLanguages | slice:0:3" class="language-card">
           <div class="language-header">
