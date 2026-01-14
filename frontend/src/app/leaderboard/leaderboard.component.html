@@ -1,76 +1,81 @@
-<div class="page-container">
-  <header class="header">
-    <h1 class="title">Global Leaderboard</h1>
-    <p class="subtitle">Top learners this week. Keep the streak alive!</p>
-  </header>
+<div class="leaderboard-container">
+  <div class="leaderboard-header">
+    <h1 class="page-title">Leaderboard</h1>
+    <p class="page-subtitle">See how you stack up against other learners</p>
 
-  <section class="podium-grid">
-    <div class="podium-card rank-2" *ngIf="topThree[1]">
-      <div class="rank-badge">2</div>
-      <div class="avatar-wrapper">
-        <div class="avatar-placeholder">{{ topThree[1].username.charAt(0) }}</div>
-      </div>
-      <div class="user-info">
-        <h3 class="username">{{ topThree[1].username }}</h3>
-        <span class="xp">{{ topThree[1].xp | number }} XP</span>
-        <span class="lang-tag">{{ topThree[1].language }}</span>
-      </div>
+    <div class="timeframe-selector">
+      <button 
+        class="timeframe-btn" 
+        [class.active]="timeFrame === 'weekly'"
+        (click)="setTimeFrame('weekly')">
+        Weekly
+      </button>
+      <button 
+        class="timeframe-btn" 
+        [class.active]="timeFrame === 'monthly'"
+        (click)="setTimeFrame('monthly')">
+        Monthly
+      </button>
+      <button 
+        class="timeframe-btn" 
+        [class.active]="timeFrame === 'allTime'"
+        (click)="setTimeFrame('allTime')">
+        All Time
+      </button>
     </div>
+  </div>
 
-    <div class="podium-card rank-1" *ngIf="topThree[0]">
-      <div class="crown-icon">👑</div>
-      <div class="avatar-wrapper">
-        <div class="avatar-placeholder">{{ topThree[0].username.charAt(0) }}</div>
-      </div>
-      <div class="user-info">
-        <h3 class="username">{{ topThree[0].username }}</h3>
-        <span class="xp">{{ topThree[0].xp | number }} XP</span>
-        <span class="lang-tag">{{ topThree[0].language }}</span>
-      </div>
-      <div class="streak-badge">🔥 {{ topThree[0].streak }} Day Streak</div>
-    </div>
-
-    <div class="podium-card rank-3" *ngIf="topThree[2]">
-      <div class="rank-badge">3</div>
-      <div class="avatar-wrapper">
-        <div class="avatar-placeholder">{{ topThree[2].username.charAt(0) }}</div>
-      </div>
-      <div class="user-info">
-        <h3 class="username">{{ topThree[2].username }}</h3>
-        <span class="xp">{{ topThree[2].xp | number }} XP</span>
-        <span class="lang-tag">{{ topThree[2].language }}</span>
-      </div>
-    </div>
-  </section>
-
-  <section class="list-container">
+  <div class="leaderboard-list">
     <div 
-      class="list-item card" 
-      *ngFor="let user of restOfList"
-      [class.current-user]="user.isCurrentUser"
-    >
-      <div class="rank-col">
-        <span class="rank-number">#{{ user.rank }}</span>
-      </div>
+      *ngFor="let user of leaderboardUsers" 
+      class="leaderboard-card"
+      [class.current-user]="isCurrentUser(user)"
+      [class.top-three]="user.rank <= 3">
       
-      <div class="user-col">
-        <div class="avatar-mini">{{ user.username.charAt(0) }}</div>
-        <div class="details">
-          <span class="name">{{ user.username }}</span>
-          <span class="lang">{{ user.language }}</span>
+      <div class="rank-section">
+        <div class="rank-badge" [class]="getRankBadgeClass(user.rank)">
+          <span class="rank-icon" *ngIf="user.rank <= 3">{{ getRankIcon(user.rank) }}</span>
+          <span class="rank-number" *ngIf="user.rank > 3">#{{ user.rank }}</span>
+        </div>
+        <div class="rank-change" [class]="getChangeClass(user.change)">
+          <span class="change-icon">{{ getChangeIcon(user.change) }}</span>
+          <span class="change-value" *ngIf="user.change !== 0">{{ user.change < 0 ? -user.change : user.change }}</span>
         </div>
       </div>
 
-      <div class="stats-col">
-        <div class="stat">
-          <span class="value">{{ user.streak }}</span>
-          <span class="label">Streak</span>
+      <div class="user-section">
+        <img [src]="user.avatar" [alt]="user.name" class="user-avatar">
+        <div class="user-info">
+          <h3 class="user-name">{{ user.name }}</h3>
+          <div class="user-level">Level {{ user.level }}</div>
         </div>
-        <div class="stat xp-stat">
-          <span class="value">{{ user.xp | number }}</span>
-          <span class="label">XP</span>
+      </div>
+
+      <div class="stats-section">
+        <div class="stat-item">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-details">
+            <div class="stat-value">{{ user.totalXp.toLocaleString() }}</div>
+            <div class="stat-label">Total XP</div>
+          </div>
+        </div>
+
+        <div class="stat-item">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-details">
+            <div class="stat-value">{{ user.currentStreak }}</div>
+            <div class="stat-label">Streak</div>
+          </div>
+        </div>
+
+        <div class="stat-item">
+          <div class="stat-icon">🏆</div>
+          <div class="stat-details">
+            <div class="stat-value">{{ user.longestStreak }}</div>
+            <div class="stat-label">Best</div>
+          </div>
         </div>
       </div>
     </div>
-  </section>
+  </div>
 </div>

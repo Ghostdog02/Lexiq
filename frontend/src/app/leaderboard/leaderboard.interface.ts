@@ -1,10 +1,10 @@
-export interface LeaderboardEntry {
+export interface LeaderboardUser {
   rank: number;
-  userId: string;
-  username: string;
-  avatarUrl?: string; 
-  xp: number;
-  streak: number;
-  language: string;
-  isCurrentUser: boolean;
+  name: string;
+  avatar: string;
+  totalXp: number;
+  currentStreak: number;
+  longestStreak: number;
+  level: number;
+  change: number; // Position change (positive = moved up, negative = moved down, 0 = no change)
 }
