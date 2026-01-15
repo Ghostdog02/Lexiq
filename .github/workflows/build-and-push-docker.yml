@@ -49,6 +49,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NG_GOOGLE_CLIENT_ID=${{ secrets.NG_GOOGLE_CLIENT_ID }}
+            BACKEND_URL=${{ secrets.BACKEND_URL }}
 
   build-and-push-backend:
     runs-on: ubuntu-latest

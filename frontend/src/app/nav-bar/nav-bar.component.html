@@ -1,18 +1,15 @@
 <aside id="mainAside">
-
-    <h1>LingoBuddy</h1>
-
     <ul class="sideBarLinks">
 
         <li><a routerLink="/"><span class="icon">🏠</span> Home</a></li>
 
-        <li><a routerLink=""><span class="icon">📚</span> Courses</a></li>
+        <li><a routerLink="/courses"><span class="icon">📚</span> Courses</a></li>
 
-        <li><a routerLink=""><span class="icon">🏆</span> Leaderboard</a></li>
+        <li><a routerLink="/leaderboard"><span class="icon">🏆</span> Leaderboard</a></li>
 
-        <li><a routerLink=""><span class="icon">👤</span> Profile</a></li>
+        <li><a routerLink="/profile"><span class="icon">👤</span> Profile</a></li>
 
-        <li><a routerLink=""><span class="icon">❓</span> Help</a></li>
+        <li><a routerLink="/help"><span class="icon">❓</span> Help</a></li>
 
         @if (userIsAuthenticated) {
           <li><a routerLink=""><span class="icon">🚪</span> Logout</a></li>

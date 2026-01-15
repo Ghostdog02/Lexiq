@@ -1,0 +1,125 @@
+<div class="profile-container">
+  <div class="profile-header">
+    <div class="user-info">
+      <img id="profile-icon" [src]="user.avatar" [alt]="user.name" class="avatar">
+      <div class="user-details">
+        <h1 class="title">{{ user.name }}</h1>
+        <p class="email">{{ user.email }}</p>
+        <p class="join-date">Member since {{ formatDate(user.joinDate) }} • {{ getDaysSinceJoined() }} days</p>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">⚡</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ user.totalXp.toLocaleString() }}</div>
+          <div class="stat-label">Total XP</div>
+        </div>
+      </div>
+
+      <div class="stat-card streak">
+        <div class="stat-icon">🔥</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ user.currentStreak }}</div>
+          <div class="stat-label">Day Streak</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ user.longestStreak }}</div>
+          <div class="stat-label">Best Streak</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">🏅</div>
+        <div class="stat-content">
+          <div class="stat-value">{{ unlockedAchievements.length }}/{{ achievements.length }}</div>
+          <div class="stat-label">Achievements</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <section class="languages-section">
+      <span class="section-header">
+        <h2 class="section-title">Enrolled Languages</h2>
+        <p>See more</p>
+      </span>
+      <div class="languages-list">
+        <div *ngFor="let language of enrolledLanguages | slice:0:3" class="language-card">
+          <div class="language-header">
+            <div class="language-info">
+              <span class="flag">{{ language.flag }}</span>
+              <div class="language-details">
+                <h3 class="language-name">{{ language.name }}</h3>
+                <div class="level-badge">Level {{ language.level }}</div>
+              </div>
+            </div>
+            <div class="language-xp">
+              <div class="xp-value">{{ language.totalXp.toLocaleString() }} XP</div>
+            </div>
+          </div>
+          
+          <div class="progress-section">
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="language.progress"></div>
+            </div>
+            <div class="progress-text">{{ language.xp }}/{{ (language.level + 1) * 500 }} XP to level {{ language.level + 1 }}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="achievements-section">
+      <span class="section-header">
+        <h2 class="section-title">Achievements</h2>
+        <p>See all</p>
+      </span>
+      <div class="achievements-subsection">
+        <div class="achievements-grid">
+          <div *ngFor="let achievement of unlockedAchievements | slice:0:3" class="achievement-card unlocked">
+            <div class="achievement-icon">{{ achievement.icon }}</div>
+            <div class="achievement-content">
+              <h4 class="achievement-name">{{ achievement.name }}</h4>
+              <p class="achievement-description">{{ achievement.description }}</p>
+              <div class="achievement-meta">
+                <span class="achievement-xp">{{ achievement.xpRequired.toLocaleString() }} XP</span>
+                <span class="achievement-date">{{ formatDate(achievement.unlockedDate!) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="content-grid">
+    <section class="achievements-section"> 
+      <div class="achievements-subsection" *ngIf="lockedAchievements.length > 0">
+        <h3 class="subsection-title">Locked Achievements ({{ lockedAchievements.length }})</h3>
+        <div class="locked-achievements-grid">
+          <div *ngFor="let achievement of lockedAchievements | slice:0:3" class="achievement-card locked">
+            <div class="achievement-icon locked-icon">{{ achievement.icon }}</div>
+            <div class="achievement-content">
+              <h4 class="achievement-name">{{ achievement.name }}</h4>
+              <p class="achievement-description">{{ achievement.description }}</p>
+              <div class="achievement-meta">
+                <span class="achievement-xp">{{ achievement.xpRequired.toLocaleString() }} XP</span>
+              </div>
+              <div class="progress-section">
+                <div class="progress-bar locked-progress">
+                  <div class="progress-fill" [style.width.%]="getXpProgress(achievement)"></div>
+                </div>
+                <div class="progress-text">{{ user.totalXp.toLocaleString() }}/{{ achievement.xpRequired.toLocaleString() }} XP</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

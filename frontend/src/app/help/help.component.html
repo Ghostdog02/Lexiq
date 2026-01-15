@@ -1,0 +1,70 @@
+<div class="page-container">
+  
+  <header class="help-header">
+    <h1 class="title">How can we help?</h1>
+    <p class="subtitle">Search for answers or browse topics below.</p>
+    
+    <div class="search-wrapper">
+      <div class="search-icon">🔍</div>
+      <input 
+        type="text" 
+        class="search-input" 
+        placeholder="Ask a question (e.g., 'How to change password')"
+        [(ngModel)]="searchQuery"
+        (ngModelChange)="filterFaqs()"
+      >
+    </div>
+  </header>
+
+  <section class="categories-grid">
+    <div 
+      *ngFor="let cat of categories" 
+      class="category-card" 
+      [class.active]="selectedCategory === cat.id"
+      (click)="selectCategory(cat.id)"
+    >
+      <div class="cat-icon">{{ cat.icon }}</div>
+      <h3 class="cat-name">{{ cat.name }}</h3>
+      <p class="cat-desc">{{ cat.description }}</p>
+    </div>
+  </section>
+
+  <section class="faq-section">
+    <h2 class="section-title">
+      {{ selectedCategory ? 'Category Questions' : 'Frequently Asked Questions' }}
+    </h2>
+    
+    <div class="faq-list">
+      <div *ngIf="filteredFaqs.length === 0" class="no-results">
+        No results found. Try a different search term.
+      </div>
+
+      <div 
+        *ngFor="let faq of filteredFaqs" 
+        class="faq-item" 
+        [class.open]="faq.isOpen"
+      >
+        <button class="faq-question" (click)="toggleFaq(faq)" [attr.aria-expanded]="faq.isOpen">
+          <span>{{ faq.question }}</span>
+          <span class="chevron">▼</span>
+        </button>
+        <div class="faq-answer-wrapper">
+          <div class="faq-answer">
+            {{ faq.answer }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact-section">
+    <div class="contact-card">
+      <div class="contact-content">
+        <h2>Still need help?</h2>
+        <p>Our support team is just a click away.</p>
+      </div>
+      <button class="btn primary">Contact Support</button>
+    </div>
+  </section>
+
+</div>

@@ -3,8 +3,6 @@ secrets:
     file: ./secrets/database/password.txt
   backend_env:
     file: ./secrets/backend/.env
-  frontend_env:
-    file: ./secrets/frontend/.env
 
 services:
   db:
@@ -30,40 +28,45 @@ services:
       retries: 10
       start_period: 30s
       timeout: 3s
+    restart: unless-stopped
   
   backend:
-    image: ghcr.io/ghostdog02/lexiq-backend:${TAG:-latest}
+    image: lexiq-backend:local 
     container_name: lexiq-backend
     ports: 
       - "5000:5000"
-    secrets: 
-      - backend_env
     depends_on:
       db: 
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:5000"]
+      test: ["CMD", "curl --fail --silent http://localhost:5000/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 10s
+    restart: unless-stopped
 
   frontend:
-    image: ghcr.io/ghostdog02/lexiq-frontend:${TAG:-latest}
+    image: lexiq-frontend:local
     container_name: lexiq-frontend
     ports:
-      - "8080:8080"
+      - "80:80"
+      - "443:443"
+    secrets:
+      - frontend_env
     depends_on:
-      - backend
+      backend: 
+        condition: service_healthy
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    user: nginx
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080"]
+      test: ["CMD-SHELL", "curl --fail --silent --insecure https://frontend:443/ || exit 1"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
-      start_period: 10s 
+      start_period: 10s
+    restart: unless-stopped 
 
 volumes:
   db-data:

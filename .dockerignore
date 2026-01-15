@@ -58,3 +58,15 @@ docker-compose*.yml
 *.bak
 *.old
 *.tmp
+
+# Ignore ALL local build artifacts
+**/bin/
+**/obj/
+
+# Ignore local environment files
+.env
+secrets/
+
+# Ignore IDE settings
+.vs/
+.vscode/

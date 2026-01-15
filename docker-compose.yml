@@ -1,10 +1,10 @@
 secrets:
   db_password:
-    file: ./secrets/database/password.txt
+    file: ./backend/Database/password.txt
   backend_env:
-    file: ./secrets/backend/.env
+    file: ./backend/.env
   frontend_env:
-    file: ./secrets/frontend/.env
+    file: ./frontend/.env
 
 services:
   db:
@@ -12,41 +12,21 @@ services:
     container_name: lexiq-database
     environment:
       ACCEPT_EULA: "Y"
+      SA_PASSWORD: /run/secrets/db_password
     secrets: 
       - db_password
-    volumes:services:
-  backend:
-    image: ghcr.io/ghostdog02/lexiq-backend:${TAG:-latest}
-    build:
-      context: ./backend
-      dockerfile: DOCKERFILE
-
-  frontend:
-    image: ghcr.io/ghostdog02/lexiq-frontend:${TAG:-latest}
-    build:
-      context: ./frontend
-      dockerfile: DOCKERFILE
-      args:
-        - NG_GOOGLE_CLIENT_ID=751309259564-16n4ng66dqcqrulih1ihhamdrnrlbvgr.apps.googleusercontent.com
-        - BACKEND_URL=http://backend:5000
+    volumes:
       - db-data:/var/opt/mssql
-    entrypoint: ["/bin/bash", "-c"]
-    command:
-      - |
-        export MSSQL_SA_PASSWORD=$$(cat /run/secrets/db_password)
-        /opt/mssql/bin/sqlservr
     healthcheck:
-      test: >
-        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa 
-        -P "$$(cat /run/secrets/db_password)" 
-        -Q "SELECT 1" -C || exit 1
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "$$(cat /run/secrets/db_password)", "-Q", "SELECT 1"]
       interval: 10s
-      retries: 10
-      start_period: 30s
       timeout: 3s
-  
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
   backend:
-    image: ghcr.io/ghostdog02/lexiq-backend:${TAG}
+    image: backend
     build:
       context: ./backend
       dockerfile: DOCKERFILE
@@ -63,9 +43,10 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+    restart: unless-stopped
 
   frontend:
-    image: ghcr.io/ghostdog02/lexiq-frontend:${TAG}
+    image: frontend
     build:
       context: ./frontend
       dockerfile: DOCKERFILE
@@ -74,7 +55,7 @@ services:
         - BACKEND_URL=http://backend:5000
     container_name: lexiq-frontend
     ports:
-      - "8080:8080"
+      - "443:443"
     depends_on:
       - backend
     volumes:
@@ -82,11 +63,12 @@ services:
       - ./certbot/www:/var/www/certbot
     user: nginx
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:443"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s 
-
+    restart: unless-stopped
+    
 volumes:
   db-data:

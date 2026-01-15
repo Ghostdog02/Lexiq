@@ -59,3 +59,15 @@ docker-compose*.yml
 *.bak
 *.old
 *.tmp
+
+# ================================
+# ASP.NET Core
+# ================================
+bin/
+obj/
+wwwroot
+**/bin
+**/obj
+www
+secrets/
+certbot/

@@ -1,6 +1,9 @@
+using System.Reflection;
 using Backend.Api.Extensions;
 using Backend.Database;
+using Backend.Database.Entities;
 using Backend.Database.Extensions;
+using Backend.Services;
 using DotNetEnv;
 
 namespace Backend.Api;
@@ -34,6 +37,7 @@ public class Program
         services.AddIdentityConfiguration();
         services.AddGoogleAuthentication();
         services.AddSwaggerDocumentation();
+        services.AddHealthChecks();
     }
 
     private static void ConfigureMiddleware(WebApplication app)
@@ -44,6 +48,7 @@ public class Program
         app.UseSwaggerWithUI();
         app.UseAuthentication();
         app.UseAuthorization();
+        app.MapHealthChecks("/health");
         app.MapControllers();
     }
 

@@ -9,7 +9,7 @@ const BACKEND_URL = import.meta.env.BACKEND_URL + '/auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService implements OnInit {
-  
+    
 
   private httpClient = inject(HttpClient);
   private router = inject(Router);
