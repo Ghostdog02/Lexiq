@@ -17,6 +17,7 @@ export class HelpComponent implements OnInit {
   filteredFaqs: FaqItem[] = [];
   searchQuery: string = '';
   selectedCategory: string | null = null;
+  isFocused: boolean = false; // Tracks search bar glow
 
   constructor(private helpService: HelpService) {}
 
@@ -29,6 +30,10 @@ export class HelpComponent implements OnInit {
   }
 
   toggleFaq(item: FaqItem): void {
+    this.allFaqs.forEach(f => {
+      if (f.id !== item.id) 
+        f.isOpen = false;
+    });
     item.isOpen = !item.isOpen;
   }
 
@@ -48,4 +53,12 @@ export class HelpComponent implements OnInit {
     this.selectedCategory = this.selectedCategory === categoryId ? null : categoryId;
     this.filterFaqs();
   }
+
+  triggerShake(elementId: string) {
+    const el = document.getElementById(elementId);
+    if (el) {
+      el.classList.add('shake-anim');
+      setTimeout(() => el.classList.remove('shake-anim'), 500);
+    }
+  } 
 }
