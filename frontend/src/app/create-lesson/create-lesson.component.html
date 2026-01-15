@@ -1,0 +1,278 @@
+<div class="page-split-view">
+  
+  <!-- Left Panel: Editor -->
+  <div class="editor-panel">
+    <div class="panel-header">
+      <div class="title-wrapper">
+        <span class="icon">✏️</span>
+        <h1 class="title">Create Lesson</h1>
+      </div>
+      <p class="subtitle">Design a comprehensive lesson with explanations and exercises.</p>
+    </div>
+
+    <form [formGroup]="lessonForm" (ngSubmit)="onSubmit()" class="editor-form">
+      
+      <!-- Lesson Meta -->
+      <section class="form-section">
+        <h3><span class="icon">⚙️</span> Lesson Details</h3>
+
+        <div class="form-group">
+          <label for="title">Title</label>
+          <div class="input-with-icon">
+            <span class="icon">📝</span>
+            <input
+              type="text"
+              id="title"
+              formControlName="title"
+              placeholder="e.g. Introduction to Spanish Verbs"
+              [class.invalid]="formControls['title'].invalid && formControls['title'].touched"
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <div class="input-with-icon">
+            <span class="icon">💬</span>
+            <textarea
+              id="description"
+              rows="2"
+              formControlName="description"
+              placeholder="Short summary for the lesson card..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="difficulty">Difficulty Level: {{ formControls['difficulty'].value }}</label>
+          <div class="range-container">
+            <input 
+              type="range" 
+              min="1" 
+              max="5" 
+              step="1" 
+              id="difficulty" 
+              formControlName="difficulty"
+            >
+            <div class="range-ticks">
+              <span>Beginner</span>
+              <span>Intermediate</span>
+              <span>Expert</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Textbook Content -->
+      <section class="form-section">
+        <h3><span class="icon">📖</span> Textbook Content</h3>
+        <p class="section-desc">Explain the concept to the student here.</p>
+
+        <div class="form-group">
+          <div class="textarea-wrapper">
+            <textarea
+              id="content"
+              rows="8"
+              formControlName="content"
+              placeholder="# Lesson Content\n\nExplain the grammar rule or vocabulary here..."
+              [class.invalid]="formControls['content'].invalid && formControls['content'].touched"
+            ></textarea>
+          </div>
+          <p class="hint"><span class="icon">📝</span> Markdown is supported.</p>
+        </div>
+      </section>
+
+      <!-- Exercises List -->
+      <section class="form-section">
+        <div class="section-header">
+          <h3><span class="icon">🧩</span> Exercises</h3>
+          <button type="button" class="btn small" (click)="addExercise()">
+            <span class="icon">➕</span> Add Exercise
+          </button>
+        </div>
+        
+        <div formArrayName="exercises" class="exercises-list">
+          @for (exercise of exercises.controls; track $index) {
+            <div [formGroupName]="$index" class="exercise-item slide-in">
+              
+              <div class="exercise-header">
+                <span class="exercise-num">Exercise #{{ $index + 1 }}</span>
+                <button type="button" class="btn icon-only delete-btn" (click)="removeExercise($index)">
+                  <span class="icon">🗑️</span>
+                </button>
+              </div>
+
+              <div class="form-group">
+                <label>Type</label>
+                <div class="select-wrapper">
+                  <span class="icon select-icon">📚</span>
+                  <select formControlName="type">
+                    @for (type of exerciseTypes; track type.value) {
+                      <option [value]="type.value">{{ type.label }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>Question / Prompt</label>
+                <div class="input-with-icon">
+                  <span class="icon">❓</span>
+                  <input type="text" formControlName="question" placeholder="e.g. Translate 'Hello'">
+                </div>
+              </div>
+
+              <!-- Conditional Fields based on Type -->
+              @switch (exercise.get('type')?.value) {
+                
+                <!-- Multiple Choice -->
+                @case ('multiple-choice') {
+                  <div class="sub-form fade-in">
+                    <label>Options</label>
+                    <div formArrayName="options">
+                      @for (option of getOptions($index).controls; track $index) {
+                        <div class="option-row slide-in-right">
+                          <div class="input-with-icon full-width">
+                            <span class="icon">⭕</span>
+                            <input [formControlName]="$index" placeholder="Option {{ $index + 1 }}">
+                          </div>
+                          <button type="button" class="btn icon-only small delete-btn" (click)="removeOption($index, $index)">
+                            <span class="icon">❌</span>
+                          </button>
+                        </div>
+                      }
+                    </div>
+                    <button type="button" class="btn link-btn" (click)="addOption($index)">
+                      <span class="icon">➕</span> Add Option
+                    </button>
+
+                    <div class="form-group mt-2">
+                      <label>Correct Answer (Match text exactly)</label>
+                      <div class="input-with-icon">
+                        <span class="icon">✅</span>
+                        <input type="text" formControlName="correctAnswer" placeholder="Copy the correct option text here">
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                <!-- Fill in Blank / Translation -->
+                @default {
+                  <div class="sub-form fade-in">
+                    <div class="form-group">
+                      <label>Correct Answer</label>
+                      <div class="input-with-icon">
+                        <span class="icon">🔑</span>
+                        <input type="text" formControlName="answer" placeholder="The expected answer">
+                      </div>
+                    </div>
+                  </div>
+                }
+              }
+
+            </div>
+          }
+          
+          @if (exercises.length === 0) {
+            <div class="empty-state">
+              <span class="icon empty-icon">🎯</span>
+              <p>No exercises added yet.</p>
+              <button type="button" class="btn small" (click)="addExercise()">Create First Exercise</button>
+            </div>
+          }
+        </div>
+      </section>
+
+    </form>
+
+      <!-- Actions -->
+      <div class="form-actions sticky-footer">
+        <button type="button" class="btn secondary">
+          <span class="icon">↩️</span> Discard
+        </button>
+        <button type="button" class="btn primary" [disabled]="lessonForm.invalid" (click)="onSubmit()">
+          <span class="icon">🚀</span> Publish Lesson
+        </button>
+      </div>
+  </div>
+
+  <!-- Right Panel: Live Preview -->
+  <div class="preview-panel">
+    <div class="preview-header">
+      <h2><span class="icon">👁️</span> Live Preview</h2>
+      <span class="tag">Student View</span>
+    </div>
+
+    <div class="device-mockup">
+      <div class="exercise-card-preview">
+        
+        <!-- Preview: Lesson Header -->
+        <div class="card-header">
+          <div class="meta">
+            <span class="badge difficulty-badge" [attr.data-level]="formControls['difficulty'].value">
+              Level {{ formControls['difficulty'].value }}
+            </span>
+            <span class="category"><span class="icon">🎓</span> Lesson</span>
+          </div>
+          <h3>{{ formControls['title'].value || 'Untitled Lesson' }}</h3>
+        </div>
+
+        <div class="card-body">
+          <!-- Preview: Textbook Content -->
+          <div class="textbook-preview">
+            @if (!formControls['content'].value) {
+              <p class="placeholder-text">Lesson content will appear here...</p>
+            }
+            <div [innerText]="formControls['content'].value"></div>
+          </div>
+
+          <hr class="divider">
+
+          <!-- Preview: Exercises -->
+          <div class="exercises-preview">
+            <h4>Exercises ({{ exercises.length }})</h4>
+            
+            @for (ex of exercises.controls; track $index) {
+              <div class="preview-item slide-in">
+                <span class="badge-num">{{ $index + 1 }}</span>
+                <div class="preview-content">
+                  <strong>{{ ex.get('question')?.value || 'Question...' }}</strong>
+                  
+                  <!-- Type specific preview -->
+                  @switch (ex.get('type')?.value) {
+                    @case ('multiple-choice') {
+                      <div class="options-list">
+                        @for (opt of getOptions($index).controls; track $index) {
+                          <div class="radio-fake">
+                            <span class="icon">⭕</span> {{ opt.value || 'Option' }}
+                          </div>
+                        }
+                      </div>
+                    }
+                    
+                    @default {
+                      <div class="input-fake">
+                        <span class="icon">✍️</span> Type answer...
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+            }
+             
+            @if (exercises.length === 0) {
+              <p class="placeholder-text small">
+                <span class="icon">🚫</span> No exercises added.
+              </p>
+            }
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <button class="btn ghost">Start Lesson <span class="icon">➡️</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

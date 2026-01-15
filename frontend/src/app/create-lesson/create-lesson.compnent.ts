@@ -3,11 +3,11 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 
 @Component({
-  selector: 'app-create-exercise', // Keeping selector to avoid route issues for now
+  selector: 'app-create-exercise',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './create-exercise.html',
-  styleUrl: './create-exercise.scss',
+  templateUrl: './create-lesson.component.html',
+  styleUrl: './create-lesson.component.scss',
 })
 export class CreateLesson {
   lessonForm: FormGroup;
@@ -18,27 +18,27 @@ export class CreateLesson {
     { value: 'translation', label: 'Translation' }
   ];
 
-  constructor(private fb: FormBuilder) {
-    this.lessonForm = this.fb.group({
+  constructor(private formBuilder: FormBuilder) {
+    this.lessonForm = this.formBuilder.group({
       title: ['', [Validators.required, Validators.minLength(5)]],
       description: ['', [Validators.required, Validators.minLength(10)]],
       content: ['', [Validators.required, Validators.minLength(20)]], // Textbook content
       difficulty: [1, [Validators.required, Validators.min(1), Validators.max(5)]],
-      exercises: this.fb.array([])
+      exercises: this.formBuilder.array([])
     });
   }
 
-  get f() { return this.lessonForm.controls; }
+  get formControls() { return this.lessonForm.controls; }
   get exercises() { return this.lessonForm.get('exercises') as FormArray; }
 
   addExercise() {
-    const exerciseGroup = this.fb.group({
+    const exerciseGroup = this.formBuilder.group({
       type: ['multiple-choice', Validators.required],
       question: ['', Validators.required],
       // Fields for Multiple Choice
-      options: this.fb.array([
-        this.fb.control(''),
-        this.fb.control('')
+      options: this.formBuilder.array([
+        this.formBuilder.control(''),
+        this.formBuilder.control('')
       ]), 
       correctAnswer: [''],
       // Field for Fill-in-blank / Translation
@@ -57,7 +57,7 @@ export class CreateLesson {
   }
 
   addOption(exerciseIndex: number) {
-    this.getOptions(exerciseIndex).push(this.fb.control(''));
+    this.getOptions(exerciseIndex).push(this.formBuilder.control(''));
   }
 
   removeOption(exerciseIndex: number, optionIndex: number) {
