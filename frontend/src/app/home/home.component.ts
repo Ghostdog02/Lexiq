@@ -1,5 +1,6 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 
 export interface Lesson {
   id: number;
@@ -32,6 +33,7 @@ export class HomeComponent implements OnInit {
   totalXp: number = 150;
   currentStreak: number = 5;
   isUserBelowLesson: boolean = false;
+  private router = inject(Router)
 
   ngOnInit() {
     this.initializeLearningPath();
@@ -141,5 +143,9 @@ export class HomeComponent implements OnInit {
     const y = lessonIndex * 180 + 100;
     const x = lessonIndex % 2 === 0 ? 50 : -50;
     return { x, y };
+  }
+
+  redirectToCreateExercise() {
+    this.router.navigate(["exercise/create"])
   }
 }

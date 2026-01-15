@@ -1,0 +1,72 @@
+import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
+
+@Component({
+  selector: 'app-create-exercise', // Keeping selector to avoid route issues for now
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule],
+  templateUrl: './create-exercise.html',
+  styleUrl: './create-exercise.scss',
+})
+export class CreateLesson {
+  lessonForm: FormGroup;
+  
+  exerciseTypes = [
+    { value: 'multiple-choice', label: 'Multiple Choice' },
+    { value: 'fill-in-blank', label: 'Fill in the Blank' },
+    { value: 'translation', label: 'Translation' }
+  ];
+
+  constructor(private fb: FormBuilder) {
+    this.lessonForm = this.fb.group({
+      title: ['', [Validators.required, Validators.minLength(5)]],
+      description: ['', [Validators.required, Validators.minLength(10)]],
+      content: ['', [Validators.required, Validators.minLength(20)]], // Textbook content
+      difficulty: [1, [Validators.required, Validators.min(1), Validators.max(5)]],
+      exercises: this.fb.array([])
+    });
+  }
+
+  get f() { return this.lessonForm.controls; }
+  get exercises() { return this.lessonForm.get('exercises') as FormArray; }
+
+  addExercise() {
+    const exerciseGroup = this.fb.group({
+      type: ['multiple-choice', Validators.required],
+      question: ['', Validators.required],
+      // Fields for Multiple Choice
+      options: this.fb.array([
+        this.fb.control(''),
+        this.fb.control('')
+      ]), 
+      correctAnswer: [''],
+      // Field for Fill-in-blank / Translation
+      answer: [''] 
+    });
+    this.exercises.push(exerciseGroup);
+  }
+
+  removeExercise(index: number) {
+    this.exercises.removeAt(index);
+  }
+
+  // Helper for Multiple Choice options
+  getOptions(exerciseIndex: number): FormArray {
+    return this.exercises.at(exerciseIndex).get('options') as FormArray;
+  }
+
+  addOption(exerciseIndex: number) {
+    this.getOptions(exerciseIndex).push(this.fb.control(''));
+  }
+
+  removeOption(exerciseIndex: number, optionIndex: number) {
+    this.getOptions(exerciseIndex).removeAt(optionIndex);
+  }
+
+  onSubmit() {
+    if (this.lessonForm.valid) {
+      console.log('Lesson submitted:', this.lessonForm.value);
+    }
+  }
+}

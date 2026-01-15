@@ -11,12 +11,17 @@ export const routes: Routes = [
     {
         path:'google-login',
         component: GoogleLoginComponent,
-        title: "Google-Login"
+        title: "Login with Google"
     },
+    {
+        path: "exercise/create",
+        loadComponent: () => import('./create-exercise/create-exercise').then(m => m.CreateLesson),
+        title: "Create Exercise"
+    }, 
     {
         path: '**',
         loadComponent: () => import('./not-found/not-found.component').then(m => m.NotFoundComponent),
-        title: "Not-Found",
-    },
+        title: "Not Found",
+    },  
 ];
 
