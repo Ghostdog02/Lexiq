@@ -30,7 +30,7 @@
 
 .page-subtitle {
   color: var(--text-secondary);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
   margin: 0 0 24px 0;
 }
@@ -53,7 +53,7 @@
   color: var(--text-secondary);
   border: none;
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -80,7 +80,7 @@
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 16px 20px;
+  padding: 2px 20px;
   background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -126,19 +126,21 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   min-width: 60px;
+  padding-top: 25px;
 }
 
 .rank-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
   background: rgba(255,255,255,0.05);
-  border: 2px solid var(--border);
+  border: 3px solid var(--border);
   font-weight: 700;
 
   &.gold {
@@ -146,7 +148,7 @@
     border-color: rgba(255, 215, 0, 0.5);
 
     .rank-icon {
-      font-size: 28px;
+      font-size: 30px;
     }
   }
 
@@ -155,7 +157,7 @@
     border-color: rgba(192, 192, 192, 0.5);
 
     .rank-icon {
-      font-size: 28px;
+      font-size: 30px;
     }
   }
 
@@ -164,13 +166,13 @@
     border-color: rgba(205, 127, 50, 0.5);
 
     .rank-icon {
-      font-size: 28px;
+      font-size: 30px;
     }
   }
 }
 
 .rank-number {
-  font-size: 18px;
+  font-size: 22px;
   color: var(--white);
 }
 
@@ -178,7 +180,7 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  font-size: 12px;
+  font-size: 18px;
   font-weight: 600;
 
   &.up {
@@ -207,7 +209,7 @@
 }
 
 .change-icon {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 800;
 }
 
@@ -220,10 +222,10 @@
 }
 
 .user-avatar {
-  width: 56px;
-  height: 56px;
+  width: 58px;
+  height: 58px;
   border-radius: 50%;
-  border: 2px solid var(--accent);
+  border: 3px solid var(--accent);
   box-shadow: 0 4px 12px rgba(124, 92, 255, 0.3);
   flex-shrink: 0;
 }
@@ -234,7 +236,7 @@
 }
 
 .user-name {
-  font-size: 18px;
+  font-size: 23px;
   font-weight: 700;
   color: var(--white);
   margin: 0 0 4px 0;
@@ -249,7 +251,7 @@
   background: var(--accent);
   color: var(--white);
   border-radius: var(--radius-sm);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -268,7 +270,7 @@
 }
 
 .stat-icon {
-  font-size: 24px;
+  font-size: 30px;
   line-height: 1;
 }
 
@@ -279,14 +281,14 @@
 }
 
 .stat-value {
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 800;
   color: var(--white);
   line-height: 1.2;
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
@@ -319,9 +321,7 @@
   }
 
   .rank-section {
-    flex-direction: row;
     width: 100%;
-    justify-content: space-between;
   }
 
   .user-section {
