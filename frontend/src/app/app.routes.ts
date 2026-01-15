@@ -3,6 +3,7 @@ import { HomeComponent } from './home/home.component';
 import { GoogleLoginComponent } from './auth/google-login/google-login.component';
 import { ProfileComponent } from './profile/profile.component';
 import { LeaderboardComponent } from './leaderboard/leaderboard.component';
+import { HelpComponent } from './help/help.component';
 
 export const routes: Routes = [
     {
@@ -24,6 +25,11 @@ export const routes: Routes = [
         path: 'leaderboard',
         component: LeaderboardComponent,
         title: "Leaderboard"
+    },
+    {
+        path: 'help',
+        component: HelpComponent,
+        title: "Help"
     },
     {
         path: '**',
