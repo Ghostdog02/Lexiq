@@ -1,4 +1,5 @@
 ﻿using Backend.Database.Entities;
+using Backend.Database.Entities.Questions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -16,21 +17,94 @@ public class BackendDbContext(DbContextOptions options)
 
     public DbSet<Exercise> Exercises { get; set; }
 
-    public DbSet<Question> Questions { get; set; }
-
     public DbSet<QuestionOption> QuestionOptions { get; set; }
 
     public DbSet<UserLanguage> UserLanguages { get; set; }
+
+    public DbSet<Question> Questions { get; set; }
+
+    public DbSet<MultipleChoiceQuestion> MultipleChoiceQuestions { get; set; }
+
+    public DbSet<FillInBlankQuestion> FillInBlankQuestions { get; set; }
+
+    public DbSet<TranslationQuestion> TranslationQuestions { get; set; }
+
+    public DbSet<ListeningQuestion> ListeningQuestions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<User>(entity =>
+        OverrideMicrostIdentityTablesNames(modelBuilder);
+
+        DefineRelationships(modelBuilder);
+    }
+
+    public void DefineRelationships(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserLanguage>(entity =>
         {
-            entity.ToTable("Users");
+            entity.HasKey(ul => new { ul.UserId, ul.LanguageId });
+
+            entity
+                .HasOne(ul => ul.User)
+                .WithMany(u => u.UserLanguages)
+                .HasForeignKey(ul => ul.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity
+                .HasOne(ul => ul.Language)
+                .WithMany(l => l.UserLanguages)
+                .HasForeignKey(ul => ul.LanguageId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder
+            .Entity<Language>()
+            .HasMany(l => l.Courses)
+            .WithOne(c => c.Language)
+            .HasForeignKey(c => c.LanguageId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<Course>()
+            .HasMany(c => c.Lessons)
+            .WithOne(l => l.Course)
+            .HasForeignKey(l => l.CourseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<Lesson>()
+            .HasMany(l => l.Exercises)
+            .WithOne(e => e.Lesson)
+            .HasForeignKey(e => e.LessonId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<Exercise>()
+            .HasMany(e => e.Questions)
+            .WithOne(q => q.Exercise)
+            .HasForeignKey(q => q.ExerciseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder
+            .Entity<Question>()
+            .HasDiscriminator<string>("QuestionType")
+            .HasValue<MultipleChoiceQuestion>("MultipleChoice")
+            .HasValue<FillInBlankQuestion>("FillInBlank")
+            .HasValue<TranslationQuestion>("Translation")
+            .HasValue<ListeningQuestion>("Listening");
+
+        modelBuilder
+            .Entity<QuestionOption>()
+            .HasOne(qo => qo.Question)
+            .WithMany(q => q.Options)
+            .HasForeignKey(qo => qo.QuestionId)
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+
+    public void OverrideMicrostIdentityTablesNames(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<IdentityRole>(entity =>
         {
             entity.ToTable(name: "Roles");
@@ -71,21 +145,9 @@ public class BackendDbContext(DbContextOptions options)
             entity.ToTable("UserTokens");
         });
 
-        modelBuilder.Entity<UserLanguage>(entity =>
+        modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(ul => new { ul.UserId, ul.LanguageId });
-
-            entity
-                .HasOne(ul => ul.User)
-                .WithMany(u => u.UserLanguages)
-                .HasForeignKey(ul => ul.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity
-                .HasOne(ul => ul.Language)
-                .WithMany(l => l.UserLanguages)
-                .HasForeignKey(ul => ul.LanguageId)
-                .OnDelete(DeleteBehavior.Cascade);
+            entity.ToTable("Users");
         });
     }
 }

@@ -1,15 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Backend.Database.Entities
+namespace Backend.Database.Entities.Questions
 {
-    public enum QuestionType
-    {
-        MultipleChoice,
-        FillInBlank,
-        Translation,
-    }
-
     public abstract class Question
     {
         [Key]

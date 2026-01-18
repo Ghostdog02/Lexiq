@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Backend.Database.Entities.Questions;
 
 namespace Backend.Database.Entities
 {
@@ -7,7 +8,7 @@ namespace Backend.Database.Entities
     {
         Beginner,
         Intermediate,
-        Advanced
+        Advanced,
     }
 
     public class Exercise

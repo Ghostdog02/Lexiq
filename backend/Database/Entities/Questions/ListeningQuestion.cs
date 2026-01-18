@@ -1,5 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using Backend.Database.Entities;
 
 namespace Backend.Database.Entities.Questions
 {
