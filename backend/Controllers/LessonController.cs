@@ -1,5 +1,7 @@
-using Backend.Database.Entities;
+using Backend.Api.Dtos;
+using Backend.Api.Mapping;
 using Backend.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -64,7 +66,7 @@ namespace Backend.Controllers
         /// </summary>
         /// <param name="lessonId">The current lesson ID</param>
         [HttpGet("{lessonId}/next")]
-        public async Task<IActionResult> GetNextLesson(int lessonId)
+        public async Task<ActionResult<LessonDto>> GetNextLesson(int lessonId)
         {
             var nextLesson = await _lessonService.GetNextLessonAsync(lessonId);
 
@@ -73,7 +75,7 @@ namespace Backend.Controllers
                 return Ok(new { message = "This is the last lesson in the language" });
             }
 
-            return Ok(nextLesson);
+            return Ok(nextLesson.ToDto());
         }
 
         /// <summary>
@@ -81,10 +83,10 @@ namespace Backend.Controllers
         /// </summary>
         /// <param name="courseId">The course ID</param>
         [HttpGet("course/{courseId}")]
-        public async Task<IActionResult> GetLessonsByCourse(int courseId)
+        public async Task<ActionResult<List<LessonDto>>> GetLessonsByCourse(int courseId)
         {
             var lessons = await _lessonService.GetLessonsByCourseAsync(courseId);
-            return Ok(lessons);
+            return Ok(lessons.Select(l => l.ToDto()));
         }
 
         /// <summary>
@@ -92,7 +94,7 @@ namespace Backend.Controllers
         /// </summary>
         /// <param name="lessonId">The lesson ID</param>
         [HttpGet("{lessonId}")]
-        public async Task<IActionResult> GetLesson(int lessonId)
+        public async Task<ActionResult<LessonDto>> GetLesson(int lessonId)
         {
             var lesson = await _lessonService.GetLessonWithDetailsAsync(lessonId);
 
@@ -101,7 +103,7 @@ namespace Backend.Controllers
                 return NotFound(new { message = "Lesson not found" });
             }
 
-            return Ok(lesson);
+            return Ok(lesson.ToDto());
         }
 
         /// <summary>
@@ -109,10 +111,41 @@ namespace Backend.Controllers
         /// </summary>
         /// <param name="lessonId">The lesson ID to unlock</param>
         [HttpPost("{lessonId}/unlock")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UnlockLesson(int lessonId)
         {
             await _lessonService.UnlockLessonAsync(lessonId);
             return Ok(new { message = "Lesson unlocked successfully" });
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin,ContentCreator")]
+        public async Task<ActionResult<LessonDto>> CreateLesson(CreateLessonDto dto)
+        {
+            var lesson = await _lessonService.CreateLessonAsync(dto);
+            return CreatedAtAction(nameof(GetLesson), new { lessonId = lesson.Id }, lesson.ToDto());
+        }
+
+        [HttpPut("{lessonId}")]
+        [Authorize(Roles = "Admin,ContentCreator")]
+        public async Task<ActionResult<LessonDto>> UpdateLesson(int lessonId, UpdateLessonDto dto)
+        {
+            var lesson = await _lessonService.UpdateLessonAsync(lessonId, dto);
+            if (lesson == null)
+                return NotFound();
+
+            return Ok(lesson.ToDto());
+        }
+
+        [HttpDelete("{lessonId}")]
+        [Authorize(Roles = "Admin,ContentCreator")]
+        public async Task<IActionResult> DeleteLesson(int lessonId)
+        {
+            var result = await _lessonService.DeleteLessonAsync(lessonId);
+            if (!result)
+                return NotFound();
+
+            return NoContent();
         }
     }
 }

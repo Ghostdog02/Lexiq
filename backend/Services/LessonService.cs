@@ -145,6 +145,59 @@ namespace Backend.Services
         /// </summary>
         /// <param name="lessonId">The ID of the lesson</param>
         /// <returns>The lesson with its course and language included</returns>
+        public async Task<Lesson> CreateLessonAsync(Backend.Api.Dtos.CreateLessonDto dto)
+        {
+            var lesson = new Lesson
+            {
+                CourseId = dto.CourseId,
+                Title = dto.Title,
+                Description = dto.Description,
+                EstimatedDurationMinutes = dto.EstimatedDurationMinutes,
+                OrderIndex = dto.OrderIndex,
+                LessonMediaUrl = dto.LessonMediaUrl,
+                LessonTextUrl = dto.LessonTextUrl,
+                IsLocked = true, // Default to locked
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.Lessons.Add(lesson);
+            await _context.SaveChangesAsync();
+            return lesson;
+        }
+
+        public async Task<Lesson?> UpdateLessonAsync(int id, Backend.Api.Dtos.UpdateLessonDto dto)
+        {
+            var lesson = await _context.Lessons.FindAsync(id);
+            if (lesson == null)
+                return null;
+
+            if (dto.Title != null) lesson.Title = dto.Title;
+            if (dto.Description != null) lesson.Description = dto.Description;
+            if (dto.EstimatedDurationMinutes.HasValue) lesson.EstimatedDurationMinutes = dto.EstimatedDurationMinutes.Value;
+            if (dto.OrderIndex.HasValue) lesson.OrderIndex = dto.OrderIndex.Value;
+            if (dto.LessonMediaUrl != null) lesson.LessonMediaUrl = dto.LessonMediaUrl;
+            if (dto.LessonTextUrl != null) lesson.LessonTextUrl = dto.LessonTextUrl;
+
+            await _context.SaveChangesAsync();
+            return lesson;
+        }
+
+        public async Task<bool> DeleteLessonAsync(int lessonId)
+        {
+            var lesson = await _context.Lessons.FindAsync(lessonId);
+            if (lesson == null)
+                return false;
+
+            _context.Lessons.Remove(lesson);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        /// <summary>
+        /// Gets the lesson with full navigation properties
+        /// </summary>
+        /// <param name="lessonId">The ID of the lesson</param>
+        /// <returns>The lesson with its course and language included</returns>
         public async Task<Lesson?> GetLessonWithDetailsAsync(int lessonId)
         {
             return await _context

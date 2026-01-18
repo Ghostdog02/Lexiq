@@ -1,5 +1,6 @@
 using System.Reflection;
 using Backend.Api.Services;
+using Backend.Services;
 using Backend.Database;
 using Backend.Database.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -44,6 +45,12 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+        services.AddScoped<CourseService>();
+        services.AddScoped<LessonService>();
+        services.AddScoped<LanguageService>();
+        services.AddScoped<ExerciseService>();
+        services.AddScoped<QuestionService>();
+        services.AddScoped<UserLanguageService>();
         return services;
     }
 
