@@ -95,7 +95,7 @@ public class UserManagementController(BackendDbContext context, UserManager<User
 
     // PUT api/userManagement/5
     [HttpPut("{id}")]
-    public async Task<IResult> Put(int id, [FromBody] UpdatedUserDto dto)
+    public async Task<IResult> Put(int id, [FromBody] UpdateUserDto dto)
     {
         User? existingUser = await _userManager.FindByIdAsync(id.ToString());
 

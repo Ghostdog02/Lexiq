@@ -1,15 +1,5 @@
 namespace Backend.Api.Dtos;
 
-public class LanguageDto
-{
-    public int Id { get; set; }
-    public required string Name { get; set; }
-    public string? FlagIconUrl { get; set; }
-    public int CourseCount { get; set; }
-}
+public record LanguageDto(int Id, string Name, string? FlagIconUrl, int CourseCount);
 
-public class CreateLanguageDto
-{
-    public required string Name { get; set; }
-    public string? FlagIconUrl { get; set; }
-}
+public record CreateLanguageDto(string Name, string? FlagIconUrl);

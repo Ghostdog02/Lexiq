@@ -29,9 +29,9 @@ public static class ClaimsMapping
         return new ClaimsDto(nameClaim.Value, emailClaim.Value);
     }
 
-    public static UserCreationDto ToUserCreationDto(this ClaimsDto dto)
+    public static CreateUserDto ToUserCreationDto(this ClaimsDto dto)
     {
-        var userCreationDto = new UserCreationDto(
+        var userCreationDto = new CreateUserDto(
             dto.Email!,
             dto.FullName!,
             Guid.NewGuid().ToString(), // SecurityStamp

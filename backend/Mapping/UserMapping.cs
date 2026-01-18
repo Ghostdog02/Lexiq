@@ -43,7 +43,7 @@ public static class UserMapping
         return newUser;
     }
 
-    public static User ToEntity(this UserCreationDto dto)
+    public static User ToEntity(this CreateUserDto dto)
     {
         string cleanFullName = dto.FullName.RemoveInvalidCharacters();
 
@@ -81,7 +81,7 @@ public static class UserMapping
         return new GoogleLoginDto(user.Email!, user.UserName!);
     }
 
-    public static User ToEntity(this UpdatedUserDto dto, string id)
+    public static User ToEntity(this UpdateUserDto dto, string id)
     {
         return new User
         {

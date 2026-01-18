@@ -9,7 +9,7 @@ public static class UserExtensions
 {
     public static User UpdateUserCredentials(
         this User user,
-        UpdatedUserDto dto,
+        UpdateUserDto dto,
         UserManager<User> userManager
     )
     {
