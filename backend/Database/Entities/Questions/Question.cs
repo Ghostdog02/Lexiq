@@ -40,7 +40,5 @@ namespace Backend.Database.Entities
 
         [ForeignKey(nameof(ExerciseId))]
         public Exercise Exercise { get; set; } = null!;
-
-        public abstract bool IsAnswerCorrect(string userAnswer);
     }
 }
