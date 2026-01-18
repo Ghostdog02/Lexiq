@@ -7,10 +7,10 @@ namespace Backend.Database.Entities
     {
         MultipleChoice,
         FillInBlank,
-        Translation
+        Translation,
     }
 
-    public class Question
+    public abstract class Question
     {
         [Key]
         public int Id { get; set; }
@@ -23,30 +23,24 @@ namespace Backend.Database.Entities
         public required string QuestionText { get; set; }
 
         [MaxLength(500)]
-        public string? QuestionAudioUrl { get; set; } // For listening exercises
+        public string? QuestionAudioUrl { get; set; }
 
         [MaxLength(500)]
-        public string? QuestionImageUrl { get; set; } // For visual questions
+        public string? QuestionImageUrl { get; set; }
 
-        [MaxLength(500)]
-        public string? CorrectAnswer { get; set; } // For fill-in-blank
-        
         [Required]
         public int OrderIndex { get; set; } // Position within the exercise (1, 2, 3...)
 
-        public int Points { get; set; } = 0; // Points for this question
-
-        [Required]
-        public QuestionType ExerciseType { get; set; }
+        public int Points { get; set; } = 10;
 
         [MaxLength(1000)]
-        public string? Explanation { get; set; } // Shown after answering
+        public string? Explanation { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [ForeignKey(nameof(ExerciseId))]
         public Exercise Exercise { get; set; } = null!;
 
-        public List<QuestionOption> QuestionOptions { get; set; } = []; // For multiple choice
+        public abstract bool IsAnswerCorrect(string userAnswer);
     }
 }

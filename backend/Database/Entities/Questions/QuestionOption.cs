@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Backend.Database.Entities.Questions;
 
 namespace Backend.Database.Entities
 {
@@ -22,6 +23,6 @@ namespace Backend.Database.Entities
         public int OrderIndex { get; set; } // Display order (A, B, C, D)
 
         [ForeignKey(nameof(QuestionId))]
-        public Question Question { get; set; } = null!;
+        public MultipleChoiceQuestion Question { get; set; } = null!;
     }
 }

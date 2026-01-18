@@ -44,10 +44,11 @@ export class CreateLesson {
       // Field for Fill-in-blank / Translation
       answer: [''] 
     });
+    
     this.exercises.push(exerciseGroup);
   }
 
-  removeExercise(index: number) {
+  removeAtExercise(index: number) {
     this.exercises.removeAt(index);
   }
 
