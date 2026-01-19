@@ -18,7 +18,7 @@ export const routes: Routes = [
     },
     {
         path: "exercise/create",
-        loadComponent: () => import('./create-lesson/lesson.compnent').then(m => m.LessonComponent),
+        loadComponent: () => import('./lesson/lesson.compnent').then(m => m.LessonComponent),
         title: "Create Exercise"
     }, 
     {
