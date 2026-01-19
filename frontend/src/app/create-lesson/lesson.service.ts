@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Lesson, LessonResponse } from './lesson.interface';
+import { Lesson } from './lesson.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -9,9 +9,9 @@ import { Lesson, LessonResponse } from './lesson.interface';
 export class LessonService {
   private apiUrl = 'https://your-api.com/api/lessons';
 
-  constructor(private http: HttpClient) {}
+  constructor(private httpClient: HttpClient) {}
 
-  createLesson(lesson: Lesson): Observable<LessonResponse> {
-    return this.http.post<LessonResponse>(this.apiUrl, lesson);
+  createLesson(lesson: Lesson): Observable<Lesson> {
+    return this.httpClient.post<Lesson>(this.apiUrl, lesson);
   }
 }

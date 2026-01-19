@@ -4,18 +4,13 @@ using Backend.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Backend.Controllers
+namespace Backend.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class LessonController : ControllerBase
+    public class LessonController(LessonService lessonService) : ControllerBase
     {
-        private readonly LessonService _lessonService;
-
-        public LessonController(LessonService lessonService)
-        {
-            _lessonService = lessonService;
-        }
+        private readonly LessonService _lessonService = lessonService;
 
         /// <summary>
         /// Marks a lesson as completed and unlocks the next lesson

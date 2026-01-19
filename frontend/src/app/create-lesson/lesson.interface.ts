@@ -6,7 +6,6 @@ export interface Exercise {
   estimatedDurationMinutes: number;
   difficultyLevel: 'Beginner' | 'Intermediate' | 'Advanced';
   points: number;
-  lessonName: string;
   questions: Question[];
 }
 
@@ -15,17 +14,6 @@ export interface Lesson {
   description: string;
   estimatedDuration: number;
   content: string;
-  courseName: string;
+  courseId: string;
   exercises: Exercise[];
-}
-
-export interface LessonResponse {
-  id: string;
-  title: string;
-  description: string;
-  content: string;
-  difficulty: number;
-  exercises: Exercise[];
-  createdAt: string;
-  updatedAt: string;
 }

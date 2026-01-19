@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Exercise, Lesson } from './lesson.interface';
+import {email, form, FormField, required, submit} from '@angular/forms/signals';
 
 @Component({
   selector: 'app-create-exercise',
@@ -8,10 +10,20 @@ import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } fr
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './create-lesson.component.html',
   styleUrl: './create-lesson.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CreateLesson {
   lessonForm: FormGroup;
   
+  lessonModel = signal<Lesson>({
+    title: '',
+    description: '',
+    estimatedDuration: 0,
+    content: '',
+    courseId: '',
+    exercises: Array<Exercise>()
+  })
+
   exerciseTypes = [
     { value: 'multiple-choice', label: 'Multiple Choice' },
     { value: 'fill-in-blank', label: 'Fill in the Blank' },
