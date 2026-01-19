@@ -32,7 +32,7 @@ namespace Backend.Database.Entities
         public required string LessonTextUrl { get; set; } // Markdown or HTML lesson url
 
         [Required]
-        public bool IsLocked { get; set; } = false;
+        public bool IsLocked { get; set; } = true;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

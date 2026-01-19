@@ -1,17 +1,13 @@
+using Backend.Api.Dtos;
 using Backend.Database;
 using Backend.Database.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services
+namespace Backend.Api.Services
 {
-    public class LessonService
+    public class LessonService(BackendDbContext context)
     {
-        private readonly BackendDbContext _context;
-
-        public LessonService(BackendDbContext context)
-        {
-            _context = context;
-        }
+        private readonly BackendDbContext _context = context;
 
         /// <summary>
         /// Gets the next lesson after the current one, even if it's in the next course
@@ -21,9 +17,8 @@ namespace Backend.Services
         public async Task<Lesson?> GetNextLessonAsync(int currentLessonId)
         {
             var currentLesson = await _context
-                .Lessons
-                    .Include(l => l.Course)
-                        .ThenInclude(c => c.LanguageId)
+                .Lessons.Include(l => l.Course)
+                .ThenInclude(c => c.LanguageId)
                 .FirstOrDefaultAsync(l => l.Id == currentLessonId);
 
             if (currentLesson == null)
@@ -145,13 +140,11 @@ namespace Backend.Services
         /// </summary>
         /// <param name="lessonId">The ID of the lesson</param>
         /// <returns>The lesson with its course and language included</returns>
-        public async Task<Lesson> CreateLessonAsync(Backend.Api.Dtos.CreateLessonDto dto)
+        public async Task<Lesson> CreateLessonAsync(CreateLessonDto dto)
         {
-            var course = await _context.Courses.FirstOrDefaultAsync(c => c.Title == dto.CourseName);
-            if (course == null)
-            {
-                throw new ArgumentException($"Course '{dto.CourseName}' not found.");
-            }
+            var course =
+                await _context.Courses.FirstOrDefaultAsync(c => c.Title == dto.CourseName)
+                ?? throw new ArgumentException($"Course '{dto.CourseName}' not found.");
 
             var lesson = new Lesson
             {
@@ -163,7 +156,7 @@ namespace Backend.Services
                 LessonMediaUrl = dto.LessonMediaUrl,
                 LessonTextUrl = dto.LessonTextUrl,
                 IsLocked = true, // Default to locked
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
             };
 
             _context.Lessons.Add(lesson);
@@ -171,18 +164,24 @@ namespace Backend.Services
             return lesson;
         }
 
-        public async Task<Lesson?> UpdateLessonAsync(int id, Backend.Api.Dtos.UpdateLessonDto dto)
+        public async Task<Lesson?> UpdateLessonAsync(int id, UpdateLessonDto dto)
         {
             var lesson = await _context.Lessons.FindAsync(id);
             if (lesson == null)
                 return null;
 
-            if (dto.Title != null) lesson.Title = dto.Title;
-            if (dto.Description != null) lesson.Description = dto.Description;
-            if (dto.EstimatedDurationMinutes.HasValue) lesson.EstimatedDurationMinutes = dto.EstimatedDurationMinutes.Value;
-            if (dto.OrderIndex.HasValue) lesson.OrderIndex = dto.OrderIndex.Value;
-            if (dto.LessonMediaUrl != null) lesson.LessonMediaUrl = dto.LessonMediaUrl;
-            if (dto.LessonTextUrl != null) lesson.LessonTextUrl = dto.LessonTextUrl;
+            if (dto.Title != null)
+                lesson.Title = dto.Title;
+            if (dto.Description != null)
+                lesson.Description = dto.Description;
+            if (dto.EstimatedDurationMinutes.HasValue)
+                lesson.EstimatedDurationMinutes = dto.EstimatedDurationMinutes.Value;
+            if (dto.OrderIndex.HasValue)
+                lesson.OrderIndex = dto.OrderIndex.Value;
+            if (dto.LessonMediaUrl != null)
+                lesson.LessonMediaUrl = dto.LessonMediaUrl;
+            if (dto.LessonTextUrl != null)
+                lesson.LessonTextUrl = dto.LessonTextUrl;
 
             await _context.SaveChangesAsync();
             return lesson;
@@ -207,10 +206,9 @@ namespace Backend.Services
         public async Task<Lesson?> GetLessonWithDetailsAsync(int lessonId)
         {
             return await _context
-                .Lessons
-                    .Include(l => l.Course)
-                        .ThenInclude(c => c.LanguageId)
-                    .Include(l => l.Exercises)
+                .Lessons.Include(l => l.Course)
+                .ThenInclude(c => c.LanguageId)
+                .Include(l => l.Exercises)
                 .FirstOrDefaultAsync(l => l.Id == lessonId);
         }
     }

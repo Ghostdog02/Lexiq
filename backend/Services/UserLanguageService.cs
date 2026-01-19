@@ -3,7 +3,7 @@ using Backend.Database;
 using Backend.Database.Entities;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services;
+namespace Backend.Api.Services;
 
 public class UserLanguageService(BackendDbContext context)
 {

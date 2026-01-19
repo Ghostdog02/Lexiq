@@ -11,7 +11,10 @@ namespace Backend.Api.Services
 
         public async Task<List<Course>> GetAllCoursesAsync()
         {
-            return await _context.Courses.Include(c => c.Language).ToListAsync();
+            return await _context
+                .Courses.Include(c => c.Language)
+                .OrderBy(c => c.OrderIndex)
+                .ToListAsync();
         }
 
         public async Task<Course?> GetCourseByIdAsync(int id)
@@ -59,7 +62,7 @@ namespace Backend.Api.Services
 
             if (dto.EstimatedDurationHours.HasValue)
                 course.EstimatedDurationHours = dto.EstimatedDurationHours.Value;
-                
+
             if (dto.OrderIndex.HasValue)
                 course.OrderIndex = dto.OrderIndex.Value;
 

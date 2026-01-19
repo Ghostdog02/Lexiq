@@ -1,16 +1,21 @@
+import { Question } from "./question.interface";
+
 export interface Exercise {
-  type: 'multiple-choice' | 'fill-in-blank' | 'translation';
-  question: string;
-  options?: string[]; // Optional, only for multiple-choice
-  correctAnswer?: string; // Optional, for multiple-choice
-  answer?: string; // Optional, for fill-in-blank and translation
+  title: string;
+  instructions: string;
+  estimatedDurationMinutes: number;
+  difficultyLevel: 'Beginner' | 'Intermediate' | 'Advanced';
+  points: number;
+  lessonName: string;
+  questions: Question[];
 }
 
 export interface Lesson {
   title: string;
   description: string;
+  estimatedDuration: number;
   content: string;
-  difficulty: number;
+  courseName: string;
   exercises: Exercise[];
 }
 

@@ -4,7 +4,7 @@ using Backend.Database.Entities;
 using Backend.Database.Entities.Questions;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services;
+namespace Backend.Api.Services;
 
 public class QuestionService(BackendDbContext context)
 {
