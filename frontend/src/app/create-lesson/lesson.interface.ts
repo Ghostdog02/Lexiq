@@ -1,3 +1,4 @@
+import { FormControl, FormGroup } from "@angular/forms";
 import { Question } from "./question.interface";
 
 export interface Exercise {
@@ -17,3 +18,14 @@ export interface Lesson {
   courseId: string;
   exercises: Exercise[];
 }
+
+export interface LessonFormControls {
+  title: FormControl<string>;
+  description: FormControl<string>;
+  estimatedDuration: FormControl<number>;
+  content: FormControl<string>;
+  courseId: FormControl<string>;
+  exercises: FormControl<Exercise[]>;
+}
+
+export type LessonForm = FormGroup<LessonFormControls>;

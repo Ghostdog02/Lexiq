@@ -1,28 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Exercise, Lesson } from './lesson.interface';
-import {email, form, FormField, required, submit} from '@angular/forms/signals';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators, NonNullableFormBuilder } from '@angular/forms';
+import { Exercise, Lesson, LessonForm } from './lesson.interface';
 
 @Component({
   selector: 'app-create-exercise',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
-  templateUrl: './create-lesson.component.html',
-  styleUrl: './create-lesson.component.scss',
-  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './lesson.component.html',
+  styleUrl: './lesson.component.scss'
 })
-export class CreateLesson {
-  lessonForm: FormGroup;
-  
-  lessonModel = signal<Lesson>({
-    title: '',
-    description: '',
-    estimatedDuration: 0,
-    content: '',
-    courseId: '',
-    exercises: Array<Exercise>()
-  })
+export class LessonComponent {
+  private formBuilder = inject(NonNullableFormBuilder);
 
   exerciseTypes = [
     { value: 'multiple-choice', label: 'Multiple Choice' },
@@ -30,15 +19,25 @@ export class CreateLesson {
     { value: 'translation', label: 'Translation' }
   ];
 
-  constructor(private formBuilder: FormBuilder) {
-    this.lessonForm = this.formBuilder.group({
-      title: ['', [Validators.required, Validators.minLength(5)]],
-      description: ['', [Validators.required, Validators.minLength(10)]],
-      content: ['', [Validators.required, Validators.minLength(20)]], // Textbook content
-      difficulty: [1, [Validators.required, Validators.min(1), Validators.max(5)]],
-      exercises: this.formBuilder.array([])
-    });
-  }
+  lessonForm: LessonForm = this.formBuilder.group({
+    title: ['', Validators.required],
+    description: [''],
+    estimatedDuration: [0, [Validators.required, Validators.min(1)]],
+    content: [''],
+    courseId: ['', Validators.required],
+    exercises: [[] as Exercise[]]
+  });
+
+  // constructor(private fb: FormBuilder) {
+  //   this.lessonForm = this.fb.group({
+  //     title: ['', Validators.required],
+  //     description: [''],
+  //     estimatedDuration: [0, [Validators.required, Validators.min(1)]],
+  //     content: [''],
+  //     courseId: ['', Validators.required],
+  //     exercises: 
+  //   }) as LessonForm;
+  // }
 
   get formControls() { return this.lessonForm.controls; }
   get exercises() { return this.lessonForm.get('exercises') as FormArray; }
