@@ -25,6 +25,12 @@ public class QuestionService(BackendDbContext context)
 
     public async Task<Question> CreateQuestionAsync(CreateQuestionDto dto)
     {
+        var exercise = await _context.Exercises.FirstOrDefaultAsync(e => e.Title == dto.ExerciseName);
+        if (exercise == null)
+        {
+            throw new ArgumentException($"Exercise '{dto.ExerciseName}' not found.");
+        }
+
         Question question;
 
         switch (dto.QuestionType)
@@ -32,7 +38,7 @@ public class QuestionService(BackendDbContext context)
             case "MultipleChoice":
                 var mcq = new MultipleChoiceQuestion
                 {
-                    ExerciseId = dto.ExerciseId,
+                    ExerciseId = exercise.Id,
                     QuestionText = dto.QuestionText,
                     QuestionAudioUrl = dto.QuestionAudioUrl,
                     QuestionImageUrl = dto.QuestionImageUrl,
@@ -61,7 +67,7 @@ public class QuestionService(BackendDbContext context)
             case "FillInBlank":
                 question = new FillInBlankQuestion
                 {
-                    ExerciseId = dto.ExerciseId,
+                    ExerciseId = exercise.Id,
                     QuestionText = dto.QuestionText,
                     QuestionAudioUrl = dto.QuestionAudioUrl,
                     QuestionImageUrl = dto.QuestionImageUrl,
@@ -78,7 +84,7 @@ public class QuestionService(BackendDbContext context)
             case "Translation":
                 question = new TranslationQuestion
                 {
-                    ExerciseId = dto.ExerciseId,
+                    ExerciseId = exercise.Id,
                     QuestionText = dto.QuestionText,
                     QuestionAudioUrl = dto.QuestionAudioUrl,
                     QuestionImageUrl = dto.QuestionImageUrl,
@@ -94,7 +100,7 @@ public class QuestionService(BackendDbContext context)
             case "Listening":
                 question = new ListeningQuestion
                 {
-                    ExerciseId = dto.ExerciseId,
+                    ExerciseId = exercise.Id,
                     QuestionText = dto.QuestionText,
                     QuestionAudioUrl = dto.QuestionAudioUrl,
                     QuestionImageUrl = dto.QuestionImageUrl,

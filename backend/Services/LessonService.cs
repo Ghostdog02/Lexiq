@@ -147,9 +147,15 @@ namespace Backend.Services
         /// <returns>The lesson with its course and language included</returns>
         public async Task<Lesson> CreateLessonAsync(Backend.Api.Dtos.CreateLessonDto dto)
         {
+            var course = await _context.Courses.FirstOrDefaultAsync(c => c.Title == dto.CourseName);
+            if (course == null)
+            {
+                throw new ArgumentException($"Course '{dto.CourseName}' not found.");
+            }
+
             var lesson = new Lesson
             {
-                CourseId = dto.CourseId,
+                CourseId = course.Id,
                 Title = dto.Title,
                 Description = dto.Description,
                 EstimatedDurationMinutes = dto.EstimatedDurationMinutes,

@@ -9,20 +9,13 @@ public static class ContentMappingExtensions
     // Language
     public static LanguageDto ToDto(this Language entity)
     {
-        return new LanguageDto(
-            entity.Id,
-            entity.Name,
-            entity.FlagIconUrl,
-            entity.Courses.Count
-        );
+        return new LanguageDto(entity.Name, entity.FlagIconUrl, entity.Courses.Count);
     }
 
     // Course
     public static CourseDto ToDto(this Course entity)
     {
         return new CourseDto(
-            entity.Id,
-            entity.LanguageId,
             entity.Language?.Name ?? string.Empty,
             entity.Title,
             entity.Description,
@@ -36,8 +29,7 @@ public static class ContentMappingExtensions
     public static LessonDto ToDto(this Lesson entity)
     {
         return new LessonDto(
-            entity.Id,
-            entity.CourseId,
+            entity.Course?.Title ?? string.Empty,
             entity.Title,
             entity.Description,
             entity.EstimatedDurationMinutes,
@@ -71,19 +63,23 @@ public static class ContentMappingExtensions
         return entity switch
         {
             MultipleChoiceQuestion mcq => new MultipleChoiceQuestionDto(
-                mcq.Id,
-                mcq.ExerciseId,
+                mcq.Exercise?.Title ?? string.Empty,
                 mcq.QuestionText,
                 mcq.QuestionAudioUrl,
                 mcq.QuestionImageUrl,
                 mcq.OrderIndex,
                 mcq.Points,
                 mcq.Explanation,
-                mcq.Options.Select(o => new QuestionOptionDto(o.Id, o.OptionText, o.IsCorrect, o.OrderIndex)).ToList()
+                mcq.Options.Select(o => new QuestionOptionDto(
+                        o.Id,
+                        o.OptionText,
+                        o.IsCorrect,
+                        o.OrderIndex
+                    ))
+                    .ToList()
             ),
             FillInBlankQuestion fib => new FillInBlankQuestionDto(
-                fib.Id,
-                fib.ExerciseId,
+                fib.Exercise?.Title ?? string.Empty,
                 fib.QuestionText,
                 fib.QuestionAudioUrl,
                 fib.QuestionImageUrl,
@@ -93,8 +89,7 @@ public static class ContentMappingExtensions
                 fib.CorrectAnswer
             ),
             TranslationQuestion tq => new TranslationQuestionDto(
-                tq.Id,
-                tq.ExerciseId,
+                tq.Exercise?.Title ?? string.Empty,
                 tq.QuestionText,
                 tq.QuestionAudioUrl,
                 tq.QuestionImageUrl,
@@ -105,8 +100,7 @@ public static class ContentMappingExtensions
                 tq.TargetLanguageCode
             ),
             ListeningQuestion lq => new ListeningQuestionDto(
-                lq.Id,
-                lq.ExerciseId,
+                lq.Exercise?.Title ?? string.Empty,
                 lq.QuestionText,
                 lq.QuestionAudioUrl,
                 lq.QuestionImageUrl,
@@ -116,7 +110,9 @@ public static class ContentMappingExtensions
                 lq.AudioUrl,
                 lq.CorrectAnswer
             ),
-            _ => throw new NotImplementedException($"Mapping for question type {entity.GetType().Name} is not implemented")
+            _ => throw new NotImplementedException(
+                $"Mapping for question type {entity.GetType().Name} is not implemented"
+            ),
         };
     }
 
@@ -130,7 +126,7 @@ public static class ContentMappingExtensions
             entity.Language?.FlagIconUrl,
             entity.EnrolledAt,
             0, // Placeholder
-            0  // Placeholder
+            0 // Placeholder
         );
     }
 }

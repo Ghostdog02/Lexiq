@@ -1,8 +1,7 @@
 namespace Backend.Api.Dtos;
 
 public record LessonDto(
-    int Id,
-    int CourseId,
+    string CourseName,
     string Title,
     string? Description,
     int? EstimatedDurationMinutes,
@@ -14,7 +13,7 @@ public record LessonDto(
 );
 
 public record CreateLessonDto(
-    int CourseId,
+    string CourseName,
     string Title,
     string? Description,
     int? EstimatedDurationMinutes,
@@ -24,6 +23,7 @@ public record CreateLessonDto(
 );
 
 public record UpdateLessonDto(
+    string CourseName,
     string? Title,
     string? Description,
     int? EstimatedDurationMinutes,

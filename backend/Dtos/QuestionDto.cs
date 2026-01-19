@@ -8,8 +8,7 @@ namespace Backend.Api.Dtos;
 [JsonDerivedType(typeof(TranslationQuestionDto), typeDiscriminator: "Translation")]
 [JsonDerivedType(typeof(ListeningQuestionDto), typeDiscriminator: "Listening")]
 public abstract record QuestionDto(
-    int Id,
-    int ExerciseId,
+    string ExerciseName,
     string QuestionText,
     string? QuestionAudioUrl,
     string? QuestionImageUrl,
@@ -19,8 +18,7 @@ public abstract record QuestionDto(
 );
 
 public record MultipleChoiceQuestionDto(
-    int Id,
-    int ExerciseId,
+    string ExerciseName,
     string QuestionText,
     string? QuestionAudioUrl,
     string? QuestionImageUrl,
@@ -30,8 +28,7 @@ public record MultipleChoiceQuestionDto(
     List<QuestionOptionDto> Options
 )
     : QuestionDto(
-        Id,
-        ExerciseId,
+        ExerciseName,
         QuestionText,
         QuestionAudioUrl,
         QuestionImageUrl,
@@ -41,8 +38,7 @@ public record MultipleChoiceQuestionDto(
     );
 
 public record FillInBlankQuestionDto(
-    int Id,
-    int ExerciseId,
+    string ExerciseName,
     string QuestionText,
     string? QuestionAudioUrl,
     string? QuestionImageUrl,
@@ -52,8 +48,7 @@ public record FillInBlankQuestionDto(
     string CorrectAnswer
 )
     : QuestionDto(
-        Id,
-        ExerciseId,
+        ExerciseName,
         QuestionText,
         QuestionAudioUrl,
         QuestionImageUrl,
@@ -63,8 +58,7 @@ public record FillInBlankQuestionDto(
     );
 
 public record TranslationQuestionDto(
-    int Id,
-    int ExerciseId,
+    string ExerciseName,
     string QuestionText,
     string? QuestionAudioUrl,
     string? QuestionImageUrl,
@@ -75,8 +69,7 @@ public record TranslationQuestionDto(
     string TargetLanguageCode
 )
     : QuestionDto(
-        Id,
-        ExerciseId,
+        ExerciseName,
         QuestionText,
         QuestionAudioUrl,
         QuestionImageUrl,
@@ -86,8 +79,7 @@ public record TranslationQuestionDto(
     );
 
 public record ListeningQuestionDto(
-    int Id,
-    int ExerciseId,
+    string ExerciseName,
     string QuestionText,
     string? QuestionAudioUrl,
     string? QuestionImageUrl,
@@ -98,8 +90,7 @@ public record ListeningQuestionDto(
     string CorrectAnswer
 )
     : QuestionDto(
-        Id,
-        ExerciseId,
+        ExerciseName,
         QuestionText,
         QuestionAudioUrl,
         QuestionImageUrl,
@@ -112,7 +103,7 @@ public record QuestionOptionDto(int Id, string OptionText, bool IsCorrect, int O
 
 // Create DTOs - kept flat for easier binding, but converted to record
 public record CreateQuestionDto(
-    int ExerciseId,
+    string ExerciseName,
     string QuestionText,
     string? QuestionAudioUrl,
     string? QuestionImageUrl,
@@ -120,7 +111,7 @@ public record CreateQuestionDto(
     int Points,
     string? Explanation,
     string QuestionType, // "MultipleChoice", "FillInBlank", "Translation", "Listening"
-    // Specifics (Nullable)
+                         // Specifics (Nullable)
     List<CreateQuestionOptionDto>? Options,
     string? CorrectAnswer,
     string? AcceptedAnswers,

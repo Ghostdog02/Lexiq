@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
-using Backend.Services;
+using Backend.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -24,6 +24,7 @@ public class CourseController(CourseService courseService) : ControllerBase
     public async Task<ActionResult<CourseDto>> GetCourse(int id)
     {
         var course = await _courseService.GetCourseByIdAsync(id);
+
         if (course == null)
             return NotFound();
 
@@ -31,10 +32,11 @@ public class CourseController(CourseService courseService) : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,ContentCreator")] 
+    [Authorize(Roles = "Admin,ContentCreator")]
     public async Task<ActionResult<CourseDto>> CreateCourse(CreateCourseDto dto)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
         if (userId == null)
             return Unauthorized();
 

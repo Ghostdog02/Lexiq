@@ -3,8 +3,6 @@ using Backend.Database.Entities;
 namespace Backend.Api.Dtos;
 
 public record CourseDto(
-    int Id,
-    int LanguageId,
     string LanguageName,
     string Title,
     string? Description,
@@ -14,7 +12,7 @@ public record CourseDto(
 );
 
 public record CreateCourseDto(
-    int LanguageId,
+    string LanguageName,
     string Title,
     string? Description,
     int? EstimatedDurationHours,
@@ -22,6 +20,7 @@ public record CreateCourseDto(
 );
 
 public record UpdateCourseDto(
+    string LanguageName,
     string? Title,
     string? Description,
     int? EstimatedDurationHours,
