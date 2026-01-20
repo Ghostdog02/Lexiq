@@ -3,7 +3,7 @@ import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 
 @Component({
-  selector: 'app-create-exercise', // Keeping selector to avoid route issues for now
+  selector: 'app-create-exercise',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './create-exercise.html',

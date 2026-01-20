@@ -2,6 +2,38 @@
   display: flex;
   justify-content: center;
   width: 100%;
+  padding-right: 7em;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+
+  // Animated background elements
+  &::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(
+      circle at 30% 50%,
+      rgba(124, 92, 255, 0.08) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 70% 80%,
+      rgba(145, 120, 255, 0.06) 0%,
+      transparent 50%
+    );
+    animation: pulse 8s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 #profile-icon {
@@ -16,6 +48,8 @@
   max-width: 200rem;
   font-family: var(--font-family);
   padding-top: 24px;
+  position: relative;
+  z-index: 1;
 }
 
 .profile-header {
