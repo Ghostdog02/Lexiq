@@ -1,4 +1,4 @@
-using Backend.Database.Entities;
+using Backend.Database.Entities.Exercises;
 
 namespace Backend.Api.Dtos;
 

@@ -1,4 +1,5 @@
 ﻿using Backend.Database.Entities;
+using Backend.Database.Entities.Exercises;
 using Backend.Database.Entities.Questions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;

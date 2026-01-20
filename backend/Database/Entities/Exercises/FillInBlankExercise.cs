@@ -1,8 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Database.Entities.Questions;
+namespace Backend.Database.Entities.Exercises;
 
-public class FillInBlankQuestion : Question
+public class FillInBlankExercise : Exercise
 {
     [Required]
     [MaxLength(500)]

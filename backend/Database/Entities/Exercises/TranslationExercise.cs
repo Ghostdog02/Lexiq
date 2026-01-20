@@ -1,11 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Database.Entities.Questions;
+namespace Backend.Database.Entities.Exercises;
 
-/// <summary>
-/// Translation exercise - translate from source to target language
-/// </summary>
-public class TranslationQuestion : Question
+public class TranslationExercise : Exercise
 {
     [Required]
     [MaxLength(10)]

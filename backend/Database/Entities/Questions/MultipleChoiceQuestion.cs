@@ -1,7 +1,6 @@
-namespace Backend.Database.Entities.Questions
+namespace Backend.Database.Entities.Questions;
+
+public class MultipleChoiceQuestion : Question
 {
-    public class MultipleChoiceQuestion : Question
-    {
-        public List<QuestionOption> Options { get; set; } = [];
-    }
+    public List<QuestionOption> Options { get; set; } = [];
 }

@@ -1,9 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Database.Entities.Questions;
+namespace Backend.Database.Entities.Exercises;
 
-public class FillInBlankQuestion : Question
+public class ListeningExercise : Exercise
 {
+    [Required]
+    [MaxLength(500)]
+    public required string AudioUrl { get; set; }
+
     [Required]
     [MaxLength(500)]
     public required string CorrectAnswer { get; set; }
@@ -14,6 +18,6 @@ public class FillInBlankQuestion : Question
     [Required]
     public bool CaseSensitive { get; set; } = false;
 
-    [Required]
-    public bool TrimWhitespace { get; set; } = true;
+    [Range(1, 10)]
+    public int MaxReplays { get; set; } = 3;
 }

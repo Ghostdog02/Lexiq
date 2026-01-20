@@ -1,5 +1,6 @@
 using Backend.Api.Dtos;
 using Backend.Database.Entities;
+using Backend.Database.Entities.Exercises;
 using Backend.Database.Entities.Questions;
 
 namespace Backend.Api.Mapping;

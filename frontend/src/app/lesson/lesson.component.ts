@@ -8,15 +8,17 @@ import { LessonFormService } from './lesson-form.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChanged';
+import { QuestionForm } from './question.interface';
 
 @Component({
-  selector: 'app-create-exercise',
+  selector: 'app-lesson',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './lesson.component.html',
   styleUrl: './lesson.component.scss'
 })
 export class LessonComponent {
+[x: string]: any;
   private readonly formService = inject(LessonFormService);
   private readonly lessonService = inject(LessonService);
   private readonly destroyRef = inject(DestroyRef);
@@ -28,12 +30,16 @@ export class LessonComponent {
     this.setupFormValueChanges();
   }
 
-  get formControls() { 
+  get lessonFormControls() { 
     return this.lessonForm.controls; 
   }
   
   get exercises(): FormArray<ExerciseForm> { 
     return this.lessonForm.controls.exercises;
+  }
+
+  get exerciseControls() {
+    return this.exercises.controls;
   }
 
   addExercise(): void {

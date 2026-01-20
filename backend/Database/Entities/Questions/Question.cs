@@ -1,37 +1,37 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Backend.Database.Entities.Exercises;
 
-namespace Backend.Database.Entities.Questions
+namespace Backend.Database.Entities.Questions;
+
+public abstract class Question
 {
-    public abstract class Question
-    {
-        [Key]
-        public int Id { get; set; }
+    [Key]
+    public int Id { get; set; }
 
-        [Required]
-        public int ExerciseId { get; set; }
+    [Required]
+    public int ExerciseId { get; set; }
 
-        [Required]
-        [MaxLength(1000)]
-        public required string QuestionText { get; set; }
+    [Required]
+    [MaxLength(1000)]
+    public required string QuestionText { get; set; }
 
-        [MaxLength(500)]
-        public string? QuestionAudioUrl { get; set; }
+    [MaxLength(500)]
+    public string? QuestionAudioUrl { get; set; }
 
-        [MaxLength(500)]
-        public string? QuestionImageUrl { get; set; }
+    [MaxLength(500)]
+    public string? QuestionImageUrl { get; set; }
 
-        [Required]
-        public int OrderIndex { get; set; } // Position within the exercise (1, 2, 3...)
+    [Required]
+    public int OrderIndex { get; set; } // Position within the exercise (1, 2, 3...)
 
-        public int Points { get; set; } = 10;
+    public int Points { get; set; } = 10;
 
-        [MaxLength(1000)]
-        public string? Explanation { get; set; }
+    [MaxLength(1000)]
+    public string? Explanation { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        [ForeignKey(nameof(ExerciseId))]
-        public Exercise Exercise { get; set; } = null!;
-    }
+    [ForeignKey(nameof(ExerciseId))]
+    public Exercise Exercise { get; set; } = null!;
 }
