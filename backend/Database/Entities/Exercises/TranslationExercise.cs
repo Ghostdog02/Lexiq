@@ -5,6 +5,14 @@ namespace Backend.Database.Entities.Exercises;
 public class TranslationExercise : Exercise
 {
     [Required]
+    [MaxLength(1000)]
+    public required string SourceText { get; set; }
+
+    [Required]
+    [MaxLength(1000)]
+    public required string TargetText { get; set; }
+
+    [Required]
     [MaxLength(10)]
     public required string SourceLanguageCode { get; set; } // e.g., "en", "es"
 

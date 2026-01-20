@@ -5,6 +5,9 @@ namespace Backend.Database.Entities.Exercises;
 public class FillInBlankExercise : Exercise
 {
     [Required]
+    public required string Text { get; set; }
+
+    [Required]
     [MaxLength(500)]
     public required string CorrectAnswer { get; set; }
 
@@ -12,8 +15,8 @@ public class FillInBlankExercise : Exercise
     public string? AcceptedAnswers { get; set; }
 
     [Required]
-    public bool CaseSensitive { get; set; } = false;
+    public required bool CaseSensitive { get; set; } = false;
 
     [Required]
-    public bool TrimWhitespace { get; set; } = true;
+    public required bool TrimWhitespace { get; set; } = true;
 }

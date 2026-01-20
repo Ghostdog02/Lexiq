@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Backend.Database.Entities.Questions;
 
 namespace Backend.Database.Entities.Exercises;
 
@@ -9,6 +8,14 @@ public enum DifficultyLevel
     Beginner,
     Intermediate,
     Advanced,
+}
+
+public enum ExerciseType
+{
+    MultipleChoice,
+    FillInTheBlank,
+    Listening,
+    Translation,
 }
 
 public abstract class Exercise
@@ -31,6 +38,9 @@ public abstract class Exercise
 
     [Required]
     public DifficultyLevel DifficultyLevel { get; set; }
+
+    [Required]
+    public ExerciseType ExerciseType { get; set; }
 
     [Required]
     [Range(1, int.MaxValue)]
