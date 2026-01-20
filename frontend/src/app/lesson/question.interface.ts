@@ -1,8 +1,4 @@
-export interface QuestionOption {
-  optionText: string;
-  isCorrect: boolean;
-  orderIndex: number;
-}
+import { FormControl, FormGroup } from "@angular/forms";
 
 export interface Question {
   exerciseName: string;
@@ -10,16 +6,40 @@ export interface Question {
   orderIndex: number;
   points: number;
   explanation?: string;
-  questionType: 'MultipleChoice' | 'FillInBlank' | 'Listening' | 'Translation';
+  questionType: QuestionType;
+}
+
+export enum QuestionType {
+  MultipleChoice = 'MultipleChoice',
+  FillInBlank = 'FillInBlank',
+  Listening = 'Listening',
+  Translation = 'Translation'
+}
+
+export interface QuestionFormControls {
+  exerciseName: FormControl<string>;
+  questionText: FormControl<string>;
+  orderIndex: FormControl<number>;
+  points: FormControl<number>;
+  explanation: FormControl<string>;
+  questionType: FormControl<QuestionType>;
+}
+
+export type QuestionForm = FormGroup<QuestionFormControls>;
+
+export interface QuestionOption {
+  optionText: string;
+  isCorrect: boolean;
+  orderIndex: number;
 }
 
 export interface MultipleChoiceQuestion extends Question {
-  questionType: 'MultipleChoice';
+  questionType: QuestionType.MultipleChoice;
   options: QuestionOption[];
 }
 
 export interface FillInBlankQuestion extends Question {
-  questionType: 'FillInBlank';
+  questionType: QuestionType.FillInBlank;
   correctAnswer: string;
   acceptedAnswers?: string;
   caseSensitive: boolean;
@@ -27,7 +47,7 @@ export interface FillInBlankQuestion extends Question {
 }
 
 export interface ListeningQuestion extends Question {
-  questionType: 'Listening';
+  questionType: QuestionType.Listening;
   correctAnswer: string;
   acceptedAnswers?: string;
   caseSensitive: boolean;
@@ -35,7 +55,7 @@ export interface ListeningQuestion extends Question {
 }
 
 export interface TranslationQuestion extends Question {
-  questionType: 'Translation';
+  questionType: QuestionType.Translation;
   sourceLanguageCode: string;
   targetLanguageCode: string;
   matchingThreshold: number;
