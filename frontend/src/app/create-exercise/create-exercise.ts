@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { marked } from 'marked';
 
 @Component({
   selector: 'app-create-exercise',
@@ -18,18 +20,33 @@ export class CreateLesson {
     { value: 'translation', label: 'Translation' }
   ];
 
-  constructor(private fb: FormBuilder) {
+  constructor(private fb: FormBuilder, private sanitizer: DomSanitizer) {
     this.lessonForm = this.fb.group({
       title: ['', [Validators.required, Validators.minLength(5)]],
       description: ['', [Validators.required, Validators.minLength(10)]],
       content: ['', [Validators.required, Validators.minLength(20)]], // Textbook content
-      difficulty: [1, [Validators.required, Validators.min(1), Validators.max(5)]],
+      difficulty: [1, [Validators.required, Validators.min(1), Validators.max(3)]],
       exercises: this.fb.array([])
     });
   }
 
   get f() { return this.lessonForm.controls; }
   get exercises() { return this.lessonForm.get('exercises') as FormArray; }
+
+  parseMarkdown(markdown: string): SafeHtml {
+    if (!markdown) return this.sanitizer.bypassSecurityTrustHtml('');
+    const html = marked(markdown, { async: false, breaks: true });
+    return this.sanitizer.bypassSecurityTrustHtml(html as string);
+  }
+
+  replaceFillInBlank(question: string, answer: string): string {
+    if (!question) return question;
+    if (!answer) {
+      return question.replace(/{%special%}/g, '');
+    }
+    const underscores = '_'.repeat(answer.length);
+    return question.replace(/{%special%}/g, underscores);
+  }
 
   addExercise() {
     const exerciseGroup = this.fb.group({

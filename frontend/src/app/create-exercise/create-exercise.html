@@ -44,20 +44,20 @@
         </div>
 
         <div class="form-group">
-          <label for="difficulty">Difficulty Level: {{ f['difficulty'].value }}</label>
+          <label for="difficulty">Difficulty Level: {{ f['difficulty'].value === 1 ? 'Beginner' : f['difficulty'].value === 2 ? 'Intermediate' : 'Advanced' }}</label>
           <div class="range-container">
-            <input 
-              type="range" 
-              min="1" 
-              max="5" 
-              step="1" 
-              id="difficulty" 
+            <input
+              type="range"
+              min="1"
+              max="3"
+              step="1"
+              id="difficulty"
               formControlName="difficulty"
             >
             <div class="range-ticks">
               <span>Beginner</span>
               <span>Intermediate</span>
-              <span>Expert</span>
+              <span>Advanced</span>
             </div>
           </div>
         </div>
@@ -74,11 +74,11 @@
               id="content"
               rows="8"
               formControlName="content"
-              placeholder="# Lesson Content\n\nExplain the grammar rule or vocabulary here..."
+              placeholder="Explain the concept here. Supports markdown formatting..."
               [class.invalid]="f['content'].invalid && f['content'].touched"
             ></textarea>
           </div>
-          <p class="hint"><span class="icon">📝</span> Markdown is supported.</p>
+          <p class="hint"><span class="icon">✏️</span> Markdown is supported.</p>
         </div>
       </section>
 
@@ -97,7 +97,12 @@
             <div class="exercise-header">
               <span class="exercise-num">Exercise #{{i + 1}}</span>
               <button type="button" class="btn icon-only delete-btn" (click)="removeExercise(i)">
-                <span class="icon">🗑️</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
               </button>
             </div>
 
@@ -117,6 +122,7 @@
                 <span class="icon">❓</span>
                 <input type="text" formControlName="question" placeholder="e.g. Translate 'Hello'">
               </div>
+              <p *ngIf="exercise.get('type')?.value === 'fill-in-blank'" class="hint"><span class="icon">💡</span> Use &#123;%special%&#125; as a placeholder for fill-in-blank.</p>
             </div>
 
             <!-- Conditional Fields based on Type -->
@@ -128,11 +134,16 @@
                 <div formArrayName="options">
                   <div *ngFor="let option of getOptions(i).controls; let j=index" class="option-row slide-in-right">
                     <div class="input-with-icon full-width">
-                      <span class="icon">⭕</span>
+                      <span class="icon">☐</span>
                       <input [formControlName]="j" placeholder="Option {{j+1}}">
                     </div>
                     <button type="button" class="btn icon-only small delete-btn" (click)="removeOption(i, j)">
-                      <span class="icon">❌</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                      </svg>
                     </button>
                   </div>
                 </div>
@@ -210,7 +221,7 @@
           <!-- Preview: Textbook Content -->
           <div class="textbook-preview">
             <p *ngIf="!f['content'].value" class="placeholder-text">Lesson content will appear here...</p>
-            <div [innerText]="f['content'].value"></div>
+            <div [innerHTML]="f['content'].value ? parseMarkdown(f['content'].value) : ''"></div>
           </div>
 
           <hr class="divider">
@@ -222,8 +233,9 @@
             <div *ngFor="let ex of exercises.controls; let i=index" class="preview-item slide-in">
               <span class="badge-num">{{i + 1}}</span>
               <div class="preview-content">
-                <strong>{{ ex.get('question')?.value || 'Question...' }}</strong>
-                
+                <strong *ngIf="ex.get('type')?.value === 'multiple-choice'">{{ ex.get('question')?.value || 'Question...' }}</strong>
+                <strong *ngIf="ex.get('type')?.value !== 'multiple-choice'">{{ replaceFillInBlank(ex.get('question')?.value || 'Question...', ex.get('answer')?.value || '') }}</strong>
+
                 <!-- Type specific preview -->
                 <div [ngSwitch]="ex.get('type')?.value" class="interaction-preview">
                   <div *ngSwitchCase="'multiple-choice'" class="options-list">
