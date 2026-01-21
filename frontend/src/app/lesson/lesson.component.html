@@ -43,7 +43,7 @@
           </div>
         </div>
 
-        <div class="form-group">
+        <!-- <div class="form-group">
           <div class="range-container">
             <input 
               type="range" 
@@ -60,7 +60,7 @@
               <span>Advanced</span>
             </div>
           </div>
-        </div>
+        </div> -->
       </section>
 
       <!-- Textbook Content -->
@@ -86,8 +86,17 @@
       <section class="form-section">
         <div class="section-header">
           <h3><span class="icon">🧩</span> Exercises</h3>
-          <button type="button" class="btn small" (click)="addExercise()">
+          <button type="button" class="btn small">
             <span class="icon">➕</span> Add Exercise
+            <select 
+              formControlName="exerciseType" 
+              required 
+            >
+              <option value="" disabled selected>Select exercise type</option>
+              @for (pair of exerciseTypeDictionary; track pair.value) {
+                <option [value]="pair.value" (click)="addExercise(pair.value)"{{ pair.label }}</option>
+              }
+            </select>
           </button>
         </div>
         
@@ -101,16 +110,31 @@
                   <span class="icon">🗑️</span>
                 </button>
               </div>
-
+              <div class="form-group">
+              </div>
+              <!-- <div class="form-group">
+                <label>Title</label>
+                <div class="select-wrapper">
+                  <span class="icon select-icon">📚</span>
+                  <select formControlName="type">
+                    
+                  </select>
+                </div>
+              </div> -->
               <div class="form-group">
                 <label>Type</label>
                 <div class="select-wrapper">
                   <span class="icon select-icon">📚</span>
-                  <select formControlName="type">
-                    @for (type of this['QuestionType']; track type.value) {
-                      <option [value]="type.value">{{ type.label }}</option>
+                  <!-- <select 
+                    formControlName="exerciseType" 
+                    required 
+                    (change)="onExerciseTypeChange($index, $any($event.target).value)"
+                  >
+                    <option value="" disabled selected>Select exercise type</option>
+                    @for (pair of exerciseTypeDictionary; track pair.value) {
+                      <option [value]="pair.value">{{ pair.label }}</option>
                     }
-                  </select>
+                  </select> -->
                 </div>
               </div>
 
@@ -122,15 +146,13 @@
                 </div>
               </div>
 
-              <!-- Conditional Fields based on Type -->
-              @switch (exercise.get('type')?.value) {
-                
-                <!-- Multiple Choice -->
-                <!-- @case ('multiple-choice') {
+              @switch (exercise.get('exerciseType')?.value) {
+                <!-- @case (ExerciseType.MultipleChoice) {
                   <div class="sub-form fade-in">
+                    
                     <label>Options</label>
                     <div formArrayName="options">
-                      @for (option of getOptions($index).controls; track $index) {
+                      @for (option of (exercise.controls.); track $index) {
                         <div class="option-row slide-in-right">
                           <div class="input-with-icon full-width">
                             <span class="icon">⭕</span>
@@ -169,7 +191,21 @@
                   </div>
                 }
               }
-
+              <div class="range-container">
+                <input 
+                  type="range" 
+                  min="1" 
+                  max="3" 
+                  step="1" 
+                  id="difficulty" 
+                  (input)="onDifficultyChange($event, exercise)"
+                >
+                <div class="range-ticks">
+                  <span>Beginner</span>
+                  <span>Intermediate</span>
+                  <span>Advanced</span>
+                </div>
+              </div>
             </div>
           }
           

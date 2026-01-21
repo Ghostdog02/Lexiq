@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { FormArray, ReactiveFormsModule, FormGroup } from '@angular/forms';
 import { LessonForm } from './lesson.interface';
-import { DifficultyLevel, ExerciseForm } from './exercise.interface';
+import { DifficultyLevel, Exercise, ExerciseForm, ExerciseType, MultipleChoiceExercise } from './exercise.interface';
 import { LessonService } from './lesson.service';
 import { LessonFormService } from './lesson-form.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -19,24 +19,32 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   styleUrl: './lesson.component.scss'
 })
 export class LessonComponent {
-[x: string]: any;
   private readonly formService = inject(LessonFormService);
   private readonly lessonService = inject(LessonService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly sanitizer = inject(DomSanitizer);
 
   lessonForm!: LessonForm;
+  exerciseTypeDictionary: { label: string; value: ExerciseType }[];
+  ExerciseType = ExerciseType;
+
+  constructor() {
+    this.exerciseTypeDictionary = Object.entries(ExerciseType).map(([key, value]) => ({
+      label: key,
+      value: value
+    }));
+  }
 
   ngOnInit(): void {
     this.initializeForm();
     this.setupFormValueChanges();
   }
 
-  get lessonFormControls() { 
-    return this.lessonForm.controls; 
+  get lessonFormControls() {
+    return this.lessonForm.controls;
   }
-  
-  get exercises(): FormArray<ExerciseForm> { 
+
+  get exercises(): FormArray<ExerciseForm> {
     return this.lessonForm.controls.exercises;
   }
 
@@ -44,17 +52,17 @@ export class LessonComponent {
     return this.exercises.controls;
   }
 
-  onDifficultyChange(event: Event): void {
+  onDifficultyChange(event: Event, exerciseForm: ExerciseForm): void {
     const rangeValue = +(event.target as HTMLInputElement).value;
-    
+
     // Map range value (1-3) to DifficultyLevel enum
-    const difficultyMap: { [key: number]: DifficultyLevel } = {
-      1: DifficultyLevel.Beginner,
-      2: DifficultyLevel.Intermediate,
-      3: DifficultyLevel.Advanced
+    const difficultyMap: { [key: string]: DifficultyLevel } = {
+      '1': DifficultyLevel.Beginner,
+      '2': DifficultyLevel.Intermediate,
+      '3': DifficultyLevel.Advanced
     };
-    
-    this.exerciseForm.get('difficultyLevel')?.setValue(difficultyMap[rangeValue]);
+
+    exerciseForm.get('difficultyLevel')?.setValue(difficultyMap[rangeValue]);
   }
 
   parseMarkdown(markdown: string): SafeHtml {

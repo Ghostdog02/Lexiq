@@ -17,14 +17,9 @@ export const routes: Routes = [
         title: "Login with Google"
     },
     {
-        path: "exercise/create-lesson",
+        path: "create-lesson",
         loadComponent: () => import('./lesson/lesson.component').then(m => m.LessonComponent),
         title: "Create Lesson"
-    }, 
-    {
-        path: "exercise/create",
-        loadComponent: () => import('./create-exercise/create-exercise').then(m => m.CreateExerciseComponent),
-        title: "Create Exercise"
     }, 
     {
         path: 'profile',

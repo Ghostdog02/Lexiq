@@ -146,6 +146,6 @@ export class HomeComponent implements OnInit {
   }
 
   redirectToCreateExercise() {
-    this.router.navigate(["exercise/create"])
+    this.router.navigate(["/create-lesson"])
   }
 }

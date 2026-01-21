@@ -1,4 +1,4 @@
-import { FormControl, FormGroup } from "@angular/forms";
+import { FormArray, FormControl, FormGroup } from "@angular/forms";
 
 export enum DifficultyLevel {
   Beginner = 'Beginner',
@@ -8,7 +8,7 @@ export enum DifficultyLevel {
 
 export enum ExerciseType {
   MultipleChoice = 'MultipleChoice',
-  FillInTheBlank = 'FillInTheBlank',
+  FillInBlank = 'FillInTheBlank',
   Listening = 'Listening',
   Translation = 'Translation'
 }
@@ -33,21 +33,25 @@ export interface ExerciseFormControls {
   exerciseType: FormControl<ExerciseType>;
 }
 
-export type ExerciseForm = FormGroup<ExerciseFormControls>;
-
 export interface QuestionOption {
   optionText: string;
   isCorrect: boolean;
   orderIndex: number;
 }
 
+export interface QuestionOptionForm {
+  optionText: FormControl<string>;
+  isCorrect: FormControl<boolean>;
+  orderIndex: FormControl<number>;
+}
+
 export interface MultipleChoiceExercise extends Exercise {
-  questionType: ExerciseType.MultipleChoice;
+  exerciseType: ExerciseType.MultipleChoice;
   options: QuestionOption[];
 }
 
 export interface FillInBlankExercise extends Exercise {
-  questionType: ExerciseType.FillInTheBlank;
+  exerciseType: ExerciseType.FillInBlank;
   correctAnswer: string;
   acceptedAnswers?: string;
   caseSensitive: boolean;
@@ -55,7 +59,7 @@ export interface FillInBlankExercise extends Exercise {
 }
 
 export interface ListeningExercise extends Exercise {
-  questionType: ExerciseType.Listening;
+  exerciseType: ExerciseType.Listening;
   correctAnswer: string;
   acceptedAnswers?: string;
   caseSensitive: boolean;
@@ -63,8 +67,57 @@ export interface ListeningExercise extends Exercise {
 }
 
 export interface TranslationExercise extends Exercise {
-  questionType: ExerciseType.Translation;
+  exerciseType: ExerciseType.Translation;
   sourceLanguageCode: string;
   targetLanguageCode: string;
   matchingThreshold: number;
 }
+
+// Union type for all exercises
+export type AnyExercise =
+  | MultipleChoiceExercise
+  | FillInBlankExercise
+  | TranslationExercise
+  | ListeningExercise;
+
+// Specific form controls for each type
+export interface MultipleChoiceFormControls extends ExerciseFormControls {
+  exerciseType: FormControl<ExerciseType.MultipleChoice>;
+  options: FormArray<FormGroup<QuestionOptionForm>>;
+}
+
+export interface FillInBlankFormControls extends ExerciseFormControls {
+  exerciseType: FormControl<ExerciseType.FillInBlank>;
+  correctAnswer: FormControl<string>;
+  acceptedAnswers?: FormControl<string>;
+  caseSensitive: FormControl<boolean>;
+  trimWhitespace: FormControl<boolean>;
+}
+
+export interface TranslationFormControls extends ExerciseFormControls {
+  exerciseType: FormControl<ExerciseType.Translation>;
+  sourceLanguageCode: FormControl<string>;
+  targetLanguageCode: FormControl<string>;
+  matchingThreshold: FormControl<number>;
+}
+
+export interface ListeningFormControls extends ExerciseFormControls {
+  exerciseType: FormControl<ExerciseType.Listening>;
+  correctAnswer: FormControl<string>;
+  acceptedAnswers?: FormControl<string>;
+  caseSensitive: FormControl<boolean>;
+  maxReplays: FormControl<number>;
+}
+
+// Form types
+export type MultipleChoiceForm = FormGroup<MultipleChoiceFormControls>;
+export type FillInBlankForm = FormGroup<FillInBlankFormControls>;
+export type TranslationForm = FormGroup<TranslationFormControls>;
+export type ListeningForm = FormGroup<ListeningFormControls>;
+export type ExerciseForm = FormGroup<any>;
+
+// export type ExerciseForm =
+//   | MultipleChoiceForm
+//   | FillInBlankForm
+//   | TranslationForm
+//   | ListeningForm;

@@ -88,7 +88,7 @@
   flex-direction: column;
   gap: 40px;
   overflow-y: auto;
-  max-height: 100vh;
+  max-height: 110vh;
   &::-webkit-scrollbar { width: 8px; }
   &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
   @media (max-width: 1200px) { padding: 40px 40px 100px 40px; }
@@ -287,9 +287,20 @@
     background-size: 10px;
     cursor: pointer;
 
+    color: var(--white);
+
+    &:invalid {
+      color: #6b7280; // Gray color for placeholder state
+    }
+
     option {
-      background: var(--bg);
+      background-color: #1a1a2e;
       color: var(--white);
+      color: white;
+      
+      &:disabled {
+       color: #6b7280;
+      }
     }
 
     &:focus ~ .select-icon {
@@ -529,7 +540,7 @@
 .form-actions.sticky-footer {
   position: sticky;
   bottom: 0;
-  padding: 20px 80px;
+  padding: 20px 90px;
   margin: 0 -80px;
   display: flex;
   justify-content: flex-end;
