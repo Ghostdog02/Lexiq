@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { FormArray, NonNullableFormBuilder, Validators } from '@angular/forms';
 import { LessonForm } from './lesson.interface';
-import { ExerciseForm, DifficultyLevel } from './exercise.interface';
+import { ExerciseForm, DifficultyLevel, ExerciseType } from './exercise.interface';
 import { QuestionForm, QuestionType } from './question.interface';
 import { MIN_DURATION, MIN_POINTS } from './lesson-form.constants';
 
@@ -29,20 +29,21 @@ export class LessonFormService {
       estimatedDurationMinutes: [0, [Validators.required, Validators.min(MIN_DURATION)]],
       difficultyLevel: [DifficultyLevel.Beginner, Validators.required],
       points: [0, [Validators.required, Validators.min(MIN_POINTS)]],
-      questions: this.fb.array<QuestionForm>([])
+      explanation: ['', Validators.maxLength(1000)],
+      exerciseType: [ExerciseType.MultipleChoice, Validators.required]
     });
   }
 
-  createQuestionForm(): QuestionForm {
-    return this.fb.group({
-      exerciseName: ['', Validators.required],
-      questionText: ['', Validators.required],
-      orderIndex: [0, [Validators.required, Validators.min(0)]],
-      points: [0, [Validators.required, Validators.min(MIN_POINTS)]],
-      explanation: [''],
-      questionType: [QuestionType.FillInBlank, Validators.required]
-    });
-  }
+  // createQuestionForm(): QuestionForm {
+  //   return this.fb.group({
+  //     exerciseName: ['', Validators.required],
+  //     questionText: ['', Validators.required],
+  //     orderIndex: [0, [Validators.required, Validators.min(0)]],
+  //     points: [0, [Validators.required, Validators.min(MIN_POINTS)]],
+  //     explanation: [''],
+  //     questionType: [QuestionType.FillInBlank, Validators.required]
+  //   });
+  // }
 
   addExerciseToForm(exercises: FormArray<ExerciseForm>): void {
     exercises.push(this.createExerciseForm());

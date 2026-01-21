@@ -20,7 +20,7 @@ export interface Exercise {
   estimatedDurationMinutes: number;
   difficultyLevel: DifficultyLevel;
   points: number;
-  questions: Question[];
+  explanation?: string;
   exerciseType: ExerciseType;
 }
 
@@ -30,7 +30,8 @@ export interface ExerciseFormControls {
   estimatedDurationMinutes: FormControl<number>;
   difficultyLevel: FormControl<DifficultyLevel>;
   points: FormControl<number>;
-  questions: FormArray<QuestionForm>;
+  explanation?: FormControl<string>;
+  exerciseType: FormControl<ExerciseType>;
 }
 
 export type ExerciseForm = FormGroup<ExerciseFormControls>;
@@ -41,29 +42,29 @@ export interface QuestionOption {
   orderIndex: number;
 }
 
-export interface MultipleChoiceExercise extends Question {
-  questionType: QuestionType.MultipleChoice;
+export interface MultipleChoiceExercise extends Exercise {
+  questionType: ExerciseType.MultipleChoice;
   options: QuestionOption[];
 }
 
-export interface FillInBlankQuestion extends Question {
-  questionType: QuestionType.FillInBlank;
+export interface FillInBlankExercise extends Exercise {
+  questionType: ExerciseType.FillInTheBlank;
   correctAnswer: string;
   acceptedAnswers?: string;
   caseSensitive: boolean;
   trimWhitespace: boolean;
 }
 
-export interface ListeningQuestion extends Question {
-  questionType: QuestionType.Listening;
+export interface ListeningExercise extends Exercise {
+  questionType: ExerciseType.Listening;
   correctAnswer: string;
   acceptedAnswers?: string;
   caseSensitive: boolean;
   maxReplays: number;
 }
 
-export interface TranslationQuestion extends Question {
-  questionType: QuestionType.Translation;
+export interface TranslationExercise extends Exercise {
+  questionType: ExerciseType.Translation;
   sourceLanguageCode: string;
   targetLanguageCode: string;
   matchingThreshold: number;
