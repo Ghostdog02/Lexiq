@@ -2,12 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { FormArray, ReactiveFormsModule, FormGroup } from '@angular/forms';
 import { LessonForm } from './lesson.interface';
-import { ExerciseForm } from './exercise.interface';
+import { DifficultyLevel, ExerciseForm } from './exercise.interface';
 import { LessonService } from './lesson.service';
 import { LessonFormService } from './lesson-form.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChanged';
+import { marked } from 'marked';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-lesson',
@@ -21,6 +23,7 @@ export class LessonComponent {
   private readonly formService = inject(LessonFormService);
   private readonly lessonService = inject(LessonService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly sanitizer = inject(DomSanitizer);
 
   lessonForm!: LessonForm;
 
@@ -39,6 +42,34 @@ export class LessonComponent {
 
   get exerciseControls() {
     return this.exercises.controls;
+  }
+
+  onDifficultyChange(event: Event): void {
+    const rangeValue = +(event.target as HTMLInputElement).value;
+    
+    // Map range value (1-3) to DifficultyLevel enum
+    const difficultyMap: { [key: number]: DifficultyLevel } = {
+      1: DifficultyLevel.Beginner,
+      2: DifficultyLevel.Intermediate,
+      3: DifficultyLevel.Advanced
+    };
+    
+    this.exerciseForm.get('difficultyLevel')?.setValue(difficultyMap[rangeValue]);
+  }
+
+  parseMarkdown(markdown: string): SafeHtml {
+    if (!markdown) return this.sanitizer.bypassSecurityTrustHtml('');
+    const html = marked(markdown, { async: false, breaks: true });
+    return this.sanitizer.bypassSecurityTrustHtml(html as string);
+  }
+
+  replaceFillInBlank(question: string, answer: string): string {
+    if (!question) return question;
+    if (!answer) {
+      return question.replace(/{%special%}/g, '');
+    }
+    const underscores = '_'.repeat(answer.length);
+    return question.replace(/{%special%}/g, underscores);
   }
 
   addExercise(): void {

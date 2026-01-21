@@ -31,7 +31,7 @@
         </div>
 
         <div class="form-group">
-          <label for="description">Description</label>
+          <label for="description">Instructions</label>
           <div class="input-with-icon">
             <span class="icon">💬</span>
             <textarea
@@ -48,15 +48,16 @@
             <input 
               type="range" 
               min="1" 
-              max="5" 
+              max="3" 
               step="1" 
               id="difficulty" 
-              formControlName="difficulty"
+              formControlName="difficultyLevel"
+              (input)="onDifficultyChange($event)"
             >
             <div class="range-ticks">
               <span>Beginner</span>
               <span>Intermediate</span>
-              <span>Expert</span>
+              <span>Advanced</span>
             </div>
           </div>
         </div>
@@ -77,7 +78,7 @@
               [class.invalid]="lessonFormControls.content.invalid && lessonFormControls.content.touched"
             ></textarea>
           </div>
-          <p class="hint"><span class="icon">📝</span> Markdown is supported.</p>
+          <p class="hint"><span class="icon">✏️</span> Markdown is supported.</p>
         </div>
       </section>
 
@@ -222,7 +223,7 @@
             @if (!lessonFormControls.content.value) {
               <p class="placeholder-text">Lesson content will appear here...</p>
             }
-            <div [innerText]="lessonFormControls.content.value"></div>
+            <div [innerHTML]="lessonFormControls.content.value ? parseMarkdown(lessonFormControls.content.value) : ''"></div>
           </div>
 
           <hr class="divider">
@@ -236,7 +237,7 @@
                 <span class="badge-num">{{ $index + 1 }}</span>
                 <div class="preview-content">
                   <strong>{{ ex.get('question')?.value || 'Question...' }}</strong>
-                  
+                  <strong *ngIf="ex.get('type')?.value !== 'multiple-choice'">{{ replaceFillInBlank(ex.get('question')?.value || 'Question...', ex.get('answer')?.value || '') }}</strong>
                   <!-- Type specific preview -->
                   <!-- @switch (ex.get('type')?.value) {
                     @case ('multiple-choice') {

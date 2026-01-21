@@ -1,0 +1,266 @@
+<div class="page-split-view">
+  
+  <!-- Left Panel: Editor -->
+  <div class="editor-panel">
+    <div class="panel-header">
+      <div class="title-wrapper">
+        <span class="icon">✏️</span>
+        <h1 class="title">Create Lesson</h1>
+      </div>
+      <p class="subtitle">Design a comprehensive lesson with explanations and exercises.</p>
+    </div>
+
+    <form [formGroup]="lessonForm" (ngSubmit)="onSubmit()" class="editor-form">
+      
+      <!-- Lesson Meta -->
+      <section class="form-section">
+        <h3><span class="icon">⚙️</span> Lesson Details</h3>
+
+        <div class="form-group">
+          <label for="title">Title</label>
+          <div class="input-with-icon">
+            <span class="icon">📝</span>
+            <input
+              type="text"
+              id="title"
+              formControlName="title"
+              placeholder="e.g. Introduction to Spanish Verbs"
+              [class.invalid]="f['title'].invalid && f['title'].touched"
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <div class="input-with-icon">
+            <span class="icon">💬</span>
+            <textarea
+              id="description"
+              rows="2"
+              formControlName="description"
+              placeholder="Short summary for the lesson card..."
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="difficulty">Difficulty Level: {{ f['difficulty'].value === 1 ? 'Beginner' : f['difficulty'].value === 2 ? 'Intermediate' : 'Advanced' }}</label>
+          <div class="range-container">
+            <input
+              type="range"
+              min="1"
+              max="3"
+              step="1"
+              id="difficulty"
+              formControlName="difficulty"
+            >
+            <div class="range-ticks">
+              <span>Beginner</span>
+              <span>Intermediate</span>
+              <span>Advanced</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Textbook Content -->
+      <section class="form-section">
+        <h3><span class="icon">📖</span> Textbook Content</h3>
+        <p class="section-desc">Explain the concept to the student here.</p>
+
+        <div class="form-group">
+          <div class="textarea-wrapper">
+            <textarea
+              id="content"
+              rows="8"
+              formControlName="content"
+              placeholder="Explain the concept here. Supports markdown formatting..."
+              [class.invalid]="f['content'].invalid && f['content'].touched"
+            ></textarea>
+          </div>
+          <p class="hint"><span class="icon">✏️</span> Markdown is supported.</p>
+        </div>
+      </section>
+
+      <!-- Exercises List -->
+      <section class="form-section">
+        <div class="section-header">
+          <h3><span class="icon">🧩</span> Exercises</h3>
+          <button type="button" class="btn small" (click)="addExercise()">
+            <span class="icon">➕</span> Add Exercise
+          </button>
+        </div>
+        
+        <div formArrayName="exercises" class="exercises-list">
+          <div *ngFor="let exercise of exercises.controls; let i=index" [formGroupName]="i" class="exercise-item slide-in">
+            
+            <div class="exercise-header">
+              <span class="exercise-num">Exercise #{{i + 1}}</span>
+              <button type="button" class="btn icon-only delete-btn" (click)="removeExercise(i)">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </button>
+            </div>
+
+            <div class="form-group">
+              <label>Type</label>
+              <div class="select-wrapper">
+                <span class="icon select-icon">📚</span>
+                <select formControlName="type">
+                  <option *ngFor="let type of exerciseTypes" [value]="type.value">{{ type.label }}</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Question / Prompt</label>
+              <div class="input-with-icon">
+                <span class="icon">❓</span>
+                <input type="text" formControlName="question" placeholder="e.g. Translate 'Hello'">
+              </div>
+              <p *ngIf="exercise.get('type')?.value === 'fill-in-blank'" class="hint"><span class="icon">💡</span> Use &#123;%special%&#125; as a placeholder for fill-in-blank.</p>
+            </div>
+
+            <!-- Conditional Fields based on Type -->
+            <ng-container [ngSwitch]="exercise.get('type')?.value">
+              
+              <!-- Multiple Choice -->
+              <div *ngSwitchCase="'multiple-choice'" class="sub-form fade-in">
+                <label>Options</label>
+                <div formArrayName="options">
+                  <div *ngFor="let option of getOptions(i).controls; let j=index" class="option-row slide-in-right">
+                    <div class="input-with-icon full-width">
+                      <span class="icon">☐</span>
+                      <input [formControlName]="j" placeholder="Option {{j+1}}">
+                    </div>
+                    <button type="button" class="btn icon-only small delete-btn" (click)="removeOption(i, j)">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <button type="button" class="btn link-btn" (click)="addOption(i)">
+                  <span class="icon">➕</span> Add Option
+                </button>
+
+                <div class="form-group mt-2">
+                  <label>Correct Answer (Match text exactly)</label>
+                  <div class="input-with-icon">
+                    <span class="icon">✅</span>
+                    <input type="text" formControlName="correctAnswer" placeholder="Copy the correct option text here">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Fill in Blank / Translation -->
+              <div *ngSwitchDefault class="sub-form fade-in">
+                <div class="form-group">
+                  <label>Correct Answer</label>
+                  <div class="input-with-icon">
+                    <span class="icon">🔑</span>
+                    <input type="text" formControlName="answer" placeholder="The expected answer">
+                  </div>
+                </div>
+              </div>
+
+            </ng-container>
+
+          </div>
+          
+          <div *ngIf="exercises.length === 0" class="empty-state">
+            <span class="icon empty-icon">🎯</span>
+            <p>No exercises added yet.</p>
+            <button type="button" class="btn small" (click)="addExercise()">Create First Exercise</button>
+          </div>
+        </div>
+      </section>
+
+    </form>
+
+      <!-- Actions -->
+      <div class="form-actions sticky-footer">
+        <button type="button" class="btn secondary">
+          <span class="icon">↩️</span> Discard
+        </button>
+        <button type="button" class="btn primary" [disabled]="lessonForm.invalid" (click)="onSubmit()">
+          <span class="icon">🚀</span> Publish Lesson
+        </button>
+      </div>
+  </div>
+
+  <!-- Right Panel: Live Preview -->
+  <div class="preview-panel">
+    <div class="preview-header">
+      <h2><span class="icon">👁️</span> Live Preview</h2>
+      <span class="tag">Student View</span>
+    </div>
+
+    <div class="device-mockup">
+      <div class="exercise-card-preview">
+        
+        <!-- Preview: Lesson Header -->
+        <div class="card-header">
+          <div class="meta">
+            <span class="badge difficulty-badge" [attr.data-level]="f['difficulty'].value">
+              Level {{ f['difficulty'].value }}
+            </span>
+            <span class="category"><span class="icon">🎓</span> Lesson</span>
+          </div>
+          <h3>{{ f['title'].value || 'Untitled Lesson' }}</h3>
+        </div>
+
+        <div class="card-body">
+          <!-- Preview: Textbook Content -->
+          <div class="textbook-preview">
+            <p *ngIf="!f['content'].value" class="placeholder-text">Lesson content will appear here...</p>
+            <div [innerHTML]="f['content'].value ? parseMarkdown(f['content'].value) : ''"></div>
+          </div>
+
+          <hr class="divider">
+
+          <!-- Preview: Exercises -->
+          <div class="exercises-preview">
+            <h4>Exercises ({{ exercises.length }})</h4>
+            
+            <div *ngFor="let ex of exercises.controls; let i=index" class="preview-item slide-in">
+              <span class="badge-num">{{i + 1}}</span>
+              <div class="preview-content">
+                <strong *ngIf="ex.get('type')?.value === 'multiple-choice'">{{ ex.get('question')?.value || 'Question...' }}</strong>
+                <strong *ngIf="ex.get('type')?.value !== 'multiple-choice'">{{ replaceFillInBlank(ex.get('question')?.value || 'Question...', ex.get('answer')?.value || '') }}</strong>
+
+                <!-- Type specific preview -->
+                <div [ngSwitch]="ex.get('type')?.value" class="interaction-preview">
+                  <div *ngSwitchCase="'multiple-choice'" class="options-list">
+                    <div *ngFor="let opt of getOptions(i).controls" class="radio-fake">
+                      <span class="icon">⭕</span> {{ opt.value || 'Option' }}
+                    </div>
+                  </div>
+                  <div *ngSwitchDefault class="input-fake">
+                    <span class="icon">✍️</span> Type answer...
+                  </div>
+                </div>
+              </div>
+            </div>
+             
+            <p *ngIf="exercises.length === 0" class="placeholder-text small">
+              <span class="icon">🚫</span> No exercises added.
+            </p>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <button class="btn ghost">Start Lesson <span class="icon">➡️</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
