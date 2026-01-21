@@ -8,7 +8,6 @@ import { LessonFormService } from './lesson-form.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChanged';
-import { QuestionForm } from './question.interface';
 
 @Component({
   selector: 'app-lesson',
@@ -49,23 +48,6 @@ export class LessonComponent {
   removeExercise(index: number): void {
     if (this.confirmRemoval('exercise')) {
       this.formService.removeExerciseFromForm(this.exercises, index);
-    }
-  }
-
-  getExerciseQuestions(exerciseIndex: number): FormArray<QuestionForm> {
-    return this.exercises.at(exerciseIndex).controls.questions;
-  }
-
-  // Question management
-  addQuestion(exerciseIndex: number): void {
-    const questions = this.getExerciseQuestions(exerciseIndex);
-    this.formService.addQuestionToExercise(questions);
-  }
-
-  removeQuestion(exerciseIndex: number, questionIndex: number): void {
-    if (this.confirmRemoval('question')) {
-      const questions = this.getExerciseQuestions(exerciseIndex);
-      this.formService.removeQuestionFromExercise(questions, questionIndex);
     }
   }
 

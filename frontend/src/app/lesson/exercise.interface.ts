@@ -1,5 +1,4 @@
-import { FormArray, FormControl, FormGroup } from "@angular/forms";
-import { Question, QuestionForm } from "./question.interface";
+import { FormControl, FormGroup } from "@angular/forms";
 
 export enum DifficultyLevel {
   Beginner = 'Beginner',

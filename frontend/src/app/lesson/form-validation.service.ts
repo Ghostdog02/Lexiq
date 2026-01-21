@@ -33,12 +33,15 @@ export class FormValidationService {
     if (control.errors['required']) {
       return `${fieldName} is required`;
     }
+
     if (control.errors['min']) {
       return `${fieldName} must be at least ${control.errors['min'].min}`;
     }
+
     if (control.errors['max']) {
       return `${fieldName} must be at most ${control.errors['max'].max}`;
     }
+    
     if (control.errors['minlength']) {
       return `${fieldName} must be at least ${control.errors['minlength'].requiredLength} characters`;
     }

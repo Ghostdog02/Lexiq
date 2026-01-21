@@ -2,7 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { FormArray, NonNullableFormBuilder, Validators } from '@angular/forms';
 import { LessonForm } from './lesson.interface';
 import { ExerciseForm, DifficultyLevel, ExerciseType } from './exercise.interface';
-import { QuestionForm, QuestionType } from './question.interface';
 import { MIN_DURATION, MIN_POINTS } from './lesson-form.constants';
 
 @Injectable({
@@ -31,7 +30,7 @@ export class LessonFormService {
       points: [0, [Validators.required, Validators.min(MIN_POINTS)]],
       explanation: ['', Validators.maxLength(1000)],
       exerciseType: [ExerciseType.MultipleChoice, Validators.required]
-    });
+    }) as ExerciseForm;
   }
 
   // createQuestionForm(): QuestionForm {
@@ -52,16 +51,6 @@ export class LessonFormService {
   removeExerciseFromForm(exercises: FormArray<ExerciseForm>, index: number): void {
     if (index >= 0 && index < exercises.length) {
       exercises.removeAt(index);
-    }
-  }
-
-  addQuestionToExercise(questions: FormArray<QuestionForm>): void {
-    questions.push(this.createQuestionForm());
-  }
-
-  removeQuestionFromExercise(questions: FormArray<QuestionForm>, index: number): void {
-    if (index >= 0 && index < questions.length) {
-      questions.removeAt(index);
     }
   }
 }
