@@ -162,9 +162,21 @@ public static class ServiceCollectionExtensions
         var dbName = Environment.GetEnvironmentVariable("DB_NAME");
         var dbUser = Environment.GetEnvironmentVariable("DB_USER_ID");
         var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
 
-        return $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};"
-            + $"Encrypt=True;TrustServerCertificate=True;Connection Timeout=30";
+        return environment switch
+        {
+            "development" =>
+                $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};"
+                    + $"Encrypt=False;TrustServerCertificate=True;Connection Timeout=30",
+
+            "production" =>
+                $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};"
+                    + $"Encrypt=True;TrustServerCertificate=True;Connection Timeout=30",
+                    
+            _ => $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};"
+                + $"Encrypt=False;TrustServerCertificate=True;Connection Timeout=30",
+        };
     }
 
     private static void AddXmlDocumentation(SwaggerGenOptions options)

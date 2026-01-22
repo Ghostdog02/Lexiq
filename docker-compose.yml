@@ -10,6 +10,8 @@ services:
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: lexiq-database
+    ports: 
+      - "1433:1433"
     environment:
       ACCEPT_EULA: "Y"
     secrets: 
@@ -28,7 +30,7 @@ services:
         -Q "SELECT 1" -C || exit 1
       interval: 10s
       retries: 10
-      start_period: 30s
+      start_period: 10s
       timeout: 3s
     restart: unless-stopped
 
@@ -46,7 +48,7 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl --fail --silent http://localhost:5000/health || exit 1"]
-      interval: 30s
+      interval: 10s
       timeout: 5s
       retries: 3
       start_period: 10s
@@ -70,7 +72,7 @@ services:
     user: nginx
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/ || exit 1"]
-      interval: 30s
+      interval: 10s
       timeout: 5s
       retries: 3
       start_period: 10s
