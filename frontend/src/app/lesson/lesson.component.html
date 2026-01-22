@@ -94,7 +94,7 @@
             >
               <option value="" disabled selected>Select exercise type</option>
               @for (pair of exerciseTypeDictionary; track pair.value) {
-                <option [value]="pair.value" (click)="addExercise(pair.value)"{{ pair.label }}</option>
+                <option [value]="pair.value" (click)="addExercise(pair.value)">{{ pair.label }}</option>
               }
             </select>
           </button>

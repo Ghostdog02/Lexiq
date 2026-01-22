@@ -80,8 +80,9 @@ export class LessonComponent {
     return question.replace(/{%special%}/g, underscores);
   }
 
-  addExercise(): void {
-    this.formService.addExerciseToForm(this.exercises);
+  addExercise(type: ExerciseType): void {
+    const form: ExerciseForm = this.formService.createExerciseForm(type);
+    this.formService.addExerciseToForm(this.lessonForm.controls.exercises);
   }
 
   removeExercise(index: number): void {

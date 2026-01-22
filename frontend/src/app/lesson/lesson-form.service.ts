@@ -7,7 +7,10 @@ import {
   FillInBlankFormControls,
   TranslationFormControls,
   ListeningFormControls,
-  ExerciseForm
+  ExerciseForm,
+  ExerciseFormControls,
+  QuestionOption,
+  QuestionOptionForm
 } from './exercise.interface';
 import { LessonForm } from './lesson.interface';
 
@@ -19,11 +22,15 @@ export class LessonFormService {
 
   createLessonForm(): LessonForm {
     const group = this.fb.group({
-      title: ['', Validators.required],
-      description: [''],
-      estimatedDuration: [0],
-      content: ['', Validators.required],
-      courseId: [''],
+      title: this.fb.control('', {
+        validators: Validators.required
+      }),
+      description: this.fb.control(''),
+      estimatedDuration: this.fb.control(0),
+      content: this.fb.control('', {
+        validators: Validators.required
+      }),
+      courseId: this.fb.control(''),
       exercises: this.fb.array<ExerciseForm>([])
     });
 
@@ -52,36 +59,26 @@ export class LessonFormService {
 
   private createBaseExerciseControls() {
     return {
-      exerciseType: this.fb.control(ExerciseType.FillInBlank, {
-        validators: Validators.required
-      }),
+      title: this.fb.control(''),
+      instructions: this.fb.control<string>(''),
+      estimatedDurationMinutes: this.fb.control<number>(1),
       question: this.fb.control('', {
         validators: Validators.required
       }),
-      difficultyLevel: this.fb.control(DifficultyLevel.Beginner, {
-        
+      difficultyLevel: this.fb.control(DifficultyLevel.Beginner),
+      points: this.fb.control<number>(1),
+      explanation: this.fb.control<string>(''),
+      exerciseType: this.fb.control(ExerciseType.FillInBlank, {
+        validators: Validators.required
       }),
-      title: this.fb.control('', {  }),
-      instructions: this.fb.control('', {  }),
-      estimatedDurationMinutes: this.fb.control(5, {  }),
-      points: this.fb.control(10, {  }),
-      explanation: this.fb.control<string | undefined>(undefined)
-    };
+    } as ExerciseFormControls;
   }
 
   private createMultipleChoiceForm(): FormGroup<MultipleChoiceFormControls> {
     return this.fb.group({
       ...this.createBaseExerciseControls(),
-      exerciseType: this.fb.control(ExerciseType.MultipleChoice, {
-        
-        validators: Validators.required
-      }),
-      options: this.fb.array<FormControl<string>>([
-        this.fb.control('', {  }),
-        this.fb.control('', {  })
-      ]),
-      correctAnswer: this.fb.control('', {
-        
+      options: this.fb.array<QuestionOptionForm>([]),
+      exerciseType: this.fb.control<ExerciseType.MultipleChoice>(ExerciseType.MultipleChoice, {
         validators: Validators.required
       })
     });
@@ -90,47 +87,64 @@ export class LessonFormService {
   private createFillInTheBlankForm(): FormGroup<FillInBlankFormControls> {
     return this.fb.group({
       ...this.createBaseExerciseControls(),
-      exerciseType: this.fb.control(ExerciseType.FillInBlank, {
-        
+      exerciseType: this.fb.control<ExerciseType.FillInBlank>(ExerciseType.FillInBlank, {
         validators: Validators.required
       }),
-      answer: this.fb.control('', {
-        
+      correctAnswer: this.fb.control<string>('', {
         validators: Validators.required
-      })
-    });
+      }),
+      acceptedAnswers: this.fb.control<string>(''),
+      caseSensitive: this.fb.control<boolean>(true),
+      trimWhitespace: this.fb.control<boolean>(true),
+    }) as FormGroup<FillInBlankFormControls>;
   }
 
   private createTranslationForm(): FormGroup<TranslationFormControls> {
     return this.fb.group({
       ...this.createBaseExerciseControls(),
       exerciseType: this.fb.control(ExerciseType.Translation, {
-        
         validators: Validators.required
       }),
-      answer: this.fb.control('', {
-        
-        validators: Validators.required
-      })
-    });
+      sourceLanguageCode: this.fb.control<string>('en', {
+        validators: [Validators.required, Validators.pattern('[a-z]{2}')]
+      }),
+      targetLanguageCode: this.fb.control<string>('it', {
+        validators: [Validators.required, Validators.pattern('[a-z]{2}')]
+      }),
+      matchingThreshold: this.fb.control<number>(0.1, {
+        validators: [Validators.required, Validators.min(0.1), Validators.max(1)]
+      }),
+      sourceText: this.fb.control<string>('', {
+        validators: [Validators.required, Validators.maxLength(1000)]
+      }),
+      targetText: this.fb.control<string>('', {
+        validators: [Validators.required, Validators.maxLength(1000)]
+      }),
+    }) as FormGroup<TranslationFormControls>;
   }
 
   private createListeningForm(): FormGroup<ListeningFormControls> {
     return this.fb.group({
       ...this.createBaseExerciseControls(),
       exerciseType: this.fb.control(ExerciseType.Listening, {
-        
         validators: Validators.required
       }),
-      audioUrl: this.fb.control('', {
-        
+      correctAnswer: this.fb.control<string>('', {
         validators: Validators.required
       }),
-      answer: this.fb.control('', {
-        
+      acceptedAnswers: this.fb.control<string>('', {
         validators: Validators.required
-      })
-    });
+      }),
+      caseSensitive: this.fb.control<boolean>(true, {
+        validators: Validators.required
+      }),
+      maxReplays: this.fb.control<number>(1, {
+        validators: [Validators.required, Validators.min(1), Validators.max(3)]
+      }),
+      audioUrl: this.fb.control<string>('', {
+        validators: [Validators.required, Validators.maxLength(500)]
+      }),
+    }) as FormGroup<ListeningFormControls>;
   }
 
   addExerciseToForm(exercises: FormArray<ExerciseForm>, type: ExerciseType = ExerciseType.FillInBlank): void {
@@ -145,7 +159,12 @@ export class LessonFormService {
   // Helper to add option to multiple choice
   addOptionToMultipleChoice(form: FormGroup<MultipleChoiceFormControls>): void {
     const options = form.controls.options;
-    options.push(this.fb.control(''));
+    const questionOptionForm = this.fb.group({
+      optionText: this.fb.control<string>('', { validators: Validators.required }),
+      isCorrect: this.fb.control<boolean>(false, { validators: Validators.required })
+    }) as QuestionOptionForm;
+
+    options.push(questionOptionForm);
   }
 
   removeOptionFromMultipleChoice(form: FormGroup<MultipleChoiceFormControls>, index: number): void {

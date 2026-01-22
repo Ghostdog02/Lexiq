@@ -29,20 +29,18 @@ export interface ExerciseFormControls {
   estimatedDurationMinutes: FormControl<number>;
   difficultyLevel: FormControl<DifficultyLevel>;
   points: FormControl<number>;
-  explanation?: FormControl<string>;
+  explanation: FormControl<string>;
   exerciseType: FormControl<ExerciseType>;
 }
 
 export interface QuestionOption {
   optionText: string;
   isCorrect: boolean;
-  orderIndex: number;
 }
 
-export interface QuestionOptionForm {
+export interface QuestionOptionFormControls {
   optionText: FormControl<string>;
   isCorrect: FormControl<boolean>;
-  orderIndex: FormControl<number>;
 }
 
 export interface MultipleChoiceExercise extends Exercise {
@@ -63,11 +61,14 @@ export interface ListeningExercise extends Exercise {
   correctAnswer: string;
   acceptedAnswers?: string;
   caseSensitive: boolean;
+  audioUrl: string;
   maxReplays: number;
 }
 
 export interface TranslationExercise extends Exercise {
   exerciseType: ExerciseType.Translation;
+  sourceText: string;
+  targetText: string;
   sourceLanguageCode: string;
   targetLanguageCode: string;
   matchingThreshold: number;
@@ -83,7 +84,7 @@ export type AnyExercise =
 // Specific form controls for each type
 export interface MultipleChoiceFormControls extends ExerciseFormControls {
   exerciseType: FormControl<ExerciseType.MultipleChoice>;
-  options: FormArray<FormGroup<QuestionOptionForm>>;
+  options: FormArray<QuestionOptionForm>;
 }
 
 export interface FillInBlankFormControls extends ExerciseFormControls {
@@ -96,6 +97,8 @@ export interface FillInBlankFormControls extends ExerciseFormControls {
 
 export interface TranslationFormControls extends ExerciseFormControls {
   exerciseType: FormControl<ExerciseType.Translation>;
+  sourceText: FormControl<string>;
+  targetText: FormControl<string>;
   sourceLanguageCode: FormControl<string>;
   targetLanguageCode: FormControl<string>;
   matchingThreshold: FormControl<number>;
@@ -107,6 +110,7 @@ export interface ListeningFormControls extends ExerciseFormControls {
   acceptedAnswers?: FormControl<string>;
   caseSensitive: FormControl<boolean>;
   maxReplays: FormControl<number>;
+  audioUrl: FormControl<string>;
 }
 
 // Form types
@@ -115,6 +119,7 @@ export type FillInBlankForm = FormGroup<FillInBlankFormControls>;
 export type TranslationForm = FormGroup<TranslationFormControls>;
 export type ListeningForm = FormGroup<ListeningFormControls>;
 export type ExerciseForm = FormGroup<any>;
+export type QuestionOptionForm = FormGroup<QuestionOptionFormControls>;
 
 // export type ExerciseForm =
 //   | MultipleChoiceForm
