@@ -1,7 +1,7 @@
 using System.Reflection;
 using Backend.Api.Services;
 using Backend.Database;
-using Backend.Database.Entities;
+using Backend.Database.Entities.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
@@ -49,6 +49,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LanguageService>();
         services.AddScoped<ExerciseService>();
         services.AddScoped<UserLanguageService>();
+        services.AddScoped<IProgressService, ProgressService>();
         return services;
     }
 

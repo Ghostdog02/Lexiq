@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Backend.Database.Entities.Users;
 
 namespace Backend.Database.Entities;
 

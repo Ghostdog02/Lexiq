@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Backend.Database.Entities;
+namespace Backend.Database.Entities.Users;
 
 /// <summary>
 /// Tracks which languages a user has learned

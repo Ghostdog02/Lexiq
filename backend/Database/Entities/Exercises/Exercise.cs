@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Backend.Database.Entities.Users;
 
 namespace Backend.Database.Entities.Exercises;
 
@@ -55,4 +56,6 @@ public abstract class Exercise
 
     [ForeignKey(nameof(LessonId))]
     public Lesson? Lesson { get; set; }
+
+    public List<UserExerciseProgress> UserProgress { get; set; } = [];
 }

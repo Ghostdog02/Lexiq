@@ -1,6 +1,7 @@
 using Backend.Api.Dtos;
 using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
+using Backend.Database.Entities.Users;
 
 namespace Backend.Api.Mapping;
 

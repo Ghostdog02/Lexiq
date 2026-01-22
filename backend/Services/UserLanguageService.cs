@@ -1,6 +1,6 @@
 using Backend.Api.Dtos;
 using Backend.Database;
-using Backend.Database.Entities;
+using Backend.Database.Entities.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
