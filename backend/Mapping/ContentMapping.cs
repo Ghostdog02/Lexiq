@@ -1,7 +1,6 @@
 using Backend.Api.Dtos;
 using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
-using Backend.Database.Entities.Questions;
 
 namespace Backend.Api.Mapping;
 
@@ -45,33 +44,19 @@ public static class ContentMappingExtensions
     // Exercise
     public static ExerciseDto ToDto(this Exercise entity)
     {
-        return new ExerciseDto(
-            entity.Id,
-            entity.LessonId,
-            entity.Title,
-            entity.Instructions,
-            entity.EstimatedDurationMinutes,
-            entity.DifficultyLevel,
-            entity.Points,
-            entity.OrderIndex,
-            entity.Questions.Count
-        );
-    }
-
-    // Question
-    public static QuestionDto ToDto(this Question entity)
-    {
         return entity switch
         {
-            MultipleChoiceQuestion mcq => new MultipleChoiceQuestionDto(
-                mcq.Exercise?.Title ?? string.Empty,
-                mcq.QuestionText,
-                mcq.QuestionAudioUrl,
-                mcq.QuestionImageUrl,
-                mcq.OrderIndex,
-                mcq.Points,
-                mcq.Explanation,
-                mcq.Options.Select(o => new QuestionOptionDto(
+            MultipleChoiceExercise mce => new MultipleChoiceExerciseDto(
+                mce.Id,
+                mce.LessonId,
+                mce.Title,
+                mce.Instructions,
+                mce.EstimatedDurationMinutes,
+                mce.DifficultyLevel,
+                mce.Points,
+                mce.OrderIndex,
+                mce.Explanation,
+                mce.Options.Select(o => new ExerciseOptionDto(
                         o.Id,
                         o.OptionText,
                         o.IsCorrect,
@@ -79,40 +64,56 @@ public static class ContentMappingExtensions
                     ))
                     .ToList()
             ),
-            FillInBlankQuestion fib => new FillInBlankQuestionDto(
-                fib.Exercise?.Title ?? string.Empty,
-                fib.QuestionText,
-                fib.QuestionAudioUrl,
-                fib.QuestionImageUrl,
-                fib.OrderIndex,
+            FillInBlankExercise fib => new FillInBlankExerciseDto(
+                fib.Id,
+                fib.LessonId,
+                fib.Title,
+                fib.Instructions,
+                fib.EstimatedDurationMinutes,
+                fib.DifficultyLevel,
                 fib.Points,
+                fib.OrderIndex,
                 fib.Explanation,
-                fib.CorrectAnswer
+                fib.Text,
+                fib.CorrectAnswer,
+                fib.AcceptedAnswers,
+                fib.CaseSensitive,
+                fib.TrimWhitespace
             ),
-            TranslationQuestion tq => new TranslationQuestionDto(
-                tq.Exercise?.Title ?? string.Empty,
-                tq.QuestionText,
-                tq.QuestionAudioUrl,
-                tq.QuestionImageUrl,
-                tq.OrderIndex,
-                tq.Points,
-                tq.Explanation,
-                tq.SourceLanguageCode,
-                tq.TargetLanguageCode
+            ListeningExercise le => new ListeningExerciseDto(
+                le.Id,
+                le.LessonId,
+                le.Title,
+                le.Instructions,
+                le.EstimatedDurationMinutes,
+                le.DifficultyLevel,
+                le.Points,
+                le.OrderIndex,
+                le.Explanation,
+                le.AudioUrl,
+                le.CorrectAnswer,
+                le.AcceptedAnswers,
+                le.CaseSensitive,
+                le.MaxReplays
             ),
-            ListeningQuestion lq => new ListeningQuestionDto(
-                lq.Exercise?.Title ?? string.Empty,
-                lq.QuestionText,
-                lq.QuestionAudioUrl,
-                lq.QuestionImageUrl,
-                lq.OrderIndex,
-                lq.Points,
-                lq.Explanation,
-                lq.AudioUrl,
-                lq.CorrectAnswer
+            TranslationExercise te => new TranslationExerciseDto(
+                te.Id,
+                te.LessonId,
+                te.Title,
+                te.Instructions,
+                te.EstimatedDurationMinutes,
+                te.DifficultyLevel,
+                te.Points,
+                te.OrderIndex,
+                te.Explanation,
+                te.SourceText,
+                te.TargetText,
+                te.SourceLanguageCode,
+                te.TargetLanguageCode,
+                te.MatchingThreshold
             ),
             _ => throw new NotImplementedException(
-                $"Mapping for question type {entity.GetType().Name} is not implemented"
+                $"Mapping for exercise type {entity.GetType().Name} is not implemented"
             ),
         };
     }

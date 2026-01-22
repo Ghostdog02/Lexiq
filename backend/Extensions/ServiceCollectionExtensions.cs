@@ -48,7 +48,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LessonService>();
         services.AddScoped<LanguageService>();
         services.AddScoped<ExerciseService>();
-        services.AddScoped<QuestionService>();
         services.AddScoped<UserLanguageService>();
         return services;
     }

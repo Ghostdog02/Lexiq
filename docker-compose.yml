@@ -18,15 +18,17 @@ services:
     volumes:
       - db-data:/var/opt/mssql
     healthcheck:
-      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "$$(cat /run/secrets/db_password)", "-Q", "SELECT 1"]
+      test: >
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa 
+        -P "$$(cat /run/secrets/db_password)" 
+        -Q "SELECT 1" -C || exit 1
       interval: 10s
-      timeout: 3s
       retries: 10
-      start_period: 10s
+      start_period: 30s
+      timeout: 3s
     restart: unless-stopped
 
   backend:
-    image: backend
     build:
       context: ./backend
       dockerfile: DOCKERFILE
@@ -39,14 +41,14 @@ services:
       db: 
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:5000"]
+      test: ["CMD", "curl --fail --silent http://localhost:5000/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   frontend:
-    image: frontend
     build:
       context: ./frontend
       dockerfile: DOCKERFILE
@@ -58,17 +60,14 @@ services:
       - "443:443"
     depends_on:
       - backend
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
     user: nginx
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:443"]
+      test: ["CMD-SHELL", "curl --fail --silent --insecure https://frontend:443/ || exit 1"]
       interval: 30s
-      timeout: 10s
+      timeout: 5s
       retries: 3
-      start_period: 10s 
-    restart: unless-stopped
+      start_period: 10s
+    restart: unless-stopped 
     
 volumes:
   db-data:

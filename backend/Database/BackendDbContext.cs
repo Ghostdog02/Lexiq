@@ -1,6 +1,5 @@
 ﻿using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
-using Backend.Database.Entities.Questions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -18,20 +17,7 @@ public class BackendDbContext(DbContextOptions options)
 
     public DbSet<Exercise> Exercises { get; set; }
 
-    public DbSet<QuestionOption> QuestionOptions { get; set; }
-
     public DbSet<UserLanguage> UserLanguages { get; set; }
-
-    public DbSet<Question> Questions { get; set; }
-
-    public DbSet<MultipleChoiceQuestion> MultipleChoiceQuestions { get; set; }
-
-    public DbSet<FillInBlankQuestion> FillInBlankQuestions { get; set; }
-
-    public DbSet<TranslationQuestion> TranslationQuestions { get; set; }
-
-    public DbSet<ListeningQuestion> ListeningQuestions { get; set; }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -82,25 +68,10 @@ public class BackendDbContext(DbContextOptions options)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder
-            .Entity<Exercise>()
-            .HasMany(e => e.Questions)
-            .WithOne(q => q.Exercise)
-            .HasForeignKey(q => q.ExerciseId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder
-            .Entity<Question>()
-            .HasDiscriminator<string>("QuestionType")
-            .HasValue<MultipleChoiceQuestion>("MultipleChoice")
-            .HasValue<FillInBlankQuestion>("FillInBlank")
-            .HasValue<TranslationQuestion>("Translation")
-            .HasValue<ListeningQuestion>("Listening");
-
-        modelBuilder
-            .Entity<QuestionOption>()
-            .HasOne(qo => qo.Question)
-            .WithMany(q => q.Options)
-            .HasForeignKey(qo => qo.QuestionId)
+            .Entity<MultipleChoiceExercise>()
+            .HasMany(e => e.Options)
+            .WithOne(eo => eo.Exercise as MultipleChoiceExercise)
+            .HasForeignKey(eo => eo.ExerciseId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 

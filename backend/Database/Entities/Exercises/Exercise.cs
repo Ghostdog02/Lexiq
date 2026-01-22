@@ -40,9 +40,6 @@ public abstract class Exercise
     public DifficultyLevel DifficultyLevel { get; set; }
 
     [Required]
-    public ExerciseType ExerciseType { get; set; }
-
-    [Required]
     [Range(1, int.MaxValue)]
     public int Points { get; set; } = 0; // Points earned for completion
 

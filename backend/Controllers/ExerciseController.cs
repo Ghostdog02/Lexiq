@@ -1,6 +1,7 @@
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
 using Backend.Api.Services;
+using Backend.Database.Entities.Exercises;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,6 +9,7 @@ namespace Backend.Api.Controllers;
 
 [Route("api/exercises")]
 [ApiController]
+[Authorize]
 public class ExerciseController(ExerciseService exerciseService) : ControllerBase
 {
     private readonly ExerciseService _exerciseService = exerciseService;

@@ -9,7 +9,6 @@ import {
   ListeningFormControls,
   ExerciseForm,
   ExerciseFormControls,
-  QuestionOption,
   QuestionOptionForm
 } from './exercise.interface';
 import { LessonForm } from './lesson.interface';
@@ -38,7 +37,6 @@ export class LessonFormService {
     return group;
   }
 
-  // Factory method to create exercise form based on type
   createExerciseForm(type: ExerciseType): ExerciseForm {
     switch (type) {
       case ExerciseType.MultipleChoice:
