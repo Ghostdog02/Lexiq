@@ -10,10 +10,16 @@ public interface IProgressService
         int score,
         bool isCompleted
     );
+    
     Task<ExerciseProgressResponse?> GetExerciseProgressAsync(string userId, int exerciseId);
+
     Task<LessonProgressResponse?> GetLessonProgressAsync(string userId, int lessonId);
+
     Task<CourseProgressResponse?> GetCourseProgressAsync(string userId, int courseId);
+
     Task<UserProgressSummaryResponse> GetUserProgressSummaryAsync(string userId);
+
     Task<List<CourseProgressResponse>> GetLanguageProgressAsync(string userId, int languageId);
+
     Task<bool> ResetExerciseProgressAsync(string userId, int exerciseId);
 }

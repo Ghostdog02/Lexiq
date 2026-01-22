@@ -33,7 +33,6 @@ public class UserExerciseProgress
     [Required]
     public int PointsEarned { get; set; } = 0; // Actual points earned
 
-    // Navigation properties
     [ForeignKey(nameof(UserId))]
     public User User { get; set; } = null!;
 

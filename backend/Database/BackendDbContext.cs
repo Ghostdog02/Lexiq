@@ -19,7 +19,12 @@ public class BackendDbContext(DbContextOptions options)
     public DbSet<Exercise> Exercises { get; set; }
 
     public DbSet<UserLanguage> UserLanguages { get; set; }
-    public object UserExerciseProgress { get; set; }
+
+    public DbSet<UserExerciseProgress> UserExerciseProgresses { get; set; }
+
+    public DbSet<UserLessonProgress> UserLessonProgresses { get; set; } 
+
+    public DbSet<UserLessonProgress> UserCourseProgresses {get; set; } 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

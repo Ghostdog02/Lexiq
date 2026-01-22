@@ -49,7 +49,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LanguageService>();
         services.AddScoped<ExerciseService>();
         services.AddScoped<UserLanguageService>();
-        services.AddScoped<IProgressService, ProgressService>();
+        // services.AddScoped<ProgressService>();
         return services;
     }
 
