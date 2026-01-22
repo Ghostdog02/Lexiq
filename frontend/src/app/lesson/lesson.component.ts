@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject } from '@angular/core';
 import { FormArray, ReactiveFormsModule, FormGroup } from '@angular/forms';
-import { LessonForm } from './lesson.interface';
+import { Lesson, LessonForm } from './lesson.interface';
 import { DifficultyLevel, Exercise, ExerciseForm, ExerciseType, MultipleChoiceExercise } from './exercise.interface';
 import { LessonService } from './lesson.service';
 import { LessonFormService } from './lesson-form.service';
@@ -82,7 +82,7 @@ export class LessonComponent {
 
   addExercise(type: ExerciseType): void {
     const form: ExerciseForm = this.formService.createExerciseForm(type);
-    this.formService.addExerciseToForm(this.lessonForm.controls.exercises);
+    this.lessonForm.controls.exercises.push(form);
   }
 
   removeExercise(index: number): void {
@@ -98,7 +98,7 @@ export class LessonComponent {
       return;
     }
 
-    const lessonData = this.lessonForm.getRawValue();
+    const lessonData = this.lessonForm.getRawValue() as Lesson;
     console.log('Lesson submitted:', lessonData);
 
     this.lessonService.createLesson(lessonData)
