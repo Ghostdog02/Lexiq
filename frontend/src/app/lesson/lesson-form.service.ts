@@ -31,7 +31,8 @@ export class LessonFormService {
         validators: Validators.required
       }),
       courseId: this.fb.control(''),
-      exercises: this.fb.array<ExerciseForm>([])
+      exercises: this.fb.array<ExerciseForm>([]),
+      exerciseType: this.fb.control<ExerciseType | ''>('' as ExerciseType | '')
     });
 
     return group;
@@ -132,12 +133,8 @@ export class LessonFormService {
       correctAnswer: this.fb.control<string>('', {
         validators: Validators.required
       }),
-      acceptedAnswers: this.fb.control<string>('', {
-        validators: Validators.required
-      }),
-      caseSensitive: this.fb.control<boolean>(true, {
-        validators: Validators.required
-      }),
+      acceptedAnswers: this.fb.control<string>(''),
+      caseSensitive: this.fb.control<boolean>(true),
       maxReplays: this.fb.control<number>(1, {
         validators: [Validators.required, Validators.min(1), Validators.max(3)]
       }),

@@ -37,6 +37,11 @@ export const routes: Routes = [
         title: "Help"
     },
     {
+        path: 'lesson/:id',
+        loadComponent: () => import('./lesson-detail/lesson-detail').then(m => m.LessonDetailComponent),
+        title: "Lesson Details"
+    },
+    {
         path: '**',
         loadComponent: () => import('./not-found/not-found.component').then(m => m.NotFoundComponent),
         title: "Not Found"

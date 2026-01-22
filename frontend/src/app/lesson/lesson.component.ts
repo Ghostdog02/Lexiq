@@ -1,8 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { FormArray, ReactiveFormsModule, FormGroup } from '@angular/forms';
 import { Lesson, LessonForm } from './lesson.interface';
-import { DifficultyLevel, Exercise, ExerciseForm, ExerciseType, MultipleChoiceExercise } from './exercise.interface';
+import {
+  DifficultyLevel,
+  ExerciseForm,
+  ExerciseType,
+  FillInBlankExercise,
+  TranslationExercise,
+  ListeningExercise,
+  MultipleChoiceExercise,
+  AnyExercise
+} from './exercise.interface';
 import { LessonService } from './lesson.service';
 import { LessonFormService } from './lesson-form.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -19,10 +29,11 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   styleUrl: './lesson.component.scss'
 })
 export class LessonComponent {
-  private readonly formService = inject(LessonFormService);
+  readonly formService = inject(LessonFormService);
   private readonly lessonService = inject(LessonService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly router = inject(Router);
 
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[];
@@ -80,9 +91,11 @@ export class LessonComponent {
     return question.replace(/{%special%}/g, underscores);
   }
 
-  addExercise(type: ExerciseType): void {
+  addExercise(type: ExerciseType | ''): void {
+    if (!type) return;
     const form: ExerciseForm = this.formService.createExerciseForm(type);
     this.lessonForm.controls.exercises.push(form);
+    this.lessonForm.controls.exerciseType.reset();
   }
 
   removeExercise(index: number): void {
@@ -98,7 +111,7 @@ export class LessonComponent {
       return;
     }
 
-    const lessonData = this.lessonForm.getRawValue() as Lesson;
+    const lessonData = this.buildLessonPayload();
     console.log('Lesson submitted:', lessonData);
 
     this.lessonService.createLesson(lessonData)
@@ -107,12 +120,83 @@ export class LessonComponent {
         next: (response) => {
           console.log('Lesson created successfully:', response);
           this.resetForm();
+          this.router.navigate(['/']);
         },
         error: (error) => {
           console.error('Error creating lesson:', error);
-          // Handle error (show toast, etc.)
         }
       });
+  }
+
+  private buildLessonPayload(): Lesson {
+    const formValue = this.lessonForm.getRawValue();
+
+    const exercises: AnyExercise[] = this.exercises.controls.map(exerciseForm => {
+      const exerciseValue = exerciseForm.getRawValue();
+      const baseExercise = {
+        title: exerciseValue.title,
+        instructions: exerciseValue.instructions,
+        estimatedDurationMinutes: exerciseValue.estimatedDurationMinutes,
+        difficultyLevel: exerciseValue.difficultyLevel,
+        points: exerciseValue.points,
+        explanation: exerciseValue.explanation,
+        exerciseType: exerciseValue.exerciseType,
+        question: exerciseValue.question
+      };
+
+      switch (exerciseValue.exerciseType) {
+        case ExerciseType.FillInBlank:
+          return {
+            ...baseExercise,
+            exerciseType: ExerciseType.FillInBlank,
+            correctAnswer: exerciseValue.correctAnswer,
+            acceptedAnswers: exerciseValue.acceptedAnswers,
+            caseSensitive: exerciseValue.caseSensitive,
+            trimWhitespace: exerciseValue.trimWhitespace
+          } as FillInBlankExercise;
+
+        case ExerciseType.Translation:
+          return {
+            ...baseExercise,
+            exerciseType: ExerciseType.Translation,
+            sourceText: exerciseValue.sourceText,
+            targetText: exerciseValue.targetText,
+            sourceLanguageCode: exerciseValue.sourceLanguageCode,
+            targetLanguageCode: exerciseValue.targetLanguageCode,
+            matchingThreshold: exerciseValue.matchingThreshold
+          } as TranslationExercise;
+
+        case ExerciseType.Listening:
+          return {
+            ...baseExercise,
+            exerciseType: ExerciseType.Listening,
+            correctAnswer: exerciseValue.correctAnswer,
+            acceptedAnswers: exerciseValue.acceptedAnswers,
+            caseSensitive: exerciseValue.caseSensitive,
+            maxReplays: exerciseValue.maxReplays,
+            audioUrl: exerciseValue.audioUrl
+          } as ListeningExercise;
+
+        case ExerciseType.MultipleChoice:
+          return {
+            ...baseExercise,
+            exerciseType: ExerciseType.MultipleChoice,
+            options: exerciseValue.options || []
+          } as MultipleChoiceExercise;
+
+        default:
+          throw new Error(`Unknown exercise type: ${exerciseValue.exerciseType}`);
+      }
+    });
+
+    return {
+      title: formValue.title,
+      description: formValue.description,
+      estimatedDuration: formValue.estimatedDuration,
+      content: formValue.content,
+      courseId: formValue.courseId,
+      exercises
+    };
   }
 
   // Private methods
