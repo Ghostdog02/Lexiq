@@ -20,12 +20,6 @@ public class BackendDbContext(DbContextOptions options)
 
     public DbSet<UserLanguage> UserLanguages { get; set; }
 
-    public DbSet<UserExerciseProgress> UserExerciseProgresses { get; set; }
-
-    public DbSet<UserLessonProgress> UserLessonProgresses { get; set; } 
-
-    public DbSet<UserLessonProgress> UserCourseProgresses {get; set; } 
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -81,22 +75,7 @@ public class BackendDbContext(DbContextOptions options)
             .WithOne(eo => eo.Exercise as MultipleChoiceExercise)
             .HasForeignKey(eo => eo.ExerciseId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder
-            .Entity<UserExerciseProgress>()
-            .HasIndex(p => new { p.UserId, p.ExerciseId })
-            .IsUnique();
-
-        modelBuilder
-            .Entity<UserLessonProgress>()
-            .HasIndex(p => new { p.UserId, p.LessonId })
-            .IsUnique();
-
-        modelBuilder
-            .Entity<UserCourseProgress>()
-            .HasIndex(p => new { p.UserId, p.CourseId })
-            .IsUnique();
-
+            
         modelBuilder.Entity<UserLanguage>().HasKey(ul => new { ul.UserId, ul.LanguageId });
     }
 

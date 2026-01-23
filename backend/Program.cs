@@ -8,7 +8,15 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        Env.Load("/run/secrets/backend_env");
+        var secretPath = "/run/secrets/backend_env";
+        if (File.Exists(secretPath))
+        {
+            Env.Load(secretPath);
+        }
+        else
+        {
+            Env.Load(); // Loads from .env in current directory
+        }
 
         var builder = WebApplication.CreateBuilder(args);
 

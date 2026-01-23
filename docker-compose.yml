@@ -3,8 +3,6 @@ secrets:
     file: ./backend/Database/password.txt
   backend_env:
     file: ./backend/.env
-  frontend_env:
-    file: ./frontend/.env
 
 services:
   db:
@@ -47,7 +45,7 @@ services:
       db: 
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl --fail --silent http://localhost:5000/health || exit 1"]
+      test: ["CMD", "curl --fail --silent http://backend:5000/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -71,7 +69,7 @@ services:
         condition: service_healthy
     user: nginx
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/ || exit 1"]
+      test: ["CMD-SHELL", "curl --fail --silent http://frontend:8080/ || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
