@@ -36,7 +36,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   templateUrl: './lesson.component.html',
   styleUrl: './lesson.component.scss'
 })
-export class LessonComponent implements AfterViewInit, OnInit, OnDestroy {
+export class LessonComponent implements OnInit {
   readonly formService = inject(LessonFormService);
   private readonly lessonService = inject(LessonService);
   private readonly destroyRef = inject(DestroyRef);
@@ -45,7 +45,6 @@ export class LessonComponent implements AfterViewInit, OnInit, OnDestroy {
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[];
   ExerciseType = ExerciseType;
-  editor!: EditorJS;
 
   constructor() {
     this.exerciseTypeDictionary = Object.entries(ExerciseType).map(([key, value]) => ({
@@ -59,57 +58,52 @@ export class LessonComponent implements AfterViewInit, OnInit, OnDestroy {
     this.setupFormValueChanges();
   }
 
-  ngOnDestroy(): void {
-    if (this.editor) {
-      this.editor.destroy();
-    }
-  }
 
-  ngAfterViewInit(): void {
-    this.editor = new EditorJS({
-      tools: {
-        header: Header,
-        image: {
-          class: ImageTool,
-          config: {
-            endpoints: {
-              byFile: '',
-              byUrl: ''
-            }
-          }
-        },
-        List: {
-          class: EditorjsList,
-          inlineToolbar: true,
-          config: {
-            defaultStyle: 'unordered'
-          }
-        },
-        table: {
-          class: Table as any,
-          inlineToolbar: true,
-          config: {
-              rows: 2,
-              cols: 3,
-              withHeadings: true
-          }
-        },
-        delimiter: Delimiter,
-        attaches: {
-          class: AttachesTool,
-          config: {
-            endpoint: ''
-          }
-        }
-      },
-      holder: 'editorjs',
-      onChange: (api, event) => {
-        api.saver.save().then((outputData) => {
-          this.lessonForm.controls.content.setValue(JSON.stringify(outputData));
-        });
-      }
-    });
-  }
+  // ngAfterViewInit(): void {
+    // this.editor = new EditorJS({
+    //   tools: {
+    //     header: Header,
+    //     image: {
+    //       class: ImageTool,
+    //       config: {
+    //         endpoints: {
+    //           byFile: 'localhost:8080/api',
+    //           byUrl: ''
+    //         }
+    //       }
+    //     },
+    //     List: {
+    //       class: EditorjsList,
+    //       inlineToolbar: true,
+    //       config: {
+    //         defaultStyle: 'unordered'
+    //       }
+    //     },
+    //     table: {
+    //       class: Table as any,
+    //       inlineToolbar: true,
+    //       config: {
+    //           rows: 2,
+    //           cols: 3,
+    //           withHeadings: true
+    //       }
+    //     },
+    //     delimiter: Delimiter,
+    //     attaches: {
+    //       class: AttachesTool,
+    //       config: {
+    //         endpoint: ''
+    //       }
+    //     }
+    //   },
+    //   holder: 'editorjs',
+    //   onChange: (api, event) => {
+    //     api.saver.save().then((outputData) => {
+    //       this.lessonForm.controls.content.setValue(JSON.stringify(outputData));
+    //     });
+    //   }
+    // });
+//  }
 
   get lessonFormControls() {
     return this.lessonForm.controls;

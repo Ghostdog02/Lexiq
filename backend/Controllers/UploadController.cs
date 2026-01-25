@@ -18,7 +18,7 @@ namespace Backend.Api.Controllers
         }
 
         [HttpPost("image")]
-        public async Task<IActionResult> UploadImage([FromForm] IFormFile image)
+        public async Task<IActionResult> UploadImage(IFormFile image)
         {
             var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var result = await _fileUploadService.UploadFileAsync(image, "image", baseUrl);
