@@ -7,10 +7,10 @@ COPY package.json package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci
 COPY . .
 
-ARG BACKEND_URL
+ARG BACKEND_API_URL
 ARG NG_GOOGLE_CLIENT_ID
 
-RUN echo "BACKEND_URL=${BACKEND_URL}" > .env && \
+RUN echo "BACKEND_API_URL=${BACKEND_API_URL}" > .env && \
     echo "NG_GOOGLE_CLIENT_ID=${NG_GOOGLE_CLIENT_ID}" >> .env
 
 RUN npm run build

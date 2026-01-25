@@ -5,11 +5,11 @@ import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
 import { FormGroup } from '@angular/forms';
 
-const BACKEND_URL = import.meta.env.BACKEND_URL + '/auth';
+const BACKEND_API_URL = import.meta.env.BACKEND_API_URL + '/auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService implements OnInit {
-    
+
 
   private httpClient = inject(HttpClient);
   private router = inject(Router);
@@ -37,7 +37,7 @@ export class AuthService implements OnInit {
 
   async getInitialValue() {
     const response = await firstValueFrom(
-      this.httpClient.get<{ message: string; isLogged: boolean }>(BACKEND_URL + '/auth-status')
+      this.httpClient.get<{ message: string; isLogged: boolean }>(BACKEND_API_URL + '/auth-status')
     );
 
     if (response) {
@@ -89,13 +89,15 @@ export class AuthService implements OnInit {
     try {
       const response = await firstValueFrom(
         this.httpClient.post<{ message: string; user: any; expiresIn: number }>(
-          BACKEND_URL + '/google-login', 
+          BACKEND_API_URL + '/google-login',
           { idToken: googleToken },
           { withCredentials: true }
         )
       );
 
       const responseMessage = response.message;
+
+      console.log(responseMessage)
 
       if (!response) {
         throw new Error(`Login failed: ${responseMessage}`);
@@ -116,7 +118,7 @@ export class AuthService implements OnInit {
   async logoutUser() {
     try {
       const response = await firstValueFrom(
-        this.httpClient.post<{ message: string }>(BACKEND_URL + '/logout', {
+        this.httpClient.post<{ message: string }>(BACKEND_API_URL + '/logout', {
           headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
           withCredentials: true,
           observe: 'response' as 'response',
