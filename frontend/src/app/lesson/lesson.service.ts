@@ -34,7 +34,12 @@ export class LessonService {
     // return this.httpClient.post<Lesson>(this.apiUrl, lesson);
 
     // Temporary: return the lesson as-is for testing
-    return of(lesson).pipe(
+    const lessonWithId = {
+      ...lesson,
+      id: lesson.id || Math.floor(Math.random() * 10000)
+    };
+
+    return of(lessonWithId).pipe(
       tap((createdLesson) => {
         console.log('Lesson would be sent to:', this.apiUrl);
         // Store the lesson

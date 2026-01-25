@@ -83,8 +83,72 @@ export class LessonDetailComponent implements OnInit {
   }
 
   // Content rendering
-  parseMarkdown(content: string): SafeHtml {
+  parseContent(content: string): SafeHtml {
     if (!content) return this.sanitizer.bypassSecurityTrustHtml('');
+    
+    try {
+      const data = JSON.parse(content);
+      if (data && data.blocks && Array.isArray(data.blocks)) {
+        let html = '';
+        data.blocks.forEach((block: any) => {
+          switch (block.type) {
+            case 'header':
+              html += `<h${block.data.level}>${block.data.text}</h${block.data.level}>`;
+              break;
+            case 'paragraph':
+              html += `<p>${block.data.text}</p>`;
+              break;
+            case 'List':
+            case 'list':
+              const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+              html += `<${tag}>`;
+              block.data.items.forEach((item: string) => {
+                html += `<li>${item}</li>`;
+              });
+              html += `</${tag}>`;
+              break;
+            case 'delimiter':
+              html += '<hr />';
+              break;
+            case 'table':
+              html += '<table>';
+              if (block.data.withHeadings && block.data.content.length > 0) {
+                html += '<thead><tr>';
+                block.data.content[0].forEach((cell: string) => {
+                  html += `<th>${cell}</th>`;
+                });
+                html += '</tr></thead><tbody>';
+                block.data.content.slice(1).forEach((row: string[]) => {
+                  html += '<tr>';
+                  row.forEach((cell: string) => {
+                    html += `<td>${cell}</td>`;
+                  });
+                  html += '</tr>';
+                });
+                html += '</tbody>';
+              } else {
+                html += '<tbody>';
+                block.data.content.forEach((row: string[]) => {
+                  html += '<tr>';
+                  row.forEach((cell: string) => {
+                    html += `<td>${cell}</td>`;
+                  });
+                  html += '</tr>';
+                });
+                html += '</tbody>';
+              }
+              html += '</table>';
+              break;
+            default:
+              break;
+          }
+        });
+        return this.sanitizer.bypassSecurityTrustHtml(html);
+      }
+    } catch (e) {
+      // Not JSON, fallback to markdown
+    }
+
     const html = marked(content, { async: false, breaks: true });
     return this.sanitizer.bypassSecurityTrustHtml(html as string);
   }

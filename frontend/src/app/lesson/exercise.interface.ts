@@ -16,6 +16,7 @@ export enum ExerciseType {
 export interface Exercise {
   title: string;
   instructions: string;
+  question: string;
   estimatedDurationMinutes: number;
   difficultyLevel: DifficultyLevel;
   points: number;
@@ -26,6 +27,7 @@ export interface Exercise {
 export interface ExerciseFormControls {
   title: FormControl<string>;
   instructions: FormControl<string>;
+  question: FormControl<string>;
   estimatedDurationMinutes: FormControl<number>;
   difficultyLevel: FormControl<DifficultyLevel>;
   points: FormControl<number>;

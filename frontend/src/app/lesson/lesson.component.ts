@@ -1,8 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject } from '@angular/core';
+import { Component, DestroyRef, inject, AfterViewInit, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { FormArray, ReactiveFormsModule, FormGroup } from '@angular/forms';
+import { FormArray, ReactiveFormsModule, FormGroup, AbstractControl } from '@angular/forms';
 import { Lesson, LessonForm } from './lesson.interface';
+import EditorJS from '@editorjs/editorjs'
+import Header from '@editorjs/header';
+import ImageTool from '@editorjs/image';
+import EditorjsList from '@editorjs/list';
+import Table from '@editorjs/table';
+import Delimiter from '@editorjs/delimiter';
+// @ts-ignore
+import AttachesTool from '@editorjs/attaches';
 import {
   DifficultyLevel,
   ExerciseForm,
@@ -28,16 +36,16 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
   templateUrl: './lesson.component.html',
   styleUrl: './lesson.component.scss'
 })
-export class LessonComponent {
+export class LessonComponent implements AfterViewInit, OnInit, OnDestroy {
   readonly formService = inject(LessonFormService);
   private readonly lessonService = inject(LessonService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly sanitizer = inject(DomSanitizer);
-  private readonly router = inject(Router);
-
+  private readonly router = inject(Router);  
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[];
   ExerciseType = ExerciseType;
+  editor!: EditorJS;
 
   constructor() {
     this.exerciseTypeDictionary = Object.entries(ExerciseType).map(([key, value]) => ({
@@ -49,6 +57,58 @@ export class LessonComponent {
   ngOnInit(): void {
     this.initializeForm();
     this.setupFormValueChanges();
+  }
+
+  ngOnDestroy(): void {
+    if (this.editor) {
+      this.editor.destroy();
+    }
+  }
+
+  ngAfterViewInit(): void {
+    this.editor = new EditorJS({
+      tools: {
+        header: Header,
+        image: {
+          class: ImageTool,
+          config: {
+            endpoints: {
+              byFile: '',
+              byUrl: ''
+            }
+          }
+        },
+        List: {
+          class: EditorjsList,
+          inlineToolbar: true,
+          config: {
+            defaultStyle: 'unordered'
+          }
+        },
+        table: {
+          class: Table as any,
+          inlineToolbar: true,
+          config: {
+              rows: 2,
+              cols: 3,
+              withHeadings: true
+          }
+        },
+        delimiter: Delimiter,
+        attaches: {
+          class: AttachesTool,
+          config: {
+            endpoint: ''
+          }
+        }
+      },
+      holder: 'editorjs',
+      onChange: (api, event) => {
+        api.saver.save().then((outputData) => {
+          this.lessonForm.controls.content.setValue(JSON.stringify(outputData));
+        });
+      }
+    });
   }
 
   get lessonFormControls() {
@@ -63,22 +123,87 @@ export class LessonComponent {
     return this.exercises.controls;
   }
 
-  onDifficultyChange(event: Event, exerciseForm: ExerciseForm): void {
+  onDifficultyChange(event: Event, exerciseForm: any): void {
     const rangeValue = +(event.target as HTMLInputElement).value;
 
-    // Map range value (1-3) to DifficultyLevel enum
     const difficultyMap: { [key: string]: DifficultyLevel } = {
       '1': DifficultyLevel.Beginner,
       '2': DifficultyLevel.Intermediate,
       '3': DifficultyLevel.Advanced
     };
 
-    exerciseForm.get('difficultyLevel')?.setValue(difficultyMap[rangeValue]);
+    if (exerciseForm && exerciseForm.get) {
+      exerciseForm.get('difficultyLevel')?.setValue(difficultyMap[rangeValue]);
+    }
   }
 
-  parseMarkdown(markdown: string): SafeHtml {
-    if (!markdown) return this.sanitizer.bypassSecurityTrustHtml('');
-    const html = marked(markdown, { async: false, breaks: true });
+  parseContent(content: string): SafeHtml {
+    if (!content) return this.sanitizer.bypassSecurityTrustHtml('');
+    
+    try {
+      const data = JSON.parse(content);
+      if (data && data.blocks && Array.isArray(data.blocks)) {
+        let html = '';
+        data.blocks.forEach((block: any) => {
+          switch (block.type) {
+            case 'header':
+              html += `<h${block.data.level}>${block.data.text}</h${block.data.level}>`;
+              break;
+            case 'paragraph':
+              html += `<p>${block.data.text}</p>`;
+              break;
+            case 'List':
+            case 'list':
+              const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
+              html += `<${tag}>`;
+              block.data.items.forEach((item: string) => {
+                html += `<li>${item}</li>`;
+              });
+              html += `</${tag}>`;
+              break;
+            case 'delimiter':
+              html += '<hr />';
+              break;
+            case 'table':
+              html += '<table>';
+              if (block.data.withHeadings && block.data.content.length > 0) {
+                html += '<thead><tr>';
+                block.data.content[0].forEach((cell: string) => {
+                  html += `<th>${cell}</th>`;
+                });
+                html += '</tr></thead><tbody>';
+                block.data.content.slice(1).forEach((row: string[]) => {
+                  html += '<tr>';
+                  row.forEach((cell: string) => {
+                    html += `<td>${cell}</td>`;
+                  });
+                  html += '</tr>';
+                });
+                html += '</tbody>';
+              } else {
+                html += '<tbody>';
+                block.data.content.forEach((row: string[]) => {
+                  html += '<tr>';
+                  row.forEach((cell: string) => {
+                    html += `<td>${cell}</td>`;
+                  });
+                  html += '</tr>';
+                });
+                html += '</tbody>';
+              }
+              html += '</table>';
+              break;
+            default:
+              break;
+          }
+        });
+        return this.sanitizer.bypassSecurityTrustHtml(html);
+      }
+    } catch (e) {
+      // Not JSON, fallback to markdown
+    }
+
+    const html = marked(content, { async: false, breaks: true });
     return this.sanitizer.bypassSecurityTrustHtml(html as string);
   }
 

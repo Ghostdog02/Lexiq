@@ -62,7 +62,7 @@
           <!-- Rendered markdown content -->
           @if (lesson.content) {
             <div class="lesson-content card">
-              <div class="markdown-content" [innerHTML]="parseMarkdown(lesson.content)"></div>
+              <div class="markdown-content" [innerHTML]="parseContent(lesson.content)"></div>
             </div>
           }
 

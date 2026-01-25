@@ -66,19 +66,13 @@
       <!-- Textbook Content -->
       <section class="form-section">
         <h3><span class="icon">📖</span> Textbook Content</h3>
-        <p class="section-desc">Explain the concept to the student here.</p>
+        <p class="section-desc">Explain the concept to the students here.</p>
 
         <div class="form-group">
           <div class="textarea-wrapper">
-            <textarea
-              id="content"
-              rows="8"
-              formControlName="content"
-              placeholder="# Lesson Content\n\nExplain the grammar rule or vocabulary here..."
-              [class.invalid]="lessonFormControls.content.invalid && lessonFormControls.content.touched"
-            ></textarea>
+            <div id="editorjs"></div>
           </div>
-          <p class="hint"><span class="icon">✏️</span> Markdown is supported.</p>
+          <p class="hint"><span class="icon">✏️</span> Write '/' to specify a command.</p>
         </div>
       </section>
 
@@ -300,7 +294,7 @@
             <div class="empty-state">
               <span class="icon empty-icon">🎯</span>
               <p>No exercises added yet.</p>
-              <button type="button" class="btn small">Create First Exercise</button>
+              <button type="button" class="btn small" (click)="addExercise(ExerciseType.FillInBlank)">Create First Exercise</button>
             </div>
           }
         </div>
@@ -346,7 +340,7 @@
             @if (!lessonFormControls.content.value) {
               <p class="placeholder-text">Lesson content will appear here...</p>
             }
-            <div [innerHTML]="lessonFormControls.content.value ? parseMarkdown(lessonFormControls.content.value) : ''"></div>
+            <div [innerHTML]="lessonFormControls.content.value ? parseContent(lessonFormControls.content.value) : ''"></div>
           </div>
 
           <hr class="divider">

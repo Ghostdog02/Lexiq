@@ -264,6 +264,429 @@
   textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
 }
 
+#editorjs {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  color: var(--white);
+  transition: all 0.2s ease;
+  width: 100%;
+  font-family: inherit;
+  min-height: 200px;
+  position: relative;
+  z-index: 1;
+  padding: 0; /* Remove padding from holder to avoid click blocking */
+
+  &:focus-within {
+    border-color: var(--accent);
+    background: var(--glass-hover);
+  }
+
+  ::ng-deep {
+    .codex-editor {
+      color: var(--white);
+      z-index: inherit;
+      padding: 12px 16px; /* Apply padding internally */
+      min-height: 200px;
+    }
+    
+    .codex-editor__redactor {
+      padding-bottom: 50px !important;
+    }
+
+    .ce-block__content {
+        max-width: 100%;
+    }
+
+    // Typography
+    h1, h2, h3, h4, h5, h6, p, div {
+       color: inherit;
+    }
+
+    // Fix for placeholder color
+    .ce-header[data-placeholder]:before,
+    .cdx-block[data-placeholder]:before {
+        color: rgba(255, 255, 255, 0.3) !important;
+        opacity: 1 !important;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+       font-weight: 700;
+    }
+
+    .ce-block--selected {
+      .ce-block__content {
+         background: rgba(124, 92, 255, 0.05);
+      }
+    }
+
+    // Remove purple background when image is selected
+    .ce-block--selected:has(.image-tool) {
+      .ce-block__content {
+        background: transparent !important;
+      }
+    }
+
+    // Toolbox & Popover containers
+    .ce-inline-toolbar, .ce-conversion-toolbar, .ce-settings, .ce-popover, .ce-toolbox {
+        background: var(--panel) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--white) !important;
+        box-shadow: var(--shadow) !important;
+        backdrop-filter: blur(10px);
+        border-radius: 8px !important;
+    }
+
+    // Popover container (newer Editor.js versions)
+    .ce-popover__container {
+        background: var(--panel) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+        box-shadow: var(--shadow) !important;
+    }
+
+    // All text inside popovers
+    .ce-popover__item-label,
+    .ce-popover-item__title,
+    .ce-popover-item__secondary-title {
+        color: var(--white) !important;
+    }
+
+    // Popover items (both old and new class names)
+    .ce-popover__item,
+    .ce-popover-item {
+        color: var(--white) !important;
+
+        &:hover {
+            background: var(--glass-hover) !important;
+        }
+    }
+
+    .ce-popover__search {
+        background: var(--bg-dark) !important;
+        border-bottom: 1px solid var(--border) !important;
+
+        input {
+            color: var(--white) !important;
+            background: transparent !important;
+            &::placeholder {
+                color: var(--muted) !important;
+            }
+        }
+    }
+
+    // Popover search (newer class)
+    .ce-popover-header {
+        background: var(--bg-dark) !important;
+        border-bottom: 1px solid var(--border) !important;
+    }
+
+    .ce-popover-search__input {
+        color: var(--white) !important;
+        background: transparent !important;
+        &::placeholder {
+            color: var(--muted) !important;
+        }
+    }
+
+    .ce-popover__item--active,
+    .ce-popover-item--active {
+        background: var(--accent) !important;
+        color: var(--white) !important;
+
+        .ce-popover__item-icon,
+        .ce-popover-item__icon {
+            background: rgba(255, 255, 255, 0.2) !important;
+        }
+    }
+
+    // Focused state for keyboard navigation
+    .ce-popover__item--focused,
+    .ce-popover-item--focused {
+        background: var(--glass-hover) !important;
+    }
+
+    .ce-inline-toolbar__dropdown:hover,
+    .ce-inline-toolbar__toggler:hover,
+    .ce-conversion-tool:hover,
+    .ce-settings__button:hover {
+        background: var(--glass-hover) !important;
+    }
+
+    // Settings buttons (tune options) when active/selected
+    .ce-settings__button--active,
+    .ce-settings__button--selected {
+        background: var(--glass-hover) !important;
+        color: var(--accent-light) !important;
+        border-color: var(--accent) !important;
+    }
+
+    // Tune settings (image options like border, stretched, etc.)
+    .ce-tune-toggler,
+    .cdx-settings-button {
+        background: var(--glass) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--white) !important;
+
+        &:hover {
+            background: var(--glass-hover) !important;
+        }
+
+        &--active {
+            background: rgba(124, 92, 255, 0.2) !important;
+            border-color: var(--accent-light) !important;
+            color: var(--white) !important;
+        }
+    }
+
+    // Image tune settings specific override
+    .image-tool__tune {
+        background: transparent !important;
+
+        .cdx-settings-button {
+            background: var(--glass) !important;
+            color: var(--white) !important;
+
+            &[data-tune="withBorder"],
+            &[data-tune="stretched"],
+            &[data-tune="withBackground"] {
+                color: var(--white) !important;
+
+                &.cdx-settings-button--active {
+                    background: rgba(124, 92, 255, 0.25) !important;
+                    color: var(--white) !important;
+                    font-weight: 600 !important;
+                }
+            }
+        }
+    }
+
+    // Icons inside popovers
+    .ce-popover__item-icon,
+    .ce-popover-item__icon {
+        background: var(--bg-dark) !important;
+        color: var(--accent-light) !important;
+        border-radius: 6px !important;
+        border: 1px solid var(--border) !important;
+
+        svg {
+            color: var(--accent-light) !important;
+
+            path {
+                stroke: var(--accent-light) !important;
+            }
+        }
+    }
+
+    // Toolbox buttons (the "/" menu items)
+    .ce-toolbox__button {
+        color: var(--accent-light) !important;
+        background: var(--bg-dark) !important;
+        border-radius: 6px !important;
+        border: 1px solid var(--border) !important;
+
+        &:hover {
+            background: var(--glass-hover) !important;
+            border-color: var(--accent) !important;
+        }
+
+        svg {
+            color: var(--accent-light) !important;
+
+            path {
+                stroke: var(--accent-light) !important;
+            }
+        }
+    }
+
+    // Nothing found message
+    .ce-popover__nothing-found-message,
+    .ce-popover-nothing-found-message {
+        color: var(--muted) !important;
+    }
+
+    // Popover items container
+    .ce-popover__items,
+    .ce-popover-items {
+        background: transparent !important;
+    }
+    
+    .ce-toolbar__plus, .ce-toolbar__settings-btn {
+        color: var(--muted);
+        background-color: rgba(255,255,255,0.05);
+
+        &:hover {
+            color: var(--white);
+            background-color: var(--accent);
+        }
+    }
+
+    // Image tool styling
+    .image-tool {
+        --bg-color: transparent;
+        --front-color: var(--white);
+        --border-color: var(--border);
+        background: transparent !important;
+
+        &__image {
+            background: transparent !important;
+            border: none !important;
+            border-radius: 8px !important;
+        }
+
+        &__image-picture {
+            background: transparent !important;
+        }
+
+        &__caption {
+            background: var(--glass) !important;
+            border: 1px solid var(--border) !important;
+            border-radius: 6px !important;
+            color: var(--white) !important;
+
+            &::placeholder {
+                color: var(--muted) !important;
+            }
+
+            &:focus {
+                border-color: var(--accent) !important;
+                background: var(--glass-hover) !important;
+            }
+        }
+    }
+
+    // Image tool empty state / upload button
+    .image-tool--empty,
+    .image-tool__image-preloader {
+        background: transparent !important;
+        border: none !important;
+        border-radius: 8px !important;
+    }
+
+    .cdx-button {
+        background: var(--glass) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--white) !important;
+        border-radius: 6px !important;
+
+        &:hover {
+            background: var(--glass-hover) !important;
+            border-color: var(--accent) !important;
+        }
+
+        svg {
+            color: var(--accent-light) !important;
+
+            path {
+                stroke: var(--accent-light) !important;
+            }
+        }
+    }
+
+    // Attaches tool styling
+    .cdx-attaches {
+        background: transparent !important;
+        border: none !important;
+        border-radius: 8px !important;
+        color: var(--white) !important;
+
+        &--with-file {
+            background: transparent !important;
+        }
+
+        &__file-icon {
+            background: var(--accent-dark) !important;
+            border-radius: 6px !important;
+
+            svg {
+                path {
+                    stroke: var(--white) !important;
+                }
+            }
+        }
+
+        &__file-info {
+            color: var(--white) !important;
+        }
+
+        &__title {
+            color: var(--white) !important;
+        }
+
+        &__size {
+            color: var(--muted) !important;
+        }
+
+        &__download-button {
+            background: var(--accent) !important;
+            color: var(--white) !important;
+            border-radius: 6px !important;
+
+            &:hover {
+                background: var(--accent-light) !important;
+            }
+
+            svg path {
+                stroke: var(--white) !important;
+            }
+        }
+    }
+
+    // Generic input styling for all Editor.js tools
+    .cdx-input {
+        background: var(--glass) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--white) !important;
+        border-radius: 6px !important;
+
+        &::placeholder {
+            color: var(--muted) !important;
+        }
+
+        &:focus {
+            border-color: var(--accent) !important;
+            background: var(--glass-hover) !important;
+        }
+    }
+
+    // Table tool styling
+    .tc-table {
+        background: var(--bg-dark) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 8px !important;
+
+        &__cell {
+            border-color: var(--border) !important;
+            color: var(--white) !important;
+        }
+
+        &__inp {
+            color: var(--white) !important;
+        }
+    }
+
+    .tc-toolbox {
+        background: var(--panel) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 6px !important;
+        box-shadow: var(--shadow) !important;
+
+        &__toggler {
+            color: var(--muted) !important;
+
+            &:hover {
+                color: var(--white) !important;
+            }
+
+            svg path {
+                stroke: currentColor !important;
+            }
+        }
+    }
+  }
+}
+
 .select-wrapper {
   position: relative;
 
@@ -294,12 +717,11 @@
     }
 
     option {
-      background-color: #1a1a2e;
+      background-color: var(--panel);
       color: var(--white);
-      color: white;
-      
+
       &:disabled {
-       color: #6b7280;
+       color: var(--muted);
       }
     }
 
