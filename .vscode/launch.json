@@ -49,6 +49,27 @@
       "smartStep": true,
       "enableContentValidation": false,
       "trace": false
-    }
+    },
+    {
+      "name": "Attach to Docker .NET Core",
+      "type": "coreclr",
+      "request": "attach",
+      "processId": "${command:pickRemoteProcess}",
+      "sourceFileMap": {
+        "/app": "${workspaceFolder}"
+      },
+      "pipeTransport": {
+        "pipeProgram": "sudo",
+        "pipeArgs": [
+          "docker",            
+          "exec", 
+          "-i", 
+          "lexiq-backend"
+        ],
+        "pipeCwd": "${workspaceFolder}",
+        "quoteArgs": false,
+        "debuggerPath": "/vsdbg/vsdbg"
+      }
+    }   
   ]
 }

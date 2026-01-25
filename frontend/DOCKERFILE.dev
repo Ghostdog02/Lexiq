@@ -26,6 +26,6 @@ COPY --chown=nginx:nginx --from=builder /app/dist/*/browser /usr/share/nginx/htm
 RUN apk add --no-cache curl && chmod +x /docker-entrypoint.sh
 
 USER nginx
-EXPOSE 8080
+EXPOSE 4200
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]

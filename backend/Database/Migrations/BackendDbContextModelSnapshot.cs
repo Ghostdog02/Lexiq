@@ -295,95 +295,6 @@ namespace Backend.Database.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
-            modelBuilder.Entity("Backend.Database.Entities.Users.UserCourseProgress", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CompletionPercentage")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CourseId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("StartedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("TotalPointsEarned")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CourseId");
-
-                    b.HasIndex("UserId", "CourseId")
-                        .IsUnique();
-
-                    b.ToTable("UserCourseProgress");
-                });
-
-            modelBuilder.Entity("Backend.Database.Entities.Users.UserExerciseProgress", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AttemptsCount")
-                        .HasColumnType("int");
-
-                    b.Property<int>("BestScore")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ExerciseId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("FirstAttemptAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastAttemptAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("PointsEarned")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ExerciseId");
-
-                    b.HasIndex("UserId", "ExerciseId")
-                        .IsUnique();
-
-                    b.ToTable("UserExerciseProgresses");
-                });
-
             modelBuilder.Entity("Backend.Database.Entities.Users.UserLanguage", b =>
                 {
                     b.Property<string>("UserId")
@@ -400,46 +311,6 @@ namespace Backend.Database.Migrations
                     b.HasIndex("LanguageId");
 
                     b.ToTable("UserLanguages");
-                });
-
-            modelBuilder.Entity("Backend.Database.Entities.Users.UserLessonProgress", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("CompletionPercentage")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("LessonId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("StartedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("LessonId");
-
-                    b.HasIndex("UserId", "LessonId")
-                        .IsUnique();
-
-                    b.ToTable("UserLessonProgress");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -634,44 +505,6 @@ namespace Backend.Database.Migrations
                     b.Navigation("Course");
                 });
 
-            modelBuilder.Entity("Backend.Database.Entities.Users.UserCourseProgress", b =>
-                {
-                    b.HasOne("Backend.Database.Entities.Course", "Course")
-                        .WithMany()
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Backend.Database.Entities.Users.User", "User")
-                        .WithMany("CourseProgress")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Course");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Backend.Database.Entities.Users.UserExerciseProgress", b =>
-                {
-                    b.HasOne("Backend.Database.Entities.Exercises.Exercise", "Exercise")
-                        .WithMany("UserProgress")
-                        .HasForeignKey("ExerciseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Backend.Database.Entities.Users.User", "User")
-                        .WithMany("ExerciseProgress")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Exercise");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("Backend.Database.Entities.Users.UserLanguage", b =>
                 {
                     b.HasOne("Backend.Database.Entities.Language", "Language")
@@ -687,25 +520,6 @@ namespace Backend.Database.Migrations
                         .IsRequired();
 
                     b.Navigation("Language");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Backend.Database.Entities.Users.UserLessonProgress", b =>
-                {
-                    b.HasOne("Backend.Database.Entities.Lesson", "Lesson")
-                        .WithMany()
-                        .HasForeignKey("LessonId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Backend.Database.Entities.Users.User", "User")
-                        .WithMany("LessonProgress")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Lesson");
 
                     b.Navigation("User");
                 });
@@ -766,11 +580,6 @@ namespace Backend.Database.Migrations
                     b.Navigation("Lessons");
                 });
 
-            modelBuilder.Entity("Backend.Database.Entities.Exercises.Exercise", b =>
-                {
-                    b.Navigation("UserProgress");
-                });
-
             modelBuilder.Entity("Backend.Database.Entities.Language", b =>
                 {
                     b.Navigation("Courses");
@@ -785,12 +594,6 @@ namespace Backend.Database.Migrations
 
             modelBuilder.Entity("Backend.Database.Entities.Users.User", b =>
                 {
-                    b.Navigation("CourseProgress");
-
-                    b.Navigation("ExerciseProgress");
-
-                    b.Navigation("LessonProgress");
-
                     b.Navigation("UserLanguages");
                 });
 

@@ -56,6 +56,4 @@ public abstract class Exercise
 
     [ForeignKey(nameof(LessonId))]
     public Lesson? Lesson { get; set; }
-
-    public List<UserExerciseProgress> UserProgress { get; set; } = [];
 }
