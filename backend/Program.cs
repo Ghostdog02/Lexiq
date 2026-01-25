@@ -49,6 +49,7 @@ public class Program
         app.ConfigureHttpPort();
         app.UseCors();
         app.UseSecurityHeaders();
+        app.UseStaticFiles();
         app.UseSwaggerWithUI();
         app.UseAuthentication();
         app.UseAuthorization();

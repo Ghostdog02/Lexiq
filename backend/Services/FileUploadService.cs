@@ -91,6 +91,8 @@ namespace Backend.Api.Services
             string baseUrl
         )
         {
+            Console.WriteLine(_environment.ContentRootPath);
+
             // Validate file exists
             if (file == null || file.Length == 0)
             {
@@ -122,11 +124,13 @@ namespace Backend.Api.Services
 
             try
             {
+                Console.WriteLine(_environment.ContentRootPath);
                 // Create uploads directory
+                var basePath = _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
                 var uploadsFolder = Path.Combine(
-                    _environment.WebRootPath,
+                    basePath,
                     "uploads",
-                    config.Folder
+                    "images"
                 );
                 if (!Directory.Exists(uploadsFolder))
                 {
@@ -199,8 +203,9 @@ namespace Backend.Api.Services
                 }
 
                 // Create uploads directory
+                var basePath = _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
                 var uploadsFolder = Path.Combine(
-                    _environment.WebRootPath,
+                    basePath,
                     "uploads",
                     config.Folder
                 );

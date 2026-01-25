@@ -20,6 +20,8 @@ RUN apt-get update && \
 
 COPY --from=publish /app/publish .
 
+COPY wwwroot ./
+
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "Backend.Api.dll"]

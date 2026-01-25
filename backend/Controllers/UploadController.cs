@@ -99,9 +99,10 @@ namespace Backend.Api.Controllers
                 return BadRequest(new { success = 0, message = result.Message });
             }
 
-            return Ok(
-                new
-                {
+
+            Console.WriteLine(response);
+
+            var response = new {
                     success = 1,
                     file = new
                     {
@@ -111,7 +112,12 @@ namespace Backend.Api.Controllers
                         extension = result.Extension,
                         title = result.Title,
                     },
-                }
+            };
+
+            Console.WriteLine(response);
+
+            return Ok(
+                response
             );
         }
     }
