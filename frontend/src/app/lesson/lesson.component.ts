@@ -42,7 +42,7 @@ export class LessonComponent implements OnInit {
   private readonly lessonService = inject(LessonService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly sanitizer = inject(DomSanitizer);
-  private readonly router = inject(Router);  
+  private readonly router = inject(Router);
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[];
   ExerciseType = ExerciseType;
@@ -61,50 +61,50 @@ export class LessonComponent implements OnInit {
 
 
   // ngAfterViewInit(): void {
-    // this.editor = new EditorJS({
-    //   tools: {
-    //     header: Header,
-    //     image: {
-    //       class: ImageTool,
-    //       config: {
-    //         endpoints: {
-    //           byFile: 'localhost:8080/api',
-    //           byUrl: ''
-    //         }
-    //       }
-    //     },
-    //     List: {
-    //       class: EditorjsList,
-    //       inlineToolbar: true,
-    //       config: {
-    //         defaultStyle: 'unordered'
-    //       }
-    //     },
-    //     table: {
-    //       class: Table as any,
-    //       inlineToolbar: true,
-    //       config: {
-    //           rows: 2,
-    //           cols: 3,
-    //           withHeadings: true
-    //       }
-    //     },
-    //     delimiter: Delimiter,
-    //     attaches: {
-    //       class: AttachesTool,
-    //       config: {
-    //         endpoint: ''
-    //       }
-    //     }
-    //   },
-    //   holder: 'editorjs',
-    //   onChange: (api, event) => {
-    //     api.saver.save().then((outputData) => {
-    //       this.lessonForm.controls.content.setValue(JSON.stringify(outputData));
-    //     });
-    //   }
-    // });
-//  }
+  // this.editor = new EditorJS({
+  //   tools: {
+  //     header: Header,
+  //     image: {
+  //       class: ImageTool,
+  //       config: {
+  //         endpoints: {
+  //           byFile: 'localhost:8080/api',
+  //           byUrl: ''
+  //         }
+  //       }
+  //     },
+  //     List: {
+  //       class: EditorjsList,
+  //       inlineToolbar: true,
+  //       config: {
+  //         defaultStyle: 'unordered'
+  //       }
+  //     },
+  //     table: {
+  //       class: Table as any,
+  //       inlineToolbar: true,
+  //       config: {
+  //           rows: 2,
+  //           cols: 3,
+  //           withHeadings: true
+  //       }
+  //     },
+  //     delimiter: Delimiter,
+  //     attaches: {
+  //       class: AttachesTool,
+  //       config: {
+  //         endpoint: ''
+  //       }
+  //     }
+  //   },
+  //   holder: 'editorjs',
+  //   onChange: (api, event) => {
+  //     api.saver.save().then((outputData) => {
+  //       this.lessonForm.controls.content.setValue(JSON.stringify(outputData));
+  //     });
+  //   }
+  // });
+  //  }
 
   get lessonFormControls() {
     return this.lessonForm.controls;
@@ -134,7 +134,7 @@ export class LessonComponent implements OnInit {
 
   parseContent(content: string): SafeHtml {
     if (!content) return this.sanitizer.bypassSecurityTrustHtml('');
-    
+
     try {
       const data = JSON.parse(content);
       if (data && data.blocks && Array.isArray(data.blocks)) {

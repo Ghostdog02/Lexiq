@@ -1,21 +1,13 @@
-using System.Threading.Tasks;
 using Backend.Api.Services;
-using Backend.Api.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UploadController : ControllerBase
+    public class UploadController(IFileUploadService fileUploadService) : ControllerBase
     {
-        private readonly IFileUploadService _fileUploadService;
-
-        public UploadController(IFileUploadService fileUploadService)
-        {
-            _fileUploadService = fileUploadService;
-        }
+        private readonly IFileUploadService _fileUploadService = fileUploadService;
 
         [HttpPost("image")]
         public async Task<IActionResult> UploadImage(IFormFile image)
@@ -98,9 +90,6 @@ namespace Backend.Api.Controllers
             {
                 return BadRequest(new { success = 0, message = result.Message });
             }
-
-
-            Console.WriteLine(response);
 
             var response = new {
                     success = 1,
