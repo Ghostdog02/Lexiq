@@ -4,6 +4,7 @@ WORKDIR /src
 COPY *.sln ./
 COPY Backend.Api.csproj ./
 COPY Database/Backend.Database.csproj ./Database/
+COPY wwwroot ./
 
 RUN dotnet restore ./Backend.Api.csproj
 
@@ -20,7 +21,7 @@ RUN apt-get update && \
 
 COPY --from=publish /app/publish .
 
-COPY wwwroot ./
+COPY --from=publish /src/wwwroot ./wwwroot                    
 
 EXPOSE 8080
 

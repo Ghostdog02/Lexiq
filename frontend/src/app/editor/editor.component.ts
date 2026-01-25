@@ -98,11 +98,14 @@ export class EditorComponent implements OnInit {
 
       const response = await firstValueFrom(
         this.http.post<{
-          url: string;
-          name: string;
-          size: number;
-          extension?: string;
-          title?: string;
+          success: Number,
+          file: {
+            url: string;
+            name: string;
+            size: number;
+            extension?: string;
+            title?: string;
+          }
         }>(endpoint, formData)
       );
 
@@ -111,9 +114,9 @@ export class EditorComponent implements OnInit {
         return {
           success: 1,
           file: {
-            url: response.url,
-            name: response.name,
-            size: response.size
+            url: response.file.url,
+            name: response.file.name,
+            size: response.file.size
           }
         };
       }
@@ -122,11 +125,11 @@ export class EditorComponent implements OnInit {
       return {
         success: 1,
         file: {
-          url: response.url,
-          size: response.size,
-          name: response.name,
-          extension: response.extension,
-          title: response.title || response.name
+          url: response.file.url,
+          size: response.file.size,
+          name: response.file.name,
+          extension: response.file.extension,
+          title: response.file.title || response.file.name
         }
       };
     } catch (error: any) {
@@ -149,10 +152,14 @@ export class EditorComponent implements OnInit {
 
       const response = await firstValueFrom(
         this.http.post<{
-          url: string;
-          name?: string;
-          size?: number;
-          extension?: string;
+          success: Number,
+          file: {
+            url: string;
+            name: string;
+            size: number;
+            extension?: string;
+            title?: string;
+          }
         }>(endpoint, { url })
       );
 
@@ -160,7 +167,7 @@ export class EditorComponent implements OnInit {
         return {
           success: 1,
           file: {
-            url: response.url
+            url: response.file.url
           }
         };
       }
@@ -168,10 +175,10 @@ export class EditorComponent implements OnInit {
       return {
         success: 1,
         file: {
-          url: response.url,
-          size: response.size,
-          name: response.name,
-          extension: response.extension
+          url: response.file.url,
+          size: response.file.size,
+          name: response.file.name,
+          extension: response.file.extension
         }
       };
     } catch (error: any) {
