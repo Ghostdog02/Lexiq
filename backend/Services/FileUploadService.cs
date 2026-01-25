@@ -1,11 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-
-namespace YourApp.Services
+namespace Backend.Api.Services
 {
     public interface IFileUploadService
     {
@@ -211,6 +204,7 @@ namespace YourApp.Services
                     "uploads",
                     config.Folder
                 );
+
                 if (!Directory.Exists(uploadsFolder))
                 {
                     Directory.CreateDirectory(uploadsFolder);

@@ -49,7 +49,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LanguageService>();
         services.AddScoped<ExerciseService>();
         services.AddScoped<UserLanguageService>();
-        // services.AddScoped<ProgressService>();
+        services.AddScoped<IFileUploadService, FileUploadService>();
+
         return services;
     }
 
@@ -173,7 +174,7 @@ public static class ServiceCollectionExtensions
             "production" =>
                 $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};"
                     + $"Encrypt=True;TrustServerCertificate=True;Connection Timeout=30",
-                    
+
             _ => $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};"
                 + $"Encrypt=False;TrustServerCertificate=True;Connection Timeout=30",
         };
