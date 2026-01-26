@@ -41,8 +41,6 @@ services:
       - "8080:8080"
     secrets: 
       - backend_env
-    volumes:
-      - ~/.vsdbg:/vsdbg:ro
     depends_on:
       db: 
         condition: service_healthy

@@ -24,23 +24,14 @@ namespace Backend.Api.Services
             {
                 ["image"] = new FileTypeConfig
                 {
-                    AllowedExtensions = new[]
-                    {
-                        ".jpg",
-                        ".jpeg",
-                        ".png",
-                        ".gif",
-                        ".webp",
-                        ".svg",
-                        ".bmp",
-                    },
+                    AllowedExtensions = [".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp"],
                     Folder = "images",
                     MaxSize = 5 * 1024 * 1024, // 5MB
                 },
                 ["document"] = new FileTypeConfig
                 {
-                    AllowedExtensions = new[]
-                    {
+                    AllowedExtensions =
+                    [
                         ".pdf",
                         ".doc",
                         ".docx",
@@ -49,26 +40,26 @@ namespace Backend.Api.Services
                         ".ppt",
                         ".pptx",
                         ".txt",
-                    },
+                    ],
                     Folder = "documents",
                     MaxSize = 10 * 1024 * 1024, // 10MB
                 },
                 ["video"] = new FileTypeConfig
                 {
-                    AllowedExtensions = new[] { ".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm" },
+                    AllowedExtensions = [".mp4", ".avi", ".mov", ".wmv", ".flv", ".webm"],
                     Folder = "videos",
                     MaxSize = 50 * 1024 * 1024, // 50MB
                 },
                 ["audio"] = new FileTypeConfig
                 {
-                    AllowedExtensions = new[] { ".mp3", ".wav", ".ogg", ".m4a", ".flac" },
+                    AllowedExtensions = [".mp3", ".wav", ".ogg", ".m4a", ".flac"],
                     Folder = "audio",
                     MaxSize = 10 * 1024 * 1024, // 10MB
                 },
                 ["file"] = new FileTypeConfig
                 {
-                    AllowedExtensions = new[]
-                    {
+                    AllowedExtensions =
+                    [
                         ".pdf",
                         ".doc",
                         ".docx",
@@ -78,7 +69,7 @@ namespace Backend.Api.Services
                         ".rar",
                         ".txt",
                         ".csv",
-                    },
+                    ],
                     Folder = "files",
                     MaxSize = 10 * 1024 * 1024, // 10MB
                 },
@@ -126,12 +117,10 @@ namespace Backend.Api.Services
             {
                 Console.WriteLine(_environment.ContentRootPath);
                 // Create uploads directory
-                var basePath = _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
-                var uploadsFolder = Path.Combine(
-                    basePath,
-                    "uploads",
-                    "images"
-                );
+                var basePath =
+                    _environment.WebRootPath
+                    ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+                var uploadsFolder = Path.Combine(basePath, "uploads", "images");
                 if (!Directory.Exists(uploadsFolder))
                 {
                     Directory.CreateDirectory(uploadsFolder);
@@ -203,12 +192,10 @@ namespace Backend.Api.Services
                 }
 
                 // Create uploads directory
-                var basePath = _environment.WebRootPath ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
-                var uploadsFolder = Path.Combine(
-                    basePath,
-                    "uploads",
-                    config.Folder
-                );
+                var basePath =
+                    _environment.WebRootPath
+                    ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+                var uploadsFolder = Path.Combine(basePath, "uploads", config.Folder);
 
                 if (!Directory.Exists(uploadsFolder))
                 {
@@ -260,11 +247,17 @@ namespace Backend.Api.Services
     public class FileUploadResult
     {
         public bool IsSuccess { get; set; }
+
         public string Message { get; set; }
+
         public string Url { get; set; }
+
         public string Name { get; set; }
+
         public long Size { get; set; }
+
         public string Extension { get; set; }
+
         public string Title { get; set; }
 
         public static FileUploadResult Success(

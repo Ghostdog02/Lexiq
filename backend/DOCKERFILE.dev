@@ -16,11 +16,11 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/* && \
-    curl -sSL https://aka.ms/getvsdbgsh | /bin/sh /dev/stdin -v latest -l /vsdbg   
+    curl -sSL https://aka.ms/getvsdbgsh | /bin/sh /dev/stdin -v latest -l /app/vsdbg  
 
 COPY --from=publish /app/publish .
 
-COPY wwwroot ./
+COPY wwwroot ./wwwroot
 
 EXPOSE 8080
 

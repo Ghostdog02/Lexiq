@@ -10,7 +10,7 @@
       "name": "Launch Chrome against localhost",
       "url": "http://localhost:4200",
       "webRoot": "/mnt/Data/Projects/Lexiq/frontend",
-      "runtimeExecutable": "/usr/bin/brave-browser-beta",
+      "runtimeExecutable": "/usr/bin/brave-browser",
       "sourceMaps": true,
       "skipFiles": [
         "/mnt/Data/Projects/Lexiq/frontend/node_modules/**/*.js",
@@ -18,12 +18,10 @@
         "<node_internals>/**",
         "**/node_modules/**",
         "**/node_modules/**/*.js",
-
         // Skip Angular framework files
         "**/@angular/**",
         "**/rxjs/**",
         "**/zone.js/**",
-
         // Skip webpack and build artifacts
         "**/webpack/**",
         "**/main.js",
@@ -31,18 +29,15 @@
         "**/runtime.js",
         "**/vendor.js",
         "**/*.chunk.js",
-
         // Skip generated/compiled files
         "**/.angular/**",
         "**/dist/**",
         "**/*.ngfactory.js",
         "**/*.ngstyle.js",
-
         // Skip specific problematic files
         "**/index.js",
         "**/bootstrap",
         "**/platform-browser-dynamic/**",
-
         // Skip Chrome extension files
         "chrome-extension://**"
       ],
@@ -50,26 +45,76 @@
       "enableContentValidation": false,
       "trace": false
     },
+    // {
+    //   "name": "Attach to Docker .NET Core",
+    //   "type": "coreclr",
+    //   "request": "attach",
+    //   "processId": "${command:pickRemoteProcess}",
+    //   "sourceFileMap": {
+    //     "/app": "${workspaceFolder}"
+    //   },
+    //   "pipeTransport": {
+    //     "pipeProgram": "sudo",
+    //     "pipeArgs": [
+    //       "docker",
+    //       "exec",
+    //       "-i",
+    //       "lexiq-backend"
+    //     ],
+    //     "pipeCwd": "${workspaceFolder}",
+    //     "quoteArgs": false,
+    //     "debuggerPath": "/vsdbg"
+    //   }
+    // },
     {
-      "name": "Attach to Docker .NET Core",
+      "name": "Attach to Docker (Linux)",
       "type": "coreclr",
       "request": "attach",
       "processId": "${command:pickRemoteProcess}",
-      "sourceFileMap": {
-        "/app": "${workspaceFolder}"
-      },
       "pipeTransport": {
-        "pipeProgram": "sudo",
+        "pipeProgram": "docker",
         "pipeArgs": [
-          "docker",            
-          "exec", 
-          "-i", 
+          "exec",
+          "-i",
           "lexiq-backend"
         ],
         "pipeCwd": "${workspaceFolder}",
         "quoteArgs": false,
-        "debuggerPath": "/vsdbg/vsdbg"
+        "debuggerPath": "/app/vsdbg/vsdbg"
+      },
+      "sourceFileMap": {
+        "/app": "${workspaceFolder}/src"
       }
-    }   
+    }
+    // {
+    //     // Use IntelliSense to find out which attributes exist for C# debugging
+    //     // Use hover for the description of the existing attributes
+    //     // For further information visit https://github.com/dotnet/vscode-csharp/blob/main/debugger-launchjson.md.
+    //     "name": ".NET Core Launch (web)",
+    //     "type": "coreclr",
+    //     "request": "launch",
+    //     "preLaunchTask": "build",
+    //     // If you have changed target frameworks, make sure to update the program path.
+    //     "program": "${workspaceFolder}/backend/bin/Debug/net10.0/Backend.Api.dll",
+    //     "args": [],
+    //     "cwd": "${workspaceFolder}/backend",
+    //     "stopAtEntry": false,
+    //     // Enable launching a web browser when ASP.NET Core starts. For more information: https://aka.ms/VSCode-CS-LaunchJson-WebBrowser
+    //     "serverReadyAction": {
+    //         "action": "openExternally",
+    //         "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+    //     },
+    //     "env": {
+    //         "ASPNETCORE_ENVIRONMENT": "Development"
+    //     },
+    //     "sourceFileMap": {
+    //         "/Views": "${workspaceFolder}/Views"
+    //     }
+    // },
+    // {
+    //     "name": ".NET Core Attach",
+    //     "type": "coreclr",
+    //     "request": "attach"
+    // }
   ]
 }
