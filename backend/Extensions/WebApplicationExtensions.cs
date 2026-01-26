@@ -32,9 +32,4 @@ public static class WebApplicationExtensions
 
         return app;
     }
-
-    public static WebApplication UseSecurityHeaders(this WebApplication app)
-    {
-        return app;
-    }
 }

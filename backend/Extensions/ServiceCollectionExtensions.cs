@@ -56,30 +56,21 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddCookieAuthentication(this IServiceCollection services)
     {
-        services
-            .AddAuthentication(
-                Microsoft
-                    .AspNetCore
-                    .Authentication
-                    .Cookies
-                    .CookieAuthenticationDefaults
-                    .AuthenticationScheme
-            )
-            .AddCookie(options =>
-            {
-                options.Cookie.Name = "LexiqAuth";
-                options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-                options.ExpireTimeSpan = TimeSpan.FromHours(1);
-                options.SlidingExpiration = true;
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.Cookie.Name = "AuthToken";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Lax;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+            options.ExpireTimeSpan = TimeSpan.FromHours(1);
+            options.SlidingExpiration = true;
 
-                options.Events.OnRedirectToLogin = context =>
-                {
-                    context.Response.StatusCode = 401;
-                    return Task.CompletedTask;
-                };
-            });
+            options.Events.OnRedirectToLogin = context =>
+            {
+                context.Response.StatusCode = 401;
+                return Task.CompletedTask;
+            };
+        });
 
         return services;
     }

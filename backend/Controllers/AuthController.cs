@@ -38,8 +38,6 @@ public class AuthController(IGoogleAuthService googleAuthService, SignInManager<
 
         await _signInManager.SignInAsync(user, isPersistent: true);
 
-        System.Console.WriteLine(payload.IssuedAtTimeSeconds);
-
         return Ok(
             new
             {
@@ -49,6 +47,8 @@ public class AuthController(IGoogleAuthService googleAuthService, SignInManager<
             }
         );
     }
+
+    
 
     [HttpPost("logout")]
     public async Task<IActionResult> Logout()
