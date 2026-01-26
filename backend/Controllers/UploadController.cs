@@ -9,65 +9,66 @@ namespace Backend.Api.Controllers
     {
         private readonly IFileUploadService _fileUploadService = fileUploadService;
 
+        private string BaseUrl => $"{Request.Scheme}://{Request.Host}";
+
         [HttpPost("image")]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadImage(IFormFile image)
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var result = await _fileUploadService.UploadFileAsync(image, "image", baseUrl);
+            var result = await _fileUploadService.UploadFileAsync(image, "image", BaseUrl);
             return BuildResponse(result);
         }
 
         [HttpPost("document")]
-        public async Task<IActionResult> UploadDocument([FromForm] IFormFile document)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadDocument(IFormFile document)
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var result = await _fileUploadService.UploadFileAsync(document, "document", baseUrl);
+            var result = await _fileUploadService.UploadFileAsync(document, "document", BaseUrl);
             return BuildResponse(result);
         }
 
         [HttpPost("video")]
-        public async Task<IActionResult> UploadVideo([FromForm] IFormFile video)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadVideo(IFormFile video)
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var result = await _fileUploadService.UploadFileAsync(video, "video", baseUrl);
+            var result = await _fileUploadService.UploadFileAsync(video, "video", BaseUrl);
             return BuildResponse(result);
         }
 
         [HttpPost("audio")]
-        public async Task<IActionResult> UploadAudio([FromForm] IFormFile audio)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadAudio(IFormFile audio)
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var result = await _fileUploadService.UploadFileAsync(audio, "audio", baseUrl);
+            var result = await _fileUploadService.UploadFileAsync(audio, "audio", BaseUrl);
             return BuildResponse(result);
         }
 
         [HttpPost("file")]
-        public async Task<IActionResult> UploadFile([FromForm] IFormFile file)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadFile(IFormFile file)
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var result = await _fileUploadService.UploadFileAsync(file, "file", baseUrl);
+            var result = await _fileUploadService.UploadFileAsync(file, "file", BaseUrl);
             return BuildResponse(result);
         }
 
         [HttpPost("any")]
-        public async Task<IActionResult> UploadAnyFile([FromForm] IFormFile file)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadAnyFile(IFormFile file)
         {
             var extension = System.IO.Path.GetExtension(file.FileName).ToLowerInvariant();
             var fileType = _fileUploadService.DetermineFileType(extension);
 
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
-            var result = await _fileUploadService.UploadFileAsync(file, fileType, baseUrl);
+            var result = await _fileUploadService.UploadFileAsync(file, fileType, BaseUrl);
             return BuildResponse(result);
         }
 
         [HttpPost("image-by-url")]
         public async Task<IActionResult> UploadImageByUrl([FromBody] FileUrlRequest request)
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var result = await _fileUploadService.UploadFileByUrlAsync(
                 request.Url,
                 "image",
-                baseUrl
+                BaseUrl
             );
             return BuildResponse(result);
         }
@@ -75,11 +76,10 @@ namespace Backend.Api.Controllers
         [HttpPost("file-by-url")]
         public async Task<IActionResult> UploadFileByUrl([FromBody] FileUrlRequest request)
         {
-            var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var result = await _fileUploadService.UploadFileByUrlAsync(
                 request.Url,
                 "file",
-                baseUrl
+                BaseUrl
             );
             return BuildResponse(result);
         }
@@ -91,29 +91,24 @@ namespace Backend.Api.Controllers
                 return BadRequest(new { success = 0, message = result.Message });
             }
 
-            
             var response = new {
-                    success = 1,
-                    file = new
-                    {
-                        url = result.Url,
-                        name = result.Name,
-                        size = result.Size,
-                        extension = result.Extension,
-                        title = result.Title,
-                    },
+                success = 1,
+                file = new
+                {
+                    url = result.Url,
+                    name = result.Name,
+                    size = result.Size,
+                    extension = result.Extension,
+                    title = result.Title,
+                },
             };
 
-            Console.WriteLine(response);
-
-            return Ok(
-                response
-            );
+            return Ok(response);
         }
     }
 
     public class FileUrlRequest
     {
-        public string Url { get; set; }
+        public string Url { get; set; } = string.Empty;
     }
 }

@@ -24,6 +24,7 @@ public class AuthController(IGoogleAuthService googleAuthService, SignInManager<
         }
 
         var payload = await _googleAuthService.ValidateGoogleTokenAsync(request.IdToken);
+
         if (payload == null)
         {
             return Unauthorized(new { message = "Invalid Google token" });
@@ -37,12 +38,14 @@ public class AuthController(IGoogleAuthService googleAuthService, SignInManager<
 
         await _signInManager.SignInAsync(user, isPersistent: true);
 
+        System.Console.WriteLine(payload.IssuedAtTimeSeconds);
+
         return Ok(
             new
             {
                 message = "Login successful",
                 user = user.ToGoogleLoginDto(),
-                payload.ExpirationTimeSeconds,
+                issuedAt = payload.IssuedAtTimeSeconds,
             }
         );
     }

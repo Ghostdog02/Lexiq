@@ -30,8 +30,6 @@
                 "input": "public"
               },
               "src/assets",
-              "src/assets/images",
-              "src/favicon.png",
               "src/manifest.json"
             ],
             "styles": [

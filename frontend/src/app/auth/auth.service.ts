@@ -9,7 +9,7 @@ const BACKEND_API_URL = import.meta.env.BACKEND_API_URL + '/auth';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService implements OnInit {
-
+  private expiresIn = 3600; // 1 hour
 
   private httpClient = inject(HttpClient);
   private router = inject(Router);
@@ -47,9 +47,9 @@ export class AuthService implements OnInit {
     return false;
   }
 
-  setExpirationDate(expiresIn: number) {
+  setExpirationDate(issuedAt: number) {
     const now = new Date();
-    const expirationDate = new Date(now.getTime() + expiresIn);
+    const expirationDate = new Date(this.expiresIn + issuedAt); // 1 hour
     console.log(expirationDate);
 
     localStorage.setItem('expiration-date', expirationDate.toISOString());
@@ -88,7 +88,7 @@ export class AuthService implements OnInit {
   async loginUserWithGoogle(googleToken: any) {
     try {
       const response = await firstValueFrom(
-        this.httpClient.post<{ message: string; user: any; expiresIn: number }>(
+        this.httpClient.post<{ message: string; user: any; issuedAt: number }>(
           BACKEND_API_URL + '/google-login',
           { idToken: googleToken },
           { withCredentials: true }
@@ -96,16 +96,14 @@ export class AuthService implements OnInit {
       );
 
       const responseMessage = response.message;
-      console.log('Haho');
-      console.log(responseMessage + "Smt erroed");
 
       if (!response) {
         throw new Error(`Login failed: ${responseMessage}`);
       }
 
-      this.setExpirationDate(response.expiresIn);
+      this.setExpirationDate(response.issuedAt);
 
-      this.setAuthTimer(response.expiresIn);
+      this.setAuthTimer(this.expiresIn);
 
       this.changeAuthStatus(true);
 

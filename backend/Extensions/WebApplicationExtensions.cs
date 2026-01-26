@@ -35,20 +35,6 @@ public static class WebApplicationExtensions
 
     public static WebApplication UseSecurityHeaders(this WebApplication app)
     {
-        app.Use(
-            async (context, next) =>
-            {
-                context.Response.Headers.AccessControlAllowOrigin = "*";
-                context.Response.Headers.ContentSecurityPolicy =
-                    "default-src 'self'; "
-                    + "connect-src 'self' https://localhost:4200 ws://localhost:4200; "
-                    + "script-src 'self'; "
-                    + "style-src 'self' 'unsafe-inline'";
-
-                await next();
-            }
-        );
-
         return app;
     }
 }

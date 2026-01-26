@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
             options.AddDefaultPolicy(policy =>
             {
                 policy
-                    .WithOrigins("http://localhost:4200", "https://localhost:8080")
+                    .WithOrigins("http://localhost:4200")
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials()
@@ -69,9 +69,16 @@ public static class ServiceCollectionExtensions
             {
                 options.Cookie.Name = "LexiqAuth";
                 options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.Strict;
+                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
                 options.ExpireTimeSpan = TimeSpan.FromHours(1);
                 options.SlidingExpiration = true;
+
+                options.Events.OnRedirectToLogin = context =>
+                {
+                    context.Response.StatusCode = 401;
+                    return Task.CompletedTask;
+                };
             });
 
         return services;
