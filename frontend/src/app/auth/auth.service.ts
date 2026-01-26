@@ -96,8 +96,8 @@ export class AuthService implements OnInit {
       );
 
       const responseMessage = response.message;
-
-      console.log(responseMessage)
+      console.log('Haho');
+      console.log(responseMessage + "Smt erroed");
 
       if (!response) {
         throw new Error(`Login failed: ${responseMessage}`);

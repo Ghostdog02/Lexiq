@@ -75,7 +75,7 @@ bld/
 
 # Visual Studio 2015 cache/options directory
 .vs/
-# Uncomment if you have tasks that create the project's static files in wwwroot
+
 wwwroot/
 
 # MSTest test Results
@@ -549,10 +549,6 @@ FodyWeavers.xsd
 
 # VS Code files for those working on multiple tools
 .vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
 *.code-workspace
 
 # Local History for Visual Studio Code
@@ -565,13 +561,6 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-# JetBrains Rider
-
-### VisualStudioCode ###
-!.vscode/*.code-snippets
-
-# Local History for Visual Studio Code
-
 # Built Visual Studio Code Extensions
 *.vsix
 
@@ -580,11 +569,13 @@ FodyWeavers.xsd
 .history
 .ionide
 
+# Database credentials
 **/password.txt
 
 # Nginx configuration swap files
 .nginf.conf.txt.kate-swp
 
-# End of https://www.toptal.com/developers/gitignore/api/angular,aspnetcore,csharp,visualstudiocode
-
 .GEMINI.md.swp
+
+# End of https://www.toptal.com/developers/gitignore/api/angular,aspnetcore,csharp,visualstudiocode
+.vscode/launch.json

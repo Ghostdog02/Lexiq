@@ -33,7 +33,7 @@ public static class UserMapping
     {
         User newUser = new()
         {
-            UserName = validPayload.Name,
+            UserName = CleanUsername(validPayload.Name),
             EmailConfirmed = true,
             NormalizedEmail = _userManager.NormalizeEmail(validPayload.Email),
             NormalizedUserName = _userManager.NormalizeEmail(validPayload.Name),
@@ -41,6 +41,12 @@ public static class UserMapping
         };
 
         return newUser;
+    }
+
+    private static string CleanUsername(string username)
+    {
+        char[] charToRemove = ['-', ' ', '_', '*', '&'];
+        return new string(username.Where(c => !charToRemove.Contains(c)).ToArray());
     }
 
     public static User ToEntity(this CreateUserDto dto)
