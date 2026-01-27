@@ -234,7 +234,7 @@
     &:active:not(:disabled) {
       transform: translateY(0);
     }
-    
+
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
@@ -243,12 +243,40 @@
     }
   }
 
-  &.success {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+  &.no-exercises-btn {
+    background: linear-gradient(135deg, rgba(139, 152, 165, 0.25) 0%, rgba(107, 114, 128, 0.2) 100%);
+    color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: not-allowed;
+    opacity: 0.8;
 
     &:hover {
-      box-shadow: 0 12px 28px rgba(16, 185, 129, 0.4);
+      transform: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .icon {
+      opacity: 0.6;
+    }
+  }
+
+  &.success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: var(--white);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: ease-in-out .25s;
+
+    &:hover {
+      transform: translateY(-2px);
+      // box-shadow: 0 12px 28px rgba(16, 185, 129, 0.4);
+      filter: brightness(1.15);
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    &:active {
+      transform: translateY(0);
     }
   }
 
@@ -290,6 +318,26 @@
   display: flex;
   flex-direction: column;
   gap: 32px;
+
+  .section-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .section-label {
+    font-weight: 700;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    letter-spacing: 0.5px;
+  }
+
+  #second-section-label {
+    margin-top: 1.2em;
+  }
 
   .lesson-description {
     font-size: 20px;
@@ -337,6 +385,23 @@
   .action-section {
     margin-top: 24px;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    .no-exercises-btn {
+      width: 28% !important;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn {
+      width: 20%;
+      display: flex;
+      gap: 15px
+    }
 
     .action-hint {
       margin-top: 12px;
@@ -756,69 +821,6 @@
       &.incorrect {
         background: #ef4444;
       }
-    }
-  }
-}
-
-// --------------------------------------------------------------------------
-// Completion Overlay
-// --------------------------------------------------------------------------
-.completion-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(15, 20, 25, 0.9);
-  backdrop-filter: blur(10px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-
-  .completion-card {
-    text-align: center;
-    max-width: 500px;
-    width: 100%;
-    border: 1px solid var(--border);
-    background: linear-gradient(145deg, rgba(30, 39, 50, 0.9) 0%, rgba(20, 25, 30, 0.95) 100%);
-    
-    .celebration-icon {
-      font-size: 80px;
-      margin-bottom: 24px;
-      animation: float 3s ease-in-out infinite;
-    }
-
-    h2 {
-      font-size: 32px;
-      font-weight: 800;
-      margin-bottom: 16px;
-      background: linear-gradient(135deg, #fff 0%, var(--accent-light) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .score-display {
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 16px;
-      padding: 20px;
-      margin: 24px 0;
-      border: 1px solid var(--border);
-
-      .score {
-        font-size: 48px;
-        font-weight: 800;
-        color: var(--accent-light);
-      }
-      .total {
-        font-size: 24px;
-        color: var(--muted);
-      }
-    }
-
-    .completion-message {
-      font-size: 18px;
-      color: var(--text-secondary);
-      margin-bottom: 32px;
     }
   }
 }

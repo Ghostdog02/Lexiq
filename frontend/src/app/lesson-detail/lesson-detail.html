@@ -55,14 +55,20 @@
       @if (currentView === 'content') {
         <div class="content-view fade-in">
           <!-- Lesson description -->
-          <div class="lesson-description card">
-            <p>{{ lesson.description }}</p>
+          <div class="section-wrapper">
+            <h3 class="section-label"><span class="icon">📋</span> Instructions</h3>
+            <div class="lesson-description card">
+              <p>{{ lesson.description }}</p>
+            </div>
           </div>
 
           <!-- Rendered markdown content -->
           @if (lesson.content) {
-            <div class="lesson-content card">
-              <div class="markdown-content" [innerHTML]="parseContent(lesson.content)"></div>
+            <div class="section-wrapper">
+              <h3 class="section-label" id="second-section-label"><span class="icon">📖</span> Textbook Content</h3>
+              <div class="lesson-content card">
+                <div class="markdown-content" [innerHTML]="parseContent(lesson.content)"></div>
+              </div>
             </div>
           }
 
@@ -76,9 +82,12 @@
               <p class="action-hint">{{ lesson.exercises.length }} exercises to complete</p>
             </div>
           } @else {
-            <div class="no-exercises card">
-              <span class="icon">&#x1F4AD;</span>
-              <p>This lesson has no exercises yet.</p>
+            <div class="action-section">
+              <button class="btn no-exercises-btn large" disabled aria-label="No exercises available">
+                <span class="icon">&#x1F4AD;</span>
+                This lesson has no exercises yet
+              </button>
+              <p class="action-hint">Add exercises to activate this lesson</p>
             </div>
           }
         </div>
@@ -283,7 +292,7 @@
                     </svg>
                   </button>
                 } @else {
-                  <button class="btn primary success" (click)="finishLesson()" aria-label="Finish lesson">
+                  <button class="btn success" (click)="finishLesson()" aria-label="Finish lesson">
                     <span class="icon">&#x1F3C6;</span>
                     Complete Lesson
                   </button>
@@ -341,31 +350,6 @@
         </div>
       }
 
-      <!-- Completion view -->
-      @if (allExercisesCompleted && currentView === 'exercises') {
-        <div class="completion-overlay fade-in">
-          <div class="completion-card card">
-            <div class="celebration-icon">&#x1F389;</div>
-            <h2>Lesson Complete!</h2>
-            <div class="score-display">
-              <span class="score">{{ earnedXp }}</span>
-              <span class="total">/ {{ totalPossibleXp }} XP</span>
-            </div>
-            <p class="completion-message">
-              @if (earnedXp === totalPossibleXp) {
-                Perfect score! You're amazing!
-              } @else if (earnedXp >= totalPossibleXp * 0.7) {
-                Great job! Keep up the good work!
-              } @else {
-                Good effort! Practice makes perfect!
-              }
-            </p>
-            <button class="btn primary large" (click)="finishLesson()">
-              Continue Learning
-            </button>
-          </div>
-        </div>
-      }
     }
   </main>
 </div>
