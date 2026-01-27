@@ -83,8 +83,21 @@ load_env() {
   fi
 
   if [ -f "$ENVIRONMENT_FILE" ]; then
+    # Source the file
     . "$ENVIRONMENT_FILE"
     log_info "Loaded environment variables from $ENVIRONMENT_FILE"
+    
+    # Export variables needed by docker-compose
+    export REGISTRY
+    export REPO_LOWER
+    export BRANCH
+    
+    # Debug: show what we have
+    log_info "REGISTRY=${REGISTRY}"
+    log_info "REPO_LOWER=${REPO_LOWER}"
+    log_info "BRANCH=${BRANCH}"
+    log_info "Docker image will be: ${REGISTRY}/${REPO_LOWER}-backend:${BRANCH}"
+    
   else
     log_error "Environment file $ENVIRONMENT_FILE not found"
     exit $EXIT_FILE_NOT_FOUND
@@ -180,7 +193,7 @@ install_dependencies() {
 # ============================================================================
 
 run_docker_login() {
-  echo "$DOCKER_PASSWORD" | docker login "${REGISTRY}/${REPO_LOWER}" --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1
+  echo "$DOCKER_PASSWORD" | docker login "${REGISTRY}" --username "$DOCKER_USERNAME" --password-stdin > /dev/null 2>&1
 }
 
 authenticate_docker_registry() {
