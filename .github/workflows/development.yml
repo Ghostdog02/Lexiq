@@ -15,7 +15,7 @@ env:
 
 jobs:
   build-and-push-docker:
-    uses: Ghostdog02/Lexiq/.github/workflows/build-and-push-docker.yml@${{github.ref_name}}
+    uses: Ghostdog02/Lexiq/.github/workflows/build-and-push-docker.yml@fix/ci-cd
     with:
       config-path: .github/workflows/build-and-push-docker.yml
     permissions:
