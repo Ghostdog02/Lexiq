@@ -12,7 +12,7 @@
         <li><a routerLink="/help"><span class="icon">❓</span> Help</a></li>
 
         @if (userIsAuthenticated) {
-          <li><a routerLink=""><span class="icon">🚪</span> Logout</a></li>
+          <li><a (click)="authService.logoutUser()"><span class="icon">🚪</span> Logout</a></li>
         } @else {
           <li><a routerLink="/google-login"><span class="icon">🔑</span> Login</a></li>
         }

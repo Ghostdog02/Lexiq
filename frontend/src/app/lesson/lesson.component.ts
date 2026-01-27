@@ -3,14 +3,6 @@ import { Component, DestroyRef, inject, AfterViewInit, OnInit, OnDestroy } from 
 import { Router } from '@angular/router';
 import { FormArray, ReactiveFormsModule, FormGroup, AbstractControl } from '@angular/forms';
 import { Lesson, LessonForm } from './lesson.interface';
-import EditorJS from '@editorjs/editorjs'
-import Header from '@editorjs/header';
-import ImageTool from '@editorjs/image';
-import EditorjsList from '@editorjs/list';
-import Table from '@editorjs/table';
-import Delimiter from '@editorjs/delimiter';
-// @ts-ignore
-import AttachesTool from '@editorjs/attaches';
 import {
   DifficultyLevel,
   ExerciseForm,
@@ -58,53 +50,6 @@ export class LessonComponent implements OnInit {
     this.initializeForm();
     this.setupFormValueChanges();
   }
-
-
-  // ngAfterViewInit(): void {
-  // this.editor = new EditorJS({
-  //   tools: {
-  //     header: Header,
-  //     image: {
-  //       class: ImageTool,
-  //       config: {
-  //         endpoints: {
-  //           byFile: 'localhost:8080/api',
-  //           byUrl: ''
-  //         }
-  //       }
-  //     },
-  //     List: {
-  //       class: EditorjsList,
-  //       inlineToolbar: true,
-  //       config: {
-  //         defaultStyle: 'unordered'
-  //       }
-  //     },
-  //     table: {
-  //       class: Table as any,
-  //       inlineToolbar: true,
-  //       config: {
-  //           rows: 2,
-  //           cols: 3,
-  //           withHeadings: true
-  //       }
-  //     },
-  //     delimiter: Delimiter,
-  //     attaches: {
-  //       class: AttachesTool,
-  //       config: {
-  //         endpoint: ''
-  //       }
-  //     }
-  //   },
-  //   holder: 'editorjs',
-  //   onChange: (api, event) => {
-  //     api.saver.save().then((outputData) => {
-  //       this.lessonForm.controls.content.setValue(JSON.stringify(outputData));
-  //     });
-  //   }
-  // });
-  //  }
 
   get lessonFormControls() {
     return this.lessonForm.controls;

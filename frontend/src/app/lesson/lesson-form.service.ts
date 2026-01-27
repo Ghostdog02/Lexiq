@@ -151,7 +151,6 @@ export class LessonFormService {
     exercises.removeAt(index);
   }
 
-  // Helper to add option to multiple choice
   addOptionToMultipleChoice(form: FormGroup<MultipleChoiceFormControls>): void {
     const options = form.controls.options;
     const questionOptionForm = this.fb.group({

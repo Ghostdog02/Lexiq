@@ -76,14 +76,12 @@ export interface TranslationExercise extends Exercise {
   matchingThreshold: number;
 }
 
-// Union type for all exercises
 export type AnyExercise =
   | MultipleChoiceExercise
   | FillInBlankExercise
   | TranslationExercise
   | ListeningExercise;
 
-// Specific form controls for each type
 export interface MultipleChoiceFormControls extends ExerciseFormControls {
   exerciseType: FormControl<ExerciseType.MultipleChoice>;
   options: FormArray<QuestionOptionForm>;
@@ -115,16 +113,9 @@ export interface ListeningFormControls extends ExerciseFormControls {
   audioUrl: FormControl<string>;
 }
 
-// Form types
 export type MultipleChoiceForm = FormGroup<MultipleChoiceFormControls>;
 export type FillInBlankForm = FormGroup<FillInBlankFormControls>;
 export type TranslationForm = FormGroup<TranslationFormControls>;
 export type ListeningForm = FormGroup<ListeningFormControls>;
 export type ExerciseForm = FormGroup<any>;
 export type QuestionOptionForm = FormGroup<QuestionOptionFormControls>;
-
-// export type ExerciseForm =
-//   | MultipleChoiceForm
-//   | FillInBlankForm
-//   | TranslationForm
-//   | ListeningForm;
