@@ -18,10 +18,26 @@
     margin-top: 1.5em;
     list-style: none;
     padding-left: 0em;
+    gap: 0.5em;
 
-    li{    
+    li{
         display: flex;
-        gap: .5em;
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: linear-gradient(180deg, var(--accent) 0%, var(--accent-light) 100%);
+            transform: scaleY(0);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
 
         a{
             display: flex;
@@ -29,21 +45,42 @@
             text-transform: uppercase;
             padding: .8em 1em;
             width: 100%;
-            display: flex;
-            gap: 1.2em;    
+            gap: 1.2em;
             text-decoration: none;
             color: var(--primary-color);
             font-weight: 700;
             letter-spacing: .08px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .icon {
             font-size: var(--icon-size-md);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-    }
 
-    li:hover{
-        background-color: #3b4951;
-        border-radius: 5%;
+        &:hover{
+            background: linear-gradient(135deg, rgba(124, 92, 255, 0.12) 0%, rgba(145, 120, 255, 0.08) 100%);
+            transform: translateX(8px);
+            box-shadow:
+                0 4px 12px rgba(124, 92, 255, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+
+            &::before {
+                transform: scaleY(1);
+            }
+
+            a {
+                color: var(--white);
+            }
+
+            .icon {
+                transform: scale(1.15);
+                filter: drop-shadow(0 0 8px rgba(124, 92, 255, 0.6));
+            }
+        }
+
+        &:active {
+            transform: translateX(4px);
+        }
     }
 }
