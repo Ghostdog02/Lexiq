@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
   
   backend:
-    image: lexiq-backend:local 
+    image:  ${REGISTRY}/${REPO_LOWER}-backend:${BRANCH}
     container_name: lexiq-backend
     secrets:
       - backend_env
@@ -49,7 +49,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: lexiq-frontend:local
+    image:  ${REGISTRY}/${REPO_LOWER}-frontend:${BRANCH}
     container_name: lexiq-frontend
     ports:
       - "80:80"

@@ -5,8 +5,6 @@
 env.*
 !env.d.ts
 environment.*
-#Vs code configuration
-.vscode/
 
 # Configuration files
 .config/
@@ -548,7 +546,6 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # VS Code files for those working on multiple tools
-.vscode/*
 *.code-workspace
 
 # Local History for Visual Studio Code
@@ -578,4 +575,4 @@ FodyWeavers.xsd
 .GEMINI.md.swp
 
 # End of https://www.toptal.com/developers/gitignore/api/angular,aspnetcore,csharp,visualstudiocode
-.vscode/launch.json
+.vscode/*

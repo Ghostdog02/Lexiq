@@ -48,7 +48,7 @@ jobs:
 
   continuous-delivery:
     needs: pull-and-test
-    uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@feature/ci-cd
+    uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@fix/ci-cd
     permissions:
       packages: read
       issues: write
