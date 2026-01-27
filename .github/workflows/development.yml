@@ -28,9 +28,6 @@ jobs:
     permissions:
       contents: read
       packages: read
-    outputs:
-      repo_lower: ${{ steps.vars.outputs.repo_lower }}
-      branch: ${{ steps.vars.outputs.branch }}
     
     steps:
       - name: Set lowercase repo name
@@ -41,12 +38,6 @@ jobs:
           BRANCH="${{ github.ref_name }}"
           BRANCH="${BRANCH//\//-}"
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
-      
-      - name: Set outputs for next job
-        id: vars
-        run: |
-          echo "repo_lower=${{ env.REPO_LOWER }}" >> $GITHUB_OUTPUT
-          echo "branch=${{ env.BRANCH }}" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3.5.0
@@ -57,16 +48,13 @@ jobs:
 
   continuous-delivery:
     needs: pull-and-test
-    uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@fix/ci-cd
+    uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@feature/ci-cd
     permissions:
       packages: read
       issues: write
       contents: write
     with:
       config-path: .github/workflows/continuous-delivery.yml
-      registry: ghcr.io
-      repo_lower: ${{ needs.pull-and-test.outputs.repo_lower }}
-      branch: ${{ needs.pull-and-test.outputs.branch }}
     secrets:
       HETZNER_PROD_PRIVATE_SSH_KEY: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
       HETZNER_PROD_HOST: ${{ secrets.HETZNER_PROD_HOST }}
