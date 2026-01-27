@@ -4,7 +4,8 @@ import ImageTool from '@editorjs/image';
 // @ts-ignore - EditorJS plugins may not have type definitions
 import AttachesTool from '@editorjs/attaches';
 
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, forwardRef, OnDestroy } from '@angular/core';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
@@ -20,13 +21,22 @@ import { firstValueFrom } from 'rxjs';
       padding: 20px;
       min-height: 400px;
     }
-  `]
+  `],
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => EditorComponent),
+      multi: true
+    }
+  ]
 })
-export class EditorComponent implements OnInit {
+export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor {
   @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
 
   private editor!: EditorJS;
   private apiUrl = import.meta.env.BACKEND_API_URL;
+  private onChange: any = () => {};
+  private onTouched: any = () => {};
 
   constructor(private http: HttpClient) { }
 
@@ -77,7 +87,12 @@ export class EditorComponent implements OnInit {
         }
       },
       placeholder: 'Start writing your content...',
-      autofocus: true
+      autofocus: true,
+      onChange: async (api, event) => {
+        const content = await this.editor.save();
+        this.onChange(JSON.stringify(content));
+        this.onTouched();
+      }
     });
   }
 
@@ -250,6 +265,31 @@ export class EditorComponent implements OnInit {
     } catch (error) {
       console.error('Save failed:', error);
     }
+  }
+
+  // ControlValueAccessor methods
+  writeValue(value: any): void {
+    if (value && this.editor) {
+      try {
+        const data = typeof value === 'string' ? JSON.parse(value) : value;
+        this.editor.render(data);
+      } catch (error) {
+        console.error('Failed to write value to editor:', error);
+      }
+    }
+  }
+
+  registerOnChange(fn: any): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: any): void {
+    this.onTouched = fn;
+  }
+
+  setDisabledState?(isDisabled: boolean): void {
+    // EditorJS doesn't have a built-in disabled state
+    // Could be implemented by making the editor read-only
   }
 
   ngOnDestroy(): void {

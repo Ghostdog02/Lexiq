@@ -22,10 +22,14 @@ export class LessonFormService {
   createLessonForm(): LessonForm {
     const group = this.fb.group({
       title: this.fb.control('', {
-        validators: Validators.required
+        validators: [Validators.required, Validators.minLength(3), Validators.maxLength(100)]
       }),
-      description: this.fb.control(''),
-      estimatedDuration: this.fb.control(0),
+      description: this.fb.control('', {
+        validators: [Validators.required, Validators.minLength(10), Validators.maxLength(500)]
+      }),
+      estimatedDuration: this.fb.control(30, {
+        validators: [Validators.min(1), Validators.max(300)]
+      }),
       content: this.fb.control('', {
         validators: Validators.required
       }),

@@ -63,6 +63,44 @@ export class LessonComponent implements OnInit {
     return this.exercises.controls;
   }
 
+  getErrorMessage(control: AbstractControl | null): string {
+    if (!control || !control.errors || !control.touched) {
+      return '';
+    }
+
+    const errors = control.errors;
+
+    if (errors['required']) {
+      return 'This field is required';
+    }
+    if (errors['minlength']) {
+      return `Minimum length is ${errors['minlength'].requiredLength} characters`;
+    }
+    if (errors['maxlength']) {
+      return `Maximum length is ${errors['maxlength'].requiredLength} characters`;
+    }
+    if (errors['min']) {
+      return `Minimum value is ${errors['min'].min}`;
+    }
+    if (errors['max']) {
+      return `Maximum value is ${errors['max'].max}`;
+    }
+    if (errors['pattern']) {
+      // Check if this is a language code pattern error
+      const pattern = errors['pattern'].requiredPattern;
+      if (pattern === '[a-z]{2}') {
+        return 'Language code must be 2 lowercase letters (e.g. en, es, fr)';
+      }
+      return 'Invalid format';
+    }
+
+    return 'Invalid value';
+  }
+
+  hasError(control: AbstractControl | null): boolean {
+    return !!(control && control.invalid && control.touched);
+  }
+
   onDifficultyChange(event: Event, exerciseForm: any): void {
     const rangeValue = +(event.target as HTMLInputElement).value;
 
@@ -193,6 +231,19 @@ export class LessonComponent implements OnInit {
       });
   }
 
+  onDiscard(): void {
+    const hasContent = this.lessonForm.dirty;
+
+    if (hasContent) {
+      const confirmed = confirm('Are you sure you want to discard all changes? This cannot be undone.');
+      if (!confirmed) {
+        return;
+      }
+    }
+
+    this.router.navigate(['/']);
+  }
+
   private buildLessonPayload(): Lesson {
     const formValue = this.lessonForm.getRawValue();
 
@@ -284,18 +335,21 @@ export class LessonComponent implements OnInit {
   }
 
   private markFormGroupTouched(): void {
-    Object.keys(this.lessonForm.controls).forEach(key => {
-      const control = this.lessonForm.get(key);
-      control?.markAsTouched();
+    // Helper function to recursively mark all controls as touched
+    const markTouched = (control: AbstractControl): void => {
+      control.markAsTouched();
 
-      if (control instanceof FormArray) {
-        control.controls.forEach(c => {
-          if (c instanceof FormGroup) {
-            Object.keys(c.controls).forEach(k => c.get(k)?.markAsTouched());
-          }
+      if (control instanceof FormGroup) {
+        Object.keys(control.controls).forEach(key => {
+          markTouched(control.get(key)!);
         });
+      } else if (control instanceof FormArray) {
+        control.controls.forEach(c => markTouched(c));
       }
-    });
+    };
+
+    // Mark all controls in the form as touched
+    markTouched(this.lessonForm);
   }
 
   private confirmRemoval(type: string): boolean {
