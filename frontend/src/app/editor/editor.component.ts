@@ -1,10 +1,10 @@
-import EditorJS from '@editorjs/editorjs';
+import EditorJS, { LogLevels } from '@editorjs/editorjs';
 // @ts-ignore - EditorJS plugins may not have type definitions
 import ImageTool from '@editorjs/image';
 // @ts-ignore - EditorJS plugins may not have type definitions
 import AttachesTool from '@editorjs/attaches';
 
-import { Component, OnInit, ViewChild, ElementRef, forwardRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, forwardRef, OnDestroy, Output, EventEmitter } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -32,6 +32,7 @@ import { firstValueFrom } from 'rxjs';
 })
 export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor {
   @ViewChild('editorContainer', { static: true }) editorContainer!: ElementRef;
+  @Output() imageUploaded = new EventEmitter<string>();
 
   private editor!: EditorJS;
   private apiUrl = import.meta.env.BACKEND_API_URL;
@@ -88,6 +89,7 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
       },
       placeholder: 'Start writing your content...',
       autofocus: true,
+      logLevel: LogLevels.ERROR,
       onChange: async (api, event) => {
         const content = await this.editor.save();
         this.onChange(JSON.stringify(content));
@@ -124,8 +126,8 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
         }>(endpoint, formData)
       );
 
-      // Format for EditorJS Image tool
       if (fileType === 'image') {
+        this.imageUploaded.emit(response.file.url);
         return {
           success: 1,
           file: {
@@ -136,7 +138,6 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
         };
       }
 
-      // Format for EditorJS Attaches tool
       return {
         success: 1,
         file: {
@@ -156,9 +157,6 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
     }
   }
 
-  /**
-   * Upload file by URL
-   */
   private async uploadFileByUrl(url: string, fileType: string = 'file'): Promise<any> {
     try {
       const endpoint = fileType === 'image'
@@ -179,6 +177,7 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
       );
 
       if (fileType === 'image') {
+        this.imageUploaded.emit(response.file.url);
         return {
           success: 1,
           file: {
@@ -205,9 +204,6 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
     }
   }
 
-  /**
-   * Advanced configuration with custom file types
-   */
   initializeEditorWithCustomTypes(): void {
     this.editor = new EditorJS({
       holder: 'editorjs',
@@ -221,7 +217,6 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
           }
         },
 
-        // Documents (PDF, Word, Excel)
         documents: {
           class: AttachesTool,
           config: {
@@ -233,7 +228,6 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
           }
         },
 
-        // Any file type
         files: {
           class: AttachesTool,
           config: {
@@ -249,9 +243,6 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
     });
   }
 
-  /**
-   * Save editor content
-   */
   async saveContent(): Promise<void> {
     try {
       const outputData = await this.editor.save();
@@ -267,7 +258,6 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
     }
   }
 
-  // ControlValueAccessor methods
   writeValue(value: any): void {
     if (value && this.editor) {
       try {

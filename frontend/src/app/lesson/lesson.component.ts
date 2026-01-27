@@ -115,6 +115,10 @@ export class LessonComponent implements OnInit {
     }
   }
 
+  onImageUploaded(url: string): void {
+    this.lessonForm.patchValue({ mediaUrl: url });
+  }
+
   parseContent(content: string): SafeHtml {
     if (!content) return this.sanitizer.bypassSecurityTrustHtml('');
 

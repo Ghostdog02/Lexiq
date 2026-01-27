@@ -30,6 +30,7 @@ export class LessonFormService {
       estimatedDuration: this.fb.control(30, {
         validators: [Validators.min(1), Validators.max(300)]
       }),
+      mediaUrl: this.fb.control(''),
       content: this.fb.control('', {
         validators: Validators.required
       }),

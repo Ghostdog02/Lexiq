@@ -1,4 +1,3 @@
-using Backend.Api.Dtos;
 using Backend.Database;
 using Backend.Database.Entities.Users;
 using Microsoft.EntityFrameworkCore;

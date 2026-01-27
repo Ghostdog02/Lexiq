@@ -15,16 +15,20 @@ export class AuthService implements OnInit {
   private router = inject(Router);
 
   private authStatusListener = new BehaviorSubject<boolean>(false);
-
+  
   private tokenTimer?: ReturnType<typeof setTimeout>;
 
-  public isAuth: boolean = false;
+  public isLogged: boolean = false;
 
   async ngOnInit() {
-    const authStatus = await this.getInitialValue();
-
-    this.isAuth = authStatus;
-    this.authStatusListener = new BehaviorSubject<boolean>(authStatus);
+    this.isLogged = await this.getInitialValue();                                                           
+    
+    if (this.isLogged) {
+      this.changeAuthStatus(true);
+      this.checkIfAuthTokenIsExpired();
+    } else {
+      this.changeAuthStatus(false);
+    }
   }
 
   getAuthStatusListener() {
@@ -32,25 +36,24 @@ export class AuthService implements OnInit {
   }
 
   getIsAuth() {
-    return this.isAuth;
+    return this.isLogged;
   }
 
   async getInitialValue() {
-    const response = await firstValueFrom(
-      this.httpClient.get<{ message: string; isLogged: boolean }>(BACKEND_API_URL + '/auth-status')
-    );
+    try {
+      const response = await firstValueFrom(
+        this.httpClient.get<{ message: string; isLogged: boolean }>(BACKEND_API_URL + '/auth-status', { withCredentials: true })
+      );
 
-    if (response) {
-      return true;
+      return response?.isLogged ?? false;
+    } catch (error) {
+      return false;
     }
-
-    return false;
   }
 
   setExpirationDate(issuedAt: number) {
-    const now = new Date();
-    const expirationDate = new Date(this.expiresIn + issuedAt); // 1 hour
-    console.log(expirationDate);
+    const expirationDate = new Date((issuedAt + this.expiresIn) * 1000);
+    console.log('Expiration Date Set:', expirationDate);
 
     localStorage.setItem('expiration-date', expirationDate.toISOString());
   }
@@ -82,7 +85,7 @@ export class AuthService implements OnInit {
 
   changeAuthStatus(status: boolean) {
     this.authStatusListener.next(status);
-    this.isAuth = status;
+    this.isLogged = status;
   }
 
   async loginUserWithGoogle(googleToken: any) {

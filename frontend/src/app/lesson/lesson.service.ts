@@ -8,7 +8,7 @@ import { Lesson } from './lesson.interface';
   providedIn: 'root'
 })
 export class LessonService {
-  private apiUrl = 'http://localhost:5000/api/lessons';
+  private apiUrl = 'http://localhost:8080/api/lesson';
 
   // Store created lessons in memory
   private createdLessons: Lesson[] = [];

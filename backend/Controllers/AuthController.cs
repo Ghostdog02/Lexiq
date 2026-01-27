@@ -1,13 +1,9 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
-using Backend.Api.Dtos;
 using Backend.Api.Mapping;
 using Backend.Api.Services;
 using Backend.Database.Entities.Users;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Backend.Api.Controllers;
 

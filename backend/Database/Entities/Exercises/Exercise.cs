@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Backend.Database.Entities.Users;
 
 namespace Backend.Database.Entities.Exercises;
 

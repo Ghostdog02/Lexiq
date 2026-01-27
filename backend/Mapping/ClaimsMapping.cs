@@ -1,6 +1,5 @@
 ﻿using System.Security.Claims;
 using Backend.Api.Dtos;
-using Backend.Database.Entities;
 
 namespace Backend.Api.Mapping;
 

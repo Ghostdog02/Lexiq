@@ -1,6 +1,5 @@
 using Backend.Api.Dtos;
 using Backend.Database.Entities.Users;
-using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 
 namespace Backend.Api.Services;

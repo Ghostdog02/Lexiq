@@ -1,7 +1,3 @@
-using Backend.Database;
-using Backend.Database.Extensions;
-using Microsoft.EntityFrameworkCore;
-
 namespace Backend.Api.Extensions;
 
 public static class WebApplicationExtensions

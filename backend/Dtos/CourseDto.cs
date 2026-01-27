@@ -1,5 +1,3 @@
-using Backend.Database.Entities;
-
 namespace Backend.Api.Dtos;
 
 public record CourseDto(

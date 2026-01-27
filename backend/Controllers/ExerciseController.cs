@@ -1,7 +1,6 @@
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
 using Backend.Api.Services;
-using Backend.Database.Entities.Exercises;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

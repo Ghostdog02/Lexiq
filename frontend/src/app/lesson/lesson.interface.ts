@@ -8,7 +8,8 @@ export interface Lesson {
   title: string;
   description: string;
   estimatedDuration: number;
-  content: string;
+  mediaUrl?: string; // Cover image URL
+  content: string;   // JSON content from editor
   courseId: string;
   exercises: Exercise[];
 
@@ -24,6 +25,7 @@ export interface LessonFormControls {
   title: FormControl<string>;
   description: FormControl<string>;
   estimatedDuration: FormControl<number>;
+  mediaUrl: FormControl<string>;
   content: FormControl<string>;
   courseId: FormControl<string>;
   exercises: FormArray<ExerciseForm>;

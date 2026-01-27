@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using System.Text;
+﻿using System.Text;
 using Backend.Api.Dtos;
 using Backend.Database.Entities.Users;
 using Google.Apis.Auth;
