@@ -85,6 +85,7 @@ public class AuthController(
                 new AuthStatusResponse { Message = "Successful auth status check", IsLogged = true }
             );
         }
+        
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error checking auth status");
