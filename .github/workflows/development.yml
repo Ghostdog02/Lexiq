@@ -4,11 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - feature/ci-cd
+      - fix/ci-cd
       - master
   pull_request:
     branches:
-      - feature/ci-cd
       - master
 
 env:

@@ -11,5 +11,5 @@ services:
       context: ./frontend
       dockerfile: DOCKERFILE.prod
       args:
-        - NG_GOOGLE_CLIENT_ID=751309259564-16n4ng66dqcqrulih1ihhamdrnrlbvgr.apps.googleusercontent.com
-        - BACKEND_URL=http://backend:5000
+        - NG_GOOGLE_CLIENT_ID=751309259564-eh1rt37l2jev2brt1b356g6n7k01s86v.apps.googleusercontent.com
+        - BACKEND_API_URL=http://localhost:8080
