@@ -25,9 +25,12 @@
               id="title"
               formControlName="title"
               placeholder="e.g. Introduction to Spanish Verbs"
-              [class.invalid]="lessonFormControls.title.invalid && lessonFormControls.title.touched"
+              [class.invalid]="hasError(lessonFormControls.title)"
             >
           </div>
+          @if (hasError(lessonFormControls.title)) {
+            <span class="error-message">{{ getErrorMessage(lessonFormControls.title) }}</span>
+          }
         </div>
 
         <div class="form-group">
@@ -39,8 +42,12 @@
               rows="2"
               formControlName="description"
               placeholder="Short summary for the lesson card..."
+              [class.invalid]="hasError(lessonFormControls.description)"
             ></textarea>
           </div>
+          @if (hasError(lessonFormControls.description)) {
+            <span class="error-message">{{ getErrorMessage(lessonFormControls.description) }}</span>
+          }
         </div>
 
         <!-- <div class="form-group">
@@ -69,9 +76,12 @@
         <p class="section-desc">Explain the concept to the students here.</p>
 
         <div class="form-group">
-          <div class="textarea-wrapper">
-            <app-editor></app-editor>
+          <div class="textarea-wrapper" [class.invalid]="hasError(lessonFormControls.content)">
+            <app-editor formControlName="content"></app-editor>
           </div>
+          @if (hasError(lessonFormControls.content)) {
+            <span class="error-message">{{ getErrorMessage(lessonFormControls.content) }}</span>
+          }
           <p class="hint"><span class="icon">✏️</span> Write '/' to specify a command.</p>
         </div>
       </section>
@@ -134,8 +144,16 @@
                 <label>Question / Prompt</label>
                 <div class="input-with-icon">
                   <span class="icon">❓</span>
-                  <input type="text" formControlName="question" placeholder="e.g. Translate 'Hello'">
+                  <input
+                    type="text"
+                    formControlName="question"
+                    placeholder="e.g. Translate 'Hello'"
+                    [class.invalid]="hasError(exercise.get('question'))"
+                  >
                 </div>
+                @if (hasError(exercise.get('question'))) {
+                  <span class="error-message">{{ getErrorMessage(exercise.get('question')) }}</span>
+                }
               </div>
 
               @switch (exercise.get('exerciseType')?.value) {
@@ -147,7 +165,12 @@
                         <div [formGroupName]="$index" class="option-row slide-in-right">
                           <div class="input-with-icon full-width">
                             <span class="icon">⭕</span>
-                            <input type="text" formControlName="optionText" placeholder="Option {{ $index + 1 }}">
+                            <input
+                              type="text"
+                              formControlName="optionText"
+                              placeholder="Option {{ $index + 1 }}"
+                              [class.invalid]="hasError(option.get('optionText'))"
+                            >
                           </div>
                           <label class="checkbox-label correct-toggle">
                             <input type="checkbox" formControlName="isCorrect">
@@ -157,6 +180,9 @@
                             <span class="icon">❌</span>
                           </button>
                         </div>
+                        @if (hasError(option.get('optionText'))) {
+                          <span class="error-message">{{ getErrorMessage(option.get('optionText')) }}</span>
+                        }
                       }
                     </div>
                     <button type="button" class="btn link-btn" (click)="formService.addOptionToMultipleChoice($any(exercise))">
@@ -171,8 +197,16 @@
                       <label>Correct Answer</label>
                       <div class="input-with-icon">
                         <span class="icon">🔑</span>
-                        <input type="text" formControlName="correctAnswer" placeholder="The expected answer">
+                        <input
+                          type="text"
+                          formControlName="correctAnswer"
+                          placeholder="The expected answer"
+                          [class.invalid]="hasError(exercise.get('correctAnswer'))"
+                        >
                       </div>
+                      @if (hasError(exercise.get('correctAnswer'))) {
+                        <span class="error-message">{{ getErrorMessage(exercise.get('correctAnswer')) }}</span>
+                      }
                     </div>
                     <div class="form-group">
                       <label>Accepted Answers (comma-separated alternatives)</label>
@@ -201,37 +235,82 @@
                         <label>Source Language</label>
                         <div class="input-with-icon">
                           <span class="icon">🌐</span>
-                          <input type="text" formControlName="sourceLanguageCode" placeholder="e.g. en" maxlength="2">
+                          <input
+                            type="text"
+                            formControlName="sourceLanguageCode"
+                            placeholder="e.g. en"
+                            maxlength="2"
+                            [class.invalid]="hasError(exercise.get('sourceLanguageCode'))"
+                          >
                         </div>
+                        @if (hasError(exercise.get('sourceLanguageCode'))) {
+                          <span class="error-message">{{ getErrorMessage(exercise.get('sourceLanguageCode')) }}</span>
+                        }
                       </div>
                       <div class="form-group">
                         <label>Target Language</label>
                         <div class="input-with-icon">
                           <span class="icon">🌐</span>
-                          <input type="text" formControlName="targetLanguageCode" placeholder="e.g. it" maxlength="2">
+                          <input
+                            type="text"
+                            formControlName="targetLanguageCode"
+                            placeholder="e.g. it"
+                            maxlength="2"
+                            [class.invalid]="hasError(exercise.get('targetLanguageCode'))"
+                          >
                         </div>
+                        @if (hasError(exercise.get('targetLanguageCode'))) {
+                          <span class="error-message">{{ getErrorMessage(exercise.get('targetLanguageCode')) }}</span>
+                        }
                       </div>
                     </div>
                     <div class="form-group">
                       <label>Source Text</label>
                       <div class="input-with-icon">
                         <span class="icon">📝</span>
-                        <textarea formControlName="sourceText" rows="2" placeholder="Text to translate from"></textarea>
+                        <textarea
+                          formControlName="sourceText"
+                          rows="2"
+                          placeholder="Text to translate from"
+                          [class.invalid]="hasError(exercise.get('sourceText'))"
+                        ></textarea>
                       </div>
+                      @if (hasError(exercise.get('sourceText'))) {
+                        <span class="error-message">{{ getErrorMessage(exercise.get('sourceText')) }}</span>
+                      }
                     </div>
                     <div class="form-group">
                       <label>Target Text (Expected Translation)</label>
                       <div class="input-with-icon">
                         <span class="icon">🎯</span>
-                        <textarea formControlName="targetText" rows="2" placeholder="Expected translation"></textarea>
+                        <textarea
+                          formControlName="targetText"
+                          rows="2"
+                          placeholder="Expected translation"
+                          [class.invalid]="hasError(exercise.get('targetText'))"
+                        ></textarea>
                       </div>
+                      @if (hasError(exercise.get('targetText'))) {
+                        <span class="error-message">{{ getErrorMessage(exercise.get('targetText')) }}</span>
+                      }
                     </div>
                     <div class="form-group">
                       <label>Matching Threshold (0.1 - 1.0)</label>
                       <div class="input-with-icon">
                         <span class="icon">📊</span>
-                        <input type="number" formControlName="matchingThreshold" min="0.1" max="1" step="0.1" placeholder="0.8">
+                        <input
+                          type="number"
+                          formControlName="matchingThreshold"
+                          min="0.1"
+                          max="1"
+                          step="0.1"
+                          placeholder="0.8"
+                          [class.invalid]="hasError(exercise.get('matchingThreshold'))"
+                        >
                       </div>
+                      @if (hasError(exercise.get('matchingThreshold'))) {
+                        <span class="error-message">{{ getErrorMessage(exercise.get('matchingThreshold')) }}</span>
+                      }
                     </div>
                   </div>
                 }
@@ -242,15 +321,31 @@
                       <label>Audio URL</label>
                       <div class="input-with-icon">
                         <span class="icon">🔊</span>
-                        <input type="url" formControlName="audioUrl" placeholder="https://example.com/audio.mp3">
+                        <input
+                          type="url"
+                          formControlName="audioUrl"
+                          placeholder="https://example.com/audio.mp3"
+                          [class.invalid]="hasError(exercise.get('audioUrl'))"
+                        >
                       </div>
+                      @if (hasError(exercise.get('audioUrl'))) {
+                        <span class="error-message">{{ getErrorMessage(exercise.get('audioUrl')) }}</span>
+                      }
                     </div>
                     <div class="form-group">
                       <label>Correct Answer</label>
                       <div class="input-with-icon">
                         <span class="icon">🔑</span>
-                        <input type="text" formControlName="correctAnswer" placeholder="The expected answer">
+                        <input
+                          type="text"
+                          formControlName="correctAnswer"
+                          placeholder="The expected answer"
+                          [class.invalid]="hasError(exercise.get('correctAnswer'))"
+                        >
                       </div>
+                      @if (hasError(exercise.get('correctAnswer'))) {
+                        <span class="error-message">{{ getErrorMessage(exercise.get('correctAnswer')) }}</span>
+                      }
                     </div>
                     <div class="form-group">
                       <label>Accepted Answers (comma-separated alternatives)</label>
@@ -266,7 +361,17 @@
                       </label>
                       <div class="form-group small">
                         <label>Max Replays</label>
-                        <input type="number" formControlName="maxReplays" min="1" max="3" placeholder="3">
+                        <input
+                          type="number"
+                          formControlName="maxReplays"
+                          min="1"
+                          max="3"
+                          placeholder="3"
+                          [class.invalid]="hasError(exercise.get('maxReplays'))"
+                        >
+                        @if (hasError(exercise.get('maxReplays'))) {
+                          <span class="error-message">{{ getErrorMessage(exercise.get('maxReplays')) }}</span>
+                        }
                       </div>
                     </div>
                   </div>
@@ -304,7 +409,7 @@
 
       <!-- Actions -->
       <div class="form-actions sticky-footer">
-        <button type="button" class="btn secondary">
+        <button type="button" class="btn secondary" (click)="onDiscard()">
           <span class="icon">↩️</span> Discard
         </button>
         <button type="button" class="btn primary" [disabled]="lessonForm.invalid" (click)="onSubmit()">
