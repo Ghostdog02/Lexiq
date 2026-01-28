@@ -1,6 +1,9 @@
+using Backend.Api.Models;
+using FileInfo = Backend.Api.Models.FileInfo;
+
 namespace Backend.Api.Services
 {
-    public class FileUploadService : IFileUploadService
+    public class FileUploadService : IFileUploadsService
     {
         private readonly IWebHostEnvironment _environment;
         private readonly Dictionary<string, FileTypeConfig> _fileTypeConfigs;
@@ -104,7 +107,7 @@ namespace Backend.Api.Services
 
             try
             {
-                System.Console.WriteLine("Got to uploading service try catch");
+                Console.WriteLine("Got to uploading service try catch");
 
                 var basePath =
                     _environment.WebRootPath
@@ -125,11 +128,11 @@ namespace Backend.Api.Services
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
-                    System.Console.WriteLine("Saved image");
+                    Console.WriteLine("Saved image");
                 }
 
                 // Build URL
-                var fileUrl = $"{baseUrl}/uploads/{config.Folder}/{uniqueFileName}";
+                var fileUrl = $"{uploadsFolder}/{uniqueFileName}";
 
                 return FileUploadResult.Success(
                     url: fileUrl,
@@ -263,7 +266,6 @@ namespace Backend.Api.Services
                     TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
                 };
             }
-            
             catch (Exception ex)
             {
                 return new FileListResult
@@ -329,16 +331,10 @@ namespace Backend.Api.Services
                 // }
                 // var file = await query.FirstOrDefaultAsync();
 
-                // if (file == null)
-                // {
-                //     return new FileUploadResult
-                //     {
-                //         IsSuccess = false,
-                //         Message = "File not found"
-                //     };
-                // }
-
                 // For demonstration purposes only:
+
+                var imageUrl = $"{baseUrl}/uploads/{_fileTypeConfigs[filename].Folder}/{filename}";
+
                 return new FileUploadResult
                 {
                     IsSuccess = false,

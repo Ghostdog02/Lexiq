@@ -1,3 +1,4 @@
+using Backend.Api.Models;
 using Backend.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -5,9 +6,9 @@ namespace Backend.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UploadController(IFileUploadService fileUploadService) : ControllerBase
+    public class UploadsController(FileUploadService fileUploadService) : ControllerBase
     {
-        private readonly IFileUploadService _fileUploadService = fileUploadService;
+        private readonly FileUploadService _fileUploadService = fileUploadService;
 
         private string BaseUrl => $"{Request.Scheme}://{Request.Host}";
 
@@ -15,9 +16,9 @@ namespace Backend.Api.Controllers
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadImage(IFormFile image)
         {
-            System.Console.WriteLine("Uploading an image");
+            Console.WriteLine("Uploading an image");
             var result = await _fileUploadService.UploadFileAsync(image, "image", BaseUrl);
-            return BuildResponse(result);
+            return BuildEditorJsFileResponse(result);
         }
 
         [HttpPost("document")]
@@ -25,7 +26,7 @@ namespace Backend.Api.Controllers
         public async Task<IActionResult> UploadDocument(IFormFile document)
         {
             var result = await _fileUploadService.UploadFileAsync(document, "document", BaseUrl);
-            return BuildResponse(result);
+            return BuildEditorJsFileResponse(result);
         }
 
         [HttpPost("video")]
@@ -33,7 +34,7 @@ namespace Backend.Api.Controllers
         public async Task<IActionResult> UploadVideo(IFormFile video)
         {
             var result = await _fileUploadService.UploadFileAsync(video, "video", BaseUrl);
-            return BuildResponse(result);
+            return BuildEditorJsFileResponse(result);
         }
 
         [HttpPost("audio")]
@@ -41,7 +42,7 @@ namespace Backend.Api.Controllers
         public async Task<IActionResult> UploadAudio(IFormFile audio)
         {
             var result = await _fileUploadService.UploadFileAsync(audio, "audio", BaseUrl);
-            return BuildResponse(result);
+            return BuildEditorJsFileResponse(result);
         }
 
         [HttpPost("file")]
@@ -49,7 +50,7 @@ namespace Backend.Api.Controllers
         public async Task<IActionResult> UploadFile(IFormFile file)
         {
             var result = await _fileUploadService.UploadFileAsync(file, "file", BaseUrl);
-            return BuildResponse(result);
+            return BuildEditorJsFileResponse(result);
         }
 
         [HttpPost("any")]
@@ -60,7 +61,7 @@ namespace Backend.Api.Controllers
             var fileType = _fileUploadService.DetermineFileType(extension);
 
             var result = await _fileUploadService.UploadFileAsync(file, fileType, BaseUrl);
-            return BuildResponse(result);
+            return BuildEditorJsFileResponse(result);
         }
 
         [HttpPost("image-by-url")]
@@ -71,7 +72,7 @@ namespace Backend.Api.Controllers
                 "image",
                 BaseUrl
             );
-            return BuildResponse(result);
+            return BuildEditorJsFileResponse(result);
         }
 
         [HttpPost("file-by-url")]
@@ -82,33 +83,9 @@ namespace Backend.Api.Controllers
                 "file",
                 BaseUrl
             );
-            return BuildResponse(result);
+            return BuildEditorJsFileResponse(result);
         }
 
-        private IActionResult BuildResponse(FileUploadResult result)
-        {
-            if (!result.IsSuccess)
-            {
-                return BadRequest(new { success = 0, message = result.Message });
-            }
-
-            var response = new
-            {
-                success = 1,
-                file = new
-                {
-                    url = result.Url,
-                    name = result.Name,
-                    size = result.Size,
-                    extension = result.Extension,
-                    title = result.Title,
-                },
-            };
-
-            return Ok(response);
-        }
-
-        // GET endpoints - List files by type
         [HttpGet("image")]
         public async Task<IActionResult> GetImages(
             [FromQuery] int page = 1,
@@ -198,12 +175,13 @@ namespace Backend.Api.Controllers
         [HttpGet("image/{filename}")]
         public async Task<IActionResult> GetImageByFilename(string filename)
         {
-            var result = await _fileUploadService.GetFileByFilenameAsync(
-                filename,
-                "image",
-                BaseUrl
-            );
-            return BuildResponse(result);
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "images", filename);
+
+            if (!System.IO.File.Exists(path))
+                return NotFound();
+
+            var image = System.IO.File.OpenRead(path);
+            return File(image, "image/png");
         }
 
         [HttpGet("document/{filename}")]
@@ -277,6 +255,54 @@ namespace Backend.Api.Controllers
                     pageSize = result.PageSize,
                     totalCount = result.TotalCount,
                     totalPages = result.TotalPages,
+                },
+            };
+
+            return Ok(response);
+        }
+
+        /// <summary>
+        /// Build Editor.js specific file upload response
+        /// </summary>
+        private IActionResult BuildEditorJsFileResponse(FileUploadResult result)
+        {
+            if (!result.IsSuccess)
+            {
+                return BadRequest(new { success = 0, message = result.Message });
+            }
+
+            var response = new EditorJsFileUploadResponse
+            {
+                Success = 1,
+                File = new EditorJsFileData
+                {
+                    Url = result.Url,
+                    Size = result.Size,
+                    Name = result.Name,
+                    Extension = result.Extension,
+                },
+            };
+
+            return Ok(response);
+        }
+
+        private IActionResult BuildResponse(FileUploadResult result)
+        {
+            if (!result.IsSuccess)
+            {
+                return BadRequest(new { success = 0, message = result.Message });
+            }
+
+            var response = new
+            {
+                success = 1,
+                file = new
+                {
+                    url = result.Url,
+                    name = result.Name,
+                    size = result.Size,
+                    extension = result.Extension,
+                    title = result.Title,
                 },
             };
 

@@ -65,7 +65,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LanguageService>();
         services.AddScoped<ExerciseService>();
         services.AddScoped<UserLanguageService>();
-        services.AddScoped<IFileUploadService, FileUploadService>();
+        services.AddScoped<IFileUploadsService, FileUploadService>();
 
         return services;
     }

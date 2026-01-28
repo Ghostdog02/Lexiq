@@ -13,7 +13,6 @@ public class RoleManagementController(BackendDbContext context, UserManager<User
     private readonly BackendDbContext _context = context;
     private readonly UserManager<User> _userManager = userManager;
 
-    // GET: api/roleManagement/example@example.com
     [HttpGet("{email}")]
     public async Task<ActionResult<string>> GetRoleByEmail([FromRoute] string email)
     {
