@@ -115,12 +115,13 @@ namespace Backend.Api.Services
 
             try
             {
-                Console.WriteLine(_environment.ContentRootPath);
-                // Create uploads directory
+                System.Console.WriteLine("Got to uploading service try catch");
+
                 var basePath =
                     _environment.WebRootPath
                     ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
-                var uploadsFolder = Path.Combine(basePath, "uploads", "images");
+                var uploadsFolder = Path.Combine(basePath, "uploads", config.Folder);
+
                 if (!Directory.Exists(uploadsFolder))
                 {
                     Directory.CreateDirectory(uploadsFolder);
@@ -135,6 +136,7 @@ namespace Backend.Api.Services
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
+                    System.Console.WriteLine("Saved image");
                 }
 
                 // Build URL
@@ -148,6 +150,7 @@ namespace Backend.Api.Services
                     title: originalFileName
                 );
             }
+
             catch (Exception ex)
             {
                 return FileUploadResult.Failure($"Upload failed: {ex.Message}");

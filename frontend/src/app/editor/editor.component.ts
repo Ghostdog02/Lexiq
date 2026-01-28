@@ -1,4 +1,4 @@
-import EditorJS, { LogLevels } from '@editorjs/editorjs';
+import EditorJS from '@editorjs/editorjs';
 // @ts-ignore - EditorJS plugins may not have type definitions
 import ImageTool from '@editorjs/image';
 // @ts-ignore - EditorJS plugins may not have type definitions
@@ -89,7 +89,7 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
       },
       placeholder: 'Start writing your content...',
       autofocus: true,
-      logLevel: LogLevels.ERROR,
+      logLevel: 'ERROR' as any,
       onChange: async (api, event) => {
         const content = await this.editor.save();
         this.onChange(JSON.stringify(content));

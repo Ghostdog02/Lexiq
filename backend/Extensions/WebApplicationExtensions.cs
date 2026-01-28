@@ -28,4 +28,25 @@ public static class WebApplicationExtensions
 
         return app;
     }
+
+    public static WebApplication ConfigureStaticFiles(this WebApplication app)
+    {
+        app.UseStaticFiles(
+            new StaticFileOptions
+            {
+                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+                    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")
+                ),
+                RequestPath = "/uploads",
+                OnPrepareResponse = ctx =>
+                {
+                    ctx.Context.Response.Headers["Cross-Origin-Resource-Policy"] = "cross-origin";
+                    ctx.Context.Response.Headers.AccessControlAllowOrigin =
+                        Environment.GetEnvironmentVariable("ANGULAR_PORT");
+                },
+            }
+        );
+
+        return app;
+    }
 }

@@ -18,7 +18,7 @@ RUN npm run build
 FROM nginxinc/nginx-unprivileged:${NGINX_VERSION} AS runner
 USER root
 
-COPY nginx.dev.conf /etc/nginx/nginx.conf
+COPY ./nginx.dev.conf /etc/nginx/nginx.dev.conf
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 COPY --chown=nginx:nginx --from=builder /app/dist/*/browser /usr/share/nginx/html
 

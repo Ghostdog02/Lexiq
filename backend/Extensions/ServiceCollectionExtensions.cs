@@ -23,7 +23,7 @@ public static class ServiceCollectionExtensions
                     .AllowAnyMethod()
                     .AllowCredentials()
                     .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
-            });
+            }); 
         });
 
         return services;

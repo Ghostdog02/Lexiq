@@ -74,19 +74,26 @@ public class AuthController(
         try
         {
             string cookie = Request.Cookies["AuthToken"] ?? "";
+            
+            if (string.IsNullOrEmpty(cookie))
+            {
+                return Ok(new AuthStatusResponse { Message = "No auth cookie found", IsLogged = false });
+            }
 
             bool isValid = await ValidateJwtToken(cookie);
 
             return Ok(
-                new AuthStatusResponse { Message = "Successful auth status check", IsLogged = true }
+                new AuthStatusResponse { 
+                    Message = isValid ? "Successful auth status check" : "Invalid token", 
+                    IsLogged = isValid 
+                }
             );
         }
-        
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error checking auth status");
+            _logger.LogWarning("Auth status check failed: {Message}", ex.Message);
             return Ok(
-                new AuthStatusResponse { Message = "Error checking status", IsLogged = false }
+                new AuthStatusResponse { Message = "Not authenticated", IsLogged = false }
             );
         }
     }

@@ -15,6 +15,7 @@ namespace Backend.Api.Controllers
         [Consumes("multipart/form-data")]
         public async Task<IActionResult> UploadImage(IFormFile image)
         {
+            System.Console.WriteLine("Uploading an image");
             var result = await _fileUploadService.UploadFileAsync(image, "image", BaseUrl);
             return BuildResponse(result);
         }
@@ -91,7 +92,8 @@ namespace Backend.Api.Controllers
                 return BadRequest(new { success = 0, message = result.Message });
             }
 
-            var response = new {
+            var response = new
+            {
                 success = 1,
                 file = new
                 {

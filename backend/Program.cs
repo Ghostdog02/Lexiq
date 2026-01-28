@@ -15,7 +15,7 @@ public class Program
         }
         else
         {
-            Env.Load(); // Loads from .env in current directory
+            Env.Load();
         }
 
         var builder = WebApplication.CreateBuilder(args);
@@ -48,7 +48,7 @@ public class Program
     {
         app.ConfigureHttpPort();
         app.UseCors();
-        app.UseStaticFiles();
+        app.ConfigureStaticFiles();
         app.UseSwaggerWithUI();
         app.UseAuthentication();
         app.UseAuthorization();

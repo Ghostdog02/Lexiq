@@ -313,6 +313,7 @@ export class LessonComponent implements OnInit {
       title: formValue.title,
       description: formValue.description,
       estimatedDuration: formValue.estimatedDuration,
+      mediaUrl: formValue.mediaUrl,
       content: formValue.content,
       courseId: formValue.courseId,
       exercises
