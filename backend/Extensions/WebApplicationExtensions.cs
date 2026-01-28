@@ -40,8 +40,10 @@ public static class WebApplicationExtensions
                 RequestPath = "/static/uploads", 
                 OnPrepareResponse = ctx =>
                 {
-                    ctx.Context.Response.Headers.AccessControlAllowOrigin = "*";
-                    ctx.Context.Response.Headers["Cross-Origin-Resource-Policy"] = "cross-origin";
+                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
+                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, OPTIONS");
+                    ctx.Context.Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+                    ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=31536000");
                 },
             }
         );

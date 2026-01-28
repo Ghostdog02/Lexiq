@@ -188,8 +188,7 @@ namespace Backend.Api.Controllers
                 contentType = "image/png";
             }
 
-            Response.Headers.Append("Access-Control-Allow-Origin", "*");
-            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+            SetCorsHeaders();
 
             return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }
@@ -208,8 +207,7 @@ namespace Backend.Api.Controllers
                 contentType = "application/pdf";
             }
 
-            Response.Headers.Append("Access-Control-Allow-Origin", "*");
-            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+            SetCorsHeaders();
 
             return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }
@@ -228,8 +226,7 @@ namespace Backend.Api.Controllers
                 contentType = "video/mp4";
             }
 
-            Response.Headers.Append("Access-Control-Allow-Origin", "*");
-            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+            SetCorsHeaders();
 
             return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }
@@ -248,9 +245,7 @@ namespace Backend.Api.Controllers
                 contentType = "audio/mpeg"; // Default to MP3
             }
 
-            // Add CORS headers
-            Response.Headers.Append("Access-Control-Allow-Origin", "*");
-            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+            SetCorsHeaders();
 
             return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }
@@ -269,8 +264,7 @@ namespace Backend.Api.Controllers
                 contentType = "application/octet-stream";
             }
 
-            Response.Headers.Append("Access-Control-Allow-Origin", "*");
-            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+            SetCorsHeaders();
 
             return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }
@@ -289,10 +283,17 @@ namespace Backend.Api.Controllers
                 contentType = "application/octet-stream";
             }
 
-            Response.Headers.Append("Access-Control-Allow-Origin", "*");
-            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+            SetCorsHeaders();
 
             return PhysicalFile(path, contentType, enableRangeProcessing: true);
+        }
+
+        private void SetCorsHeaders()
+        {
+            Response.Headers.Append("Access-Control-Allow-Origin", "*");
+            Response.Headers.Append("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+            Response.Headers.Append("Access-Control-Allow-Headers", "Content-Type, Accept");
+            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
         }
 
         private IActionResult BuildListResponse(FileListResult result)

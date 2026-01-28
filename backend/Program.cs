@@ -51,14 +51,6 @@ public class Program
         app.UseRouting();
         app.ConfigureHttpPort();
         app.UseCors("AllowAngular");
-        app.Use(
-            async (context, next) =>
-            {
-                context.Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
-                context.Response.Headers.Append("Cross-Origin-Embedder-Policy", "unsafe-none");
-                await next();
-            }
-        );
         app.ConfigureStaticFiles();
         app.UseSwaggerWithUI();
         app.UseAuthentication();
