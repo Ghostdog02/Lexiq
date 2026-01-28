@@ -107,6 +107,181 @@ namespace Backend.Api.Controllers
 
             return Ok(response);
         }
+
+        // GET endpoints - List files by type
+        [HttpGet("image")]
+        public async Task<IActionResult> GetImages(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10
+        )
+        {
+            var result = await _fileUploadService.GetFilesByTypeAsync(
+                "image",
+                page,
+                pageSize,
+                BaseUrl
+            );
+            return BuildListResponse(result);
+        }
+
+        [HttpGet("document")]
+        public async Task<IActionResult> GetDocuments(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10
+        )
+        {
+            var result = await _fileUploadService.GetFilesByTypeAsync(
+                "document",
+                page,
+                pageSize,
+                BaseUrl
+            );
+            return BuildListResponse(result);
+        }
+
+        [HttpGet("video")]
+        public async Task<IActionResult> GetVideos(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10
+        )
+        {
+            var result = await _fileUploadService.GetFilesByTypeAsync(
+                "video",
+                page,
+                pageSize,
+                BaseUrl
+            );
+            return BuildListResponse(result);
+        }
+
+        [HttpGet("audio")]
+        public async Task<IActionResult> GetAudios(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10
+        )
+        {
+            var result = await _fileUploadService.GetFilesByTypeAsync(
+                "audio",
+                page,
+                pageSize,
+                BaseUrl
+            );
+            return BuildListResponse(result);
+        }
+
+        [HttpGet("file")]
+        public async Task<IActionResult> GetFiles(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10
+        )
+        {
+            var result = await _fileUploadService.GetFilesByTypeAsync(
+                "file",
+                page,
+                pageSize,
+                BaseUrl
+            );
+            return BuildListResponse(result);
+        }
+
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllFiles(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10
+        )
+        {
+            var result = await _fileUploadService.GetAllFilesAsync(page, pageSize, BaseUrl);
+            return BuildListResponse(result);
+        }
+
+        // GET endpoints - Get specific file by filename
+        [HttpGet("image/{filename}")]
+        public async Task<IActionResult> GetImageByFilename(string filename)
+        {
+            var result = await _fileUploadService.GetFileByFilenameAsync(
+                filename,
+                "image",
+                BaseUrl
+            );
+            return BuildResponse(result);
+        }
+
+        [HttpGet("document/{filename}")]
+        public async Task<IActionResult> GetDocumentByFilename(string filename)
+        {
+            var result = await _fileUploadService.GetFileByFilenameAsync(
+                filename,
+                "document",
+                BaseUrl
+            );
+            return BuildResponse(result);
+        }
+
+        [HttpGet("video/{filename}")]
+        public async Task<IActionResult> GetVideoByFilename(string filename)
+        {
+            var result = await _fileUploadService.GetFileByFilenameAsync(
+                filename,
+                "video",
+                BaseUrl
+            );
+            return BuildResponse(result);
+        }
+
+        [HttpGet("audio/{filename}")]
+        public async Task<IActionResult> GetAudioByFilename(string filename)
+        {
+            var result = await _fileUploadService.GetFileByFilenameAsync(
+                filename,
+                "audio",
+                BaseUrl
+            );
+            return BuildResponse(result);
+        }
+
+        [HttpGet("file/{filename}")]
+        public async Task<IActionResult> GetFileByFilename(string filename)
+        {
+            var result = await _fileUploadService.GetFileByFilenameAsync(filename, "file", BaseUrl);
+            return BuildResponse(result);
+        }
+
+        [HttpGet("{filename}")]
+        public async Task<IActionResult> GetAnyFileByFilename(string filename)
+        {
+            var result = await _fileUploadService.GetFileByFilenameAsync(filename, null, BaseUrl);
+            return BuildResponse(result);
+        }
+
+        private IActionResult BuildListResponse(FileListResult result)
+        {
+            if (!result.IsSuccess)
+            {
+                return BadRequest(new { success = 0, message = result.Message });
+            }
+
+            var response = new
+            {
+                success = 1,
+                data = result.Files.Select(f => new
+                {
+                    url = f.Url,
+                    name = f.Name,
+                    size = f.Size,
+                    extension = f.Extension,
+                    title = f.Title,
+                }),
+                pagination = new
+                {
+                    page = result.Page,
+                    pageSize = result.PageSize,
+                    totalCount = result.TotalCount,
+                    totalPages = result.TotalPages,
+                },
+            };
+
+            return Ok(response);
+        }
     }
 
     public class FileUrlRequest

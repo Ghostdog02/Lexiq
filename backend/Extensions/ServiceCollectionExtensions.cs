@@ -2,6 +2,7 @@ using System.Reflection;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities.Users;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
@@ -11,19 +12,34 @@ namespace Backend.Api.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection LimitFileUploads(this IServiceCollection services)
+    {
+        long maxFileSizeInBytes = 100 * 1024 * 1024; // 10 MB
+
+        services.Configure<FormOptions>(options =>
+        {
+            options.MultipartBodyLengthLimit = maxFileSizeInBytes;
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddCorsPolicy(this IServiceCollection services)
     {
         services.AddCors(options =>
         {
-            options.AddDefaultPolicy(policy =>
-            {
-                policy
-                    .WithOrigins("http://localhost:4200")
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials()
-                    .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
-            }); 
+            options.AddPolicy(
+                "AllowAngular",
+                policy =>
+                {
+                    policy
+                        .WithOrigins("http://localhost:4200")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials()
+                        .SetPreflightMaxAge(TimeSpan.FromMinutes(10));
+                }
+            );
         });
 
         return services;

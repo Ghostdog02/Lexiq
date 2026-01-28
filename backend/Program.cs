@@ -13,6 +13,7 @@ public class Program
         {
             Env.Load(secretPath);
         }
+        
         else
         {
             Env.Load();
@@ -41,13 +42,22 @@ public class Program
         services.AddIdentityConfiguration();
         services.AddGoogleAuthentication();
         services.AddSwaggerDocumentation();
+        services.LimitFileUploads();
         services.AddHealthChecks();
     }
 
     private static void ConfigureMiddleware(WebApplication app)
     {
         app.ConfigureHttpPort();
-        app.UseCors();
+        app.UseCors("AllowAngular");
+        app.Use(
+            async (context, next) =>
+            {
+                context.Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+                context.Response.Headers.Append("Cross-Origin-Embedder-Policy", "unsafe-none");
+                await next();
+            }
+        );
         app.ConfigureStaticFiles();
         app.UseSwaggerWithUI();
         app.UseAuthentication();

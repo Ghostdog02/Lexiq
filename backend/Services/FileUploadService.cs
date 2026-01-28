@@ -1,12 +1,5 @@
 namespace Backend.Api.Services
 {
-    public interface IFileUploadService
-    {
-        Task<FileUploadResult> UploadFileAsync(IFormFile file, string fileType, string baseUrl);
-        Task<FileUploadResult> UploadFileByUrlAsync(string url, string fileType, string baseUrl);
-        string DetermineFileType(string extension);
-    }
-
     public class FileUploadService : IFileUploadService
     {
         private readonly IWebHostEnvironment _environment;
@@ -84,19 +77,16 @@ namespace Backend.Api.Services
         {
             Console.WriteLine(_environment.ContentRootPath);
 
-            // Validate file exists
             if (file == null || file.Length == 0)
             {
                 return FileUploadResult.Failure("No file uploaded");
             }
 
-            // Get configuration for file type
             if (!_fileTypeConfigs.TryGetValue(fileType, out var config))
             {
                 return FileUploadResult.Failure("Invalid file type");
             }
 
-            // Validate file size
             if (file.Length > config.MaxSize)
             {
                 return FileUploadResult.Failure(
@@ -104,7 +94,6 @@ namespace Backend.Api.Services
                 );
             }
 
-            // Validate file extension
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
             if (!config.AllowedExtensions.Contains(extension))
             {
@@ -150,7 +139,6 @@ namespace Backend.Api.Services
                     title: originalFileName
                 );
             }
-
             catch (Exception ex)
             {
                 return FileUploadResult.Failure($"Upload failed: {ex.Message}");
@@ -238,6 +226,134 @@ namespace Backend.Api.Services
             }
             return "file"; // Default to generic file type
         }
+
+        public async Task<FileListResult> GetFilesByTypeAsync(
+            string fileType,
+            int page,
+            int pageSize,
+            string baseUrl
+        )
+        {
+            try
+            {
+                // TODO: Replace with your actual data access logic
+                // This is a sample implementation - adjust based on your storage mechanism
+                // (database, file system, cloud storage, etc.)
+
+                // Example: Query database for files of specific type
+                // var query = _dbContext.Files.Where(f => f.FileType == fileType);
+                // var totalCount = await query.CountAsync();
+                // var files = await query
+                //     .OrderByDescending(f => f.UploadedAt)
+                //     .Skip((page - 1) * pageSize)
+                //     .Take(pageSize)
+                //     .ToListAsync();
+
+                // For demonstration purposes only:
+                var files = new List<FileInfo>();
+                var totalCount = 0;
+
+                return new FileListResult
+                {
+                    IsSuccess = true,
+                    Files = files,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalCount = totalCount,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                };
+            }
+            
+            catch (Exception ex)
+            {
+                return new FileListResult
+                {
+                    IsSuccess = false,
+                    Message = $"Error retrieving files: {ex.Message}",
+                };
+            }
+        }
+
+        public async Task<FileListResult> GetAllFilesAsync(int page, int pageSize, string baseUrl)
+        {
+            try
+            {
+                // TODO: Replace with your actual data access logic
+                // Example: Query database for all files
+                // var query = _dbContext.Files;
+                // var totalCount = await query.CountAsync();
+                // var files = await query
+                //     .OrderByDescending(f => f.UploadedAt)
+                //     .Skip((page - 1) * pageSize)
+                //     .Take(pageSize)
+                //     .ToListAsync();
+
+                // For demonstration purposes only:
+                var files = new List<FileInfo>();
+                var totalCount = 0;
+
+                return new FileListResult
+                {
+                    IsSuccess = true,
+                    Files = files,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalCount = totalCount,
+                    TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                };
+            }
+            catch (Exception ex)
+            {
+                return new FileListResult
+                {
+                    IsSuccess = false,
+                    Message = $"Error retrieving files: {ex.Message}",
+                };
+            }
+        }
+
+        public async Task<FileUploadResult> GetFileByFilenameAsync(
+            string filename,
+            string? fileType,
+            string baseUrl
+        )
+        {
+            try
+            {
+                // TODO: Replace with your actual data access logic
+                // Example: Query database for specific file
+                // var query = _dbContext.Files.Where(f => f.Name == filename);
+                // if (!string.IsNullOrEmpty(fileType))
+                // {
+                //     query = query.Where(f => f.FileType == fileType);
+                // }
+                // var file = await query.FirstOrDefaultAsync();
+
+                // if (file == null)
+                // {
+                //     return new FileUploadResult
+                //     {
+                //         IsSuccess = false,
+                //         Message = "File not found"
+                //     };
+                // }
+
+                // For demonstration purposes only:
+                return new FileUploadResult
+                {
+                    IsSuccess = false,
+                    Message = "File not found - implement actual retrieval logic",
+                };
+            }
+            catch (Exception ex)
+            {
+                return new FileUploadResult
+                {
+                    IsSuccess = false,
+                    Message = $"Error retrieving file: {ex.Message}",
+                };
+            }
+        }
     }
 
     public class FileTypeConfig
@@ -245,46 +361,5 @@ namespace Backend.Api.Services
         public string[] AllowedExtensions { get; set; }
         public string Folder { get; set; }
         public long MaxSize { get; set; }
-    }
-
-    public class FileUploadResult
-    {
-        public bool IsSuccess { get; set; }
-
-        public string Message { get; set; }
-
-        public string Url { get; set; }
-
-        public string Name { get; set; }
-
-        public long Size { get; set; }
-
-        public string Extension { get; set; }
-
-        public string Title { get; set; }
-
-        public static FileUploadResult Success(
-            string url,
-            string name,
-            long size,
-            string extension,
-            string title
-        )
-        {
-            return new FileUploadResult
-            {
-                IsSuccess = true,
-                Url = url,
-                Name = name,
-                Size = size,
-                Extension = extension,
-                Title = title,
-            };
-        }
-
-        public static FileUploadResult Failure(string message)
-        {
-            return new FileUploadResult { IsSuccess = false, Message = message };
-        }
     }
 }
