@@ -23,7 +23,7 @@ dotnet restore
 # Build the project
 dotnet build
 
-# Run the development server (listens on port 5000)
+# Run the development server (listens on port 8080)
 dotnet run
 
 # Run with watch mode (auto-reload on changes)
@@ -106,20 +106,49 @@ TAG=latest docker compose -f docker-compose.prod.yml up --build
 ```
 backend/
 ├── Controllers/          # API endpoints
-│   ├── AuthController.cs          # Authentication endpoints
+│   ├── AuthController.cs          # Google OAuth login/logout, auth status
 │   ├── UserManagementController.cs # User CRUD operations
 │   ├── RoleManagementController.cs # Role management
-│   └── CoursesController.cs        # Course management (placeholder)
+│   ├── LanguageController.cs      # Language CRUD (Admin only for CUD)
+│   ├── CourseController.cs        # Course management
+│   ├── LessonController.cs        # Lesson management with unlock/complete flow
+│   ├── ExerciseController.cs      # Exercise CRUD
+│   ├── UserLanguageController.cs  # User language enrollment
+│   ├── ProgressController.cs      # User progress tracking
+│   └── UploadsController.cs       # File uploads (images, documents, video, audio)
 ├── Database/
-│   ├── BackendDbContext.cs        # EF Core DbContext
+│   ├── BackendDbContext.cs        # EF Core DbContext with Identity
 │   ├── Entities/                  # Database models
+│   │   ├── Language.cs            # Language entity
+│   │   ├── Course.cs              # Course entity
+│   │   ├── Lesson.cs              # Lesson entity with lock state
+│   │   ├── Users/                 # User-related entities
+│   │   │   ├── User.cs            # Extends IdentityUser
+│   │   │   └── UserLanguage.cs    # User-Language enrollment join table
+│   │   └── Exercises/             # Exercise types (TPH inheritance)
+│   │       ├── Exercise.cs        # Abstract base class
+│   │       ├── ExerciseOption.cs  # Multiple choice options
+│   │       ├── MultipleChoiceExercise.cs
+│   │       ├── FillInBlankExercise.cs
+│   │       ├── TranslationExercise.cs
+│   │       └── ListeningExercise.cs
 │   ├── Migrations/                # EF Core migrations
 │   └── Extensions/                # Database service configuration
 ├── Services/
 │   ├── GoogleAuthService.cs       # Google OAuth implementation
+│   ├── LanguageService.cs         # Language business logic
+│   ├── CourseService.cs           # Course business logic
+│   ├── LessonService.cs           # Lesson unlock/complete logic
+│   ├── ExerciseService.cs         # Exercise business logic
+│   ├── UserLanguageService.cs     # User enrollment logic
+│   ├── ProgressService.cs         # Progress tracking service
+│   ├── IProgressService.cs        # Progress service interface
+│   ├── FileUploadService.cs       # File upload handling
+│   ├── IFileUploadsService.cs     # File upload interface
 │   └── UserExtensions.cs          # User utility methods
 ├── Dtos/                # Data Transfer Objects
 ├── Mapping/             # DTO ↔ Entity mappings
+├── Models/              # Request/response models (EditorJS, file uploads)
 ├── Extensions/          # Service collection & app builder extensions
 └── Program.cs          # Application entry point
 ```
@@ -128,7 +157,9 @@ backend/
 - **Service registration** is organized via extension methods in `Extensions/ServiceCollectionExtensions.cs`
 - **Middleware configuration** is in `Extensions/WebApplicationExtensions.cs`
 - **Authentication** uses cookie-based auth with Google OAuth support
+- **Authorization roles**: `Admin`, `ContentCreator` for content management
 - **Database initialization** happens in `Program.cs` via `InitializeDatabaseAsync()`
+- **Exercise inheritance**: Uses Table-Per-Hierarchy (TPH) pattern with abstract `Exercise` base class
 
 ### Frontend Structure
 
@@ -155,33 +186,122 @@ The database schema is designed to support a language learning platform. It's bu
 
 #### Core Entities
 
-*   **User**: Extends `IdentityUser` and represents an application user. It includes properties like `RegistrationDate` and `LastLoginDate`.
-*   **Language**: Represents a language that can be learned (e.g., Spanish, French).
-*   **UserLanguage**: A join table for the many-to-many relationship between `User` and `Language`.
+*   **User**: Extends `IdentityUser` with `RegistrationDate`, `LastLoginDate`, and `UserLanguages` collection.
+*   **Language**: Represents a learnable language with `Name`, `FlagIconUrl`, and related `Courses`.
+*   **UserLanguage**: Join table for User-Language enrollment tracking with `EnrolledAt` timestamp.
 
 #### Content Hierarchy
 
-The learning content is organized in the following hierarchy:
-
 ```
 Language
-  └── Course
-       └── Lesson
-            └── Exercise
-                 └── Question
-                      └── QuestionOption
+  └── Course (Title, Description, EstimatedDurationHours, OrderIndex, CreatedById)
+       └── Lesson (Title, Description, EstimatedDurationMinutes, OrderIndex, IsLocked, LessonTextUrl, LessonMediaUrl)
+            └── Exercise (abstract base with TPH inheritance)
+                 ├── MultipleChoiceExercise → ExerciseOption[]
+                 ├── FillInBlankExercise (Text, CorrectAnswer, AcceptedAnswers, CaseSensitive)
+                 ├── TranslationExercise (SourceText, TargetText, LanguageCodes, MatchingThreshold)
+                 └── ListeningExercise (AudioUrl, CorrectAnswer, MaxReplays)
 ```
 
-*   **Course**: A top-level container for a learning path in a specific language.
-*   **Lesson**: An individual learning unit within a `Course`.
-*   **Exercise**: A practice activity within a `Lesson`.
-*   **Question**: An individual question within an `Exercise`. It can be of different types (`MultipleChoice`, `FillInBlank`, `Translation`).
-*   **QuestionOption**: An answer choice for a `MultipleChoice` question.
+#### Exercise Base Properties
+
+All exercises share these properties:
+- `Title`, `Instructions`, `Explanation`
+- `DifficultyLevel` enum: `Beginner`, `Intermediate`, `Advanced`
+- `ExerciseType` enum: `MultipleChoice`, `FillInTheBlank`, `Listening`, `Translation`
+- `Points`, `EstimatedDurationMinutes`, `OrderIndex`
+
+#### Exercise Types
+
+| Type | Specific Properties |
+|------|---------------------|
+| **MultipleChoiceExercise** | `Options[]` (ExerciseOption with `OptionText`, `IsCorrect`, `OrderIndex`) |
+| **FillInBlankExercise** | `Text`, `CorrectAnswer`, `AcceptedAnswers`, `CaseSensitive`, `TrimWhitespace` |
+| **TranslationExercise** | `SourceText`, `TargetText`, `SourceLanguageCode`, `TargetLanguageCode`, `MatchingThreshold` |
+| **ListeningExercise** | `AudioUrl`, `CorrectAnswer`, `AcceptedAnswers`, `CaseSensitive`, `MaxReplays` |
 
 #### Relationships
 
-*   Relationships between hierarchical entities are one-to-many (e.g., one `Course` has many `Lesson`s).
-*   Cascade delete is configured for the content hierarchy. For example, deleting a `Course` will also delete its `Lesson`s, etc.
+- All hierarchical entities use one-to-many relationships with cascade delete
+- `UserLanguage` uses composite key (`UserId`, `LanguageId`)
+- `Course.CreatedById` links to `User` who created the course
+- Exercises use Table-Per-Hierarchy (TPH) inheritance pattern
+
+### API Endpoints
+
+#### Authentication (`/api/auth`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/google-login` | No | Google OAuth login with ID token |
+| POST | `/logout` | No | Clear auth cookies |
+| GET | `/auth-status` | No | Check if user is authenticated |
+
+#### Languages (`/api/languages`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/` | No | List all languages |
+| GET | `/{id}` | No | Get language by ID |
+| POST | `/` | Admin | Create language |
+| PUT | `/{id}` | Admin | Update language |
+| DELETE | `/{id}` | Admin | Delete language |
+
+#### Courses (`/api/courses`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/` | No | List all courses |
+| GET | `/{id}` | No | Get course by ID |
+| POST | `/` | Admin/ContentCreator | Create course |
+| PUT | `/{id}` | Admin/ContentCreator | Update course |
+| DELETE | `/{id}` | Admin | Delete course |
+
+#### Lessons (`/api/lesson`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/course/{courseId}` | No | Get lessons by course |
+| GET | `/{lessonId}` | No | Get lesson details |
+| GET | `/{lessonId}/next` | No | Get next lesson |
+| POST | `/{lessonId}/complete` | Yes | Complete lesson & unlock next |
+| POST | `/{lessonId}/unlock` | Admin | Manually unlock lesson |
+| POST | `/` | Admin/ContentCreator | Create lesson |
+| PUT | `/{lessonId}` | Admin/ContentCreator | Update lesson |
+| DELETE | `/{lessonId}` | Admin/ContentCreator | Delete lesson |
+
+#### Exercises (`/api/exercises`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/lesson/{lessonId}` | Yes | Get exercises for lesson |
+| GET | `/{id}` | Yes | Get exercise by ID |
+| POST | `/` | Admin/ContentCreator | Create exercise |
+| PUT | `/{id}` | Admin/ContentCreator | Update exercise |
+| DELETE | `/{id}` | Admin/ContentCreator | Delete exercise |
+
+#### User Languages (`/api/user-languages`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/` | Yes | Get user's enrolled languages |
+| POST | `/enroll` | Yes | Enroll in a language |
+| DELETE | `/{languageId}` | Yes | Unenroll from language |
+
+#### Progress (`/api/progress`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/summary` | Yes | Get user progress summary |
+| GET | `/exercises/{id}` | Yes | Get exercise progress |
+| GET | `/lessons/{id}` | Yes | Get lesson progress |
+| GET | `/courses/{id}` | Yes | Get course progress |
+| GET | `/languages/{id}/courses` | Yes | Get language progress |
+| POST | `/exercises/{id}/attempts` | Yes | Submit exercise attempt |
+| DELETE | `/exercises/{id}` | Yes | Reset exercise progress |
+
+#### File Uploads (`/api/uploads`)
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/image`, `/document`, `/video`, `/audio`, `/file` | No | Upload file by type |
+| POST | `/any` | No | Upload with auto-detected type |
+| POST | `/image-by-url`, `/file-by-url` | No | Upload from URL |
+| GET | `/{type}` | No | List files by type (paginated) |
+| GET | `/{type}/{filename}` | No | Get specific file |
+| GET | `/all` | No | List all files (paginated) |
 
 ### CI/CD Pipeline
 
@@ -217,7 +337,7 @@ Backend loads secrets from `/run/secrets/backend_env` in production (Docker secr
 
 ```
 NG_GOOGLE_CLIENT_ID=<google-oauth-client-id>
-BACKEND_URL=http://backend:5000
+BACKEND_API_URL=http://backend:8080
 ```
 
 Frontend build arguments are passed via Docker Compose.
@@ -253,9 +373,9 @@ Frontend build arguments are passed via Docker Compose.
    - `secrets/backend/.env`
    - `secrets/frontend/.env`
 2. Run: `docker compose up --build`
-3. Access frontend at http://localhost:8080
-4. Access backend API at http://localhost:5000
-5. Access Swagger docs at http://localhost:5000/swagger
+3. Access frontend at http://localhost:4200
+4. Access backend API at http://localhost:8080
+5. Access Swagger docs at http://localhost:8080/swagger
 
 ## Frontend Design System
 
@@ -543,8 +663,8 @@ When creating new components, ensure:
 - Backend uses **.NET 10.0** (latest preview as of the project)
 - Frontend uses **Angular 21** with standalone components
 - **Bootstrap 5** is included but should be used minimally (prefer custom design system)
-- CORS is configured for `http://localhost:4200` and `https://localhost:5000` in development
-- Cookie authentication uses `LexiqAuth` cookie with 1-hour sliding expiration
+- CORS is configured for `http://localhost:4200` and `https://localhost:8080` in development
+- Cookie authentication uses `AuthToken` cookie with 1-hour sliding expiration
 - All controllers require authentication unless explicitly marked with `[AllowAnonymous]`
 - Database migrations are auto-applied on startup in `Program.cs`
 - Docker health checks are configured for all services (db, backend, frontend)

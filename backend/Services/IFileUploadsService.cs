@@ -20,4 +20,6 @@ public interface IFileUploadsService
         string? fileType,
         string baseUrl
     );
+    string? GetFilePhysicalPath(string filename, string fileType);
+    string? FindFilePhysicalPath(string filename);
 }

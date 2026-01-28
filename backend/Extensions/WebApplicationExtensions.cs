@@ -35,14 +35,13 @@ public static class WebApplicationExtensions
             new StaticFileOptions
             {
                 FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-                    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")
+                    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads")
                 ),
-                RequestPath = "/uploads",
+                RequestPath = "/static/uploads", 
                 OnPrepareResponse = ctx =>
                 {
+                    ctx.Context.Response.Headers.AccessControlAllowOrigin = "*";
                     ctx.Context.Response.Headers["Cross-Origin-Resource-Policy"] = "cross-origin";
-                    ctx.Context.Response.Headers.AccessControlAllowOrigin =
-                        Environment.GetEnvironmentVariable("ANGULAR_PORT");
                 },
             }
         );

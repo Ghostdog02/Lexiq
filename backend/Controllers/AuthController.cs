@@ -74,27 +74,28 @@ public class AuthController(
         try
         {
             string cookie = Request.Cookies["AuthToken"] ?? "";
-            
+
             if (string.IsNullOrEmpty(cookie))
             {
-                return Ok(new AuthStatusResponse { Message = "No auth cookie found", IsLogged = false });
+                return Ok(
+                    new AuthStatusResponse { Message = "No auth cookie found", IsLogged = false }
+                );
             }
 
-            bool isValid = await ValidateJwtToken(cookie);
+            bool isValid = await _googleAuthService.ValidateJwtToken(cookie);
 
             return Ok(
-                new AuthStatusResponse { 
-                    Message = isValid ? "Successful auth status check" : "Invalid token", 
-                    IsLogged = isValid 
+                new AuthStatusResponse
+                {
+                    Message = isValid ? "Successful auth status check" : "Invalid token",
+                    IsLogged = isValid,
                 }
             );
         }
         catch (Exception ex)
         {
             _logger.LogWarning("Auth status check failed: {Message}", ex.Message);
-            return Ok(
-                new AuthStatusResponse { Message = "Not authenticated", IsLogged = false }
-            );
+            return Ok(new AuthStatusResponse { Message = "Not authenticated", IsLogged = false });
         }
     }
 
@@ -109,35 +110,6 @@ public class AuthController(
         };
 
         Response.Cookies.Append("AuthToken", "", cookieOptions);
-    }
-
-    public async Task<bool> ValidateJwtToken(string token)
-    {
-        try
-        {
-            if (!string.IsNullOrEmpty(token))
-            {
-                GoogleJsonWebSignature.Payload isValid = await GoogleJsonWebSignature.ValidateAsync(
-                    token
-                );
-
-                return true;
-            }
-            else
-            {
-                throw new ArgumentException($"Passed token is null or empty");
-            }
-        }
-        catch (InvalidJwtException message)
-        {
-            throw new InvalidJwtException($"The passed jwt token is invalid. {message}");
-        }
-        catch (Exception message)
-        {
-            throw new InvalidJwtException(
-                $"Error occurred during jwt token validation with google. {message}"
-            );
-        }
     }
 }
 

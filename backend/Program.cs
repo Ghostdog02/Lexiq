@@ -48,6 +48,7 @@ public class Program
 
     private static void ConfigureMiddleware(WebApplication app)
     {
+        app.UseRouting();
         app.ConfigureHttpPort();
         app.UseCors("AllowAngular");
         app.Use(

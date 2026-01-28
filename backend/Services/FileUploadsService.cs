@@ -3,12 +3,12 @@ using FileInfo = Backend.Api.Models.FileInfo;
 
 namespace Backend.Api.Services
 {
-    public class FileUploadService : IFileUploadsService
+    public class FileUploadsService : IFileUploadsService
     {
         private readonly IWebHostEnvironment _environment;
         private readonly Dictionary<string, FileTypeConfig> _fileTypeConfigs;
 
-        public FileUploadService(IWebHostEnvironment environment)
+        public FileUploadsService(IWebHostEnvironment environment)
         {
             _environment = environment;
             _fileTypeConfigs = InitializeFileTypeConfigs();
@@ -131,8 +131,8 @@ namespace Backend.Api.Services
                     Console.WriteLine("Saved image");
                 }
 
-                // Build URL
-                var fileUrl = $"{uploadsFolder}/{uniqueFileName}";
+                // Build URL - serve via controller endpoint
+                var fileUrl = $"{baseUrl}/api/uploads/{fileType}/{uniqueFileName}";
 
                 return FileUploadResult.Success(
                     url: fileUrl,
@@ -201,8 +201,8 @@ namespace Backend.Api.Services
                 var filePath = Path.Combine(uploadsFolder, uniqueFileName);
                 await File.WriteAllBytesAsync(filePath, fileBytes);
 
-                // Build URL
-                var fileUrl = $"{baseUrl}/uploads/{config.Folder}/{uniqueFileName}";
+                // Build URL - serve via controller endpoint
+                var fileUrl = $"{baseUrl}/api/uploads/{fileType}/{uniqueFileName}";
 
                 return FileUploadResult.Success(
                     url: fileUrl,
@@ -322,32 +322,105 @@ namespace Backend.Api.Services
         {
             try
             {
-                // TODO: Replace with your actual data access logic
-                // Example: Query database for specific file
-                // var query = _dbContext.Files.Where(f => f.Name == filename);
-                // if (!string.IsNullOrEmpty(fileType))
-                // {
-                //     query = query.Where(f => f.FileType == fileType);
-                // }
-                // var file = await query.FirstOrDefaultAsync();
+                var basePath =
+                    _environment.WebRootPath
+                    ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
 
-                // For demonstration purposes only:
-
-                var imageUrl = $"{baseUrl}/uploads/{_fileTypeConfigs[filename].Folder}/{filename}";
-
-                return new FileUploadResult
+                // If fileType is specified, search in that folder only
+                if (!string.IsNullOrEmpty(fileType) && _fileTypeConfigs.TryGetValue(fileType, out var config))
                 {
-                    IsSuccess = false,
-                    Message = "File not found - implement actual retrieval logic",
-                };
+                    var filePath = Path.Combine(basePath, "uploads", config.Folder, filename);
+
+                    if (File.Exists(filePath))
+                    {
+                        var fileInfo = new System.IO.FileInfo(filePath);
+                        var extension = Path.GetExtension(filename).TrimStart('.');
+
+                        return FileUploadResult.Success(
+                            url: $"{baseUrl}/api/uploads/{fileType}/{filename}",
+                            name: filename,
+                            size: fileInfo.Length,
+                            extension: extension,
+                            title: Path.GetFileNameWithoutExtension(filename)
+                        );
+                    }
+                }
+                else
+                {
+                    // Search all folders if no specific type provided
+                    foreach (var typeConfig in _fileTypeConfigs)
+                    {
+                        var filePath = Path.Combine(basePath, "uploads", typeConfig.Value.Folder, filename);
+
+                        if (File.Exists(filePath))
+                        {
+                            var fileInfo = new System.IO.FileInfo(filePath);
+                            var extension = Path.GetExtension(filename).TrimStart('.');
+
+                            return FileUploadResult.Success(
+                                url: $"{baseUrl}/api/uploads/{typeConfig.Key}/{filename}",
+                                name: filename,
+                                size: fileInfo.Length,
+                                extension: extension,
+                                title: Path.GetFileNameWithoutExtension(filename)
+                            );
+                        }
+                    }
+                }
+
+                return FileUploadResult.Failure("File not found");
             }
             catch (Exception ex)
             {
-                return new FileUploadResult
+                return FileUploadResult.Failure($"Error retrieving file: {ex.Message}");
+            }
+        }
+
+        public string? GetFilePhysicalPath(string filename, string fileType)
+        {
+            try
+            {
+                if (!_fileTypeConfigs.TryGetValue(fileType, out var config))
                 {
-                    IsSuccess = false,
-                    Message = $"Error retrieving file: {ex.Message}",
-                };
+                    return null;
+                }
+
+                var basePath =
+                    _environment.WebRootPath
+                    ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+
+                var filePath = Path.Combine(basePath, "uploads", config.Folder, filename);
+
+                return File.Exists(filePath) ? filePath : null;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public string? FindFilePhysicalPath(string filename)
+        {
+            try
+            {
+                var basePath =
+                    _environment.WebRootPath
+                    ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+
+                foreach (var typeConfig in _fileTypeConfigs)
+                {
+                    var filePath = Path.Combine(basePath, "uploads", typeConfig.Value.Folder, filename);
+                    if (File.Exists(filePath))
+                    {
+                        return filePath;
+                    }
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
             }
         }
     }

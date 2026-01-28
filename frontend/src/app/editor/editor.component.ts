@@ -36,8 +36,8 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
 
   private editor!: EditorJS;
   private apiUrl = import.meta.env.BACKEND_API_URL;
-  private onChange: any = () => {};
-  private onTouched: any = () => {};
+  private onChange: any = () => { };
+  private onTouched: any = () => { };
 
   constructor(private http: HttpClient) { }
 
@@ -54,8 +54,8 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
           class: ImageTool,
           config: {
             endpoints: {
-              byFile: `${this.apiUrl}/upload/image`,
-              byUrl: `${this.apiUrl}/upload/image-by-url`,
+              byFile: `${this.apiUrl}/uploads/image`,
+              byUrl: `${this.apiUrl}/uploads/image-by-url`,
             },
             field: 'image',
             types: 'image/*',
@@ -74,7 +74,7 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
         attaches: {
           class: AttachesTool,
           config: {
-            endpoint: `${this.apiUrl}/upload/file`,
+            endpoint: `${this.apiUrl}/uploads/file`,
             field: 'file',
             types: '*', // Accept all file types
             // Or specify specific types:
@@ -110,8 +110,8 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
 
       // Determine endpoint based on file type
       const endpoint = fileType === 'image'
-        ? `${this.apiUrl}/upload/image`
-        : `${this.apiUrl}/upload/file`;
+        ? `${this.apiUrl}/uploads/image`
+        : `${this.apiUrl}/uploads/file`;
 
       const response = await firstValueFrom(
         this.http.post<{
@@ -160,8 +160,8 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
   private async uploadFileByUrl(url: string, fileType: string = 'file'): Promise<any> {
     try {
       const endpoint = fileType === 'image'
-        ? `${this.apiUrl}/upload/image-by-url`
-        : `${this.apiUrl}/upload/file-by-url`;
+        ? `${this.apiUrl}/uploads/image-by-url`
+        : `${this.apiUrl}/uploads/file-by-url`;
 
       const response = await firstValueFrom(
         this.http.post<{

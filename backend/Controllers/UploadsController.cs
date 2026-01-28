@@ -1,14 +1,16 @@
 using Backend.Api.Models;
 using Backend.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
 
 namespace Backend.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UploadsController(FileUploadService fileUploadService) : ControllerBase
+    public class UploadsController(FileUploadsService fileUploadService)
+        : ControllerBase
     {
-        private readonly FileUploadService _fileUploadService = fileUploadService;
+        private readonly FileUploadsService _fileUploadService = fileUploadService;
 
         private string BaseUrl => $"{Request.Scheme}://{Request.Host}";
 
@@ -173,62 +175,124 @@ namespace Backend.Api.Controllers
 
         // GET endpoints - Get specific file by filename
         [HttpGet("image/{filename}")]
-        public async Task<IActionResult> GetImageByFilename(string filename)
+        public IActionResult GetImageByFilename(string filename)
         {
-            var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "images", filename);
+            var path = _fileUploadService.GetFilePhysicalPath(filename, "image");
 
-            if (!System.IO.File.Exists(path))
-                return NotFound();
+            if (path == null)
+                return NotFound("Image not found.");
 
-            var image = System.IO.File.OpenRead(path);
-            return File(image, "image/png");
+            var provider = new FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(path, out var contentType))
+            {
+                contentType = "image/png";
+            }
+
+            Response.Headers.Append("Access-Control-Allow-Origin", "*");
+            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+
+            return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }
 
         [HttpGet("document/{filename}")]
-        public async Task<IActionResult> GetDocumentByFilename(string filename)
+        public IActionResult GetDocumentByFilename(string filename)
         {
-            var result = await _fileUploadService.GetFileByFilenameAsync(
-                filename,
-                "document",
-                BaseUrl
-            );
-            return BuildResponse(result);
+            var path = _fileUploadService.GetFilePhysicalPath(filename, "document");
+
+            if (path == null)
+                return NotFound("Document not found.");
+
+            var provider = new FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(path, out var contentType))
+            {
+                contentType = "application/pdf";
+            }
+
+            Response.Headers.Append("Access-Control-Allow-Origin", "*");
+            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+
+            return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }
 
         [HttpGet("video/{filename}")]
-        public async Task<IActionResult> GetVideoByFilename(string filename)
+        public IActionResult GetVideoByFilename(string filename)
         {
-            var result = await _fileUploadService.GetFileByFilenameAsync(
-                filename,
-                "video",
-                BaseUrl
-            );
-            return BuildResponse(result);
+            var path = _fileUploadService.GetFilePhysicalPath(filename, "video");
+
+            if (path == null)
+                return NotFound("Video not found.");
+
+            var provider = new FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(path, out var contentType))
+            {
+                contentType = "video/mp4";
+            }
+
+            Response.Headers.Append("Access-Control-Allow-Origin", "*");
+            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+
+            return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }
 
         [HttpGet("audio/{filename}")]
-        public async Task<IActionResult> GetAudioByFilename(string filename)
+        public IActionResult GetAudioByFilename(string filename)
         {
-            var result = await _fileUploadService.GetFileByFilenameAsync(
-                filename,
-                "audio",
-                BaseUrl
-            );
-            return BuildResponse(result);
+            var path = _fileUploadService.GetFilePhysicalPath(filename, "audio");
+
+            if (path == null)
+                return NotFound("Audio file not found.");
+
+            var provider = new FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(path, out var contentType))
+            {
+                contentType = "audio/mpeg"; // Default to MP3
+            }
+
+            // Add CORS headers
+            Response.Headers.Append("Access-Control-Allow-Origin", "*");
+            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+
+            return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }
 
         [HttpGet("file/{filename}")]
-        public async Task<IActionResult> GetFileByFilename(string filename)
+        public IActionResult GetFileByFilename(string filename)
         {
-            var result = await _fileUploadService.GetFileByFilenameAsync(filename, "file", BaseUrl);
-            return BuildResponse(result);
+            var path = _fileUploadService.GetFilePhysicalPath(filename, "file");
+
+            if (path == null)
+                return NotFound("File not found.");
+
+            var provider = new FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(path, out var contentType))
+            {
+                contentType = "application/octet-stream";
+            }
+
+            Response.Headers.Append("Access-Control-Allow-Origin", "*");
+            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+
+            return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }
 
         [HttpGet("{filename}")]
-        public async Task<IActionResult> GetAnyFileByFilename(string filename)
+        public IActionResult GetAnyFileByFilename(string filename)
         {
-            var result = await _fileUploadService.GetFileByFilenameAsync(filename, null, BaseUrl);
-            return BuildResponse(result);
+            var path = _fileUploadService.FindFilePhysicalPath(filename);
+
+            if (path == null)
+                return NotFound("File not found.");
+
+            var provider = new FileExtensionContentTypeProvider();
+            if (!provider.TryGetContentType(path, out var contentType))
+            {
+                contentType = "application/octet-stream";
+            }
+
+            Response.Headers.Append("Access-Control-Allow-Origin", "*");
+            Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
+
+            return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }
 
         private IActionResult BuildListResponse(FileListResult result)

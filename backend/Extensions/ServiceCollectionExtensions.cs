@@ -26,6 +26,9 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddCorsPolicy(this IServiceCollection services)
     {
+        var angularOrigin =
+            Environment.GetEnvironmentVariable("ANGULAR_PORT") ?? "http://localhost:4200";
+
         services.AddCors(options =>
         {
             options.AddPolicy(
@@ -33,7 +36,7 @@ public static class ServiceCollectionExtensions
                 policy =>
                 {
                     policy
-                        .WithOrigins("http://localhost:4200")
+                        .WithOrigins(angularOrigin)
                         .AllowAnyHeader()
                         .AllowAnyMethod()
                         .AllowCredentials()
@@ -65,7 +68,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LanguageService>();
         services.AddScoped<ExerciseService>();
         services.AddScoped<UserLanguageService>();
-        services.AddScoped<IFileUploadsService, FileUploadService>();
+        services.AddScoped<IFileUploadsService, FileUploadsService>();
+        services.AddScoped<FileUploadsService>();
 
         return services;
     }
