@@ -34,8 +34,8 @@ export class LessonFormService {
       content: this.fb.control('', {
         validators: Validators.required
       }),
-      courseId: this.fb.control(1, {
-        validators: [Validators.required, Validators.min(1)]
+      courseId: this.fb.control('', {
+        validators: [Validators.required, Validators.minLength(1)]
       }),
       exercises: this.fb.array<ExerciseForm>([]),
       exerciseType: this.fb.control<ExerciseType | ''>('' as ExerciseType | '')

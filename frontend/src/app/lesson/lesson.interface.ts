@@ -10,7 +10,7 @@ export interface Lesson {
   estimatedDuration: number;
   mediaUrl?: string; // Cover image URL
   content: string;   // Editor.js JSON content
-  courseId: number;  // Course ID (numeric)
+  courseId: string; 
   exercises: Exercise[];
 
   // Path display properties (optional - set when adding to learning path)
@@ -27,7 +27,7 @@ export interface LessonFormControls {
   estimatedDuration: FormControl<number>;
   mediaUrl: FormControl<string>;
   content: FormControl<string>;
-  courseId: FormControl<number>;  // Changed to number
+  courseId: FormControl<string>;
   exercises: FormArray<ExerciseForm>;
   exerciseType: FormControl<ExerciseType | ''>;
 }
