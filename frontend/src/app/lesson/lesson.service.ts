@@ -26,6 +26,10 @@ export class LessonService {
     return [...this.createdLessons];
   }
 
+  getCourses(): Observable<any[]> {
+    return this.httpClient.get<any[]>(`${import.meta.env.BACKEND_API_URL || 'http://localhost:8080'}/api/courses`);
+  }
+
   createLesson(lesson: Lesson): Observable<Lesson> {
     console.log('📤 Creating lesson:', lesson);
 

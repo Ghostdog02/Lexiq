@@ -15,7 +15,23 @@
       <!-- Lesson Meta -->
       <section class="form-section">
         <h3><span class="icon">⚙️</span> Lesson Details</h3>
-
+        <div class="form-group">
+          <label for="courseId">Course</label>
+          <select
+            id="courseId"
+            formControlName="courseId"
+            class="btn small"
+            [class.invalid]="hasError(lessonFormControls.courseId)"
+          >
+            <option value="" disabled>Select a Course</option>
+            @for (course of courses; track course.id) {
+              <option [value]="course.id">{{ course.title }}</option>
+            }
+          </select>
+          @if (hasError(lessonFormControls.courseId)) {
+            <span class="error-message">{{ getErrorMessage(lessonFormControls.courseId) }}</span>
+          }
+        </div>
         <div class="form-group">
           <label for="title">Title</label>
           <div class="input-with-icon">

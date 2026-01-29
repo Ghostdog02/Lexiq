@@ -9,7 +9,7 @@ public class ExerciseService(BackendDbContext context)
 {
     private readonly BackendDbContext _context = context;
 
-    public async Task<List<Exercise>> GetExercisesByLessonIdAsync(int lessonId)
+    public async Task<List<Exercise>> GetExercisesByLessonIdAsync(string lessonId)
     {
         return await _context
             .Exercises.Where(e => e.LessonId == lessonId)
@@ -18,7 +18,7 @@ public class ExerciseService(BackendDbContext context)
             .ToListAsync();
     }
 
-    public async Task<Exercise?> GetExerciseByIdAsync(int id)
+    public async Task<Exercise?> GetExerciseByIdAsync(string id)
     {
         return await _context
             .Exercises
@@ -105,7 +105,7 @@ public class ExerciseService(BackendDbContext context)
         return exercise;
     }
 
-    public async Task<Exercise?> UpdateExerciseAsync(int id, UpdateExerciseDto dto)
+    public async Task<Exercise?> UpdateExerciseAsync(string id, UpdateExerciseDto dto)
     {
         var exercise = await _context.Exercises.FindAsync(id);
         if (exercise == null)
@@ -136,7 +136,7 @@ public class ExerciseService(BackendDbContext context)
         return exercise;
     }
 
-    public async Task<bool> DeleteExerciseAsync(int id)
+    public async Task<bool> DeleteExerciseAsync(string id)
     {
         var exercise = await _context.Exercises.FindAsync(id);
         if (exercise == null)

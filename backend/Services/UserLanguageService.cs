@@ -16,7 +16,7 @@ public class UserLanguageService(BackendDbContext context)
             .ToListAsync();
     }
 
-    public async Task<UserLanguage?> EnrollUserAsync(string userId, int languageId)
+    public async Task<UserLanguage?> EnrollUserAsync(string userId, string languageId)
     {
         // Check if already enrolled
         var existing = await _context.UserLanguages.FindAsync(userId, languageId);

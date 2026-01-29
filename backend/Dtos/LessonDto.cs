@@ -14,7 +14,7 @@ public record LessonDto(
 );
 
 public record CreateLessonDto(
-    int CourseId,
+    string CourseId,
     string Title,
     string? Description,
     int? EstimatedDurationMinutes,
@@ -24,7 +24,7 @@ public record CreateLessonDto(
 );
 
 public record UpdateLessonDto(
-    int? CourseId,
+    string? CourseId,
     string? Title,
     string? Description,
     int? EstimatedDurationMinutes,

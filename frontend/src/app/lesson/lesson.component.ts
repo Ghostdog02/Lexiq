@@ -37,6 +37,7 @@ export class LessonComponent implements OnInit {
   private readonly router = inject(Router);
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[];
+  courses: { id: string; title: string }[] = [];
   ExerciseType = ExerciseType;
 
   constructor() {
@@ -49,6 +50,26 @@ export class LessonComponent implements OnInit {
   ngOnInit(): void {
     this.initializeForm();
     this.setupFormValueChanges();
+    this.loadCourses();
+  }
+
+  private loadCourses(): void {
+    this.lessonService.getCourses()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (courses) => {
+          this.courses = courses.map(c => ({
+            id: c.id,
+            title: c.title
+          }));
+          console.log('📚 Loaded courses:', this.courses);
+        },
+        error: (error) => {
+          console.error('Error loading courses:', error);
+          // Set empty array on error so form can still be used
+          this.courses = [];
+        }
+      });
   }
 
   get lessonFormControls() {

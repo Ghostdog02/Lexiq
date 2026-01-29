@@ -21,7 +21,7 @@ public class CourseController(CourseService courseService) : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<CourseDto>> GetCourse(int id)
+    public async Task<ActionResult<CourseDto>> GetCourse(string id)
     {
         var course = await _courseService.GetCourseByIdAsync(id);
 
@@ -46,7 +46,7 @@ public class CourseController(CourseService courseService) : ControllerBase
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin,ContentCreator")]
-    public async Task<ActionResult<CourseDto>> UpdateCourse(int id, UpdateCourseDto dto)
+    public async Task<ActionResult<CourseDto>> UpdateCourse(string id, UpdateCourseDto dto)
     {
         var course = await _courseService.UpdateCourseAsync(id, dto);
         if (course == null)
@@ -57,7 +57,7 @@ public class CourseController(CourseService courseService) : ControllerBase
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> DeleteCourse(int id)
+    public async Task<IActionResult> DeleteCourse(string id)
     {
         var result = await _courseService.DeleteCourseAsync(id);
         if (!result)

@@ -37,6 +37,8 @@ services:
       - backend_env
     ports: 
       - "8080:8080"
+    volumes:
+      - ./wwwroot:/app/wwwroot
     depends_on:
       db: 
         condition: service_healthy

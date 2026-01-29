@@ -17,6 +17,7 @@ public static class ContentMappingExtensions
     public static CourseDto ToDto(this Course entity)
     {
         return new CourseDto(
+            entity.Id,
             entity.Language?.Name ?? string.Empty,
             entity.Title,
             entity.Description,

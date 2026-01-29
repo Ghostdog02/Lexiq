@@ -14,14 +14,14 @@ public class ExerciseController(ExerciseService exerciseService) : ControllerBas
     private readonly ExerciseService _exerciseService = exerciseService;
 
     [HttpGet("lesson/{lessonId}")]
-    public async Task<ActionResult<List<ExerciseDto>>> GetExercisesByLesson(int lessonId)
+    public async Task<ActionResult<List<ExerciseDto>>> GetExercisesByLesson(string lessonId)
     {
         var exercises = await _exerciseService.GetExercisesByLessonIdAsync(lessonId);
         return Ok(exercises.Select(e => e.ToDto()));
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<ExerciseDto>> GetExercise(int id)
+    public async Task<ActionResult<ExerciseDto>> GetExercise(string id)
     {
         var exercise = await _exerciseService.GetExerciseByIdAsync(id);
         if (exercise == null)
@@ -40,7 +40,7 @@ public class ExerciseController(ExerciseService exerciseService) : ControllerBas
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin,ContentCreator")]
-    public async Task<ActionResult<ExerciseDto>> UpdateExercise(int id, UpdateExerciseDto dto)
+    public async Task<ActionResult<ExerciseDto>> UpdateExercise(string id, UpdateExerciseDto dto)
     {
         var exercise = await _exerciseService.UpdateExerciseAsync(id, dto);
         if (exercise == null)
@@ -51,7 +51,7 @@ public class ExerciseController(ExerciseService exerciseService) : ControllerBas
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin,ContentCreator")]
-    public async Task<IActionResult> DeleteExercise(int id)
+    public async Task<IActionResult> DeleteExercise(string id)
     {
         var result = await _exerciseService.DeleteExerciseAsync(id);
         if (!result)

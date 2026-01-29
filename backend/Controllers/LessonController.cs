@@ -18,7 +18,7 @@ public class LessonController(LessonService lessonService) : ControllerBase
     /// <param name="lessonId">The ID of the lesson that was completed</param>
     /// <returns>Information about the next lesson if available</returns>
     [HttpPost("{lessonId}/complete")]
-    public async Task<IActionResult> CompleteLesson(int lessonId)
+    public async Task<IActionResult> CompleteLesson(string lessonId)
     {
         // Validate that the lesson exists
         var currentLesson = await _lessonService.GetLessonWithDetailsAsync(lessonId);
@@ -61,7 +61,7 @@ public class LessonController(LessonService lessonService) : ControllerBase
     /// </summary>
     /// <param name="lessonId">The current lesson ID</param>
     [HttpGet("{lessonId}/next")]
-    public async Task<ActionResult<LessonDto>> GetNextLesson(int lessonId)
+    public async Task<ActionResult<LessonDto>> GetNextLesson(string lessonId)
     {
         var nextLesson = await _lessonService.GetNextLessonAsync(lessonId);
 
@@ -78,7 +78,7 @@ public class LessonController(LessonService lessonService) : ControllerBase
     /// </summary>
     /// <param name="courseId">The course ID</param>
     [HttpGet("course/{courseId}")]
-    public async Task<ActionResult<List<LessonDto>>> GetLessonsByCourse(int courseId)
+    public async Task<ActionResult<List<LessonDto>>> GetLessonsByCourse(string courseId)
     {
         var lessons = await _lessonService.GetLessonsByCourseAsync(courseId);
         return Ok(lessons.Select(l => l.ToDto()));
@@ -89,7 +89,7 @@ public class LessonController(LessonService lessonService) : ControllerBase
     /// </summary>
     /// <param name="lessonId">The lesson ID</param>
     [HttpGet("{lessonId}")]
-    public async Task<ActionResult<LessonDto>> GetLesson(int lessonId)
+    public async Task<ActionResult<LessonDto>> GetLesson(string lessonId)
     {
         var lesson = await _lessonService.GetLessonWithDetailsAsync(lessonId);
 
@@ -107,7 +107,7 @@ public class LessonController(LessonService lessonService) : ControllerBase
     /// <param name="lessonId">The lesson ID to unlock</param>
     [HttpPost("{lessonId}/unlock")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> UnlockLesson(int lessonId)
+    public async Task<IActionResult> UnlockLesson(string lessonId)
     {
         await _lessonService.UnlockLessonAsync(lessonId);
         return Ok(new { message = "Lesson unlocked successfully" });
@@ -123,7 +123,7 @@ public class LessonController(LessonService lessonService) : ControllerBase
 
     [HttpPut("{lessonId}")]
     [Authorize(Roles = "Admin,ContentCreator")]
-    public async Task<ActionResult<LessonDto>> UpdateLesson(int lessonId, UpdateLessonDto dto)
+    public async Task<ActionResult<LessonDto>> UpdateLesson(string lessonId, UpdateLessonDto dto)
     {
         var lesson = await _lessonService.UpdateLessonAsync(lessonId, dto);
         if (lesson == null)
@@ -134,7 +134,7 @@ public class LessonController(LessonService lessonService) : ControllerBase
 
     [HttpDelete("{lessonId}")]
     [Authorize(Roles = "Admin,ContentCreator")]
-    public async Task<IActionResult> DeleteLesson(int lessonId)
+    public async Task<IActionResult> DeleteLesson(string lessonId)
     {
         var result = await _lessonService.DeleteLessonAsync(lessonId);
         if (!result)

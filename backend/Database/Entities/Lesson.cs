@@ -7,10 +7,10 @@ namespace Backend.Database.Entities;
 public class Lesson
 {
     [Key]
-    public int Id { get; set; }
+    public string Id { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
-    public int CourseId { get; set; }
+    public string CourseId { get; set; } = string.Empty;
 
     [Required]
     [MaxLength(200)]

@@ -4,6 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
+1. Project Motivation and Strategic Goals
+The primary objective of this project is the development of a specialized language learning application tailored for Bulgarian speakers and other foreign learners of Italian. Beyond the educational value, this project serves as a technical showcase for professional recruitment in Bulgaria, specifically targeting Full Stack and Backend positions. The development is a collaborative effort between a Backend/DevOps specialist and a Frontend developer with interests in Machine Learning.
+
 Lexiq is a full-stack language learning application with:
 - **Backend**: ASP.NET Core 10.0 Web API with Entity Framework Core
 - **Frontend**: Angular 21 single-page application
@@ -126,9 +129,16 @@ backend/
 
 **Key patterns:**
 - **Service registration** is organized via extension methods in `Extensions/ServiceCollectionExtensions.cs`
+  - Each feature has its own extension method (AddCorsPolicy, AddDatabaseContext, AddApplicationServices, etc.)
+  - Services are registered as Scoped for per-request lifecycle
+  - No repository pattern - services directly access DbContext
 - **Middleware configuration** is in `Extensions/WebApplicationExtensions.cs`
 - **Authentication** uses cookie-based auth with Google OAuth support
+  - Cookie name: "AuthToken" with 1-hour sliding expiration
+  - HttpOnly, SameSite=Lax for CSRF protection
 - **Database initialization** happens in `Program.cs` via `InitializeDatabaseAsync()`
+  - Auto-migration with retry logic (10 attempts, 3-second delays) for Docker startup
+  - Seed data initialization after migration
 
 ### Frontend Structure
 
@@ -144,19 +154,43 @@ frontend/src/app/
 ```
 
 **Key patterns:**
-- Uses **standalone components** (no NgModule)
+- Uses **standalone components** (no NgModule) - Angular 21+ approach
 - **Routing** is defined in `app.routes.ts`
-- **Lazy loading** for NotFoundComponent
-- **Environment variables** via `@ngx-env/builder`
+- **Lazy loading** for dynamic routes (lesson/:id, create-lesson, 404)
+- **Environment variables** via `@ngx-env/builder` (prefix: `NG_` or `BACKEND_`)
+- **State management**: Service-based with RxJS Observables (no Redux/NgRx)
+  - AuthService uses BehaviorSubject for auth state
+  - LessonService uses Subject for event broadcasting
+- **Dependency injection** uses Angular 16+ `inject()` function
+- **Subscription cleanup** via `takeUntilDestroyed(DestroyRef)` operator
 
 ### Database Schema
 
-Built with ASP.NET Core Identity. Main tables:
-- `Users` - Extended from `IdentityUser` with custom `User` entity
-- `Roles` - Standard Identity roles
+Built with ASP.NET Core Identity. See `backend/Database/ENTITIES_DOCUMENTATION.md` for comprehensive entity documentation.
+
+**Content Hierarchy:**
+```
+Language (1) → Course (M) → Lesson (M) → Exercise (M)
+                                             ↓ (Abstract base)
+                                             ├─ MultipleChoice
+                                             ├─ FillInBlank
+                                             ├─ Listening
+                                             └─ Translation
+```
+
+**Identity Tables:**
+- `Users` - Extended from `IdentityUser` with RegistrationDate, LastLoginDate
+- `Roles` - Standard Identity roles (Admin, ContentCreator, User)
 - `UserRoles` - User-role associations
 - `UserLogins` - External login providers (Google)
 - `UserClaims`, `RoleClaims`, `UserTokens` - Identity infrastructure
+
+**Key Patterns:**
+- **UUID Primary Keys**: All entities use `Guid.NewGuid().ToString()` for IDs
+- **OrderIndex**: All content entities have OrderIndex for custom sequencing
+- **Composite Keys**: UserLanguage uses (UserId, LanguageId)
+- **Table-Per-Hierarchy**: Exercise uses TPH with discriminator for subtypes
+- **Timestamps**: CreatedAt/UpdatedAt for audit trails
 
 ### CI/CD Pipeline
 
@@ -172,6 +206,77 @@ Three-stage pipeline in `.github/workflows/`:
 - Pushes to GitHub Container Registry (ghcr.io)
 - SSHs into Hetzner server and runs `scripts/deploy.sh`
 - deploy.sh pulls images, rebuilds containers, and verifies health
+
+## Backend Patterns & Conventions
+
+### DTO Mapping Pattern
+
+The codebase uses extension methods for clean mapping between entities and DTOs:
+
+```csharp
+// In Mapping/ContentMapping.cs
+public static CourseDto ToDto(this Course entity) => new(
+    entity.Id,
+    entity.Title,
+    // ... map properties
+);
+
+// Usage in services/controllers
+var courseDto = course.ToDto();
+```
+
+### Polymorphic DTOs
+
+Exercise types use .NET 8+ JSON polymorphism for type discrimination:
+
+```csharp
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(MultipleChoiceExerciseDto), "MultipleChoice")]
+[JsonDerivedType(typeof(FillInBlankExerciseDto), "FillInBlank")]
+// ... other types
+public abstract record ExerciseDto(...);
+```
+
+This allows sending different exercise types in a single API response with automatic serialization/deserialization.
+
+### Service Layer Guidelines
+
+- **Async all the way**: All service methods must be async
+- **Include chains**: Use `.Include()` and `.ThenInclude()` for eager loading related entities
+- **OrderBy**: Always order collections by `OrderIndex` for consistent sequencing
+- **Null handling**: Use null-coalescing operators for optional relationships
+- **No repository pattern**: Services directly access DbContext (simple enough for current needs)
+
+Example from `LessonService.cs`:
+```csharp
+return await _context.Lessons
+    .Include(l => l.Course)
+        .ThenInclude(c => c.Language)
+    .Include(l => l.Exercises)
+    .OrderBy(l => l.OrderIndex)
+    .FirstOrDefaultAsync(l => l.Id == lessonId);
+```
+
+### File Upload Handling
+
+- **Static files** served at `/static/uploads`
+- **Max file size**: 100MB (configured in ServiceCollectionExtensions)
+- **CORS headers**: Enabled for cross-origin resource access
+- **Cache-Control**: 1-year max-age for uploaded files
+- Upload endpoints: `/api/uploads/image`, `/api/uploads/file`
+
+### Authorization Roles
+
+Three roles configured in the system:
+- **Admin**: Full system access
+- **ContentCreator**: Can create/edit courses, lessons, exercises
+- **User**: Basic authenticated user
+
+Apply roles via attributes:
+```csharp
+[Authorize(Roles = "Admin,ContentCreator")]
+public async Task<IActionResult> CreateCourse(CreateCourseDto dto) { }
+```
 
 ## Environment Variables
 
@@ -210,16 +315,43 @@ Frontend build arguments are passed via Docker Compose.
 ### Adding a New API Endpoint
 
 1. Create DTOs in `backend/Dtos/`
+   - Read DTOs (e.g., `CourseDto`) for output
+   - Create DTOs (e.g., `CreateCourseDto`) for input
+   - Update DTOs (e.g., `UpdateCourseDto`) for partial updates
+   - Use `record` types for DTOs when possible
 2. Create mappings in `backend/Mapping/`
-3. Create or update controller in `backend/Controllers/`
-4. Add service in `backend/Services/` if business logic is complex
-5. Register service in `Extensions/ServiceCollectionExtensions.cs`
+   - Extension methods: `ToDto()` for entity → DTO
+   - Map methods: `MapToEntity()` for DTO → entity
+3. Create service in `backend/Services/`
+   - Constructor inject `BackendDbContext`
+   - All methods should be async (return `Task` or `Task<T>`)
+   - Register in `Extensions/ServiceCollectionExtensions.cs` as Scoped
+4. Create or update controller in `backend/Controllers/`
+   - Use `[ApiController]` and `[Route("api/[controller]")]`
+   - Constructor inject required services
+   - Apply `[Authorize(Roles = "...")]` for protected endpoints
+   - Use `[AllowAnonymous]` for public endpoints
 
-### Adding a New Angular Route
+### Adding a New Angular Component/Feature
 
-1. Create component: `ng generate component <name>`
+1. Create component folder with files:
+   - `component-name.component.ts` (standalone: true)
+   - `component-name.component.html`
+   - `component-name.component.scss`
+   - `component-name.service.ts` (if backend communication needed)
+   - `component-name.interface.ts` (for type definitions)
 2. Add route to `frontend/src/app/app.routes.ts`
+   - Use lazy loading for dynamic routes: `loadComponent: () => import(...)`
 3. Update navigation in `nav-bar` component if needed
+4. Follow design system guidelines (see Frontend Design System section)
+5. For services:
+   - Use `providedIn: 'root'` for singleton services
+   - Inject dependencies via `inject()` function
+   - Use HttpClient with `withCredentials: true` for authenticated requests
+6. For forms:
+   - Use Reactive Forms with typed FormGroups
+   - Create factory services for complex forms (see `lesson-form.service.ts`)
+   - Implement ControlValueAccessor for custom form controls
 
 ### Testing Deployment Locally
 
@@ -231,6 +363,105 @@ Frontend build arguments are passed via Docker Compose.
 3. Access frontend at http://localhost:4200
 4. Access backend API at http://localhost:8080
 5. Access Swagger docs at http://localhost:8080/swagger
+
+## Angular Patterns & Best Practices
+
+### Service Communication Pattern
+
+**Authentication Flow:**
+1. User logs in via Google OAuth (frontend component)
+2. AuthService receives token, calls backend `/auth/google-login`
+3. Backend validates token, returns `issuedAt` timestamp
+4. Frontend stores expiration in localStorage
+5. AuthService emits auth status via BehaviorSubject
+6. Components subscribe to `getAuthStatusListener()` for reactive updates
+
+**HTTP Requests:**
+- Always include `withCredentials: true` for cookie-based auth
+- Use `firstValueFrom()` to convert Observables to Promises
+- Handle errors with try-catch blocks
+
+```typescript
+async login(token: string): Promise<void> {
+  const response = await firstValueFrom(
+    this.httpClient.post<GoogleLoginDto>(
+      `${this.apiUrl}/google-login`,
+      { idToken: token },
+      { withCredentials: true }
+    )
+  );
+}
+```
+
+### Reactive Forms with Type Safety
+
+Complex forms use typed FormGroups for compile-time safety:
+
+```typescript
+// Define form structure
+export interface LessonFormControls {
+  title: FormControl<string>;
+  description: FormControl<string>;
+  exercises: FormArray<FormGroup<ExerciseFormControls>>;
+}
+
+// Create typed FormGroup
+type LessonForm = FormGroup<LessonFormControls>;
+```
+
+**Form Factory Pattern** (see `lesson-form.service.ts`):
+- Factory methods create typed forms
+- Separate factory methods per form type
+- NonNullableFormBuilder ensures non-null values
+
+### Subscription Management
+
+Always clean up subscriptions using `takeUntilDestroyed()`:
+
+```typescript
+private destroyRef = inject(DestroyRef);
+
+ngOnInit() {
+  this.authService.getAuthStatusListener()
+    .pipe(takeUntilDestroyed(this.destroyRef))
+    .subscribe(isAuthenticated => {
+      // Handle auth status
+    });
+}
+```
+
+### Editor.js Integration
+
+The rich text editor implements `ControlValueAccessor` for seamless Reactive Forms integration:
+
+```typescript
+@Component({
+  providers: [{
+    provide: NG_VALUE_ACCESSOR,
+    useExisting: forwardRef(() => EditorComponent),
+    multi: true
+  }]
+})
+export class EditorComponent implements ControlValueAccessor {
+  writeValue(value: string): void { }
+  registerOnChange(fn: any): void { }
+  registerOnTouched(fn: any): void { }
+}
+```
+
+Content is stored as JSON in Editor.js format.
+
+### Component Organization
+
+```
+feature/
+├── feature.component.ts      # Main component (standalone)
+├── feature.component.html    # Template
+├── feature.component.scss    # Styles (SCSS)
+├── feature.service.ts        # Backend communication
+├── feature.interface.ts      # TypeScript interfaces
+└── feature-form.service.ts   # Form factory (if complex forms)
+```
 
 ## Frontend Design System
 
@@ -515,13 +746,74 @@ When creating new components, ensure:
 
 ## Important Notes
 
+### Technology Stack
 - Backend uses **.NET 10.0** (latest preview as of the project)
 - Frontend uses **Angular 21** with standalone components
+- Database: **Microsoft SQL Server 2022**
 - **Bootstrap 5** is included but should be used minimally (prefer custom design system)
-- CORS is configured for `http://localhost:4200` and `https://localhost:8080` in development
+
+### Authentication & Security
 - Cookie authentication uses `AuthToken` cookie with 1-hour sliding expiration
+- HttpOnly, SameSite=Lax cookies for CSRF protection
 - All controllers require authentication unless explicitly marked with `[AllowAnonymous]`
-- Database migrations are auto-applied on startup in `Program.cs`
-- Docker health checks are configured for all services (db, backend, frontend)
-- Production deployment uses nginx in frontend container for serving Angular app
+- CORS configured for frontend origin (environment variable: `ANGULAR_PORT`)
+- Google OAuth via `GoogleJsonWebSignature.ValidateAsync()`
+
+### Database & Migrations
+- Migrations auto-applied on startup in `Program.cs` with retry logic
+- Connection string built from environment variables (DB_SERVER, DB_NAME, DB_USER_ID, DB_PASSWORD)
+- Development: `TrustServerCertificate=True, Encrypt=False`
+- Production: `TrustServerCertificate=True, Encrypt=True`
+- Seed data applied after migration via `SeedData.InitializeAsync()`
+
+### Deployment
+- Docker health checks configured for all services (db, backend, frontend)
+- Production deployment uses nginx in frontend container
+- Images pushed to GitHub Container Registry (ghcr.io)
+- CI/CD via GitHub Actions on push to `master` branch
+- SSH deployment to Hetzner server via `scripts/deploy.sh`
+
+### Content Storage
+- Lesson content stored as JSON (Editor.js format) in database
+- Media files uploaded to `/static/uploads` directory
+- Images and attachments served with CORS headers and 1-year cache
+
+### Frontend Specifics
 - **Component styles**: Always use SCSS (configured in `angular.json`)
+- No centralized state management (uses service-based RxJS patterns)
+- Environment variables via `@ngx-env/builder` (prefix: `NG_` or `BACKEND_`)
+- Lazy loading for dynamic routes (lesson detail, create lesson, 404)
+
+### Known Limitations
+- No validation layer on backend DTOs (validation done in entity layer)
+- No error handling middleware (returns raw exceptions)
+- Help and Leaderboard services return mock data (not yet integrated with backend)
+- No logging infrastructure configured (ILogger available but not set up)
+
+## Key Controllers & Endpoints
+
+### Backend API Endpoints
+
+| Controller | Base Route | Key Endpoints | Auth Required |
+|-----------|-----------|---------------|---------------|
+| AuthController | `/api/auth` | `POST /google-login`, `POST /logout`, `GET /auth-status` | Mixed |
+| CourseController | `/api/courses` | `GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Admin/Creator for mutations |
+| LessonController | `/api/lessons` | `GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Admin/Creator for mutations |
+| ExerciseController | `/api/exercises` | `GET /lesson/{lessonId}`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Admin/Creator for mutations |
+| LanguageController | `/api/languages` | `GET /`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Public read, Admin write |
+| UserLanguageController | `/api/userLanguages` | `GET /user/{userId}`, `POST /enroll`, `DELETE /unenroll` | Yes |
+| UserManagementController | `/api/userManagement` | `GET /users`, `GET /users/{id}`, `POST /roles`, etc. | Admin only |
+| UploadsController | `/api/uploads` | `POST /image`, `POST /file`, `GET /files` | Yes |
+
+### Frontend Routes
+
+| Path | Component | Lazy Loaded | Description |
+|------|-----------|-------------|-------------|
+| `/` | HomeComponent | No | Main dashboard with learning path |
+| `/google-login` | GoogleLoginComponent | No | OAuth login page |
+| `/create-lesson` | LessonComponent | Yes | Lesson creation form with Editor.js |
+| `/lesson/:id` | LessonDetailComponent | Yes | Display lesson content |
+| `/profile` | ProfileComponent | No | User profile and achievements |
+| `/leaderboard` | LeaderboardComponent | No | User rankings |
+| `/help` | HelpComponent | No | Help and FAQ |
+| `/**` | NotFoundComponent | Yes | 404 page |
