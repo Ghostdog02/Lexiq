@@ -8,7 +8,7 @@ import { Lesson } from './lesson.interface';
   providedIn: 'root'
 })
 export class LessonService {
-  private apiUrl = 'http://localhost:8080/api/lesson';
+  private apiUrl = `${import.meta.env.BACKEND_API_URL || 'http://localhost:8080'}/api/lesson`;
 
   // Store created lessons in memory
   private createdLessons: Lesson[] = [];
@@ -27,23 +27,33 @@ export class LessonService {
   }
 
   createLesson(lesson: Lesson): Observable<Lesson> {
-    // For now, log the lesson data and return it (until backend endpoint exists)
-    console.log('Creating lesson:', JSON.stringify(lesson, null, 2));
+    console.log('📤 Creating lesson:', lesson);
 
-    // TODO: Uncomment when backend endpoint is ready
-    // return this.httpClient.post<Lesson>(this.apiUrl, lesson);
-
-    // Temporary: return the lesson as-is for testing
-    const lessonWithId = {
-      ...lesson,
-      id: lesson.id || Math.floor(Math.random() * 10000)
+    // Map frontend Lesson interface to backend CreateLessonDto format
+    const createLessonDto = {
+      courseId: lesson.courseId,
+      title: lesson.title,
+      description: lesson.description || null,
+      estimatedDurationMinutes: lesson.estimatedDuration || null,
+      orderIndex: 0, // TODO: Make this dynamic based on existing lessons in course
+      lessonMediaUrl: lesson.mediaUrl ? [lesson.mediaUrl] : null,
+      content: lesson.content  // Editor.js JSON string
     };
 
-    return of(lessonWithId).pipe(
-      tap((createdLesson) => {
-        console.log('Lesson would be sent to:', this.apiUrl);
-        // Store the lesson
+    console.log('📡 Sending to backend:', this.apiUrl, createLessonDto);
+
+    // Make actual API call to backend
+    return this.httpClient.post<any>(this.apiUrl, createLessonDto).pipe(
+      tap((response) => {
+        console.log('✅ Lesson created successfully:', response);
+
+        // Store the created lesson
+        const createdLesson: Lesson = {
+          ...lesson,
+          id: response.id
+        };
         this.createdLessons.push(createdLesson);
+
         // Emit the created lesson to subscribers
         this.lessonCreatedSubject.next(createdLesson);
       })

@@ -136,15 +136,15 @@ public class LessonService(BackendDbContext context)
     }
 
     /// <summary>
-    /// Gets the lesson with full navigation properties
+    /// Creates a new lesson with Editor.js content stored in the database
     /// </summary>
-    /// <param name="lessonId">The ID of the lesson</param>
-    /// <returns>The lesson with its course and language included</returns>
+    /// <param name="dto">The lesson creation data including Editor.js JSON content</param>
+    /// <returns>The created lesson</returns>
     public async Task<Lesson> CreateLessonAsync(CreateLessonDto dto)
     {
         var course =
-            await _context.Courses.FirstOrDefaultAsync(c => c.Title == dto.CourseName)
-            ?? throw new ArgumentException($"Course '{dto.CourseName}' not found.");
+            await _context.Courses.FindAsync(dto.CourseId)
+            ?? throw new ArgumentException($"Course with ID '{dto.CourseId}' not found.");
 
         var lesson = new Lesson
         {
@@ -154,7 +154,8 @@ public class LessonService(BackendDbContext context)
             EstimatedDurationMinutes = dto.EstimatedDurationMinutes,
             OrderIndex = dto.OrderIndex,
             LessonMediaUrl = dto.LessonMediaUrl,
-            LessonTextUrl = dto.LessonTextUrl,
+            LessonContent = dto.Content, // Store Editor.js JSON directly in database
+            LessonTextUrl = null, // Optional external URL
             IsLocked = true, // Default to locked
             CreatedAt = DateTime.UtcNow,
         };
@@ -170,6 +171,13 @@ public class LessonService(BackendDbContext context)
         if (lesson == null)
             return null;
 
+        if (dto.CourseId.HasValue)
+        {
+            var course = await _context.Courses.FindAsync(dto.CourseId.Value);
+            if (course == null)
+                throw new ArgumentException($"Course with ID '{dto.CourseId}' not found.");
+            lesson.CourseId = dto.CourseId.Value;
+        }
         if (dto.Title != null)
             lesson.Title = dto.Title;
         if (dto.Description != null)
@@ -180,6 +188,8 @@ public class LessonService(BackendDbContext context)
             lesson.OrderIndex = dto.OrderIndex.Value;
         if (dto.LessonMediaUrl != null)
             lesson.LessonMediaUrl = dto.LessonMediaUrl;
+        if (dto.LessonContent != null)
+            lesson.LessonContent = dto.LessonContent;  // Update Editor.js content
         if (dto.LessonTextUrl != null)
             lesson.LessonTextUrl = dto.LessonTextUrl;
 

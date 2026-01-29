@@ -23,7 +23,7 @@ dotnet restore
 # Build the project
 dotnet build
 
-# Run the development server (listens on port 5000)
+# Run the development server (listens on port 8080)
 dotnet run
 
 # Run with watch mode (auto-reload on changes)
@@ -192,7 +192,7 @@ Backend loads secrets from `/run/secrets/backend_env` in production (Docker secr
 
 ```
 NG_GOOGLE_CLIENT_ID=<google-oauth-client-id>
-BACKEND_URL=http://backend:5000
+BACKEND_API_URL=http://backend:8080
 ```
 
 Frontend build arguments are passed via Docker Compose.
@@ -228,9 +228,9 @@ Frontend build arguments are passed via Docker Compose.
    - `secrets/backend/.env`
    - `secrets/frontend/.env`
 2. Run: `docker compose up --build`
-3. Access frontend at http://localhost:8080
-4. Access backend API at http://localhost:5000
-5. Access Swagger docs at http://localhost:5000/swagger
+3. Access frontend at http://localhost:4200
+4. Access backend API at http://localhost:8080
+5. Access Swagger docs at http://localhost:8080/swagger
 
 ## Frontend Design System
 
@@ -518,8 +518,8 @@ When creating new components, ensure:
 - Backend uses **.NET 10.0** (latest preview as of the project)
 - Frontend uses **Angular 21** with standalone components
 - **Bootstrap 5** is included but should be used minimally (prefer custom design system)
-- CORS is configured for `http://localhost:4200` and `https://localhost:5000` in development
-- Cookie authentication uses `LexiqAuth` cookie with 1-hour sliding expiration
+- CORS is configured for `http://localhost:4200` and `https://localhost:8080` in development
+- Cookie authentication uses `AuthToken` cookie with 1-hour sliding expiration
 - All controllers require authentication unless explicitly marked with `[AllowAnonymous]`
 - Database migrations are auto-applied on startup in `Program.cs`
 - Docker health checks are configured for all services (db, backend, frontend)

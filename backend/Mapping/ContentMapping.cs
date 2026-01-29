@@ -36,7 +36,8 @@ public static class ContentMappingExtensions
             entity.EstimatedDurationMinutes,
             entity.OrderIndex,
             entity.LessonMediaUrl,
-            entity.LessonTextUrl,
+            entity.LessonContent,  // Editor.js JSON content
+            entity.LessonTextUrl,  // Optional external URL
             entity.IsLocked,
             entity.Exercises.Count
         );
