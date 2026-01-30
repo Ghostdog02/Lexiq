@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Database.Migrations
 {
     [DbContext(typeof(BackendDbContext))]
-    [Migration("20260129162751_ChangeIdTypeToString")]
+    [Migration("20260130133555_ChangeIdTypeToString")]
     partial class ChangeIdTypeToString
     {
         /// <inheritdoc />
