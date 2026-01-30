@@ -94,14 +94,6 @@ jobs:
               exit 1
             fi
 
-            if [ -f "$TARGET_DIR/nginx.prod.conf" ]; then
-              mv -f "$TARGET_DIR/nginx.prod.conf" "$TARGET_DIR/nginx.conf"
-              echo "✅ Renamed nginx.conf"
-            else
-              echo "❌ Error: nginx.prod.conf not found"
-              exit 1
-            fi
-
             # Write environment file with all needed variables
             cat > /tmp/.deploy.env << 'ENVEOF'
             HOME_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}"
