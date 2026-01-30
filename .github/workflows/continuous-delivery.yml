@@ -70,7 +70,7 @@ jobs:
           key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          source: "docker-compose.prod.yml,nginx.conf"
+          source: "docker-compose.prod.yml,frontend/nginx.prod.conf"
           target: "/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
 
       - name: Deploy with Docker Compose to Hetzner (Debian 13)
@@ -88,9 +88,17 @@ jobs:
 
             if [ -f "$TARGET_DIR/docker-compose.prod.yml" ]; then
               mv -f "$TARGET_DIR/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
-              echo "✅ Deployed docker-compose.yml"
+              echo "✅ Renamed docker-compose.yml"
             else
               echo "❌ Error: docker-compose.prod.yml not found"
+              exit 1
+            fi
+
+            if [ -f "$TARGET_DIR/nginx.prod.conf" ]; then
+              mv -f "$TARGET_DIR/nginx.prod.conf" "$TARGET_DIR/nginx.conf"
+              echo "✅ Renamed nginx.conf"
+            else
+              echo "❌ Error: nginx.prod.conf not found"
               exit 1
             fi
 
