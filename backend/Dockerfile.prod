@@ -17,11 +17,15 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     rm -rf /var/lib/apt/lists/*
 
-# Create wwwroot directory with proper permissions for uploads
-RUN mkdir -p /app/wwwroot && \
-    chmod 755 /app/wwwroot
-
 COPY --from=publish /app/publish .
+
+# Create upload directory structure for file storage
+RUN mkdir -p /app/wwwroot/uploads/images \
+             /app/wwwroot/uploads/documents \
+             /app/wwwroot/uploads/videos \
+             /app/wwwroot/uploads/audio \
+             /app/wwwroot/uploads/files && \
+    chmod -R 755 /app/wwwroot
 
 EXPOSE 8080
 

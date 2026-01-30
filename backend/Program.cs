@@ -25,6 +25,8 @@ public class Program
 
         var app = builder.Build();
 
+        app.Environment.EnsureUploadDirectoryStructure();
+
         ConfigureMiddleware(app);
 
         await InitializeDatabaseAsync(app.Services);
@@ -51,7 +53,8 @@ public class Program
         app.UseRouting();
         app.ConfigureHttpPort();
         app.UseCors("AllowAngular");
-        app.ConfigureStaticFiles();
+        // Static files disabled - using API routes for file serving (UploadsController)
+        // app.ConfigureStaticFiles();
         app.UseSwaggerWithUI();
         app.UseAuthentication();
         app.UseAuthorization();
