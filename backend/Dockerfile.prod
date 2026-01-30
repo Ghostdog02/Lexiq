@@ -15,8 +15,12 @@ WORKDIR /app
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
-    rm -rf /var/lib/apt/lists/* 
-    
+    rm -rf /var/lib/apt/lists/*
+
+# Create wwwroot directory with proper permissions for uploads
+RUN mkdir -p /app/wwwroot && \
+    chmod 755 /app/wwwroot
+
 COPY --from=publish /app/publish .
 
 EXPOSE 8080

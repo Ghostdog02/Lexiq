@@ -35,12 +35,12 @@ services:
     container_name: lexiq-backend
     secrets:
       - backend_env
-    ports: 
+    ports:
       - "8080:8080"
     volumes:
-      - ./wwwroot:/app/wwwroot
+      - backend-uploads:/app/wwwroot
     depends_on:
-      db: 
+      db:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl --fail --silent http://localhost:8080/health || exit 1"]
@@ -72,3 +72,4 @@ services:
 
 volumes:
   db-data:
+  backend-uploads:
