@@ -62,7 +62,7 @@ jobs:
           source: "scripts/verify-deployment.sh"
           target: "/tmp/"
 
-      - name: Copy docker-compose and nginx files to server
+      - name: Copy docker-compose file to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
@@ -70,7 +70,7 @@ jobs:
           key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          source: "docker-compose.prod.yml,frontend/nginx.prod.conf"
+          source: "docker-compose.prod.yml"
           target: "/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
 
       - name: Deploy with Docker Compose to Hetzner (Debian 13)
