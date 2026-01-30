@@ -41,7 +41,7 @@
             echo "BRANCH=$BRANCH" >> $GITHUB_ENV
 
         - name: Copy deployment script to server
-          uses: appleboy/scp-action@v0.1.7
+          uses: appleboy/scp-action@v1.0.0
           with:
             host: ${{ secrets.HETZNER_PROD_HOST }}
             username: ${{ secrets.HETZNER_PROD_USERNAME }}
@@ -52,7 +52,7 @@
             target: "/tmp/"
 
         - name: Copy verify-deployment script to server
-          uses: appleboy/scp-action@v0.1.7
+          uses: appleboy/scp-action@v1.0.0
           with:
             host: ${{ secrets.HETZNER_PROD_HOST }}
             username: ${{ secrets.HETZNER_PROD_USERNAME }}
@@ -63,7 +63,7 @@
             target: "/tmp/"
 
         - name: Copy docker-compose and nginx files to server
-          uses: appleboy/scp-action@v0.1.7
+          uses: appleboy/scp-action@v1.0.0
           with:
             host: ${{ secrets.HETZNER_PROD_HOST }}
             username: ${{ secrets.HETZNER_PROD_USERNAME }}
