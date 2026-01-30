@@ -13,6 +13,14 @@ export interface Unit {
   color: string;
 }
 
+export interface Quest {
+  id: number;
+  icon: string;
+  description: string;
+  current: number;
+  target: number;
+}
+
 @Component({
   selector: 'app-home',
   standalone: true,
@@ -27,6 +35,12 @@ export class HomeComponent implements OnInit {
   totalXp: number = 150;
   currentStreak: number = 5;
   isUserBelowLesson: boolean = false;
+
+  dailyQuests: Quest[] = [
+    { id: 1, icon: '🎯', description: 'Complete 3 lessons', current: 2, target: 3 },
+    { id: 2, icon: '⭐', description: 'Earn 100 XP', current: 25, target: 100 },
+    { id: 3, icon: '🗣️', description: 'Practice speaking for 5 minutes', current: 4, target: 5 }
+  ];
 
   private router = inject(Router);
   private lessonService = inject(LessonService);
@@ -206,5 +220,9 @@ export class HomeComponent implements OnInit {
 
   redirectToCreateExercise() {
     this.router.navigate(["/create-lesson"])
+  }
+
+  getQuestProgress(quest: Quest): number {
+    return Math.min((quest.current / quest.target) * 100, 100);
   }
 }

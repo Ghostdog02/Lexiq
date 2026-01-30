@@ -1,9 +1,12 @@
+@import '../../styles.scss';
+
 :host {
   display: block;
   width: 100%;
 }
 
 .page-split-view {
+  @include animated-background;
   display: grid;
   grid-template-columns: minmax(500px, 1fr) 1fr;
   min-height: 100vh;
@@ -11,27 +14,7 @@
   position: relative;
   overflow-x: hidden;
 
-  &::before {
-    content: '';
-    position: fixed;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background:
-      radial-gradient(circle at 30% 50%, rgba(124, 92, 255, 0.08) 0%, transparent 50%),
-      radial-gradient(circle at 70% 80%, rgba(145, 120, 255, 0.06) 0%, transparent 50%);
-    animation: pulse 8s ease-in-out infinite;
-    pointer-events: none;
-    z-index: 0;
-  }
-
   @media (max-width: 1024px) { grid-template-columns: 1fr; }
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
 }
 
 @keyframes slideIn {
