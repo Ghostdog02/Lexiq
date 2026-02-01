@@ -53,8 +53,7 @@ public class Program
         app.UseRouting();
         app.ConfigureHttpPort();
         app.UseCors("AllowAngular");
-        // Static files disabled - using API routes for file serving (UploadsController)
-        // app.ConfigureStaticFiles();
+        app.UseStaticFiles();
         app.UseSwaggerWithUI();
         app.UseAuthentication();
         app.UseAuthorization();
