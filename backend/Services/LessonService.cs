@@ -14,7 +14,7 @@ public class LessonService(BackendDbContext context)
     /// </summary>
     /// <param name="currentLessonId">The ID of the current lesson</param>
     /// <returns>The next lesson, or null if this is the last lesson in the language</returns>
-    public async Task<Lesson?> GetNextLessonAsync(int currentLessonId)
+    public async Task<Lesson?> GetNextLessonAsync(string currentLessonId)
     {
         var currentLesson = await _context
             .Lessons.Include(l => l.Course)
@@ -61,7 +61,7 @@ public class LessonService(BackendDbContext context)
     /// </summary>
     /// <param name="currentLessonId">The ID of the lesson that was just completed</param>
     /// <returns>True if a next lesson was unlocked, false otherwise</returns>
-    public async Task<bool> UnlockNextLessonAsync(int currentLessonId)
+    public async Task<bool> UnlockNextLessonAsync(string currentLessonId)
     {
         var nextLesson = await GetNextLessonAsync(currentLessonId);
 
@@ -82,7 +82,7 @@ public class LessonService(BackendDbContext context)
     /// </summary>
     /// <param name="lessonId">The ID of the lesson to check</param>
     /// <returns>True if this is the last lesson in the course</returns>
-    public async Task<bool> IsLastLessonInCourseAsync(int lessonId)
+    public async Task<bool> IsLastLessonInCourseAsync(string lessonId)
     {
         var lesson = await _context.Lessons.FindAsync(lessonId);
         if (lesson == null)
@@ -100,7 +100,7 @@ public class LessonService(BackendDbContext context)
     /// </summary>
     /// <param name="courseId">The ID of the course</param>
     /// <returns>The first lesson in the course</returns>
-    public async Task<Lesson?> GetFirstLessonInCourseAsync(int courseId)
+    public async Task<Lesson?> GetFirstLessonInCourseAsync(string courseId)
     {
         return await _context
             .Lessons.Where(l => l.CourseId == courseId)
@@ -113,7 +113,7 @@ public class LessonService(BackendDbContext context)
     /// </summary>
     /// <param name="courseId">The ID of the course</param>
     /// <returns>List of lessons in the course</returns>
-    public async Task<List<Lesson>> GetLessonsByCourseAsync(int courseId)
+    public async Task<List<Lesson>> GetLessonsByCourseAsync(string courseId)
     {
         return await _context
             .Lessons.Where(l => l.CourseId == courseId)
@@ -125,7 +125,7 @@ public class LessonService(BackendDbContext context)
     /// Unlocks a specific lesson
     /// </summary>
     /// <param name="lessonId">The ID of the lesson to unlock</param>
-    public async Task UnlockLessonAsync(int lessonId)
+    public async Task UnlockLessonAsync(string lessonId)
     {
         var lesson = await _context.Lessons.FindAsync(lessonId);
         if (lesson != null && lesson.IsLocked)
@@ -136,15 +136,15 @@ public class LessonService(BackendDbContext context)
     }
 
     /// <summary>
-    /// Gets the lesson with full navigation properties
+    /// Creates a new lesson with Editor.js content stored in the database
     /// </summary>
-    /// <param name="lessonId">The ID of the lesson</param>
-    /// <returns>The lesson with its course and language included</returns>
+    /// <param name="dto">The lesson creation data including Editor.js JSON content</param>
+    /// <returns>The created lesson</returns>
     public async Task<Lesson> CreateLessonAsync(CreateLessonDto dto)
     {
         var course =
-            await _context.Courses.FirstOrDefaultAsync(c => c.Title == dto.CourseName)
-            ?? throw new ArgumentException($"Course '{dto.CourseName}' not found.");
+            await _context.Courses.FindAsync(dto.CourseId)
+            ?? throw new ArgumentException($"Course with ID '{dto.CourseId}' not found.");
 
         var lesson = new Lesson
         {
@@ -154,7 +154,8 @@ public class LessonService(BackendDbContext context)
             EstimatedDurationMinutes = dto.EstimatedDurationMinutes,
             OrderIndex = dto.OrderIndex,
             LessonMediaUrl = dto.LessonMediaUrl,
-            LessonTextUrl = dto.LessonTextUrl,
+            LessonContent = dto.Content, // Store Editor.js JSON directly in database
+            LessonTextUrl = null, // Optional external URL
             IsLocked = true, // Default to locked
             CreatedAt = DateTime.UtcNow,
         };
@@ -164,12 +165,19 @@ public class LessonService(BackendDbContext context)
         return lesson;
     }
 
-    public async Task<Lesson?> UpdateLessonAsync(int id, UpdateLessonDto dto)
+    public async Task<Lesson?> UpdateLessonAsync(string id, UpdateLessonDto dto)
     {
         var lesson = await _context.Lessons.FindAsync(id);
         if (lesson == null)
             return null;
 
+        if (dto.CourseId != null)
+        {
+            var course = await _context.Courses.FindAsync(dto.CourseId);
+            if (course == null)
+                throw new ArgumentException($"Course with ID '{dto.CourseId}' not found.");
+            lesson.CourseId = dto.CourseId;
+        }
         if (dto.Title != null)
             lesson.Title = dto.Title;
         if (dto.Description != null)
@@ -180,6 +188,8 @@ public class LessonService(BackendDbContext context)
             lesson.OrderIndex = dto.OrderIndex.Value;
         if (dto.LessonMediaUrl != null)
             lesson.LessonMediaUrl = dto.LessonMediaUrl;
+        if (dto.LessonContent != null)
+            lesson.LessonContent = dto.LessonContent;  // Update Editor.js content
         if (dto.LessonTextUrl != null)
             lesson.LessonTextUrl = dto.LessonTextUrl;
 
@@ -187,7 +197,7 @@ public class LessonService(BackendDbContext context)
         return lesson;
     }
 
-    public async Task<bool> DeleteLessonAsync(int lessonId)
+    public async Task<bool> DeleteLessonAsync(string lessonId)
     {
         var lesson = await _context.Lessons.FindAsync(lessonId);
         if (lesson == null)
@@ -203,7 +213,7 @@ public class LessonService(BackendDbContext context)
     /// </summary>
     /// <param name="lessonId">The ID of the lesson</param>
     /// <returns>The lesson with its course and language included</returns>
-    public async Task<Lesson?> GetLessonWithDetailsAsync(int lessonId)
+    public async Task<Lesson?> GetLessonWithDetailsAsync(string lessonId)
     {
         return await _context
             .Lessons.Include(l => l.Course)

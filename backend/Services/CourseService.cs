@@ -17,7 +17,7 @@ public class CourseService(BackendDbContext context)
             .ToListAsync();
     }
 
-    public async Task<Course?> GetCourseByIdAsync(int id)
+    public async Task<Course?> GetCourseByIdAsync(string id)
     {
         return await _context
             .Courses.Include(c => c.Language)
@@ -48,7 +48,7 @@ public class CourseService(BackendDbContext context)
         return course;
     }
 
-    public async Task<Course?> UpdateCourseAsync(int id, Dtos.UpdateCourseDto dto)
+    public async Task<Course?> UpdateCourseAsync(string id, Dtos.UpdateCourseDto dto)
     {
         var course = await _context.Courses.FindAsync(id);
         if (course == null)
@@ -72,7 +72,7 @@ public class CourseService(BackendDbContext context)
         return course;
     }
 
-    public async Task<bool> DeleteCourseAsync(int id)
+    public async Task<bool> DeleteCourseAsync(string id)
     {
         var course = await _context.Courses.FindAsync(id);
         if (course == null)

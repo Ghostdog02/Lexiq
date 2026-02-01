@@ -9,8 +9,8 @@ namespace Backend.Api.Dtos;
 [JsonDerivedType(typeof(ListeningExerciseDto), typeDiscriminator: "Listening")]
 [JsonDerivedType(typeof(TranslationExerciseDto), typeDiscriminator: "Translation")]
 public abstract record ExerciseDto(
-    int Id,
-    int LessonId,
+    string Id,
+    string LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -21,8 +21,8 @@ public abstract record ExerciseDto(
 );
 
 public record MultipleChoiceExerciseDto(
-    int Id,
-    int LessonId,
+    string Id,
+    string LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -45,8 +45,8 @@ public record MultipleChoiceExerciseDto(
     );
 
 public record FillInBlankExerciseDto(
-    int Id,
-    int LessonId,
+    string Id,
+    string LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -73,8 +73,8 @@ public record FillInBlankExerciseDto(
     );
 
 public record ListeningExerciseDto(
-    int Id,
-    int LessonId,
+    string Id,
+    string LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -101,8 +101,8 @@ public record ListeningExerciseDto(
     );
 
 public record TranslationExerciseDto(
-    int Id,
-    int LessonId,
+    string Id,
+    string LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -128,7 +128,7 @@ public record TranslationExerciseDto(
         Explanation
     );
 
-public record ExerciseOptionDto(int Id, string OptionText, bool IsCorrect, int OrderIndex);
+public record ExerciseOptionDto(string Id, string OptionText, bool IsCorrect, int OrderIndex);
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(CreateMultipleChoiceExerciseDto), typeDiscriminator: "MultipleChoice")]
@@ -136,7 +136,7 @@ public record ExerciseOptionDto(int Id, string OptionText, bool IsCorrect, int O
 [JsonDerivedType(typeof(CreateListeningExerciseDto), typeDiscriminator: "Listening")]
 [JsonDerivedType(typeof(CreateTranslationExerciseDto), typeDiscriminator: "Translation")]
 public abstract record CreateExerciseDto(
-    int LessonId,
+    string LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -147,7 +147,7 @@ public abstract record CreateExerciseDto(
 );
 
 public record CreateMultipleChoiceExerciseDto(
-    int LessonId,
+    string LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -169,7 +169,7 @@ public record CreateMultipleChoiceExerciseDto(
     );
 
 public record CreateFillInBlankExerciseDto(
-    int LessonId,
+    string LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -195,7 +195,7 @@ public record CreateFillInBlankExerciseDto(
     );
 
 public record CreateListeningExerciseDto(
-    int LessonId,
+    string LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -221,7 +221,7 @@ public record CreateListeningExerciseDto(
     );
 
 public record CreateTranslationExerciseDto(
-    int LessonId,
+    string LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,

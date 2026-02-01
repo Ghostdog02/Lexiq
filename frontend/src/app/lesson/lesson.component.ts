@@ -37,6 +37,7 @@ export class LessonComponent implements OnInit {
   private readonly router = inject(Router);
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[];
+  courses: { id: string; title: string }[] = [];
   ExerciseType = ExerciseType;
 
   constructor() {
@@ -49,6 +50,26 @@ export class LessonComponent implements OnInit {
   ngOnInit(): void {
     this.initializeForm();
     this.setupFormValueChanges();
+    this.loadCourses();
+  }
+
+  private loadCourses(): void {
+    this.lessonService.getCourses()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (courses) => {
+          this.courses = courses.map(c => ({
+            id: c.id,
+            title: c.title
+          }));
+          console.log('📚 Loaded courses:', this.courses);
+        },
+        error: (error) => {
+          console.error('Error loading courses:', error);
+          // Set empty array on error so form can still be used
+          this.courses = [];
+        }
+      });
   }
 
   get lessonFormControls() {
@@ -326,7 +347,26 @@ export class LessonComponent implements OnInit {
   }
 
   private setupFormValueChanges(): void {
-    // Example: Auto-save draft
+    // Monitor content changes specifically
+    this.lessonForm.controls.content.valueChanges
+      .pipe(
+        debounceTime(500),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((contentJson) => {
+        console.log('📝 Editor content changed (length):', contentJson?.length || 0);
+        // You can parse and preview the content here if needed
+        try {
+          if (contentJson) {
+            const parsed = JSON.parse(contentJson);
+            console.log('📦 Editor.js blocks:', parsed.blocks?.length || 0);
+          }
+        } catch (e) {
+          // Not valid JSON yet
+        }
+      });
+
+    // Monitor all form changes for auto-save
     this.lessonForm.valueChanges
       .pipe(
         debounceTime(1000),
@@ -334,8 +374,7 @@ export class LessonComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((value) => {
-        // Auto-save logic here
-        console.log('Form changed:', value);
+        console.log('Form changed - Title:', value.title, '| Content length:', value.content?.length || 0);
       });
   }
 

@@ -7,10 +7,10 @@ namespace Backend.Database.Entities;
 public class Lesson
 {
     [Key]
-    public int Id { get; set; }
+    public string Id { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
-    public int CourseId { get; set; }
+    public string CourseId { get; set; } = string.Empty;
 
     [Required]
     [MaxLength(200)]
@@ -28,9 +28,11 @@ public class Lesson
     [MaxLength(255)]
     public List<string>? LessonMediaUrl { get; set; } // URL for video/audio lesson resources
 
-    [Required]
     [MaxLength(255)]
-    public required string LessonTextUrl { get; set; } // Markdown or HTML lesson url
+    public string? LessonTextUrl { get; set; } // Optional URL for external lesson resources
+
+    [Required]
+    public required string LessonContent { get; set; } // Editor.js JSON content (stored as text)
 
     [Required]
     public bool IsLocked { get; set; } = true;

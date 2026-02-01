@@ -14,7 +14,7 @@ public class LanguageService(BackendDbContext context)
         return await _context.Languages.Include(l => l.Courses).ToListAsync();
     }
 
-    public async Task<Language?> GetLanguageByIdAsync(int id)
+    public async Task<Language?> GetLanguageByIdAsync(string id)
     {
         return await _context
             .Languages.Include(l => l.Courses)
@@ -36,7 +36,7 @@ public class LanguageService(BackendDbContext context)
         return language;
     }
 
-    public async Task<Language?> UpdateLanguageAsync(int id, CreateLanguageDto dto)
+    public async Task<Language?> UpdateLanguageAsync(string id, CreateLanguageDto dto)
     {
         var language = await _context.Languages.FindAsync(id);
         if (language == null)
@@ -49,7 +49,7 @@ public class LanguageService(BackendDbContext context)
         return language;
     }
 
-    public async Task<bool> DeleteLanguageAsync(int id)
+    public async Task<bool> DeleteLanguageAsync(string id)
     {
         var language = await _context.Languages.FindAsync(id);
         if (language == null)

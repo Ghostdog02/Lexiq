@@ -37,13 +37,22 @@ public static class WebApplicationExtensions
                 FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
                     Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads")
                 ),
-                RequestPath = "/static/uploads", 
+                RequestPath = "/static/uploads",
                 OnPrepareResponse = ctx =>
                 {
                     ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", "*");
-                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET, OPTIONS");
-                    ctx.Context.Response.Headers.Append("Cross-Origin-Resource-Policy", "cross-origin");
-                    ctx.Context.Response.Headers.Append("Cache-Control", "public, max-age=31536000");
+                    ctx.Context.Response.Headers.Append(
+                        "Access-Control-Allow-Methods",
+                        "GET, OPTIONS"
+                    );
+                    ctx.Context.Response.Headers.Append(
+                        "Cross-Origin-Resource-Policy",
+                        "cross-origin"
+                    );
+                    ctx.Context.Response.Headers.Append(
+                        "Cache-Control",
+                        "public, max-age=31536000"
+                    );
                 },
             }
         );

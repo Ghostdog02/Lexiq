@@ -35,13 +35,15 @@ services:
     container_name: lexiq-backend
     secrets:
       - backend_env
-    ports: 
+    ports:
       - "8080:8080"
+    volumes:
+      - backend-uploads:/app/wwwroot
     depends_on:
-      db: 
+      db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl --fail --silent http://localhost:8080/health || exit 1"]
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -51,11 +53,13 @@ services:
   frontend:
     image:  ${REGISTRY}/${REPO_LOWER}-frontend:${BRANCH}
     container_name: lexiq-frontend
+    environment:
+      ENVIRONMENT: production
     ports:
       - "80:80"
       - "443:443"
     depends_on:
-      backend: 
+      backend:
         condition: service_healthy
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
@@ -70,3 +74,4 @@ services:
 
 volumes:
   db-data:
+  backend-uploads:

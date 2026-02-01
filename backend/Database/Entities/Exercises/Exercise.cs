@@ -21,10 +21,10 @@ public enum ExerciseType
 public abstract class Exercise
 {
     [Key]
-    public int Id { get; set; }
+    public string Id { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
-    public int LessonId { get; set; }
+    public string LessonId { get; set; } = string.Empty;
 
     [Required]
     [MaxLength(200)]

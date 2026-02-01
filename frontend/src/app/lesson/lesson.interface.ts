@@ -9,8 +9,8 @@ export interface Lesson {
   description: string;
   estimatedDuration: number;
   mediaUrl?: string; // Cover image URL
-  content: string;   // JSON content from editor
-  courseId: string;
+  content: string;   // Editor.js JSON content
+  courseId: string; 
   exercises: Exercise[];
 
   // Path display properties (optional - set when adding to learning path)

@@ -2,7 +2,7 @@ namespace Backend.Api.Dtos;
 
 public record UserLanguageDto(
     string UserId,
-    int LanguageId,
+    string LanguageId,
     string LanguageName,
     string? FlagIconUrl,
     DateTime EnrolledAt,
@@ -11,5 +11,5 @@ public record UserLanguageDto(
 );
 
 public record EnrollLanguageDto(
-    int LanguageId
+    string LanguageId
 );

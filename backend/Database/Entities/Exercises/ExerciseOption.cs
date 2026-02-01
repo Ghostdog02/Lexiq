@@ -6,10 +6,10 @@ namespace Backend.Database.Entities.Exercises;
 public class ExerciseOption
 {
     [Key]
-    public int Id { get; set; }
+    public string Id { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
-    public int ExerciseId { get; set; }
+    public string ExerciseId { get; set; } = string.Empty;
 
     [Required]
     [MaxLength(500)]

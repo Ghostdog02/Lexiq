@@ -20,7 +20,7 @@ public class LanguageController(LanguageService languageService) : ControllerBas
     }
 
     [HttpGet("{id}")]
-    public async Task<ActionResult<LanguageDto>> GetLanguage(int id)
+    public async Task<ActionResult<LanguageDto>> GetLanguage(string id)
     {
         var language = await _languageService.GetLanguageByIdAsync(id);
         if (language == null)
@@ -39,7 +39,7 @@ public class LanguageController(LanguageService languageService) : ControllerBas
 
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<LanguageDto>> UpdateLanguage(int id, CreateLanguageDto dto)
+    public async Task<ActionResult<LanguageDto>> UpdateLanguage(string id, CreateLanguageDto dto)
     {
         var language = await _languageService.UpdateLanguageAsync(id, dto);
         if (language == null)
@@ -50,7 +50,7 @@ public class LanguageController(LanguageService languageService) : ControllerBas
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> DeleteLanguage(int id)
+    public async Task<IActionResult> DeleteLanguage(string id)
     {
         var result = await _languageService.DeleteLanguageAsync(id);
         if (!result)

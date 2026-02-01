@@ -12,7 +12,7 @@ public class UserLanguage
     public required string UserId { get; set; }
 
     [Required]
-    public int LanguageId { get; set; }
+    public string LanguageId { get; set; } = string.Empty;
 
     public DateTime EnrolledAt { get; set; } = DateTime.UtcNow;
 
