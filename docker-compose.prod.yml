@@ -35,19 +35,25 @@ services:
     container_name: lexiq-backend
     secrets:
       - backend_env
-    ports:
-      - "8080:8080"
+    environment:
+      USE_HTTPS: "true"
+      CERT_STORAGE_PATH: "/app/certs"
+      CERT_PASSWORD: "${CERT_PASSWORD:-lexiq-cert-password}"
+    expose:
+      - "80"
+      - "443"
     volumes:
       - backend-uploads:/app/wwwroot
+      - backend-certs:/app/certs
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health || exit 1"]
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:80/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 30s
     restart: unless-stopped
 
   frontend:
@@ -62,16 +68,28 @@ services:
       backend:
         condition: service_healthy
     volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - ./certbot/www:/var/www/certbot:ro
+      - letsencrypt-certs:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
     healthcheck:
       test: ["CMD-SHELL", "curl --fail --silent --insecure https://localhost:443/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
-    restart: unless-stopped 
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: lexiq-certbot
+    volumes:
+      - letsencrypt-certs:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done;'"
+    restart: unless-stopped
 
 volumes:
   db-data:
   backend-uploads:
+  backend-certs:
+  letsencrypt-certs:
+  certbot-webroot:
