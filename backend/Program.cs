@@ -1,6 +1,8 @@
+using System.Net;
 using Backend.Api.Extensions;
 using Backend.Database.Extensions;
 using DotNetEnv;
+using LettuceEncrypt;
 
 namespace Backend.Api;
 
@@ -13,7 +15,6 @@ public class Program
         {
             Env.Load(secretPath);
         }
-        
         else
         {
             Env.Load();
@@ -21,21 +22,58 @@ public class Program
 
         var builder = WebApplication.CreateBuilder(args);
 
-        ConfigureServices(builder.Services);
+        var useHttps = Environment.GetEnvironmentVariable("USE_HTTPS")?.ToLower() == "true";
+
+        if (useHttps)
+        {
+            builder.WebHost.UseKestrel(kestrel =>
+            {
+                var appServices = kestrel.ApplicationServices;
+
+                // HTTP on port 80 (required for ACME HTTP-01 challenge)
+                kestrel.Listen(IPAddress.Any, 80);
+
+                // HTTPS on port 443 with Let's Encrypt
+                kestrel.Listen(
+                    IPAddress.Any,
+                    443,
+                    listenOptions =>
+                    {
+                        listenOptions.UseHttps(httpsOptions =>
+                        {
+                            httpsOptions.UseLettuceEncrypt(appServices);
+                        });
+                    }
+                );
+            });
+        }
+
+        ConfigureServices(builder.Services, useHttps);
 
         var app = builder.Build();
 
         app.Environment.EnsureUploadDirectoryStructure();
 
-        ConfigureMiddleware(app);
+        ConfigureMiddleware(app, useHttps);
 
         await InitializeDatabaseAsync(app.Services);
 
         app.Run();
     }
 
-    private static void ConfigureServices(IServiceCollection services)
+    private static void ConfigureServices(IServiceCollection services, bool useHttps)
     {
+        if (useHttps)
+        {
+            var certPath = Environment.GetEnvironmentVariable("CERT_STORAGE_PATH") ?? "/app/certs";
+            var certPassword =
+                Environment.GetEnvironmentVariable("CERT_PASSWORD") ?? "lexiq-cert-password";
+
+            services
+                .AddLettuceEncrypt()
+                .PersistDataToDirectory(new DirectoryInfo(certPath), certPassword);
+        }
+
         services.AddCorsPolicy();
         services.AddDatabaseContext();
         services.AddApplicationServices();
@@ -48,13 +86,21 @@ public class Program
         services.AddHealthChecks();
     }
 
-    private static void ConfigureMiddleware(WebApplication app)
+    private static void ConfigureMiddleware(WebApplication app, bool useHttps)
     {
         app.UseRouting();
-        app.ConfigureHttpPort();
+
+        if (useHttps)
+        {
+            app.UseHttpsRedirection();
+        }
+        else
+        {
+            app.ConfigureHttpPort();
+        }
+
         app.UseCors("AllowAngular");
-        // Static files disabled - using API routes for file serving (UploadsController)
-        // app.ConfigureStaticFiles();
+        app.UseStaticFiles();
         app.UseSwaggerWithUI();
         app.UseAuthentication();
         app.UseAuthorization();

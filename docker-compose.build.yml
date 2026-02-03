@@ -3,13 +3,13 @@ services:
     image: ghcr.io/ghostdog02/lexiq-backend:${TAG:-latest}
     build:
       context: ./backend
-      dockerfile: DOCKERFILE.prod
+      dockerfile: Dockerfile.prod
 
   frontend:
     image: ghcr.io/ghostdog02/lexiq-frontend:${TAG:-latest}
     build:
       context: ./frontend
-      dockerfile: DOCKERFILE.prod
+      dockerfile: Dockerfile.prod
       args:
         - NG_GOOGLE_CLIENT_ID=751309259564-eh1rt37l2jev2brt1b356g6n7k01s86v.apps.googleusercontent.com
-        - BACKEND_API_URL=http://localhost:8080
+        - BACKEND_API_URL=http://lexiqlanguage.eu/api

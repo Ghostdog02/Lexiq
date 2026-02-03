@@ -24,9 +24,10 @@ RUN mkdir -p /app/wwwroot/uploads/images \
              /app/wwwroot/uploads/documents \
              /app/wwwroot/uploads/videos \
              /app/wwwroot/uploads/audio \
-             /app/wwwroot/uploads/files && \
-    chmod -R 755 /app/wwwroot
+             /app/wwwroot/uploads/files \
+             /app/certs && \
+    chmod -R 755 /app/wwwroot /app/certs
 
-EXPOSE 8080
+EXPOSE 80 443
 
 ENTRYPOINT ["dotnet", "Backend.Api.dll"]
