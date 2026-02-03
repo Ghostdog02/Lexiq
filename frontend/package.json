@@ -35,7 +35,7 @@
   "devDependencies": {
     "@angular-devkit/build-angular": "^21.0.4",
     "@angular/cli": "^21.0.4",
-    "@angular/compiler-cli": "^21.0.6",
+    "@angular/compiler-cli": "^21.1.2",
     "@types/google-one-tap": "^1.2.7",
     "@types/jasmine": "~5.1.13",
     "jasmine-core": "~5.13.0",
