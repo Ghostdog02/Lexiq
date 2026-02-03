@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Controllers;
 
-[Route("api/user-languages")]
+[Route("api/[controller]")]
 [ApiController]
 [Authorize]
 public class UserLanguageController(UserLanguageService userLanguageService) : ControllerBase

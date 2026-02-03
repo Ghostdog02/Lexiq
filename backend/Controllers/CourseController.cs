@@ -7,8 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Controllers;
 
-[Route("api/courses")]
+[Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class CourseController(CourseService courseService) : ControllerBase
 {
     private readonly CourseService _courseService = courseService;

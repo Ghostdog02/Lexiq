@@ -1,5 +1,6 @@
 using Backend.Api.Models;
 using Backend.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 
@@ -7,6 +8,7 @@ namespace Backend.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize]
     public class UploadsController(FileUploadsService fileUploadService)
         : ControllerBase
     {

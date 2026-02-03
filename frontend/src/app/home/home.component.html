@@ -22,7 +22,7 @@
           />
         </svg>
 
-        <!-- Units and Lessons -->
+        <!-- Courses and Lessons -->
         <div class="units-container">
           <ng-container *ngFor="let unit of units; let unitIndex = index">
             <!-- Unit Header -->
@@ -32,7 +32,7 @@
               <p class="unit-description">{{ unit.description }}</p>
             </div>
 
-            <!-- Lessons in Unit -->
+            <!-- Lessons in Course -->
             <div class="lessons-grid">
               <ng-container *ngFor="let lesson of unit.lessons; let lessonIndex = index">
                 <div

@@ -8,6 +8,7 @@ namespace Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class LessonController(LessonService lessonService) : ControllerBase
 {
     private readonly LessonService _lessonService = lessonService;

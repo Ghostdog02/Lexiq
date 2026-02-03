@@ -71,6 +71,7 @@ public class Program
         {
             app.UseHttpsRedirection();
         }
+        
         else
         {
             app.ConfigureHttpPort();

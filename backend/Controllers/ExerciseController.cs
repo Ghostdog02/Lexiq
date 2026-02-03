@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Controllers;
 
-[Route("api/exercises")]
+[Route("api/[controller]")]
 [ApiController]
 [Authorize]
 public class ExerciseController(ExerciseService exerciseService) : ControllerBase

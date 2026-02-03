@@ -35,7 +35,6 @@ public class GoogleAuthService(UserManager<User> userManager, IConfiguration con
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
             return payload;
         }
-
         catch (InvalidJwtException ex)
         {
             Console.WriteLine($"Token validation failed: {ex.Message}");
@@ -56,10 +55,22 @@ public class GoogleAuthService(UserManager<User> userManager, IConfiguration con
                 user = _userManager.MapGooglePayloadToUser(payload);
 
                 var result = await _userManager.CreateAsync(user);
+
                 if (!result.Succeeded)
                 {
                     Console.WriteLine(
                         $"User creation failed: {string.Join(", ", result.Errors.Select(e => e.Description))}"
+                    );
+
+                    return null;
+                }
+
+                var roleAssignmentResult = await _userManager.AddToRoleAsync(user, "Student");
+
+                if (!roleAssignmentResult.Succeeded)
+                {
+                    Console.WriteLine(
+                        $"Role assignment failed: {string.Join(", ", roleAssignmentResult.Errors.Select(e => e.Description))}"
                     );
 
                     return null;

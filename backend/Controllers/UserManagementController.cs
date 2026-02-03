@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Controllers;
 
-[Route("api/userManagement")]
+[Route("api/[controller]")]
 [ApiController]
 public class UserManagementController(BackendDbContext context, UserManager<User> userManager)
     : ControllerBase

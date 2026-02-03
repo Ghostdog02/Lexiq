@@ -21,6 +21,7 @@ import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChang
 import { marked } from 'marked';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { EditorComponent } from '../editor/editor.component';
+import { Course } from './course.interface';
 
 @Component({
   selector: 'app-lesson',
@@ -37,7 +38,8 @@ export class LessonComponent implements OnInit {
   private readonly router = inject(Router);
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[];
-  courses: { id: string; title: string }[] = [];
+  // courses: { id: string; title: string }[] = [];
+  courses: Course[] = [];
   ExerciseType = ExerciseType;
 
   constructor() {
@@ -53,23 +55,8 @@ export class LessonComponent implements OnInit {
     this.loadCourses();
   }
 
-  private loadCourses(): void {
-    this.lessonService.getCourses()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (courses) => {
-          this.courses = courses.map(c => ({
-            id: c.id,
-            title: c.title
-          }));
-          console.log('📚 Loaded courses:', this.courses);
-        },
-        error: (error) => {
-          console.error('Error loading courses:', error);
-          // Set empty array on error so form can still be used
-          this.courses = [];
-        }
-      });
+  private async loadCourses(): Promise<void> {
+    this.courses = await this.lessonService.getCourses();
   }
 
   get lessonFormControls() {
@@ -341,13 +328,11 @@ export class LessonComponent implements OnInit {
     };
   }
 
-  // Private methods
   private initializeForm(): void {
     this.lessonForm = this.formService.createLessonForm();
   }
 
   private setupFormValueChanges(): void {
-    // Monitor content changes specifically
     this.lessonForm.controls.content.valueChanges
       .pipe(
         debounceTime(500),
@@ -355,7 +340,6 @@ export class LessonComponent implements OnInit {
       )
       .subscribe((contentJson) => {
         console.log('📝 Editor content changed (length):', contentJson?.length || 0);
-        // You can parse and preview the content here if needed
         try {
           if (contentJson) {
             const parsed = JSON.parse(contentJson);
@@ -366,7 +350,6 @@ export class LessonComponent implements OnInit {
         }
       });
 
-    // Monitor all form changes for auto-save
     this.lessonForm.valueChanges
       .pipe(
         debounceTime(1000),
@@ -379,7 +362,6 @@ export class LessonComponent implements OnInit {
   }
 
   private markFormGroupTouched(): void {
-    // Helper function to recursively mark all controls as touched
     const markTouched = (control: AbstractControl): void => {
       control.markAsTouched();
 
@@ -392,7 +374,6 @@ export class LessonComponent implements OnInit {
       }
     };
 
-    // Mark all controls in the form as touched
     markTouched(this.lessonForm);
   }
 

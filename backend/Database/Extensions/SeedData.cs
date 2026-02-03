@@ -101,7 +101,7 @@ public class SeedData
         UserManager<User> userManager
     )
     {
-        string[] roles = ["Admin", "NormalUser", "SuperUser"];
+        string[] roles = ["Admin", "Student", "Teacher", "ContentCreator"];
 
         foreach (string currRole in roles)
         {
@@ -125,7 +125,7 @@ public class SeedData
 
 public class IdentityResultValidator
 {
-    public void CheckSuccess(IdentityResult result, string description)
+    public static void CheckSuccess(IdentityResult result, string description)
     {
         if (!result.Succeeded)
         {

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Controllers;
 
-[Route("api/roleManagement")]
+[Route("api/[controller]")]
 [ApiController]
 public class RoleManagementController(BackendDbContext context, UserManager<User> userManager)
     : ControllerBase

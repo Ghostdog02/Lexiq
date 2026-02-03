@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Api.Controllers;
 
 [ApiController]
-[Route("api/languages")]
+[Route("api/[controller]")]
 public class LanguageController(LanguageService languageService) : ControllerBase
 {
     private readonly LanguageService _languageService = languageService;
@@ -30,7 +30,7 @@ public class LanguageController(LanguageService languageService) : ControllerBas
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin")] // Assuming Admin role exists or will be used
+    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<LanguageDto>> CreateLanguage(CreateLanguageDto dto)
     {
         var language = await _languageService.CreateLanguageAsync(dto);

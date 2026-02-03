@@ -7,19 +7,17 @@ namespace Backend.Api.Mapping;
 
 public static class ContentMappingExtensions
 {
-    // Language
     public static LanguageDto ToDto(this Language entity)
     {
         return new LanguageDto(entity.Name, entity.FlagIconUrl, entity.Courses.Count);
     }
 
-    // Course
     public static CourseDto ToDto(this Course entity)
     {
         return new CourseDto(
             entity.Id,
-            entity.Language?.Name ?? string.Empty,
             entity.Title,
+            entity.Language?.Name ?? string.Empty,
             entity.Description,
             entity.EstimatedDurationHours,
             entity.OrderIndex,
@@ -27,7 +25,6 @@ public static class ContentMappingExtensions
         );
     }
 
-    // Lesson
     public static LessonDto ToDto(this Lesson entity)
     {
         return new LessonDto(
@@ -44,7 +41,6 @@ public static class ContentMappingExtensions
         );
     }
 
-    // Exercise
     public static ExerciseDto ToDto(this Exercise entity)
     {
         return entity switch
@@ -121,7 +117,6 @@ public static class ContentMappingExtensions
         };
     }
 
-    // UserLanguage
     public static UserLanguageDto ToDto(this UserLanguage entity)
     {
         return new UserLanguageDto(
