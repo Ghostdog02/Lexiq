@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Database.Migrations
 {
     [DbContext(typeof(BackendDbContext))]
-    [Migration("20260130133555_ChangeIdTypeToString")]
-    partial class ChangeIdTypeToString
+    [Migration("20260203080041_ChangeLanguageIdToString")]
+    partial class ChangeLanguageIdToString
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

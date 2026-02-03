@@ -21,8 +21,7 @@ public class ExerciseService(BackendDbContext context)
     public async Task<Exercise?> GetExerciseByIdAsync(string id)
     {
         return await _context
-            .Exercises
-            .Include(e => (e as MultipleChoiceExercise)!.Options)
+            .Exercises.Include(e => (e as MultipleChoiceExercise)!.Options)
             .FirstOrDefaultAsync(e => e.Id == id);
     }
 
@@ -40,12 +39,14 @@ public class ExerciseService(BackendDbContext context)
                 Points = mcDto.Points,
                 OrderIndex = mcDto.OrderIndex,
                 Explanation = mcDto.Explanation,
-                Options = mcDto.Options.Select(o => new ExerciseOption
-                {
-                    OptionText = o.OptionText,
-                    IsCorrect = o.IsCorrect,
-                    OrderIndex = o.OrderIndex
-                }).ToList()
+                Options = mcDto
+                    .Options.Select(o => new ExerciseOption
+                    {
+                        OptionText = o.OptionText,
+                        IsCorrect = o.IsCorrect,
+                        OrderIndex = o.OrderIndex,
+                    })
+                    .ToList(),
             },
             CreateFillInBlankExerciseDto fibDto => new FillInBlankExercise
             {
@@ -61,7 +62,7 @@ public class ExerciseService(BackendDbContext context)
                 CorrectAnswer = fibDto.CorrectAnswer,
                 AcceptedAnswers = fibDto.AcceptedAnswers,
                 CaseSensitive = fibDto.CaseSensitive,
-                TrimWhitespace = fibDto.TrimWhitespace
+                TrimWhitespace = fibDto.TrimWhitespace,
             },
             CreateListeningExerciseDto lDto => new ListeningExercise
             {
@@ -77,7 +78,7 @@ public class ExerciseService(BackendDbContext context)
                 CorrectAnswer = lDto.CorrectAnswer,
                 AcceptedAnswers = lDto.AcceptedAnswers,
                 CaseSensitive = lDto.CaseSensitive,
-                MaxReplays = lDto.MaxReplays
+                MaxReplays = lDto.MaxReplays,
             },
             CreateTranslationExerciseDto tDto => new TranslationExercise
             {
@@ -93,9 +94,9 @@ public class ExerciseService(BackendDbContext context)
                 TargetText = tDto.TargetText,
                 SourceLanguageCode = tDto.SourceLanguageCode,
                 TargetLanguageCode = tDto.TargetLanguageCode,
-                MatchingThreshold = tDto.MatchingThreshold
+                MatchingThreshold = tDto.MatchingThreshold,
             },
-            _ => throw new ArgumentException("Unknown exercise type", nameof(dto))
+            _ => throw new ArgumentException("Unknown exercise type", nameof(dto)),
         };
 
         exercise.CreatedAt = DateTime.UtcNow;
@@ -125,7 +126,7 @@ public class ExerciseService(BackendDbContext context)
 
         if (dto.Points.HasValue)
             exercise.Points = dto.Points.Value;
-            
+
         if (dto.OrderIndex.HasValue)
             exercise.OrderIndex = dto.OrderIndex.Value;
 

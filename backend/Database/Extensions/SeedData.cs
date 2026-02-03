@@ -17,27 +17,33 @@ public class SeedData
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
 
             await SeedRolesAsync(context, userManager);
-            await SeedAdminUserAsync(context, userManager);
+            var adminUserId = await SeedAdminUserAsync(context, userManager);
+
+            await SeedContentAsync(context, adminUserId);
         }
+        
         catch (DbUpdateException ex)
         {
             throw new Exception("A database error occurred while saving data.", ex);
         }
+
         catch (InvalidOperationException ex)
         {
             throw new Exception("An invalid operation occurred during user processing.", ex);
         }
+
         catch (ArgumentNullException ex)
         {
             throw new Exception("A null parameter has been passed during seeding roles", ex);
         }
+
         catch (Exception ex)
         {
             throw new Exception("An unexpected error occurred during user initialization.", ex);
         }
     }
 
-    private static async Task SeedAdminUserAsync(
+    private static async Task<string> SeedAdminUserAsync(
         BackendDbContext context,
         UserManager<User> userManager
     )
@@ -45,9 +51,10 @@ public class SeedData
         var adminEmail = "alex.vesely07@gmail.com";
         var userName = "Ghostdog";
 
-        if (await userManager.FindByEmailAsync(adminEmail) != null)
+        var existingUser = await userManager.FindByEmailAsync(adminEmail);
+        if (existingUser != null)
         {
-            return;
+            return existingUser.Id;
         }
 
         var today = DateTime.Today;
@@ -78,6 +85,15 @@ public class SeedData
         }
 
         await context.SaveChangesAsync();
+        return user.Id;
+    }
+
+    private static async Task SeedContentAsync(BackendDbContext context, string adminUserId)
+    {
+        var languageId = await LanguageSeeder.SeedAsync(context);
+        var courseId = await CourseSeeder.SeedAsync(context, languageId, adminUserId);
+        var lessonIds = await LessonSeeder.SeedAsync(context, courseId);
+        await ExerciseSeeder.SeedAsync(context, lessonIds);
     }
 
     private static async Task SeedRolesAsync(

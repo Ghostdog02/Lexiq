@@ -29,7 +29,7 @@ public class BackendDbContext(DbContextOptions options)
         DefineRelationships(modelBuilder);
     }
 
-    public void DefineRelationships(ModelBuilder modelBuilder)
+    public static void DefineRelationships(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<UserLanguage>(entity =>
         {
@@ -75,11 +75,11 @@ public class BackendDbContext(DbContextOptions options)
             .WithOne(eo => eo.Exercise as MultipleChoiceExercise)
             .HasForeignKey(eo => eo.ExerciseId)
             .OnDelete(DeleteBehavior.Cascade);
-            
+
         modelBuilder.Entity<UserLanguage>().HasKey(ul => new { ul.UserId, ul.LanguageId });
     }
 
-    public void OverrideMicrostIdentityTablesNames(ModelBuilder modelBuilder)
+    public static void OverrideMicrostIdentityTablesNames(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<IdentityRole>(entity =>
         {

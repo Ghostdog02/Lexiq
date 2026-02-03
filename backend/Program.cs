@@ -22,36 +22,13 @@ public class Program
 
         var builder = WebApplication.CreateBuilder(args);
 
-        var useHttps = Environment.GetEnvironmentVariable("USE_HTTPS")?.ToLower() == "true";
+        var useHttps =
+            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower() == "production";
 
-        if (useHttps)
-        {
-            builder.WebHost.UseKestrel(kestrel =>
-            {
-                var appServices = kestrel.ApplicationServices;
-
-                // HTTP on port 80 (required for ACME HTTP-01 challenge)
-                kestrel.Listen(IPAddress.Any, 80);
-
-                // HTTPS on port 443 with Let's Encrypt
-                kestrel.Listen(
-                    IPAddress.Any,
-                    443,
-                    listenOptions =>
-                    {
-                        listenOptions.UseHttps(httpsOptions =>
-                        {
-                            httpsOptions.UseLettuceEncrypt(appServices);
-                        });
-                    }
-                );
-            });
-        }
-
+        ConfigureKestrel(builder, useHttps);
         ConfigureServices(builder.Services, useHttps);
 
         var app = builder.Build();
-
         app.Environment.EnsureUploadDirectoryStructure();
 
         ConfigureMiddleware(app, useHttps);
@@ -112,5 +89,31 @@ public class Program
     {
         await serviceProvider.MigrateDbAsync();
         await SeedData.InitializeAsync(serviceProvider);
+    }
+
+    private static void ConfigureKestrel(WebApplicationBuilder builder, bool useHttps)
+    {
+        if (useHttps)
+        {
+            builder.WebHost.UseKestrel(kestrel =>
+            {
+                var appServices = kestrel.ApplicationServices;
+
+                // HTTP on port 80 (required for ACME HTTP-01 challenge)
+                kestrel.ListenAnyIP(80);
+
+                // HTTPS on port 443 with Let's Encrypt
+                kestrel.ListenAnyIP(
+                    443,
+                    listenOptions =>
+                    {
+                        listenOptions.UseHttps(httpsOptions =>
+                        {
+                            httpsOptions.UseLettuceEncrypt(appServices);
+                        });
+                    }
+                );
+            });
+        }
     }
 }
