@@ -14,7 +14,7 @@ namespace Backend.Api.Services
             _fileTypeConfigs = InitializeFileTypeConfigs();
         }
 
-        private Dictionary<string, FileTypeConfig> InitializeFileTypeConfigs()
+        private static Dictionary<string, FileTypeConfig> InitializeFileTypeConfigs()
         {
             return new Dictionary<string, FileTypeConfig>
             {
@@ -132,7 +132,7 @@ namespace Backend.Api.Services
                 }
 
                 // Build URL - serve via controller endpoint
-                var fileUrl = $"{baseUrl}/api/uploads/{fileType}/{uniqueFileName}";
+                var fileUrl = $"/api/uploads/{fileType}/{uniqueFileName}";
 
                 return FileUploadResult.Success(
                     url: fileUrl,
@@ -202,7 +202,7 @@ namespace Backend.Api.Services
                 await File.WriteAllBytesAsync(filePath, fileBytes);
 
                 // Build URL - serve via controller endpoint
-                var fileUrl = $"{baseUrl}/api/uploads/{fileType}/{uniqueFileName}";
+                var fileUrl = $"/api/uploads/{fileType}/{uniqueFileName}";
 
                 return FileUploadResult.Success(
                     url: fileUrl,

@@ -25,7 +25,7 @@ export class LessonService {
 
   async getCourses(): Promise<Course[]> {
     const result = await firstValueFrom(
-      this.httpClient.get<Course[]>(`${this.apiUrl}/course`)
+      this.httpClient.get<Course[]>(`api/course`)
     );
     
     if (!result) {
