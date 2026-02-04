@@ -61,23 +61,6 @@ public class LessonController(LessonService lessonService) : ControllerBase
     /// Gets the next lesson after the current one
     /// </summary>
     /// <param name="lessonId">The current lesson ID</param>
-    [HttpGet]
-    public async Task<ActionResult<LessonDto>> GetLessonsAsync(string lessonId)
-    {
-        var nextLesson = await _lessonService.GetNextLessonAsync(lessonId);
-
-        if (nextLesson == null)
-        {
-            return Ok(new { message = "This is the last lesson in the language" });
-        }
-
-        return Ok(nextLesson.ToDto());
-    }
-
-    /// <summary>
-    /// Gets the next lesson after the current one
-    /// </summary>
-    /// <param name="lessonId">The current lesson ID</param>
     [HttpGet("{lessonId}/next")]
     public async Task<ActionResult<LessonDto>> GetNextLesson(string lessonId)
     {
@@ -99,6 +82,9 @@ public class LessonController(LessonService lessonService) : ControllerBase
     public async Task<ActionResult<List<LessonDto>>> GetLessonsByCourse(string courseId)
     {
         var lessons = await _lessonService.GetLessonsByCourseAsync(courseId);
+        if (lessons == null)
+            return NotFound(new { message = $"Course '{courseId}' not found" });
+
         return Ok(lessons.Select(l => l.ToDto()));
     }
 

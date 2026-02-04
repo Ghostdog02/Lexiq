@@ -113,8 +113,12 @@ public class LessonService(BackendDbContext context)
     /// </summary>
     /// <param name="courseId">The ID of the course</param>
     /// <returns>List of lessons in the course</returns>
-    public async Task<List<Lesson>> GetLessonsByCourseAsync(string courseId)
+    public async Task<List<Lesson>?> GetLessonsByCourseAsync(string courseId)
     {
+        var courseExists = await _context.Courses.AnyAsync(c => c.Id == courseId);
+        if (!courseExists)
+            return null;
+
         return await _context
             .Lessons.Where(l => l.CourseId == courseId)
             .OrderBy(l => l.OrderIndex)
