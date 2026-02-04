@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
@@ -36,7 +37,7 @@ public class CourseController(CourseService courseService) : ControllerBase
     [Authorize(Roles = "Admin,ContentCreator")]
     public async Task<ActionResult<CourseDto>> CreateCourse(CreateCourseDto dto)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
         if (userId == null)
             return Unauthorized();

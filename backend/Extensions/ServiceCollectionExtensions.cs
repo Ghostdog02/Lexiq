@@ -1,10 +1,14 @@
 using System.Reflection;
+using System.Text;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities.Users;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -74,23 +78,45 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddCookieAuthentication(this IServiceCollection services)
+    public static IServiceCollection AddJwtAuthentication(this IServiceCollection services)
     {
-        services.ConfigureApplicationCookie(options =>
-        {
-            options.Cookie.Name = "AuthToken";
-            options.Cookie.HttpOnly = true;
-            options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-            options.ExpireTimeSpan = TimeSpan.FromHours(1);
-            options.SlidingExpiration = true;
+        var secretKey =
+            Environment.GetEnvironmentVariable("JWT_SECRET")
+            ?? throw new InvalidOperationException("JWT_SECRET not found in environment variables");
+        var issuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "lexiq-api";
+        var audience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "lexiq-frontend";
 
-            options.Events.OnRedirectToLogin = context =>
+        services
+            .AddAuthentication(options =>
             {
-                context.Response.StatusCode = 401;
-                return Task.CompletedTask;
-            };
-        });
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+                    ValidateIssuer = true,
+                    ValidIssuer = issuer,
+                    ValidateAudience = true,
+                    ValidAudience = audience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero,
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        context.Token = context.Request.Cookies["AuthToken"];
+                        return Task.CompletedTask;
+                    },
+                };
+            });
+
+        services.AddScoped<IJwtService, JwtService>();
 
         return services;
     }

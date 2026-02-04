@@ -1,7 +1,6 @@
 using Backend.Api.Mapping;
 using Backend.Api.Services;
 using Backend.Database.Entities.Users;
-using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,13 +10,13 @@ namespace Backend.Api.Controllers;
 [Route("api/[controller]")]
 public class AuthController(
     IGoogleAuthService googleAuthService,
-    SignInManager<User> signInManager,
-    ILogger<AuthController> logger
+    IJwtService jwtService,
+    UserManager<User> userManager
 ) : ControllerBase
 {
     private readonly IGoogleAuthService _googleAuthService = googleAuthService;
-    private readonly SignInManager<User> _signInManager = signInManager;
-    private readonly ILogger<AuthController> _logger = logger;
+    private readonly IJwtService _jwtService = jwtService;
+    private readonly UserManager<User> _userManager = userManager;
 
     [HttpPost("google-login")]
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
@@ -40,7 +39,21 @@ public class AuthController(
             return BadRequest(new { message = "Failed to create user" });
         }
 
-        await _signInManager.SignInAsync(user, isPersistent: true);
+        var roles = await _userManager.GetRolesAsync(user);
+        var token = _jwtService.GenerateToken(user, roles);
+
+        Response.Cookies.Append(
+            "AuthToken",
+            token,
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = HttpContext.Request.IsHttps,
+                SameSite = SameSiteMode.Lax,
+                Path = "/",
+                Expires = DateTime.UtcNow.AddHours(_jwtService.ExpirationHours),
+            }
+        );
 
         return Ok(
             new
@@ -53,63 +66,36 @@ public class AuthController(
     }
 
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout()
+    public IActionResult Logout()
     {
-        try
-        {
-            ClearAuthCookies();
+        Response.Cookies.Append(
+            "AuthToken",
+            "",
+            new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = HttpContext.Request.IsHttps,
+                SameSite = SameSiteMode.Lax,
+                Path = "/",
+                Expires = DateTime.UtcNow.AddDays(-1),
+            }
+        );
 
-            return Ok(new { message = "Logout successful" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during logout");
-            return StatusCode(500, new { message = "An error occurred during logout" });
-        }
+        return Ok(new { message = "Logout successful" });
     }
 
     [HttpGet("auth-status")]
-    public async Task<IActionResult> GetAuthStatus()
+    public IActionResult GetAuthStatus()
     {
-        try
-        {
-            string cookie = Request.Cookies["AuthToken"] ?? "";
+        var isAuthenticated = HttpContext.User.Identity?.IsAuthenticated ?? false;
 
-            if (string.IsNullOrEmpty(cookie))
+        return Ok(
+            new AuthStatusResponse
             {
-                return Ok(
-                    new AuthStatusResponse { Message = "No auth cookie found", IsLogged = false }
-                );
+                Message = isAuthenticated ? "Authenticated" : "Not authenticated",
+                IsLogged = isAuthenticated,
             }
-
-            bool isValid = await _googleAuthService.ValidateJwtToken(cookie);
-
-            return Ok(
-                new AuthStatusResponse
-                {
-                    Message = isValid ? "Successful auth status check" : "Invalid token",
-                    IsLogged = isValid,
-                }
-            );
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Auth status check failed: {Message}", ex.Message);
-            return Ok(new AuthStatusResponse { Message = "Not authenticated", IsLogged = false });
-        }
-    }
-
-    private void ClearAuthCookies()
-    {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.Strict,
-            Expires = DateTime.UtcNow.AddDays(-1),
-        };
-
-        Response.Cookies.Append("AuthToken", "", cookieOptions);
+        );
     }
 }
 

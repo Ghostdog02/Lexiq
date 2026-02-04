@@ -9,14 +9,12 @@ public interface IGoogleAuthService
 {
     Task<GoogleJsonWebSignature.Payload?> ValidateGoogleTokenAsync(string idToken);
     Task<User?> LoginUser(GoogleJsonWebSignature.Payload payload);
-    Task<bool> ValidateJwtToken(string token);
 }
 
-public class GoogleAuthService(UserManager<User> userManager, IConfiguration configuration)
+public class GoogleAuthService(UserManager<User> userManager)
     : IGoogleAuthService
 {
     private readonly UserManager<User> _userManager = userManager;
-    private readonly IConfiguration _configuration = configuration;
 
     public async Task<GoogleJsonWebSignature.Payload?> ValidateGoogleTokenAsync(string idToken)
     {
@@ -84,32 +82,4 @@ public class GoogleAuthService(UserManager<User> userManager, IConfiguration con
         return user;
     }
 
-    public async Task<bool> ValidateJwtToken(string token)
-    {
-        try
-        {
-            if (!string.IsNullOrEmpty(token))
-            {
-                GoogleJsonWebSignature.Payload isValid = await GoogleJsonWebSignature.ValidateAsync(
-                    token
-                );
-
-                return true;
-            }
-            else
-            {
-                throw new ArgumentException($"Passed token is null or empty");
-            }
-        }
-        catch (InvalidJwtException message)
-        {
-            throw new InvalidJwtException($"The passed jwt token is invalid. {message}");
-        }
-        catch (Exception message)
-        {
-            throw new InvalidJwtException(
-                $"Error occurred during jwt token validation with google. {message}"
-            );
-        }
-    }
 }

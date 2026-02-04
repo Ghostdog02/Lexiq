@@ -54,10 +54,10 @@ public class Program
         services.AddCorsPolicy();
         services.AddDatabaseContext();
         services.AddApplicationServices();
-        services.AddCookieAuthentication();
         services.AddControllersWithOptions();
         services.AddIdentityConfiguration();
         services.AddGoogleAuthentication();
+        services.AddJwtAuthentication();
         services.AddSwaggerDocumentation();
         services.LimitFileUploads();
         services.AddHealthChecks();
