@@ -1,100 +1,33 @@
-import { Component, DestroyRef, HostListener, inject, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, HostListener, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { LessonService } from '../../services/lesson.service';
 import { Lesson } from '../../models/lesson.interface';
-
-export interface Unit {
-  id: number;
-  title: string;
-  description: string;
-  lessons: Lesson[];
-  color: string;
-}
+import { CourseWithLessons } from '../../models/course.interface';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit {
-  courses: Unit[] = [];
-  createdLessons: Lesson[] = [];
-  currentLessonId: number = 3;
+  courses: CourseWithLessons[] = [];
+  currentLessonId: string = '';
   totalXp: number = 150;
   currentStreak: number = 5;
   isUserBelowLesson: boolean = false;
+  isLoading: boolean = true;
+  error: string | null = null;
+
+  // Color palette for courses (cycles if more courses than colors)
+  private readonly courseColors = ['#7c5cff', '#9178ff', '#5a3ce6', '#a78bfa', '#8b5cf6', '#7c3aed'];
 
   private router = inject(Router);
   private lessonService = inject(LessonService);
-  private destroyRef = inject(DestroyRef);
 
   ngOnInit() {
-    this.initializeLearningPath();
-    this.loadExistingLessons();
-    this.subscribeToCreatedLessons();
-  }
-
-  private loadExistingLessons() {
-    // Load lessons that were created before this component initialized
-    const existingLessons = this.lessonService.getCreatedLessons();
-    existingLessons.forEach(lesson => {
-      this.createdLessons.push(lesson);
-      this.addLessonToUnits(lesson);
-    });
-  }
-
-  private subscribeToCreatedLessons() {
-    this.lessonService.lessonCreated$
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((createdLesson) => {
-        console.log('New lesson received in home:', createdLesson);
-        // Only add if not already in createdLessons (avoid duplicates from loadExistingLessons)
-        if (!this.createdLessons.includes(createdLesson)) {
-          this.createdLessons.push(createdLesson);
-          this.addLessonToUnits(createdLesson);
-        }
-      });
-  }
-
-  private addLessonToUnits(lesson: Lesson) {
-    // Find or create "My Lessons" unit for user-created content
-    let myLessonsUnit = this.courses.find(u => u.id === 1);
-
-    if (!myLessonsUnit) {
-      myLessonsUnit = {
-        id: 0,
-        title: 'My Lessons',
-        description: 'Your created lessons',
-        color: '#10b981',
-        lessons: []
-      };
-      // Add at the beginning of units
-      this.courses.unshift(myLessonsUnit);
-    }
-
-    // Generate a unique ID for the new lesson if it doesn't have one
-    if (lesson.id === undefined) {
-      const allLessons = this.getAllLessons();
-      const maxId = allLessons.length > 0 ? Math.max(...allLessons.map(l => l.id ?? 0)) : 0;
-      lesson.id = maxId + 1;
-    }
-
-    // Add path display properties to the lesson
-    const lessonWithPath: Lesson = {
-      ...lesson,
-      icon: '📚',
-      status: 'available',
-      xp: lesson.exercises.length * 25
-    };
-
-    // Check if already in unit to avoid duplicates
-    if (!myLessonsUnit.lessons.find(l => l.id === lesson.id)) {
-      myLessonsUnit.lessons.push(lessonWithPath);
-    }
+    this.loadCoursesFromApi();
   }
 
   @HostListener('window:scroll', ['$event'])
@@ -107,54 +40,51 @@ export class HomeComponent implements OnInit {
     }
   }
 
-  initializeLearningPath() {
-    this.courses = [
-      {
-        id: 1,
-        title: 'Unit 1',
-        description: 'Greetings & Basics',
-        color: '#7c5cff',
-        lessons: [
-          { id: 1, title: 'Hello!', description: 'Learn basic greetings', icon: '👋', status: 'completed', xp: 50, estimatedDuration: 10, content: '', courseId: '1', exercises: [] },
-          { id: 2, title: 'Introductions', description: 'Introduce yourself', icon: '🙋', status: 'completed', xp: 50, estimatedDuration: 15, content: '', courseId: '1', exercises: [] },
-          { id: 3, title: 'Numbers', description: 'Count from 1 to 10', icon: '🔢', status: 'in-progress', xp: 50, progress: 65, estimatedDuration: 10, content: '', courseId: '1', exercises: [] },
-          { id: 4, title: 'Colors', description: 'Learn basic colors', icon: '🎨', status: 'available', xp: 50, estimatedDuration: 10, content: '', courseId: '1', exercises: [] },
-        ]
-      },
-      {
-        id: 2,
-        title: 'Unit 2',
-        description: 'Daily Conversations',
-        color: '#9178ff',
-        lessons: [
-          { id: 5, title: 'Family', description: 'Talk about family', icon: '👨‍👩‍👧‍👦', status: 'locked', xp: 75, estimatedDuration: 20, content: '', courseId: '2', exercises: [] },
-          { id: 6, title: 'Food', description: 'Order food', icon: '🍕', status: 'locked', xp: 75, estimatedDuration: 15, content: '', courseId: '2', exercises: [] },
-          { id: 7, title: 'Shopping', description: 'Go shopping', icon: '🛍️', status: 'locked', xp: 75, estimatedDuration: 20, content: '', courseId: '2', exercises: [] },
-        ]
-      },
-      {
-        id: 3,
-        title: 'Unit 3',
-        description: 'Grammar Foundations',
-        color: '#5a3ce6',
-        lessons: [
-          { id: 8, title: 'Verbs', description: 'Present tense verbs', icon: '⚡', status: 'locked', xp: 100, estimatedDuration: 25, content: '', courseId: '3', exercises: [] },
-          { id: 9, title: 'Adjectives', description: 'Describe things', icon: '✨', status: 'locked', xp: 100, estimatedDuration: 20, content: '', courseId: '3', exercises: [] },
-          { id: 10, title: 'Questions', description: 'Ask questions', icon: '❓', status: 'locked', xp: 100, estimatedDuration: 20, content: '', courseId: '3', exercises: [] },
-        ]
-      },
-      {
-        id: 4,
-        title: 'Unit 4',
-        description: 'Real World Practice',
-        color: '#a78bfa',
-        lessons: [
-          { id: 11, title: 'Travel', description: 'Navigate around', icon: '✈️', status: 'locked', xp: 125, estimatedDuration: 30, content: '', courseId: '4', exercises: [] },
-          { id: 12, title: 'Work', description: 'Professional talk', icon: '💼', status: 'locked', xp: 125, estimatedDuration: 25, content: '', courseId: '4', exercises: [] },
-          { id: 13, title: 'Hobbies', description: 'Discuss interests', icon: '🎸', status: 'locked', xp: 125, estimatedDuration: 25, content: '', courseId: '4', exercises: [] },
-        ]
-      }
-    ];
+  /**
+   * Fetches courses from the API, then fetches lessons for each course.
+   * Maps API responses to the UI model shape expected by the template.
+   */
+  async loadCoursesFromApi(): Promise<void> {
+    this.isLoading = true;
+    this.error = null;
+
+    try {
+      const coursesFromApi = await this.lessonService.getCourses();
+
+      const coursesWithLessons: CourseWithLessons[] = await Promise.all(
+        coursesFromApi.map(async (course, index) => {
+          const lessonsFromApi = await this.lessonService.getLessonsByCourse(course.courseId);
+
+          return {
+            ...course,
+            color: this.courseColors[index % this.courseColors.length],
+            lessons: lessonsFromApi.map(lesson => this.lessonService.mapApiToLesson(lesson))
+          };
+        })
+      );
+
+      this.courses = coursesWithLessons;
+
+      // Set current lesson to first non-locked lesson
+      this.setCurrentLesson();
+
+    } catch (err) {
+      console.error('❌ Error loading courses:', err);
+      this.error = 'Failed to load courses. Please try again.';
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
+  /**
+   * Sets currentLessonId to the first available (non-locked) lesson.
+   */
+  private setCurrentLesson(): void {
+    const allLessons = this.getAllLessons();
+    const firstAvailable = allLessons.find(l => l.status === 'available' || l.status === 'in-progress');
+    if (firstAvailable?.id) {
+      this.currentLessonId = firstAvailable.id;
+    }
   }
 
   onLessonClick(lesson: Lesson) {

@@ -35,6 +35,8 @@ export class LessonViewerComponent implements OnInit {
   private lessonService = inject(LessonService);
 
   lesson: Lesson | null = null;
+  isLoading = true;
+  error: string | null = null;
   currentView: 'content' | 'exercises' = 'content';
   currentExerciseIndex = 0;
   answers: Map<number, ExerciseAnswer> = new Map();
@@ -47,21 +49,36 @@ export class LessonViewerComponent implements OnInit {
   ExerciseType = ExerciseType;
 
   ngOnInit() {
-    // Get lesson ID from route params
     const lessonId = this.route.snapshot.paramMap.get('id');
     if (lessonId) {
-      this.loadLesson(parseInt(lessonId, 10));
+      this.loadLesson(lessonId);
+    } else {
+      this.error = 'No lesson ID provided';
+      this.isLoading = false;
     }
   }
 
-  private loadLesson(id: number) {
-    // Try to find lesson from service's created lessons
-    const createdLessons = this.lessonService.getCreatedLessons();
-    this.lesson = createdLessons.find(l => l.id === id) || null;
+  private async loadLesson(lessonId: string): Promise<void> {
+    this.isLoading = true;
+    this.error = null;
 
-    if (this.lesson) {
+    try {
+      const apiLesson = await this.lessonService.getLesson(lessonId);
+
+      if (!apiLesson) {
+        this.error = 'Lesson not found';
+        return;
+      }
+
+      // Use shared mapper from service
+      this.lesson = this.lessonService.mapApiToLesson(apiLesson);
       this.initializeAnswers();
       this.calculateTotalXp();
+    } catch (err) {
+      console.error('❌ Error loading lesson:', err);
+      this.error = 'Failed to load lesson';
+    } finally {
+      this.isLoading = false;
     }
   }
 

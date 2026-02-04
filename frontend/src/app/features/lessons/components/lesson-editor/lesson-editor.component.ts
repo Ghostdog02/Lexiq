@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, AfterViewInit, OnInit, OnDestroy } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormArray, ReactiveFormsModule, FormGroup, AbstractControl } from '@angular/forms';
 import { Lesson, LessonForm } from '../../models/lesson.interface';
@@ -16,8 +16,8 @@ import {
 import { LessonService } from '../../services/lesson.service';
 import { LessonFormService } from '../../services/lesson-form.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { debounceTime } from 'rxjs/internal/operators/debounceTime';
-import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChanged';
+import { debounceTime } from 'rxjs/operators';
+import { distinctUntilChanged } from 'rxjs/operators';
 import { marked } from 'marked';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { EditorComponent } from '../../../../shared/components/editor/editor.component';
@@ -220,27 +220,23 @@ export class LessonEditorComponent implements OnInit {
   }
 
   // Form submission
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.lessonForm.invalid) {
       this.markFormGroupTouched();
       return;
     }
 
     const lessonData = this.buildLessonPayload();
-    console.log('Lesson submitted:', lessonData);
 
-    this.lessonService.createLesson(lessonData)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({
-        next: (response) => {
-          console.log('Lesson created successfully:', response);
-          this.resetForm();
-          this.router.navigate(['/']);
-        },
-        error: (error) => {
-          console.error('Error creating lesson:', error);
-        }
-      });
+    try {
+      const created = await this.lessonService.createLesson(lessonData);
+      console.log('✅ Lesson created:', created);
+      this.resetForm();
+      this.router.navigate(['/']);
+    } catch (error) {
+      console.error('❌ Error creating lesson:', error);
+      // TODO: Show user-friendly error notification
+    }
   }
 
   onDiscard(): void {

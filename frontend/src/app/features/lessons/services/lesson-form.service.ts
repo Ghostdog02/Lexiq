@@ -10,8 +10,8 @@ import {
   ExerciseForm,
   ExerciseFormControls,
   QuestionOptionForm
-} from './exercise.interface';
-import { LessonForm } from './lesson.interface';
+} from '../models/exercise.interface';
+import { LessonForm } from '../models/lesson.interface';
 
 @Injectable({
   providedIn: 'root'
