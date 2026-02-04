@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LeaderboardUser } from './leaderboard.interface';
+import { LeaderboardUser } from '../../models/leaderboard.interface';
 
 
 @Component({

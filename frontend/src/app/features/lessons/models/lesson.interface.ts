@@ -3,6 +3,23 @@ import { Exercise, ExerciseForm, ExerciseType } from "./exercise.interface";
 
 export type LessonStatus = 'locked' | 'available' | 'in-progress' | 'completed';
 
+// API response shape (matches backend LessonDto)
+export interface LessonApiResponse {
+  lessonId: string;
+  courseId: string;
+  courseName: string;
+  title: string;
+  description?: string;
+  estimatedDurationMinutes?: number;
+  orderIndex: number;
+  lessonMediaUrl?: string[];
+  lessonContent: string;
+  lessonTextUrl?: string;
+  isLocked: boolean;
+  exerciseCount: number;
+}
+
+// UI model used for lesson creation forms and display
 export interface Lesson {
   // Core lesson data
   title: string;
@@ -10,11 +27,11 @@ export interface Lesson {
   estimatedDuration: number;
   mediaUrl?: string; // Cover image URL
   content: string;   // Editor.js JSON content
-  courseId: string; 
+  courseId: string;
   exercises: Exercise[];
 
   // Path display properties (optional - set when adding to learning path)
-  id?: number;
+  id?: string;
   icon?: string;
   status?: LessonStatus;
   xp?: number;
