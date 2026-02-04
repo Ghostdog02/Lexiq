@@ -1,6 +1,8 @@
 namespace Backend.Api.Dtos;
 
 public record LessonDto(
+    string LessonId,
+    string CourseId,
     string CourseName,
     string Title,
     string? Description,
