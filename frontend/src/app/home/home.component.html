@@ -24,10 +24,10 @@
                 <article
                   [id]="'lesson-' + lesson.id"
                   class="lesson-node"
-                  [class.completed]="lesson.status === 'completed'"
-                  [class.in-progress]="lesson.status === 'in-progress'"
-                  [class.available]="lesson.status === 'available'"
-                  [class.locked]="lesson.status === 'locked'"
+                  [class.completed]="lesson.status === LessonStatus.Completed"
+                  [class.in-progress]="lesson.status === LessonStatus.InProgress"
+                  [class.available]="lesson.status === LessonStatus.Available"
+                  [class.locked]="lesson.status === LessonStatus.Locked"
                   [class.current]="lesson.id === currentLessonId"
                   (click)="onLessonClick(lesson)"
                 >
@@ -36,11 +36,11 @@
 
                     <span class="lesson-icon">{{ lesson.icon }}</span>
 
-                    @if (lesson.status === 'completed') {
+                    @if (lesson.status === LessonStatus.Completed) {
                       <span class="checkmark">✓</span>
                     }
 
-                    @if (lesson.status === 'locked') {
+                    @if (lesson.status === LessonStatus.Locked) {
                       <div class="lock-overlay">
                         <span class="lock-icon">🔒</span>
                       </div>
@@ -72,32 +72,32 @@
       <header class="header-stats">
         
         <article class="stat-card">
-        
+
           <figure class="stat-icon">🔥</figure>
-        
+
           <div class="stat-content">
-        
-            <data [value]="currentStreak" class="stat-value">{{ currentStreak }}</data>
-        
+
+            <data [value]="userStats.currentStreak" class="stat-value">{{ userStats.currentStreak }}</data>
+
             <span class="stat-label">Day streak</span>
-        
+
           </div>
-        
+
         </article>
-      
-        
+
+
         <article class="stat-card">
-        
+
           <figure class="stat-icon">⭐</figure>
-        
+
           <div class="stat-content">
-        
-            <data [value]="totalXp" class="stat-value">{{ totalXp }}</data>
-        
+
+            <data [value]="userStats.totalXp" class="stat-value">{{ userStats.totalXp }}</data>
+
             <span class="stat-label">Total XP</span>
-        
+
           </div>
-        
+
         </article>
       
       </header>

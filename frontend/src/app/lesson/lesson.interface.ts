@@ -1,7 +1,12 @@
 import { FormArray, FormControl, FormGroup } from "@angular/forms";
 import { Exercise, ExerciseForm, ExerciseType } from "./exercise.interface";
 
-export type LessonStatus = 'locked' | 'available' | 'in-progress' | 'completed';
+export enum LessonStatus {
+  Locked = 'locked',
+  Available = 'available',
+  InProgress = 'in-progress',
+  Completed = 'completed'
+}
 
 export interface Lesson {
   // Core lesson data
