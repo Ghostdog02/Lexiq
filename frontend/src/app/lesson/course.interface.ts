@@ -1,7 +1,7 @@
 export interface Course {
-  id: string;
+  courseId: string;
   title: string;
-  LanguageName: string;
+  languageName: string;
   description?: string;
   estimatedDurationHours: number;
   orderIndex: number;

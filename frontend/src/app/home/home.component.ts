@@ -21,7 +21,7 @@ export interface Unit {
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit {
-  units: Unit[] = [];
+  courses: Unit[] = [];
   createdLessons: Lesson[] = [];
   currentLessonId: number = 3;
   totalXp: number = 150;
@@ -62,7 +62,7 @@ export class HomeComponent implements OnInit {
 
   private addLessonToUnits(lesson: Lesson) {
     // Find or create "My Lessons" unit for user-created content
-    let myLessonsUnit = this.units.find(u => u.id === 1);
+    let myLessonsUnit = this.courses.find(u => u.id === 1);
 
     if (!myLessonsUnit) {
       myLessonsUnit = {
@@ -73,7 +73,7 @@ export class HomeComponent implements OnInit {
         lessons: []
       };
       // Add at the beginning of units
-      this.units.unshift(myLessonsUnit);
+      this.courses.unshift(myLessonsUnit);
     }
 
     // Generate a unique ID for the new lesson if it doesn't have one
@@ -108,7 +108,7 @@ export class HomeComponent implements OnInit {
   }
 
   initializeLearningPath() {
-    this.units = [
+    this.courses = [
       {
         id: 1,
         title: 'Unit 1',
@@ -195,7 +195,7 @@ export class HomeComponent implements OnInit {
   }
 
   getAllLessons(): Lesson[] {
-    return this.units.flatMap(unit => unit.lessons);
+    return this.courses.flatMap(unit => unit.lessons);
   }
 
   getLessonPosition(lessonIndex: number): { x: number, y: number } {

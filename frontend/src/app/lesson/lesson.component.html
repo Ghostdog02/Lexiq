@@ -24,8 +24,8 @@
             [class.invalid]="hasError(lessonFormControls.courseId)"
           >
             <option value="" disabled>Select a Course</option>
-            @for (course of courses; track course.id) {
-              <option [value]="course.id">{{ course.title }}</option>
+            @for (course of courses; track course.courseId) {
+              <option [value]="course.courseId">{{ course.title }}</option>
             }
           </select>
           @if (hasError(lessonFormControls.courseId)) {
