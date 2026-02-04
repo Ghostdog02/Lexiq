@@ -58,7 +58,7 @@ services:
       dockerfile: Dockerfile.dev
       args:
         - NG_GOOGLE_CLIENT_ID=751309259564-16n4ng66dqcqrulih1ihhamdrnrlbvgr.apps.googleusercontent.com
-        - BACKEND_API_URL=http://localhost:8080/api
+        - BACKEND_API_URL=/api
     container_name: lexiq-frontend
     ports:
       - "4200:4200"

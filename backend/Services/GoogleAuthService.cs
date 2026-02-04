@@ -78,7 +78,7 @@ public class GoogleAuthService(UserManager<User> userManager)
             var loginInfo = new UserLoginInfo("Google", payload.Subject, "Google");
             await _userManager.AddLoginAsync(user, loginInfo);
         }
-
+        
         return user;
     }
 

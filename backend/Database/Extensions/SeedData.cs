@@ -67,7 +67,7 @@ public class SeedData
             LockoutEnabled = false,
             LastLoginDate = today,
             RegistrationDate = today,
-            NormalizedEmail = userName.Normalize(),
+            NormalizedEmail = userManager.NormalizeEmail(adminEmail),
         };
 
         var creationResult = await userManager.CreateAsync(user);

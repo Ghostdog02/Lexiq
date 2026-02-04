@@ -55,14 +55,7 @@ public class AuthController(
             }
         );
 
-        return Ok(
-            new
-            {
-                message = "Login successful",
-                user = user.ToGoogleLoginDto(),
-                issuedAt = payload.IssuedAtTimeSeconds,
-            }
-        );
+        return Ok(new { message = "Login successful", user = user.ToGoogleLoginDto() });
     }
 
     [HttpPost("logout")]
@@ -81,6 +74,10 @@ public class AuthController(
             }
         );
 
+        System.Console.WriteLine(
+            $"User logged out: {HttpContext.User.Identity?.Name ?? "Unknown User"}"
+        );
+
         return Ok(new { message = "Logout successful" });
     }
 
@@ -88,7 +85,7 @@ public class AuthController(
     public IActionResult GetAuthStatus()
     {
         var isAuthenticated = HttpContext.User.Identity?.IsAuthenticated ?? false;
-
+        System.Console.WriteLine($"Auth status checked: {isAuthenticated}");
         return Ok(
             new AuthStatusResponse
             {
