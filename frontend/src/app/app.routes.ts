@@ -1,8 +1,8 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './home/home.component';
+import { HomeComponent } from './features/lessons/components/home/home.component';
 import { GoogleLoginComponent } from './auth/google-login/google-login.component';
-import { ProfileComponent } from './profile/profile.component';
-import { LeaderboardComponent } from './leaderboard/leaderboard.component';
+import { ProfileComponent } from './features/users/components/profile/profile.component';
+import { LeaderboardComponent } from './features/users/components/leaderboard/leaderboard.component';
 import { HelpComponent } from './help/help.component';
 
 export const routes: Routes = [
@@ -18,7 +18,7 @@ export const routes: Routes = [
     },
     {
         path: "create-lesson",
-        loadComponent: () => import('./lesson/lesson.component').then(m => m.LessonComponent),
+        loadComponent: () => import('./features/lessons/components/lesson-editor/lesson-editor.component').then(m => m.LessonEditorComponent),
         title: "Create Lesson"
     }, 
     {
@@ -38,7 +38,7 @@ export const routes: Routes = [
     },
     {
         path: 'lesson/:id',
-        loadComponent: () => import('./lesson-detail/lesson-detail').then(m => m.LessonDetailComponent),
+        loadComponent: () => import('./features/lessons/components/lesson-viewer/lesson-viewer.component').then(m => m.LessonViewerComponent),
         title: "Lesson Details"
     },
     {

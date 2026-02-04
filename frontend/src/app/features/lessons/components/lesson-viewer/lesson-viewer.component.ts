@@ -4,8 +4,8 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { marked } from 'marked';
-import { LessonService } from '../lesson/lesson.service';
-import { Lesson } from '../lesson/lesson.interface';
+import { LessonService } from '../../services/lesson.service';
+import { Lesson } from '../../models/lesson.interface';
 import {
   AnyExercise,
   ExerciseType,
@@ -13,7 +13,7 @@ import {
   FillInBlankExercise,
   TranslationExercise,
   ListeningExercise
-} from '../lesson/exercise.interface';
+} from '../../models/exercise.interface';
 
 interface ExerciseAnswer {
   answer: string | string[];
@@ -22,13 +22,13 @@ interface ExerciseAnswer {
 }
 
 @Component({
-  selector: 'app-lesson-detail',
+  selector: 'app-lesson-viewer',
   standalone: true,
   imports: [CommonModule, FormsModule],
-  templateUrl: './lesson-detail.html',
-  styleUrl: './lesson-detail.scss'
+  templateUrl: './lesson-viewer.component.html',
+  styleUrl: './lesson-viewer.component.scss'
 })
-export class LessonDetailComponent implements OnInit {
+export class LessonViewerComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private sanitizer = inject(DomSanitizer);

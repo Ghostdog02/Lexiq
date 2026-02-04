@@ -2,8 +2,8 @@ import { Component, DestroyRef, HostListener, inject, OnInit } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { LessonService } from '../lesson/lesson.service';
-import { Lesson } from '../lesson/lesson.interface';
+import { LessonService } from '../../services/lesson.service';
+import { Lesson } from '../../models/lesson.interface';
 
 export interface Unit {
   id: number;

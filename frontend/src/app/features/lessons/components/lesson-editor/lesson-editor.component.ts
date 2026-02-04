@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, AfterViewInit, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormArray, ReactiveFormsModule, FormGroup, AbstractControl } from '@angular/forms';
-import { Lesson, LessonForm } from './lesson.interface';
+import { Lesson, LessonForm } from '../../models/lesson.interface';
 import {
   DifficultyLevel,
   ExerciseForm,
@@ -12,25 +12,25 @@ import {
   ListeningExercise,
   MultipleChoiceExercise,
   AnyExercise
-} from './exercise.interface';
-import { LessonService } from './lesson.service';
-import { LessonFormService } from './lesson-form.service';
+} from '../../models/exercise.interface';
+import { LessonService } from '../../services/lesson.service';
+import { LessonFormService } from '../../services/lesson-form.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime } from 'rxjs/internal/operators/debounceTime';
 import { distinctUntilChanged } from 'rxjs/internal/operators/distinctUntilChanged';
 import { marked } from 'marked';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { EditorComponent } from '../editor/editor.component';
-import { Course } from './course.interface';
+import { EditorComponent } from '../../../../shared/components/editor/editor.component';
+import { Course } from '../../models/course.interface';
 
 @Component({
-  selector: 'app-lesson',
+  selector: 'app-lesson-editor',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, EditorComponent],
-  templateUrl: './lesson.component.html',
-  styleUrl: './lesson.component.scss'
+  templateUrl: './lesson-editor.component.html',
+  styleUrl: './lesson-editor.component.scss'
 })
-export class LessonComponent implements OnInit {
+export class LessonEditorComponent implements OnInit {
   readonly formService = inject(LessonFormService);
   private readonly lessonService = inject(LessonService);
   private readonly destroyRef = inject(DestroyRef);

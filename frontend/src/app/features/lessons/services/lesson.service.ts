@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, Observable, of, Subject } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { Lesson } from './lesson.interface';
-import { Course } from './course.interface';
+import { Lesson } from '../models/lesson.interface';
+import { Course } from '../models/course.interface';
 
 @Injectable({
   providedIn: 'root'
