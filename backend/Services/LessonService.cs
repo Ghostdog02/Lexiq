@@ -18,7 +18,7 @@ public class LessonService(BackendDbContext context)
     {
         var currentLesson = await _context
             .Lessons.Include(l => l.Course)
-            .ThenInclude(c => c.LanguageId)
+            .ThenInclude(c => c.Language)
             .FirstOrDefaultAsync(l => l.Id == currentLessonId);
 
         if (currentLesson == null)
@@ -221,7 +221,7 @@ public class LessonService(BackendDbContext context)
     {
         return await _context
             .Lessons.Include(l => l.Course)
-            .ThenInclude(c => c.LanguageId)
+            .ThenInclude(c => c.Language)
             .Include(l => l.Exercises)
             .FirstOrDefaultAsync(l => l.Id == lessonId);
     }
