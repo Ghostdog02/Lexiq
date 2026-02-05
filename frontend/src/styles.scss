@@ -13,13 +13,23 @@
   --color-text-muted: #8b98a5;
   --color-white: #ffffff;
 
-    --panel: #1e2732;
-    --accent: #7c5cff;
-    --accent-light: #9178ff;
-    --accent-dark: #5a3ce6;
-    --muted: #8b98a5;
-    --text-secondary: #b8c4cf;
-    --white: #ffffff;
+  --background-color: var(--color-bg);
+  --primary-color: var(--color-text-primary);
+  --panel: var(--color-bg-elevated);
+  --accent: var(--color-accent);
+  --accent-light: var(--color-accent-light);
+  --accent-dark: var(--color-accent-dark);
+  --muted: var(--color-text-muted);
+  --text-secondary: var(--color-text-secondary);
+  --white: var(--color-white);
+
+  --panel: #1e2732;
+  --accent: #7c5cff;
+  --accent-light: #9178ff;
+  --accent-dark: #5a3ce6;
+  --muted: #8b98a5;
+  --text-secondary: #b8c4cf;
+  --white: #ffffff;
 
   // Semantic colors
   --color-success: #22c55e;
