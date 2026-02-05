@@ -76,6 +76,12 @@ public class BackendDbContext(DbContextOptions options)
             .HasForeignKey(eo => eo.ExerciseId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<FillInBlankExercise>();
+        modelBuilder.Entity<ListeningExercise>();
+        modelBuilder.Entity<TranslationExercise>();
+
+
+
         modelBuilder.Entity<UserLanguage>().HasKey(ul => new { ul.UserId, ul.LanguageId });
     }
 
