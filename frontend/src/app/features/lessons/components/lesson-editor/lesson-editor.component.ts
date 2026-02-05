@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormArray, ReactiveFormsModule, FormGroup, AbstractControl } from '@angular/forms';
-import { Lesson, LessonForm } from '../../models/lesson.interface';
+import { CreateLessonDto, Lesson, LessonForm } from '../../models/lesson.interface';
 import {
   DifficultyLevel,
   ExerciseForm,
@@ -18,9 +18,9 @@ import { LessonFormService } from '../../services/lesson-form.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime } from 'rxjs/operators';
 import { distinctUntilChanged } from 'rxjs/operators';
-import { marked } from 'marked';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { EditorComponent } from '../../../../shared/components/editor/editor.component';
+import { ContentParserService } from '../../../../shared/services/content-parser.service';
 import { Course } from '../../models/course.interface';
 
 @Component({
@@ -35,6 +35,7 @@ export class LessonEditorComponent implements OnInit {
   private readonly lessonService = inject(LessonService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly contentParser = inject(ContentParserService);
   private readonly router = inject(Router);
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[];
@@ -128,73 +129,7 @@ export class LessonEditorComponent implements OnInit {
   }
 
   parseContent(content: string): SafeHtml {
-    if (!content) return this.sanitizer.bypassSecurityTrustHtml('');
-
-    try {
-      const data = JSON.parse(content);
-      if (data && data.blocks && Array.isArray(data.blocks)) {
-        let html = '';
-        data.blocks.forEach((block: any) => {
-          switch (block.type) {
-            case 'header':
-              html += `<h${block.data.level}>${block.data.text}</h${block.data.level}>`;
-              break;
-            case 'paragraph':
-              html += `<p>${block.data.text}</p>`;
-              break;
-            case 'List':
-            case 'list':
-              const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
-              html += `<${tag}>`;
-              block.data.items.forEach((item: string) => {
-                html += `<li>${item}</li>`;
-              });
-              html += `</${tag}>`;
-              break;
-            case 'delimiter':
-              html += '<hr />';
-              break;
-            case 'table':
-              html += '<table>';
-              if (block.data.withHeadings && block.data.content.length > 0) {
-                html += '<thead><tr>';
-                block.data.content[0].forEach((cell: string) => {
-                  html += `<th>${cell}</th>`;
-                });
-                html += '</tr></thead><tbody>';
-                block.data.content.slice(1).forEach((row: string[]) => {
-                  html += '<tr>';
-                  row.forEach((cell: string) => {
-                    html += `<td>${cell}</td>`;
-                  });
-                  html += '</tr>';
-                });
-                html += '</tbody>';
-              } else {
-                html += '<tbody>';
-                block.data.content.forEach((row: string[]) => {
-                  html += '<tr>';
-                  row.forEach((cell: string) => {
-                    html += `<td>${cell}</td>`;
-                  });
-                  html += '</tr>';
-                });
-                html += '</tbody>';
-              }
-              html += '</table>';
-              break;
-            default:
-              break;
-          }
-        });
-        return this.sanitizer.bypassSecurityTrustHtml(html);
-      }
-    } catch (e) {
-      // Not JSON, fallback to markdown
-    }
-
-    const html = marked(content, { async: false, breaks: true });
-    return this.sanitizer.bypassSecurityTrustHtml(html as string);
+    return this.sanitizer.bypassSecurityTrustHtml(this.contentParser.parse(content));
   }
 
   replaceFillInBlank(question: string, answer: string): string {
@@ -219,7 +154,6 @@ export class LessonEditorComponent implements OnInit {
     }
   }
 
-  // Form submission
   async onSubmit(): Promise<void> {
     if (this.lessonForm.invalid) {
       this.markFormGroupTouched();
@@ -252,7 +186,7 @@ export class LessonEditorComponent implements OnInit {
     this.router.navigate(['/']);
   }
 
-  private buildLessonPayload(): Lesson {
+  private buildLessonPayload(): CreateLessonDto {
     const formValue = this.lessonForm.getRawValue();
 
     const exercises: AnyExercise[] = this.exercises.controls.map(exerciseForm => {

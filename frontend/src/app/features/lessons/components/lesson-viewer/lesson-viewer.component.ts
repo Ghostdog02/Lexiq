@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { marked } from 'marked';
 import { LessonService } from '../../services/lesson.service';
+import { ContentParserService } from '../../../../shared/services/content-parser.service';
 import { Lesson } from '../../models/lesson.interface';
 import {
   AnyExercise,
@@ -33,6 +33,7 @@ export class LessonViewerComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private sanitizer = inject(DomSanitizer);
   private lessonService = inject(LessonService);
+  private contentParser = inject(ContentParserService);
 
   lesson: Lesson | null = null;
   isLoading = true;
@@ -70,7 +71,6 @@ export class LessonViewerComponent implements OnInit {
         return;
       }
 
-      // Use shared mapper from service
       this.lesson = this.lessonService.mapApiToLesson(apiLesson);
       this.initializeAnswers();
       this.calculateTotalXp();
@@ -99,75 +99,8 @@ export class LessonViewerComponent implements OnInit {
     this.totalPossibleXp = this.lesson.exercises.reduce((sum, ex) => sum + (ex.points || 10), 0);
   }
 
-  // Content rendering
   parseContent(content: string): SafeHtml {
-    if (!content) return this.sanitizer.bypassSecurityTrustHtml('');
-    
-    try {
-      const data = JSON.parse(content);
-      if (data && data.blocks && Array.isArray(data.blocks)) {
-        let html = '';
-        data.blocks.forEach((block: any) => {
-          switch (block.type) {
-            case 'header':
-              html += `<h${block.data.level}>${block.data.text}</h${block.data.level}>`;
-              break;
-            case 'paragraph':
-              html += `<p>${block.data.text}</p>`;
-              break;
-            case 'List':
-            case 'list':
-              const tag = block.data.style === 'ordered' ? 'ol' : 'ul';
-              html += `<${tag}>`;
-              block.data.items.forEach((item: string) => {
-                html += `<li>${item}</li>`;
-              });
-              html += `</${tag}>`;
-              break;
-            case 'delimiter':
-              html += '<hr />';
-              break;
-            case 'table':
-              html += '<table>';
-              if (block.data.withHeadings && block.data.content.length > 0) {
-                html += '<thead><tr>';
-                block.data.content[0].forEach((cell: string) => {
-                  html += `<th>${cell}</th>`;
-                });
-                html += '</tr></thead><tbody>';
-                block.data.content.slice(1).forEach((row: string[]) => {
-                  html += '<tr>';
-                  row.forEach((cell: string) => {
-                    html += `<td>${cell}</td>`;
-                  });
-                  html += '</tr>';
-                });
-                html += '</tbody>';
-              } else {
-                html += '<tbody>';
-                block.data.content.forEach((row: string[]) => {
-                  html += '<tr>';
-                  row.forEach((cell: string) => {
-                    html += `<td>${cell}</td>`;
-                  });
-                  html += '</tr>';
-                });
-                html += '</tbody>';
-              }
-              html += '</table>';
-              break;
-            default:
-              break;
-          }
-        });
-        return this.sanitizer.bypassSecurityTrustHtml(html);
-      }
-    } catch (e) {
-      // Not JSON, fallback to markdown
-    }
-
-    const html = marked(content, { async: false, breaks: true });
-    return this.sanitizer.bypassSecurityTrustHtml(html as string);
+    return this.sanitizer.bypassSecurityTrustHtml(this.contentParser.parse(content));
   }
 
   // Navigation
