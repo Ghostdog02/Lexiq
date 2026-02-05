@@ -1,6 +1,5 @@
 import { Lesson } from './lesson.interface';
 
-// API response shape (matches backend CourseDto)
 export interface Course {
   courseId: string;
   title: string;

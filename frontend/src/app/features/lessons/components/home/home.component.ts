@@ -125,7 +125,7 @@ export class HomeComponent implements OnInit {
   }
 
   getAllLessons(): Lesson[] {
-    return this.courses.flatMap(unit => unit.lessons);
+    return this.courses.flatMap(course => course.lessons);
   }
 
   getLessonPosition(lessonIndex: number): { x: number, y: number } {

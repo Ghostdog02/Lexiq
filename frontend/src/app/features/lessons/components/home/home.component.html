@@ -56,7 +56,7 @@
           @for (course of courses; track course.courseId; let i = $index) {
 
             <header class="unit-header" [style.--unit-color]="course.color">
-              <div class="unit-number">Unit {{ i + 1 }}</div>
+              <div class="unit-number">Course {{ i + 1 }}</div>
               <h2 class="unit-title">{{ course.title }}</h2>
               <p class="unit-description">{{ course.description }}</p>
             </header>

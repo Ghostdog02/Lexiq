@@ -8,7 +8,7 @@ export enum DifficultyLevel {
 
 export enum ExerciseType {
   MultipleChoice = 'MultipleChoice',
-  FillInBlank = 'FillInTheBlank',
+  FillInBlank = 'FillInBlank',
   Listening = 'Listening',
   Translation = 'Translation'
 }

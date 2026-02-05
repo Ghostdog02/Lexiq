@@ -39,7 +39,10 @@
             "ngxEnv": {
               "root": "",
               "prefix": "(BACKEND|NG)_"
-            }
+            },
+            "allowedCommonJsDependencies": [
+              "editorjs-html"
+            ]
           },
           "configurations": {
             "production": {

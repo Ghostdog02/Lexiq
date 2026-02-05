@@ -109,18 +109,31 @@ TAG=latest docker compose -f docker-compose.prod.yml up --build
 ```
 backend/
 ├── Controllers/          # API endpoints
-│   ├── AuthController.cs          # Authentication endpoints
-│   ├── UserManagementController.cs # User CRUD operations
-│   ├── RoleManagementController.cs # Role management
-│   └── CoursesController.cs        # Course management (placeholder)
+│   ├── AuthController.cs              # Google OAuth login, logout, auth-status
+│   ├── CourseController.cs            # Course CRUD
+│   ├── LessonController.cs           # Lesson CRUD
+│   ├── ExerciseController.cs         # Exercise CRUD (polymorphic types)
+│   ├── LanguageController.cs         # Language management
+│   ├── UserLanguageController.cs     # User ↔ Language enrollment
+│   ├── UserManagementController.cs   # User CRUD (admin)
+│   ├── RoleManagementController.cs   # Role management (admin)
+│   └── UploadsController.cs          # File/image uploads
 ├── Database/
 │   ├── BackendDbContext.cs        # EF Core DbContext
-│   ├── Entities/                  # Database models
+│   ├── Entities/                  # Database models (Users/, Exercises/ subdirs)
 │   ├── Migrations/                # EF Core migrations
-│   └── Extensions/                # Database service configuration
+│   └── Extensions/                # Seeders & migration helpers
 ├── Services/
-│   ├── GoogleAuthService.cs       # Google OAuth implementation
+│   ├── GoogleAuthService.cs       # Google token validation & user creation
+│   ├── JwtService.cs              # JWT generation (HS256, cookie-set by AuthController)
+│   ├── CourseService.cs           # Course business logic
+│   ├── LessonService.cs           # Lesson business logic
+│   ├── ExerciseService.cs         # Exercise business logic
+│   ├── LanguageService.cs         # Language business logic
+│   ├── UserLanguageService.cs     # Enrollment logic
+│   ├── FileUploadsService.cs      # File upload handling
 │   └── UserExtensions.cs          # User utility methods
+├── Models/              # Request/response models (EditorJSModel, FileModel)
 ├── Dtos/                # Data Transfer Objects
 ├── Mapping/             # DTO ↔ Entity mappings
 ├── Extensions/          # Service collection & app builder extensions
@@ -133,9 +146,10 @@ backend/
   - Services are registered as Scoped for per-request lifecycle
   - No repository pattern - services directly access DbContext
 - **Middleware configuration** is in `Extensions/WebApplicationExtensions.cs`
-- **Authentication** uses cookie-based auth with Google OAuth support
-  - Cookie name: "AuthToken" with 1-hour sliding expiration
-  - HttpOnly, SameSite=Lax for CSRF protection
+- **Authentication** uses JWT-in-a-cookie with Google OAuth support
+  - `JwtService` signs a JWT (HS256); default expiry **24h** (env: `JWT_EXPIRATION_HOURS`)
+  - `AuthController` sets it as an HttpOnly, SameSite=Lax cookie named `AuthToken`
+  - `AddJwtAuthentication()` extracts the token from that cookie via `OnMessageReceived`
 - **Database initialization** happens in `Program.cs` via `InitializeDatabaseAsync()`
   - Auto-migration with retry logic (10 attempts, 3-second delays) for Docker startup
   - Seed data initialization after migration
@@ -145,12 +159,31 @@ backend/
 ```
 frontend/src/app/
 ├── auth/
-│   └── google-login/    # Google OAuth login component
-├── home/                # Home page component
-├── nav-bar/            # Navigation component
-├── not-found/          # 404 page
-├── app.routes.ts       # Route definitions
-└── app.config.ts       # App configuration & providers
+│   ├── auth.service.ts              # Auth state (BehaviorSubject), login/logout
+│   └── google-login/                # Google OAuth login component
+├── features/
+│   ├── lessons/
+│   │   ├── components/
+│   │   │   ├── home/                # Main dashboard (route: /)
+│   │   │   ├── lesson-editor/       # Create/edit lessons (route: /create-lesson, lazy)
+│   │   │   └── lesson-viewer/       # View lesson content (route: /lesson/:id, lazy)
+│   │   ├── models/                  # course.interface, lesson.interface, exercise.interface
+│   │   ├── services/                # lesson.service, lesson-form.service, form-validation.service
+│   │   └── constants/               # lesson-form.constants
+│   └── users/
+│       ├── components/
+│       │   ├── leaderboard/         # User rankings
+│       │   └── profile/             # User profile & achievements
+│       ├── models/                  # leaderboard.interface, user.model
+│       └── services/                # leaderboard.service
+├── help/                            # Help & FAQ (component + service)
+├── nav-bar/                         # Navigation sidebar
+├── not-found/                       # 404 page (lazy loaded)
+├── shared/
+│   └── components/
+│       └── editor/                  # EditorJS ControlValueAccessor wrapper
+├── app.routes.ts                    # Route definitions
+└── app.config.ts                    # App configuration & providers
 ```
 
 **Key patterns:**
@@ -161,7 +194,7 @@ frontend/src/app/
 - **State management**: Service-based with RxJS Observables (no Redux/NgRx)
   - AuthService uses BehaviorSubject for auth state
   - LessonService uses Subject for event broadcasting
-- **Dependency injection** uses Angular 16+ `inject()` function
+- **Dependency injection** uses a mix of `inject()` (e.g. AuthService) and constructor injection (e.g. LessonService)
 - **Subscription cleanup** via `takeUntilDestroyed(DestroyRef)` operator
 
 ### Database Schema
@@ -201,7 +234,8 @@ Three-stage pipeline in `.github/workflows/`:
 3. **continious-delivery.yml** - Deploys to Hetzner production server
 
 **Deployment flow:**
-- Triggered on push to `master` or `feature/ci-cd`
+- Triggered on push to `master` or `fix/ci-cd`
+- Note: `continuous-delivery` job currently references `@feature/ci-cd` — may need updating to match
 - Builds both frontend and backend Docker images
 - Pushes to GitHub Container Registry (ghcr.io)
 - SSHs into Hetzner server and runs `scripts/deploy.sh`
@@ -280,7 +314,7 @@ public async Task<IActionResult> CreateCourse(CreateCourseDto dto) { }
 
 ## Environment Variables
 
-### Backend (.env or secrets/backend/.env)
+### Backend (`backend/.env` — mapped as Docker secret `backend_env`)
 
 ```
 DB_SERVER=db
@@ -289,18 +323,29 @@ DB_USER_ID=sa
 DB_PASSWORD=<your-password>
 GOOGLE_CLIENT_ID=<google-oauth-client-id>
 GOOGLE_CLIENT_SECRET=<google-oauth-client-secret>
+
+# JWT (JWT_SECRET is required — startup throws if missing)
+JWT_SECRET=<hs256-signing-key>
+JWT_ISSUER=lexiq-api            # default if unset
+JWT_AUDIENCE=lexiq-frontend     # default if unset
+JWT_EXPIRATION_HOURS=24         # default if unset
+
+# Production only
+ASPNETCORE_ENVIRONMENT=production
+CERT_STORAGE_PATH=/app/certs    # Let's Encrypt cert directory
+CERT_PASSWORD=<cert-password>   # Cert store password
 ```
 
 Backend loads secrets from `/run/secrets/backend_env` in production (Docker secrets).
 
-### Frontend (secrets/frontend/.env)
+### Frontend (Docker build args — no secrets file)
+
+Frontend env vars are passed as **build arguments** in `docker-compose.yml`, not via a secrets file:
 
 ```
 NG_GOOGLE_CLIENT_ID=<google-oauth-client-id>
-BACKEND_API_URL=http://backend:8080
+BACKEND_API_URL=/api            # proxied through nginx; not a direct backend URL
 ```
-
-Frontend build arguments are passed via Docker Compose.
 
 ## Common Development Workflows
 
@@ -356,9 +401,8 @@ Frontend build arguments are passed via Docker Compose.
 ### Testing Deployment Locally
 
 1. Ensure secrets files exist:
-   - `secrets/database/password.txt`
-   - `secrets/backend/.env`
-   - `secrets/frontend/.env`
+   - `backend/Database/password.txt`   # DB password (Docker secret: `db_password`)
+   - `backend/.env`                    # Backend env vars (Docker secret: `backend_env`)
 2. Run: `docker compose up --build`
 3. Access frontend at http://localhost:4200
 4. Access backend API at http://localhost:8080
@@ -369,11 +413,11 @@ Frontend build arguments are passed via Docker Compose.
 ### Service Communication Pattern
 
 **Authentication Flow:**
-1. User logs in via Google OAuth (frontend component)
-2. AuthService receives token, calls backend `/auth/google-login`
-3. Backend validates token, returns `issuedAt` timestamp
-4. Frontend stores expiration in localStorage
-5. AuthService emits auth status via BehaviorSubject
+1. User clicks Google sign-in; frontend receives a Google ID token
+2. `AuthService.loginUserWithGoogle()` POSTs the token to `/api/auth/google-login`
+3. Backend validates via Google, creates/fetches user, generates a JWT via `JwtService`
+4. JWT is set as an HttpOnly cookie (`AuthToken`) in the response — nothing stored in localStorage
+5. `AuthService` emits `true` via its `BehaviorSubject` auth state
 6. Components subscribe to `getAuthStatusListener()` for reactive updates
 
 **HTTP Requests:**
@@ -753,11 +797,13 @@ When creating new components, ensure:
 - **Bootstrap 5** is included but should be used minimally (prefer custom design system)
 
 ### Authentication & Security
-- Cookie authentication uses `AuthToken` cookie with 1-hour sliding expiration
-- HttpOnly, SameSite=Lax cookies for CSRF protection
+- Authentication uses **JWT stored in an HttpOnly cookie** named `AuthToken` (not Identity cookie auth)
+- JWT signed with HS256; expiry defaults to 24h (`JWT_EXPIRATION_HOURS`); no sliding expiration
+- SameSite=Lax; `Secure` flag set automatically when the request is HTTPS
 - All controllers require authentication unless explicitly marked with `[AllowAnonymous]`
 - CORS configured for frontend origin (environment variable: `ANGULAR_PORT`)
 - Google OAuth via `GoogleJsonWebSignature.ValidateAsync()`
+- Production HTTPS auto-provisioned via **LettuceEncrypt** (Let's Encrypt)
 
 ### Database & Migrations
 - Migrations auto-applied on startup in `Program.cs` with retry logic
@@ -789,6 +835,10 @@ When creating new components, ensure:
 - No error handling middleware (returns raw exceptions)
 - Help and Leaderboard services return mock data (not yet integrated with backend)
 - No logging infrastructure configured (ILogger available but not set up)
+- `ProgressService.cs` is entirely commented out — dead code, do not wire or call
+- The `pull-and-test` CI job does not actually run tests — it only authenticates to GHCR
+- `LimitFileUploads` has a misleading code comment ("10 MB") but the actual limit is 100 MB
+- Verbose JWT debug logging (`Console.WriteLine`) is active in `AddJwtAuthentication` — remove before production
 
 ## Key Controllers & Endpoints
 
@@ -811,8 +861,8 @@ When creating new components, ensure:
 |------|-----------|-------------|-------------|
 | `/` | HomeComponent | No | Main dashboard with learning path |
 | `/google-login` | GoogleLoginComponent | No | OAuth login page |
-| `/create-lesson` | LessonComponent | Yes | Lesson creation form with Editor.js |
-| `/lesson/:id` | LessonDetailComponent | Yes | Display lesson content |
+| `/create-lesson` | LessonEditorComponent | Yes | Lesson creation form with Editor.js |
+| `/lesson/:id` | LessonViewerComponent | Yes | Display lesson content |
 | `/profile` | ProfileComponent | No | User profile and achievements |
 | `/leaderboard` | LeaderboardComponent | No | User rankings |
 | `/help` | HelpComponent | No | Help and FAQ |
