@@ -74,7 +74,7 @@
             target: "/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
 
         - name: Deploy with Docker Compose to Hetzner (Debian 13)
-          uses: appleboy/ssh-action@v1.2.4
+          uses: appleboy/ssh-action@v1.2.5
           with:
             host: ${{ secrets.HETZNER_PROD_HOST }}
             username: ${{ secrets.HETZNER_PROD_USERNAME }}
@@ -115,7 +115,7 @@
 
         - name: Verify Deployment
           if: always()
-          uses: appleboy/ssh-action@v1.2.4
+          uses: appleboy/ssh-action@v1.2.5
           with:
             host: ${{ secrets.HETZNER_PROD_HOST }}
             username: ${{ secrets.HETZNER_PROD_USERNAME }}
@@ -130,7 +130,7 @@
 
         - name: Cleanup
           if: always()
-          uses: appleboy/ssh-action@v1.2.4
+          uses: appleboy/ssh-action@v1.2.5
           with:
             host: ${{ secrets.HETZNER_PROD_HOST }}
             username: ${{ secrets.HETZNER_PROD_USERNAME }}
