@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
 using Backend.Api.Services;
@@ -9,52 +11,34 @@ namespace Backend.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class LessonController(LessonService lessonService) : ControllerBase
+public class LessonController(
+    LessonService lessonService,
+    ExerciseProgressService progressService) : ControllerBase
 {
     private readonly LessonService _lessonService = lessonService;
+    private readonly ExerciseProgressService _progressService = progressService;
 
     /// <summary>
-    /// Marks a lesson as completed and unlocks the next lesson
+    /// Attempts to complete a lesson. Requires meeting the XP threshold (70%).
+    /// If met, unlocks the next lesson automatically.
     /// </summary>
-    /// <param name="lessonId">The ID of the lesson that was completed</param>
-    /// <returns>Information about the next lesson if available</returns>
+    /// <param name="lessonId">The ID of the lesson to complete</param>
     [HttpPost("{lessonId}/complete")]
-    public async Task<IActionResult> CompleteLesson(string lessonId)
+    public async Task<ActionResult<CompleteLessonResponse>> CompleteLesson(string lessonId)
     {
-        // Validate that the lesson exists
-        var currentLesson = await _lessonService.GetLessonWithDetailsAsync(lessonId);
-        if (currentLesson == null)
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userId == null)
+            return Unauthorized();
+
+        try
         {
-            return NotFound(new { message = "Lesson not found" });
+            var result = await _progressService.CompleteLessonAsync(userId, lessonId);
+            return Ok(result);
         }
-
-        // Unlock the next lesson
-        var wasUnlocked = await _lessonService.UnlockNextLessonAsync(lessonId);
-
-        // Get the next lesson details
-        var nextLesson = await _lessonService.GetNextLessonAsync(lessonId);
-
-        // Check if this was the last lesson in the course
-        var isLastInCourse = await _lessonService.IsLastLessonInCourseAsync(lessonId);
-
-        return Ok(
-            new
-            {
-                message = "Lesson completed successfully",
-                currentLessonId = lessonId,
-                isLastInCourse = isLastInCourse,
-                nextLesson = nextLesson != null
-                    ? new
-                    {
-                        id = nextLesson.Id,
-                        title = nextLesson.Title,
-                        courseId = nextLesson.CourseId,
-                        wasUnlocked = wasUnlocked,
-                        isLocked = nextLesson.IsLocked,
-                    }
-                    : null,
-            }
-        );
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
     }
 
     /// <summary>
@@ -75,7 +59,7 @@ public class LessonController(LessonService lessonService) : ControllerBase
     }
 
     /// <summary>
-    /// Gets all lessons for a specific course
+    /// Gets all lessons for a specific course, including user progress
     /// </summary>
     /// <param name="courseId">The course ID</param>
     [HttpGet("course/{courseId}")]
@@ -85,11 +69,21 @@ public class LessonController(LessonService lessonService) : ControllerBase
         if (lessons == null)
             return NotFound(new { message = $"Course '{courseId}' not found" });
 
-        return Ok(lessons.Select(l => l.ToDto()));
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userId == null)
+            return Ok(lessons.Select(l => l.ToDto()));
+
+        var result = new List<LessonDto>();
+        foreach (var lesson in lessons)
+        {
+            var progress = await _progressService.GetLessonProgressAsync(userId, lesson.Id);
+            result.Add(lesson.ToDto(progress));
+        }
+        return Ok(result);
     }
 
     /// <summary>
-    /// Gets a lesson with full details
+    /// Gets a lesson with full details, including user progress
     /// </summary>
     /// <param name="lessonId">The lesson ID</param>
     [HttpGet("{lessonId}")]
@@ -102,7 +96,12 @@ public class LessonController(LessonService lessonService) : ControllerBase
             return NotFound(new { message = "Lesson not found" });
         }
 
-        return Ok(lesson.ToDto());
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userId == null)
+            return Ok(lesson.ToDto());
+
+        var progress = await _progressService.GetLessonProgressAsync(userId, lessonId);
+        return Ok(lesson.ToDto(progress));
     }
 
     /// <summary>

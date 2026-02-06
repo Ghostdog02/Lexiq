@@ -10,7 +10,11 @@ public record LessonDto(
     int OrderIndex,
     string LessonContent, // Editor.js JSON content
     bool IsLocked,
-    int ExerciseCount
+    int ExerciseCount,
+    int? CompletedExercises = null,
+    int? EarnedXp = null,
+    int? TotalPossibleXp = null,
+    bool? IsCompleted = null
 );
 
 public record CreateLessonDto(

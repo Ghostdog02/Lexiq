@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
 using Backend.Api.Services;
@@ -9,9 +11,12 @@ namespace Backend.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class ExerciseController(ExerciseService exerciseService) : ControllerBase
+public class ExerciseController(
+    ExerciseService exerciseService,
+    ExerciseProgressService progressService) : ControllerBase
 {
     private readonly ExerciseService _exerciseService = exerciseService;
+    private readonly ExerciseProgressService _progressService = progressService;
 
     [HttpGet("lesson/{lessonId}")]
     public async Task<ActionResult<List<ExerciseDto>>> GetExercisesByLesson(string lessonId)
@@ -58,5 +63,34 @@ public class ExerciseController(ExerciseService exerciseService) : ControllerBas
             return NotFound();
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Submit an answer for an exercise and get backend validation result
+    /// </summary>
+    [HttpPost("{exerciseId}/submit")]
+    public async Task<ActionResult<SubmitAnswerResponse>> SubmitAnswer(
+        string exerciseId, SubmitAnswerRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Answer))
+            return BadRequest(new { message = "Answer cannot be empty" });
+
+        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (userId == null)
+            return Unauthorized();
+
+        try
+        {
+            var result = await _progressService.SubmitAnswerAsync(userId, exerciseId, request.Answer);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
     }
 }

@@ -25,7 +25,7 @@ public static class ContentMappingExtensions
         );
     }
 
-    public static LessonDto ToDto(this Lesson entity)
+    public static LessonDto ToDto(this Lesson entity, LessonProgressSummary? progress = null)
     {
         return new LessonDto(
             entity.Id,
@@ -37,7 +37,11 @@ public static class ContentMappingExtensions
             entity.OrderIndex,
             entity.LessonContent,  // Editor.js JSON content
             entity.IsLocked,
-            entity.Exercises.Count
+            entity.Exercises.Count,
+            CompletedExercises: progress?.CompletedExercises,
+            EarnedXp: progress?.EarnedXp,
+            TotalPossibleXp: progress?.TotalPossibleXp,
+            IsCompleted: progress?.MeetsCompletionThreshold
         );
     }
 
