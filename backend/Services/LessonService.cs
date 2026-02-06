@@ -157,9 +157,7 @@ public class LessonService(BackendDbContext context)
             Description = dto.Description,
             EstimatedDurationMinutes = dto.EstimatedDurationMinutes,
             OrderIndex = dto.OrderIndex,
-            LessonMediaUrl = dto.LessonMediaUrl,
             LessonContent = dto.Content, // Store Editor.js JSON directly in database
-            LessonTextUrl = null, // Optional external URL
             IsLocked = true, // Default to locked
             CreatedAt = DateTime.UtcNow,
         };
@@ -190,12 +188,8 @@ public class LessonService(BackendDbContext context)
             lesson.EstimatedDurationMinutes = dto.EstimatedDurationMinutes.Value;
         if (dto.OrderIndex.HasValue)
             lesson.OrderIndex = dto.OrderIndex.Value;
-        if (dto.LessonMediaUrl != null)
-            lesson.LessonMediaUrl = dto.LessonMediaUrl;
         if (dto.LessonContent != null)
             lesson.LessonContent = dto.LessonContent;  // Update Editor.js content
-        if (dto.LessonTextUrl != null)
-            lesson.LessonTextUrl = dto.LessonTextUrl;
 
         await _context.SaveChangesAsync();
         return lesson;

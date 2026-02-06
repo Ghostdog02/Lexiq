@@ -25,12 +25,6 @@ public class Lesson
     [Required]
     public int OrderIndex { get; set; } // Position within the module (0, 1, 2, ...)
 
-    [MaxLength(255)]
-    public List<string>? LessonMediaUrl { get; set; } // URL for video/audio lesson resources
-
-    [MaxLength(255)]
-    public string? LessonTextUrl { get; set; } // Optional URL for external lesson resources
-
     [Required]
     public required string LessonContent { get; set; } // Editor.js JSON content (stored as text)
 
