@@ -24,7 +24,7 @@ Navigate to `backend/` for all backend commands:
 dotnet restore
 
 # Build the project
-dotnet build
+dotnet build Backend.sln
 
 # Run the development server (listens on port 8080)
 dotnet run
@@ -129,6 +129,7 @@ backend/
 │   ├── CourseService.cs           # Course business logic
 │   ├── LessonService.cs           # Lesson business logic
 │   ├── ExerciseService.cs         # Exercise business logic
+│   ├── ExerciseProgressService.cs # Exercise answer validation & progress tracking
 │   ├── LanguageService.cs         # Language business logic
 │   ├── UserLanguageService.cs     # Enrollment logic
 │   ├── FileUploadsService.cs      # File upload handling
@@ -221,7 +222,7 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 **Key Patterns:**
 - **UUID Primary Keys**: All entities use `Guid.NewGuid().ToString()` for IDs
 - **OrderIndex**: All content entities have OrderIndex for custom sequencing
-- **Composite Keys**: UserLanguage uses (UserId, LanguageId)
+- **Composite Keys**: UserLanguage uses (UserId, LanguageId); UserExerciseProgress uses (UserId, ExerciseId)
 - **Table-Per-Hierarchy**: Exercise uses TPH with discriminator for subtypes
 - **Timestamps**: CreatedAt/UpdatedAt for audit trails
 
@@ -280,6 +281,8 @@ This allows sending different exercise types in a single API response with autom
 - **OrderBy**: Always order collections by `OrderIndex` for consistent sequencing
 - **Null handling**: Use null-coalescing operators for optional relationships
 - **No repository pattern**: Services directly access DbContext (simple enough for current needs)
+- **Upsert pattern**: `FirstOrDefaultAsync` → create if null, update if exists (see `ExerciseProgressService.SubmitAnswerAsync`)
+- **User ID from JWT**: Extract via `User.FindFirstValue(JwtRegisteredClaimNames.Sub)` in controllers
 
 Example from `LessonService.cs`:
 ```csharp
@@ -835,7 +838,10 @@ When creating new components, ensure:
 - No error handling middleware (returns raw exceptions)
 - Help and Leaderboard services return mock data (not yet integrated with backend)
 - No logging infrastructure configured (ILogger available but not set up)
-- `ProgressService.cs` is entirely commented out — dead code, do not wire or call
+- `ExerciseProgressService` validates answers server-side — frontend sends answer strings (option IDs for MC, text for others)
+- Lesson completion requires 70% XP threshold (`ExerciseProgressService.DefaultCompletionThreshold`)
+- `UserExerciseProgress.ExerciseId` FK uses `DeleteBehavior.NoAction` (SQL Server multiple cascade path constraint)
+- `Lesson.status` is NOT returned by the API — frontend derives it from `isLocked`, `isCompleted`, `completedExercises` fields
 - The `pull-and-test` CI job does not actually run tests — it only authenticates to GHCR
 - `LimitFileUploads` has a misleading code comment ("10 MB") but the actual limit is 100 MB
 - Verbose JWT debug logging (`Console.WriteLine`) is active in `AddJwtAuthentication` — remove before production
@@ -849,7 +855,7 @@ When creating new components, ensure:
 | AuthController | `/api/auth` | `POST /google-login`, `POST /logout`, `GET /auth-status` | Mixed |
 | CourseController | `/api/courses` | `GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Admin/Creator for mutations |
 | LessonController | `/api/lessons` | `GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Admin/Creator for mutations |
-| ExerciseController | `/api/exercises` | `GET /lesson/{lessonId}`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Admin/Creator for mutations |
+| ExerciseController | `/api/exercises` | `GET /lesson/{lessonId}`, `POST /`, `PUT /{id}`, `DELETE /{id}`, `POST /{id}/submit` | Admin/Creator for mutations; submit for any user |
 | LanguageController | `/api/languages` | `GET /`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Public read, Admin write |
 | UserLanguageController | `/api/userLanguages` | `GET /user/{userId}`, `POST /enroll`, `DELETE /unenroll` | Yes |
 | UserManagementController | `/api/userManagement` | `GET /users`, `GET /users/{id}`, `POST /roles`, etc. | Admin only |
