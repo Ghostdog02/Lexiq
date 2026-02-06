@@ -20,6 +20,8 @@ public class BackendDbContext(DbContextOptions options)
 
     public DbSet<UserLanguage> UserLanguages { get; set; }
 
+    public DbSet<UserExerciseProgress> UserExerciseProgress { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -83,6 +85,23 @@ public class BackendDbContext(DbContextOptions options)
 
 
         modelBuilder.Entity<UserLanguage>().HasKey(ul => new { ul.UserId, ul.LanguageId });
+
+        modelBuilder.Entity<UserExerciseProgress>(entity =>
+        {
+            entity.HasKey(uep => new { uep.UserId, uep.ExerciseId });
+
+            entity
+                .HasOne(uep => uep.User)
+                .WithMany(u => u.ExerciseProgress)
+                .HasForeignKey(uep => uep.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity
+                .HasOne(uep => uep.Exercise)
+                .WithMany()
+                .HasForeignKey(uep => uep.ExerciseId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
     }
 
     public static void OverrideMicrostIdentityTablesNames(ModelBuilder modelBuilder)

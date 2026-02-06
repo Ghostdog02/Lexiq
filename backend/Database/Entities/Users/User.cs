@@ -9,4 +9,6 @@ public class User : IdentityUser
     public DateTime LastLoginDate { get; set; }
 
     public List<UserLanguage> UserLanguages { get; set; } = [];
+
+    public List<UserExerciseProgress> ExerciseProgress { get; set; } = [];
 }
