@@ -62,15 +62,15 @@
             </header>
 
             <section class="lessons-grid">
-              @for (lesson of course.lessons; track lesson.id) {
+              @for (lesson of course.lessons; track lesson.lessonId) {
                 <article
-                  [id]="'lesson-' + lesson.id"
+                  [id]="'lesson-' + lesson.lessonId"
                   class="lesson-node"
                   [class.completed]="lesson.status === 'completed'"
                   [class.in-progress]="lesson.status === 'in-progress'"
                   [class.available]="lesson.status === 'available'"
                   [class.locked]="lesson.status === 'locked'"
-                  [class.current]="lesson.id === currentLessonId"
+                  [class.current]="lesson.lessonId === currentLessonId"
                   (click)="onLessonClick(lesson)"
                 >
 
@@ -93,7 +93,6 @@
                         stroke-width="3"
                         fill="none"
                         [style.stroke-dasharray]="'263.89'"
-                        [style.stroke-dashoffset]="263.89 - (263.89 * (lesson.progress || 0) / 100)"
                         stroke-linecap="round"
                         class="progress-circle"
                       />
@@ -102,7 +101,7 @@
 
                   <!-- Lesson icon with status overlays -->
                   <figure class="lesson-icon-wrapper">
-                    <span class="lesson-icon">{{ lesson.icon }}</span>
+                    <!-- <span class="lesson-icon">{{ lesson.icon }}</span> -->
 
                     @if (lesson.status === 'completed') {
                       <span class="checkmark">✓</span>
@@ -118,9 +117,9 @@
                   <div class="lesson-info">
                     <h3 class="lesson-title">{{ lesson.title }}</h3>
                     <p class="lesson-description">{{ lesson.description }}</p>
-                    <footer class="lesson-xp">
+                    <!-- <footer class="lesson-xp">
                       <span class="xp-badge">{{ lesson.xp }} XP</span>
-                    </footer>
+                    </footer> -->
                   </div>
 
                 </article>

@@ -5,20 +5,19 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { LessonService } from '../../services/lesson.service';
 import { ContentParserService } from '../../../../shared/services/content-parser.service';
-import { Lesson } from '../../models/lesson.interface';
+import { Lesson, SubmitAnswerResponse } from '../../models/lesson.interface';
 import {
   AnyExercise,
   ExerciseType,
   MultipleChoiceExercise,
-  FillInBlankExercise,
-  TranslationExercise,
-  ListeningExercise
 } from '../../models/exercise.interface';
 
 interface ExerciseAnswer {
   answer: string | string[];
   isSubmitted: boolean;
   isCorrect: boolean | null;
+  correctAnswer?: string | null;
+  explanation?: string | null;
 }
 
 @Component({
@@ -41,6 +40,7 @@ export class LessonViewerComponent implements OnInit {
   currentView: 'content' | 'exercises' = 'content';
   currentExerciseIndex = 0;
   answers: Map<number, ExerciseAnswer> = new Map();
+  isSubmitting = false;
 
   // For tracking completion
   earnedXp = 0;
@@ -71,7 +71,7 @@ export class LessonViewerComponent implements OnInit {
         return;
       }
 
-      this.lesson = this.lessonService.mapApiToLesson(apiLesson);
+      this.lesson = apiLesson;
       this.initializeAnswers();
       this.calculateTotalXp();
     } catch (err) {
@@ -153,151 +153,61 @@ export class LessonViewerComponent implements OnInit {
     }
   }
 
-  selectMultipleChoiceOption(optionIndex: number) {
+  selectMultipleChoiceOption(optionId: string) {
     const current = this.answers.get(this.currentExerciseIndex);
     if (current && !current.isSubmitted) {
-      current.answer = optionIndex.toString();
+      current.answer = optionId;
     }
   }
 
-  submitAnswer() {
+  async submitAnswer() {
     const current = this.answers.get(this.currentExerciseIndex);
     const exercise = this.currentExercise;
+    if (!current || !exercise || current.isSubmitted || this.isSubmitting) return;
 
-    if (!current || !exercise || current.isSubmitted) return;
+    this.isSubmitting = true;
 
-    current.isSubmitted = true;
-    current.isCorrect = this.checkAnswer(exercise, current.answer);
+    try {
+      const answerValue = Array.isArray(current.answer) ? current.answer[0] : current.answer;
 
-    if (current.isCorrect) {
-      this.earnedXp += exercise.points || 10;
+      const result: SubmitAnswerResponse = await this.lessonService.submitExerciseAnswer(
+        exercise.id,
+        answerValue
+      );
+
+      current.isSubmitted = true;
+      current.isCorrect = result.isCorrect;
+      current.correctAnswer = result.correctAnswer;
+      current.explanation = result.explanation;
+
+      // Update XP from backend
+      this.earnedXp = result.lessonProgress.earnedXp;
+      this.totalPossibleXp = result.lessonProgress.totalPossibleXp;
+    } catch (err) {
+      console.error('Failed to submit answer:', err);
+    } finally {
+      this.isSubmitting = false;
     }
-  }
-
-  private checkAnswer(exercise: AnyExercise, answer: string | string[]): boolean {
-    const userAnswer = Array.isArray(answer) ? answer[0] : answer;
-
-    switch (exercise.exerciseType) {
-      case ExerciseType.MultipleChoice: {
-        const mcExercise = exercise as MultipleChoiceExercise;
-        const selectedIndex = parseInt(userAnswer, 10);
-        return mcExercise.options[selectedIndex]?.isCorrect || false;
-      }
-
-      case ExerciseType.FillInBlank: {
-        const fibExercise = exercise as FillInBlankExercise;
-        let correctAnswer = fibExercise.correctAnswer;
-        let userInput = userAnswer;
-
-        if (fibExercise.trimWhitespace) {
-          correctAnswer = correctAnswer.trim();
-          userInput = userInput.trim();
-        }
-
-        if (!fibExercise.caseSensitive) {
-          correctAnswer = correctAnswer.toLowerCase();
-          userInput = userInput.toLowerCase();
-        }
-
-        // Check main answer
-        if (userInput === correctAnswer) return true;
-
-        // Check accepted alternatives
-        if (fibExercise.acceptedAnswers) {
-          const alternatives = fibExercise.acceptedAnswers.split(',').map(a => {
-            let alt = a.trim();
-            if (fibExercise.trimWhitespace) alt = alt.trim();
-            if (!fibExercise.caseSensitive) alt = alt.toLowerCase();
-            return alt;
-          });
-          return alternatives.includes(userInput);
-        }
-
-        return false;
-      }
-
-      case ExerciseType.Translation: {
-        const transExercise = exercise as TranslationExercise;
-        const userInput = userAnswer.trim().toLowerCase();
-        const target = transExercise.targetText.trim().toLowerCase();
-
-        // Simple similarity check - could be enhanced with fuzzy matching
-        const similarity = this.calculateSimilarity(userInput, target);
-        return similarity >= transExercise.matchingThreshold;
-      }
-
-      case ExerciseType.Listening: {
-        const listenExercise = exercise as ListeningExercise;
-        let correctAnswer = listenExercise.correctAnswer;
-        let userInput = userAnswer;
-
-        if (!listenExercise.caseSensitive) {
-          correctAnswer = correctAnswer.toLowerCase();
-          userInput = userInput.toLowerCase();
-        }
-
-        if (userInput.trim() === correctAnswer.trim()) return true;
-
-        if (listenExercise.acceptedAnswers) {
-          const alternatives = listenExercise.acceptedAnswers.split(',').map(a => {
-            let alt = a.trim();
-            if (!listenExercise.caseSensitive) alt = alt.toLowerCase();
-            return alt;
-          });
-          return alternatives.includes(userInput.trim());
-        }
-
-        return false;
-      }
-
-      default:
-        return false;
-    }
-  }
-
-  private calculateSimilarity(str1: string, str2: string): number {
-    // Simple Levenshtein-based similarity
-    const longer = str1.length > str2.length ? str1 : str2;
-    const shorter = str1.length > str2.length ? str2 : str1;
-
-    if (longer.length === 0) return 1.0;
-
-    const editDistance = this.levenshteinDistance(longer, shorter);
-    return (longer.length - editDistance) / longer.length;
-  }
-
-  private levenshteinDistance(str1: string, str2: string): number {
-    const matrix: number[][] = [];
-
-    for (let i = 0; i <= str2.length; i++) {
-      matrix[i] = [i];
-    }
-
-    for (let j = 0; j <= str1.length; j++) {
-      matrix[0][j] = j;
-    }
-
-    for (let i = 1; i <= str2.length; i++) {
-      for (let j = 1; j <= str1.length; j++) {
-        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
-          matrix[i][j] = matrix[i - 1][j - 1];
-        } else {
-          matrix[i][j] = Math.min(
-            matrix[i - 1][j - 1] + 1,
-            matrix[i][j - 1] + 1,
-            matrix[i - 1][j] + 1
-          );
-        }
-      }
-    }
-
-    return matrix[str2.length][str1.length];
   }
 
   // Completion
-  finishLesson() {
-    // Could update lesson status here via service
-    this.router.navigate(['/']);
+  async finishLesson() {
+    if (!this.lesson) return;
+
+    try {
+      const result = await this.lessonService.completeLesson(this.lesson.lessonId);
+
+      if (result.isCompleted) {
+        this.router.navigate(['/']);
+      } else {
+        alert(
+          `You need ${Math.round(result.requiredThreshold * 100)}% to complete this lesson. ` +
+          `You scored ${Math.round(result.completionPercentage * 100)}%.`
+        );
+      }
+    } catch (err) {
+      console.error('Failed to complete lesson:', err);
+    }
   }
 
   goBack() {
@@ -305,20 +215,20 @@ export class LessonViewerComponent implements OnInit {
   }
 
   // Helper for multiple choice
-  isOptionSelected(optionIndex: number): boolean {
+  isOptionSelected(optionId: string): boolean {
     const current = this.currentAnswer;
-    return current?.answer === optionIndex.toString();
+    return current?.answer === optionId;
   }
 
-  getOptionClass(optionIndex: number, isCorrect: boolean): string {
+  getOptionClass(optionId: string, isCorrect: boolean): string {
     const current = this.currentAnswer;
     if (!current?.isSubmitted) {
-      return this.isOptionSelected(optionIndex) ? 'selected' : '';
+      return this.isOptionSelected(optionId) ? 'selected' : '';
     }
 
     // After submission
     if (isCorrect) return 'correct';
-    if (this.isOptionSelected(optionIndex) && !isCorrect) return 'incorrect';
+    if (this.isOptionSelected(optionId) && !isCorrect) return 'incorrect';
     return '';
   }
 }

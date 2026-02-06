@@ -14,6 +14,7 @@ export enum ExerciseType {
 }
 
 export interface Exercise {
+  id: string;
   title: string;
   instructions: string;
   question: string;
@@ -36,6 +37,7 @@ export interface ExerciseFormControls {
 }
 
 export interface QuestionOption {
+  id: string;
   optionText: string;
   isCorrect: boolean;
 }

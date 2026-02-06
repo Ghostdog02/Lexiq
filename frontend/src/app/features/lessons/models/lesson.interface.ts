@@ -3,39 +3,86 @@ import { Exercise, ExerciseForm, ExerciseType } from "./exercise.interface";
 
 export type LessonStatus = 'locked' | 'available' | 'in-progress' | 'completed';
 
-// API response shape (matches backend LessonDto)
-export interface LessonApiResponse {
+export interface Lesson {
   lessonId: string;
   courseId: string;
+  courseName: string;
+  content: string;
+  title: string;
+  description?: string;
+  estimatedDurationMinutes?: number;
+  orderIndex: number;
+  lessonContent: string;
+  isLocked: boolean;
+  exerciseCount: number;
+  exercises: Exercise[];
+  status: LessonStatus;
+  completedExercises?: number;
+  earnedXp?: number;
+  totalPossibleXp?: number;
+  isCompleted?: boolean;
+}
+
+export interface LessonProgressSummary {
+  completedExercises: number;
+  totalExercises: number;
+  earnedXp: number;
+  totalPossibleXp: number;
+  completionPercentage: number;
+  meetsCompletionThreshold: boolean;
+}
+
+export interface SubmitAnswerResponse {
+  isCorrect: boolean;
+  pointsEarned: number;
+  correctAnswer: string | null;
+  explanation: string | null;
+  lessonProgress: LessonProgressSummary;
+}
+
+export interface CompleteLessonResponse {
+  currentLessonId: string;
+  isCompleted: boolean;
+  earnedXp: number;
+  totalPossibleXp: number;
+  completionPercentage: number;
+  requiredThreshold: number;
+  isLastInCourse: boolean;
+  nextLesson: {
+    id: string;
+    title: string;
+    courseId: string;
+    wasUnlocked: boolean;
+    isLocked: boolean;
+  } | null;
+}
+
+export interface CreateLessonApiResponse {
+  courseName: string;
+  title: string;
+  description?: string;
+  estimatedDurationMinutes?: number;
+  lessonContent: string;
+  isLocked: boolean;
+}
+
+export interface UpdateLessonApiResponse {
   courseName: string;
   title: string;
   description?: string;
   estimatedDurationMinutes?: number;
   orderIndex: number;
-  lessonMediaUrl?: string[];
   lessonContent: string;
-  lessonTextUrl?: string;
-  isLocked: boolean;
-  exerciseCount: number;
 }
 
-// UI model used for lesson creation forms and display
-export interface Lesson {
-  // Core lesson data
+export interface CreateLessonDto {
   title: string;
   description: string;
   estimatedDuration: number;
-  mediaUrl?: string; // Cover image URL
-  content: string;   // Editor.js JSON content
+  mediaUrl?: string;
+  content: string;
   courseId: string;
   exercises: Exercise[];
-
-  // Path display properties (optional - set when adding to learning path)
-  id?: string;
-  icon?: string;
-  status?: LessonStatus;
-  xp?: number;
-  progress?: number;
 }
 
 export interface LessonFormControls {

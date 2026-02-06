@@ -13,7 +13,7 @@
         <p class="lesson-meta">
           <span class="meta-item">
             <span class="icon">&#x23F1;</span>
-            {{ lesson.estimatedDuration }} min
+            {{ lesson.estimatedDurationMinutes }} min
           </span>
           <span class="meta-item">
             <span class="icon">&#x1F9E9;</span>
@@ -128,21 +128,21 @@
                 @case (ExerciseType.MultipleChoice) {
                   <div class="multiple-choice">
                     <div class="options-list">
-                      @for (option of $any(currentExercise).options; track $index) {
+                      @for (option of $any(currentExercise).options; track option.id; let i = $index) {
                         <button
                           type="button"
                           class="option-btn"
-                          [class]="getOptionClass($index, option.isCorrect)"
+                          [class]="getOptionClass(option.id, option.isCorrect)"
                           [disabled]="currentAnswer?.isSubmitted"
-                          (click)="selectMultipleChoiceOption($index)"
-                          [attr.aria-pressed]="isOptionSelected($index)"
+                          (click)="selectMultipleChoiceOption(option.id)"
+                          [attr.aria-pressed]="isOptionSelected(option.id)"
                         >
-                          <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E', 'F'][$index] }}</span>
+                          <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E', 'F'][i] }}</span>
                           <span class="option-text">{{ option.optionText }}</span>
                           @if (currentAnswer?.isSubmitted) {
                             @if (option.isCorrect) {
                               <span class="result-icon correct">&#x2713;</span>
-                            } @else if (isOptionSelected($index)) {
+                            } @else if (isOptionSelected(option.id)) {
                               <span class="result-icon incorrect">&#x2717;</span>
                             }
                           }

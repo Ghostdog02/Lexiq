@@ -1,7 +1,7 @@
 import { Component, HostListener, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { LessonService } from '../../services/lesson.service';
-import { Lesson } from '../../models/lesson.interface';
+import { Lesson, LessonStatus } from '../../models/lesson.interface';
 import { CourseWithLessons } from '../../models/course.interface';
 
 @Component({
@@ -14,8 +14,8 @@ import { CourseWithLessons } from '../../models/course.interface';
 export class HomeComponent implements OnInit {
   courses: CourseWithLessons[] = [];
   currentLessonId: string = '';
-  totalXp: number = 150;
-  currentStreak: number = 5;
+  totalXp: number = 0;
+  currentStreak: number = 0;
   isUserBelowLesson: boolean = false;
   isLoading: boolean = true;
   error: string | null = null;
@@ -55,15 +55,22 @@ export class HomeComponent implements OnInit {
         coursesFromApi.map(async (course, index) => {
           const lessonsFromApi = await this.lessonService.getLessonsByCourse(course.courseId);
 
+          // Derive status from progress fields for each lesson
+          const lessonsWithStatus = lessonsFromApi.map(lesson => ({
+            ...lesson,
+            status: this.deriveLessonStatus(lesson)
+          }));
+
           return {
             ...course,
             color: this.courseColors[index % this.courseColors.length],
-            lessons: lessonsFromApi.map(lesson => this.lessonService.mapApiToLesson(lesson))
+            lessons: lessonsWithStatus
           };
         })
       );
 
       this.courses = coursesWithLessons;
+      this.updateTotalXp();
 
       // Set current lesson to first non-locked lesson
       this.setCurrentLesson();
@@ -82,15 +89,15 @@ export class HomeComponent implements OnInit {
   private setCurrentLesson(): void {
     const allLessons = this.getAllLessons();
     const firstAvailable = allLessons.find(l => l.status === 'available' || l.status === 'in-progress');
-    if (firstAvailable?.id) {
-      this.currentLessonId = firstAvailable.id;
+    if (firstAvailable?.lessonId) {
+      this.currentLessonId = firstAvailable.lessonId;
     }
   }
 
   onLessonClick(lesson: Lesson) {
     if (lesson.status === 'available' || lesson.status === 'in-progress' || lesson.status === 'completed') {
-      if (lesson.id) {
-        this.router.navigate(['/lesson', lesson.id]);
+      if (lesson.lessonId) {
+        this.router.navigate(['/lesson', lesson.lessonId]);
       }
     }
   }
@@ -136,5 +143,17 @@ export class HomeComponent implements OnInit {
 
   redirectToCreateExercise() {
     this.router.navigate(["/create-lesson"])
+  }
+
+  private deriveLessonStatus(lesson: Lesson): LessonStatus {
+    if (lesson.isLocked) return 'locked';
+    if (lesson.isCompleted) return 'completed';
+    if ((lesson.completedExercises ?? 0) > 0) return 'in-progress';
+    return 'available';
+  }
+
+  private updateTotalXp(): void {
+    const allLessons = this.getAllLessons();
+    this.totalXp = allLessons.reduce((sum, l) => sum + (l.earnedXp ?? 0), 0);
   }
 }
