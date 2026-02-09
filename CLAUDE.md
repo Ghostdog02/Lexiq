@@ -129,7 +129,7 @@ backend/
 │   ├── CourseService.cs           # Course business logic
 │   ├── LessonService.cs           # Lesson business logic
 │   ├── ExerciseService.cs         # Exercise business logic
-│   ├── ExerciseProgressService.cs # Exercise answer validation & progress tracking
+│   ├── ExerciseProgressService.cs # Exercise answer validation, progress tracking, sequential unlocking
 │   ├── LanguageService.cs         # Language business logic
 │   ├── UserLanguageService.cs     # Enrollment logic
 │   ├── FileUploadsService.cs      # File upload handling
@@ -222,6 +222,7 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 **Key Patterns:**
 - **UUID Primary Keys**: All entities use `Guid.NewGuid().ToString()` for IDs
 - **OrderIndex**: All content entities have OrderIndex for custom sequencing
+- **IsLocked flags**: Lesson and Exercise entities have IsLocked (default true) for progression control
 - **Composite Keys**: UserLanguage uses (UserId, LanguageId); UserExerciseProgress uses (UserId, ExerciseId)
 - **Table-Per-Hierarchy**: Exercise uses TPH with discriminator for subtypes
 - **Timestamps**: CreatedAt/UpdatedAt for audit trails
@@ -283,6 +284,10 @@ This allows sending different exercise types in a single API response with autom
 - **No repository pattern**: Services directly access DbContext (simple enough for current needs)
 - **Upsert pattern**: `FirstOrDefaultAsync` → create if null, update if exists (see `ExerciseProgressService.SubmitAnswerAsync`)
 - **User ID from JWT**: Extract via `User.FindFirstValue(JwtRegisteredClaimNames.Sub)` in controllers
+- **Auto-increment OrderIndex**: When `OrderIndex` is null in DTOs, calculate as `MaxAsync(e => (int?)e.OrderIndex) ?? -1 + 1` in parent entity
+- **Idempotent unlocks**: All unlock methods check `IsLocked` before modifying (safe to call multiple times)
+- **Cascade unlocking**: `LessonService.UnlockNextLessonAsync()` calls `ExerciseService.UnlockFirstExerciseInLessonAsync()`
+- **Service dependency chain**: ExerciseService → LessonService → ExerciseProgressService (avoid circular dependencies)
 
 Example from `LessonService.cs`:
 ```csharp
@@ -410,6 +415,15 @@ BACKEND_API_URL=/api            # proxied through nginx; not a direct backend UR
 3. Access frontend at http://localhost:4200
 4. Access backend API at http://localhost:8080
 5. Access Swagger docs at http://localhost:8080/swagger
+
+### Testing Exercise Unlocking System
+
+1. Login via Google OAuth to create user account
+2. First lesson's first exercise should be unlocked (seed data)
+3. Submit correct answer: `POST /api/exercises/{id}/submit` → next exercise unlocks
+4. Submit wrong answer: can retry infinitely, no unlock
+5. Complete 70%+ of lesson exercises → lesson completion triggers next lesson unlock
+6. Admin manual unlock: `POST /api/lessons/{id}/unlock` → unlocks lesson + first exercise
 
 ## Angular Patterns & Best Practices
 
@@ -845,6 +859,7 @@ When creating new components, ensure:
 - The `pull-and-test` CI job does not actually run tests — it only authenticates to GHCR
 - `LimitFileUploads` has a misleading code comment ("10 MB") but the actual limit is 100 MB
 - Verbose JWT debug logging (`Console.WriteLine`) is active in `AddJwtAuthentication` — remove before production
+- **Exercise unlocking**: Hybrid strategy - first exercise unlocks with lesson, rest unlock sequentially on completion (infinite retries allowed)
 
 ## Key Controllers & Endpoints
 
