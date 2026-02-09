@@ -81,6 +81,7 @@ public class Program
         app.UseStaticFiles();
         app.UseSwaggerWithUI();
         app.UseAuthentication();
+        app.UseUserContext(); // Extract user entity from JWT
         app.UseAuthorization();
         app.MapHealthChecks("/health");
         app.MapControllers();

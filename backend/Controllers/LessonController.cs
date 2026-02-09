@@ -1,7 +1,6 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
+using Backend.Api.Middleware;
 using Backend.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,16 +24,15 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
     [HttpPost("{lessonId}/complete")]
     public async Task<ActionResult<CompleteLessonResponse>> CompleteLesson(string lessonId)
     {
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-        if (userId == null)
-            return Unauthorized();
+        var currentUser = HttpContext.GetCurrentUser();
+        if (currentUser == null)
+            return Unauthorized(new { message = "User is not authorized." });
 
         try
         {
-            var result = await _progressService.CompleteLessonAsync(userId, lessonId);
+            var result = await _progressService.CompleteLessonAsync(currentUser.Id, lessonId);
             return Ok(result);
         }
-        
         catch (ArgumentException ex)
         {
             return NotFound(new { message = ex.Message });
@@ -69,16 +67,17 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
         if (lessons == null)
             return NotFound(new { message = $"Course '{courseId}' not found" });
 
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-        if (userId == null)
-            return Ok(lessons.Select(l => l.ToDto()));
+        var currentUser = HttpContext.GetCurrentUser();
+        if (currentUser == null)
+            return Unauthorized(new { message = "User is not authorized." });
 
         var result = new List<LessonDto>();
         foreach (var lesson in lessons)
         {
-            var progress = await _progressService.GetLessonProgressAsync(userId, lesson.Id);
+            var progress = await _progressService.GetLessonProgressAsync(currentUser.Id, lesson.Id);
             result.Add(lesson.ToDto(progress));
         }
+
         return Ok(result);
     }
 
@@ -96,11 +95,9 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
             return NotFound(new { message = "Lesson not found" });
         }
 
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-        if (userId == null)
-            return Ok(lesson.ToDto());
+        var currentUser = HttpContext.GetCurrentUser();
 
-        var progress = await _progressService.GetLessonProgressAsync(userId, lessonId);
+        var progress = await _progressService.GetLessonProgressAsync(currentUser.Id, lessonId);
         return Ok(lesson.ToDto(progress));
     }
 

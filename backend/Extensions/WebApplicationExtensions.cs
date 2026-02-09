@@ -1,3 +1,5 @@
+using Backend.Api.Middleware;
+
 namespace Backend.Api.Extensions;
 
 public static class WebApplicationExtensions
@@ -57,6 +59,12 @@ public static class WebApplicationExtensions
             }
         );
 
+        return app;
+    }
+
+    public static WebApplication UseUserContext(this WebApplication app)
+    {
+        app.UseMiddleware<UserContextMiddleware>();
         return app;
     }
 }
