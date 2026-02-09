@@ -46,6 +46,8 @@ public abstract class Exercise
     [MaxLength(1000)]
     public string? Explanation { get; set; }
 
+    public bool IsLocked { get; set; } = true;
+
     [Required]
     public int OrderIndex { get; set; } // Position in Lesson
 

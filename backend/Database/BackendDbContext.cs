@@ -82,8 +82,6 @@ public class BackendDbContext(DbContextOptions options)
         modelBuilder.Entity<ListeningExercise>();
         modelBuilder.Entity<TranslationExercise>();
 
-
-
         modelBuilder.Entity<UserLanguage>().HasKey(ul => new { ul.UserId, ul.LanguageId });
 
         modelBuilder.Entity<UserExerciseProgress>(entity =>
