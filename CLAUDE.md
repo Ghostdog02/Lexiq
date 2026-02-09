@@ -137,6 +137,8 @@ backend/
 ├── Models/              # Request/response models (EditorJSModel, FileModel)
 ├── Dtos/                # Data Transfer Objects
 ├── Mapping/             # DTO ↔ Entity mappings
+├── Middleware/
+│   └── UserContextMiddleware.cs  # Loads User entity from JWT claims
 ├── Extensions/          # Service collection & app builder extensions
 └── Program.cs          # Application entry point
 ```
@@ -151,6 +153,12 @@ backend/
   - `JwtService` signs a JWT (HS256); default expiry **24h** (env: `JWT_EXPIRATION_HOURS`)
   - `AuthController` sets it as an HttpOnly, SameSite=Lax cookie named `AuthToken`
   - `AddJwtAuthentication()` extracts the token from that cookie via `OnMessageReceived`
+- **UserContextMiddleware** loads the full User entity from database using JWT claims
+  - Registered after `UseAuthentication()` but before `UseAuthorization()` in the pipeline
+  - Extracts user ID from `ClaimTypes.NameIdentifier` (NOT `JwtRegisteredClaimNames.Sub` - ASP.NET Core maps `sub` → `NameIdentifier`)
+  - Stores user in `HttpContext.Items["CurrentUser"]` for controller access
+  - Access via `HttpContext.GetCurrentUser()` extension method
+  - Eager loads `UserLanguages` and related `Language` entities
 - **Database initialization** happens in `Program.cs` via `InitializeDatabaseAsync()`
   - Auto-migration with retry logic (10 attempts, 3-second delays) for Docker startup
   - Seed data initialization after migration
@@ -283,7 +291,9 @@ This allows sending different exercise types in a single API response with autom
 - **Null handling**: Use null-coalescing operators for optional relationships
 - **No repository pattern**: Services directly access DbContext (simple enough for current needs)
 - **Upsert pattern**: `FirstOrDefaultAsync` → create if null, update if exists (see `ExerciseProgressService.SubmitAnswerAsync`)
-- **User ID from JWT**: Extract via `User.FindFirstValue(JwtRegisteredClaimNames.Sub)` in controllers
+- **User from JWT**: Access via `HttpContext.GetCurrentUser()` in controllers (returns full User entity, not just ID)
+  - Do NOT use `User.FindFirstValue(JwtRegisteredClaimNames.Sub)` - claim is mapped to `ClaimTypes.NameIdentifier`
+  - UserContextMiddleware pre-loads the user entity before controllers execute
 - **Auto-increment OrderIndex**: When `OrderIndex` is null in DTOs, calculate as `MaxAsync(e => (int?)e.OrderIndex) ?? -1 + 1` in parent entity
 - **Idempotent unlocks**: All unlock methods check `IsLocked` before modifying (safe to call multiple times)
 - **Cascade unlocking**: `LessonService.UnlockNextLessonAsync()` calls `ExerciseService.UnlockFirstExerciseInLessonAsync()`
@@ -860,6 +870,45 @@ When creating new components, ensure:
 - `LimitFileUploads` has a misleading code comment ("10 MB") but the actual limit is 100 MB
 - Verbose JWT debug logging (`Console.WriteLine`) is active in `AddJwtAuthentication` — remove before production
 - **Exercise unlocking**: Hybrid strategy - first exercise unlocks with lesson, rest unlock sequentially on completion (infinite retries allowed)
+
+### Common Debugging Scenarios
+
+#### 401 Unauthorized Errors
+
+If you get 401 errors on authenticated endpoints:
+
+1. **Check JWT authentication logs** - Backend outputs detailed logs:
+   ```
+   [JWT] OnMessageReceived: Token = Present (XXX chars)
+   [JWT] OnTokenValidated: Claims = sub=..., email=..., ...
+   ```
+
+2. **Verify UserContextMiddleware** - Should show:
+   ```
+   🔍 UserContextMiddleware: IsAuthenticated = True
+   🔍 UserContextMiddleware: UserId from JWT = <guid>
+   🔍 UserContextMiddleware: User found in DB = True
+   ```
+
+3. **Common causes**:
+   - **Stale JWT after DB reset**: Clear browser cookies and re-login
+   - **Missing AuthToken cookie**: Check browser DevTools → Application → Cookies
+   - **User not found in DB**: JWT has old user ID from before database reset
+   - **CORS misconfiguration**: Cookie not sent with cross-origin requests
+
+4. **JWT Claim Mapping Gotcha**:
+   - ASP.NET Core JWT middleware maps `sub` → `ClaimTypes.NameIdentifier` by default
+   - Always use `ClaimTypes.NameIdentifier` to extract user ID, NOT `JwtRegisteredClaimNames.Sub`
+   - If you see empty userId in logs but claims show `nameidentifier`, this is the issue
+
+#### Cookie Not Being Sent
+
+If cookies aren't being sent from frontend to backend:
+
+1. **Verify proxy configuration**: Frontend nginx should proxy `/api` to backend
+2. **Check CORS**: Must have `AllowCredentials()` with specific origin (not wildcard)
+3. **Frontend requests**: Must include `withCredentials: true` in HTTP requests
+4. **Cookie settings**: `SameSite=Lax` works with proxy (same-origin), otherwise needs `SameSite=None` + `Secure=true`
 
 ## Key Controllers & Endpoints
 
