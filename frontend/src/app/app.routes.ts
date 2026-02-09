@@ -1,39 +1,34 @@
 import { Routes } from '@angular/router';
-import { HomeComponent } from './features/lessons/components/home/home.component';
-import { GoogleLoginComponent } from './auth/google-login/google-login.component';
-import { ProfileComponent } from './features/users/components/profile/profile.component';
-import { LeaderboardComponent } from './features/users/components/leaderboard/leaderboard.component';
-import { HelpComponent } from './help/help.component';
 
 export const routes: Routes = [
     {
         path: '',
-        component: HomeComponent,
+        loadComponent: () => import('./features/lessons/components/home/home.component').then(m => m.HomeComponent),
         title: "Home"
     },
     {
         path: 'google-login',
-        component: GoogleLoginComponent,
+        loadComponent: () => import('./auth/google-login/google-login.component').then(m => m.GoogleLoginComponent),
         title: "Login with Google"
     },
     {
         path: "create-lesson",
         loadComponent: () => import('./features/lessons/components/lesson-editor/lesson-editor.component').then(m => m.LessonEditorComponent),
         title: "Create Lesson"
-    }, 
+    },
     {
         path: 'profile',
-        component: ProfileComponent,
+        loadComponent: () => import('./features/users/components/profile/profile.component').then(m => m.ProfileComponent),
         title: "Profile"
     },
     {
         path: 'leaderboard',
-        component: LeaderboardComponent,
+        loadComponent: () => import('./features/users/components/leaderboard/leaderboard.component').then(m => m.LeaderboardComponent),
         title: "Leaderboard"
     },
     {
         path: 'help',
-        component: HelpComponent,
+        loadComponent: () => import('./help/help.component').then(m => m.HelpComponent),
         title: "Help"
     },
     {

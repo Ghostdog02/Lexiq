@@ -85,6 +85,8 @@ export class LessonViewerComponent implements OnInit {
   private initializeAnswers() {
     if (!this.lesson) return;
 
+    console.log(this.lesson);
+
     this.lesson.exercises.forEach((_, index) => {
       this.answers.set(index, {
         answer: '',

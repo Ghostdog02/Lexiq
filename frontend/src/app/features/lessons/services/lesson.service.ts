@@ -25,24 +25,6 @@ const LESSON_ICONS = ['📚', '✏️', '🎯', '💡', '🔤', '🗣️', '📝
 export class LessonService {
   constructor(private httpClient: HttpClient) {}
 
-  /**
-   * Converts API response to UI model.
-   * Centralizes the transformation so all components use the same logic.
-   */
-  // mapApiToLesson(api: Lesson): Lesson {
-  //   return {
-  //     id: api.lessonId,
-  //     title: api.title,
-  //     description: api.description ?? '',
-  //     estimatedDuration: api.estimatedDurationMinutes ?? 0,
-  //     content: api.lessonContent,
-  //     courseId: api.courseId,
-  //     exerciseCount: api.exerciseCount,
-  //     exercises: [],
-  //     status: api.isLocked ? 'locked' : 'available',
-  //   };
-  // }
-
   async getCourses(): Promise<Course[]> {
     const result = await firstValueFrom(
       this.httpClient.get<Course[]>('/api/course', { withCredentials: true })
