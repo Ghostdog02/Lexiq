@@ -13,7 +13,8 @@ namespace Backend.Api.Controllers;
 [Authorize]
 public class ExerciseController(
     ExerciseService exerciseService,
-    ExerciseProgressService progressService) : ControllerBase
+    ExerciseProgressService progressService
+) : ControllerBase
 {
     private readonly ExerciseService _exerciseService = exerciseService;
     private readonly ExerciseProgressService _progressService = progressService;
@@ -22,6 +23,7 @@ public class ExerciseController(
     public async Task<ActionResult<List<ExerciseDto>>> GetExercisesByLesson(string lessonId)
     {
         var exercises = await _exerciseService.GetExercisesByLessonIdAsync(lessonId);
+
         return Ok(exercises.Select(e => e.ToDto()));
     }
 
@@ -31,6 +33,12 @@ public class ExerciseController(
         var exercise = await _exerciseService.GetExerciseByIdAsync(id);
         if (exercise == null)
             return NotFound();
+
+        if (exercise.IsLocked == true)
+            return StatusCode(
+                403,
+                new { message = "Exercise is locked. Complete previous exercises to unlock." }
+            );
 
         return Ok(exercise.ToDto());
     }
@@ -70,7 +78,9 @@ public class ExerciseController(
     /// </summary>
     [HttpPost("{exerciseId}/submit")]
     public async Task<ActionResult<SubmitAnswerResponse>> SubmitAnswer(
-        string exerciseId, SubmitAnswerRequest request)
+        string exerciseId,
+        SubmitAnswerRequest request
+    )
     {
         if (string.IsNullOrWhiteSpace(request.Answer))
             return BadRequest(new { message = "Answer cannot be empty" });
@@ -81,7 +91,12 @@ public class ExerciseController(
 
         try
         {
-            var result = await _progressService.SubmitAnswerAsync(userId, exerciseId, request.Answer);
+            SubmitAnswerResponse result = await _progressService.SubmitAnswerAsync(
+                userId,
+                exerciseId,
+                request.Answer
+            );
+
             return Ok(result);
         }
         catch (ArgumentException ex)

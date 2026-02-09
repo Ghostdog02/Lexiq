@@ -11,9 +11,8 @@ namespace Backend.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
-public class LessonController(
-    LessonService lessonService,
-    ExerciseProgressService progressService) : ControllerBase
+public class LessonController(LessonService lessonService, ExerciseProgressService progressService)
+    : ControllerBase
 {
     private readonly LessonService _lessonService = lessonService;
     private readonly ExerciseProgressService _progressService = progressService;
@@ -35,6 +34,7 @@ public class LessonController(
             var result = await _progressService.CompleteLessonAsync(userId, lessonId);
             return Ok(result);
         }
+        
         catch (ArgumentException ex)
         {
             return NotFound(new { message = ex.Message });
