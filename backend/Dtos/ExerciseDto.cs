@@ -142,7 +142,7 @@ public abstract record CreateExerciseDto(
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int OrderIndex,
+    int? OrderIndex, // Optional - auto-calculated if null
     string? Explanation
 );
 
@@ -153,7 +153,7 @@ public record CreateMultipleChoiceExerciseDto(
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int OrderIndex,
+    int? OrderIndex, // Optional - auto-calculated if null
     string? Explanation,
     List<CreateExerciseOptionDto> Options
 )
@@ -175,7 +175,7 @@ public record CreateFillInBlankExerciseDto(
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int OrderIndex,
+    int? OrderIndex, // Optional - auto-calculated if null
     string? Explanation,
     string Text,
     string CorrectAnswer,
@@ -201,7 +201,7 @@ public record CreateListeningExerciseDto(
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int OrderIndex,
+    int? OrderIndex, // Optional - auto-calculated if null
     string? Explanation,
     string AudioUrl,
     string CorrectAnswer,
@@ -227,7 +227,7 @@ public record CreateTranslationExerciseDto(
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int OrderIndex,
+    int? OrderIndex, // Optional - auto-calculated if null
     string? Explanation,
     string SourceText,
     string TargetText,

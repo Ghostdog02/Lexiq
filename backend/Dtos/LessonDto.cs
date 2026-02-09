@@ -22,7 +22,7 @@ public record CreateLessonDto(
     string Title,
     string? Description,
     int? EstimatedDurationMinutes,
-    int OrderIndex,
+    int? OrderIndex, // Optional - auto-calculated if null
     string Content // Editor.js JSON content
 );
 
