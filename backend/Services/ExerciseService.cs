@@ -27,6 +27,9 @@ public class ExerciseService(BackendDbContext context)
 
     public async Task<Exercise> CreateExerciseAsync(CreateExerciseDto dto)
     {
+        // Auto-calculate OrderIndex if not provided
+        int orderIndex = dto.OrderIndex ?? await GetNextOrderIndexForLessonAsync(dto.LessonId);
+
         Exercise exercise = dto switch
         {
             CreateMultipleChoiceExerciseDto mcDto => new MultipleChoiceExercise
@@ -37,7 +40,7 @@ public class ExerciseService(BackendDbContext context)
                 EstimatedDurationMinutes = mcDto.EstimatedDurationMinutes,
                 DifficultyLevel = mcDto.DifficultyLevel,
                 Points = mcDto.Points,
-                OrderIndex = mcDto.OrderIndex,
+                OrderIndex = orderIndex,
                 Explanation = mcDto.Explanation,
                 Options = mcDto
                     .Options.Select(o => new ExerciseOption
@@ -56,7 +59,7 @@ public class ExerciseService(BackendDbContext context)
                 EstimatedDurationMinutes = fibDto.EstimatedDurationMinutes,
                 DifficultyLevel = fibDto.DifficultyLevel,
                 Points = fibDto.Points,
-                OrderIndex = fibDto.OrderIndex,
+                OrderIndex = orderIndex,
                 Explanation = fibDto.Explanation,
                 Text = fibDto.Text,
                 CorrectAnswer = fibDto.CorrectAnswer,
@@ -72,7 +75,7 @@ public class ExerciseService(BackendDbContext context)
                 EstimatedDurationMinutes = lDto.EstimatedDurationMinutes,
                 DifficultyLevel = lDto.DifficultyLevel,
                 Points = lDto.Points,
-                OrderIndex = lDto.OrderIndex,
+                OrderIndex = orderIndex,
                 Explanation = lDto.Explanation,
                 AudioUrl = lDto.AudioUrl,
                 CorrectAnswer = lDto.CorrectAnswer,
@@ -88,7 +91,7 @@ public class ExerciseService(BackendDbContext context)
                 EstimatedDurationMinutes = tDto.EstimatedDurationMinutes,
                 DifficultyLevel = tDto.DifficultyLevel,
                 Points = tDto.Points,
-                OrderIndex = tDto.OrderIndex,
+                OrderIndex = orderIndex,
                 Explanation = tDto.Explanation,
                 SourceText = tDto.SourceText,
                 TargetText = tDto.TargetText,
@@ -146,5 +149,75 @@ public class ExerciseService(BackendDbContext context)
         _context.Exercises.Remove(exercise);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    /// <summary>
+    /// Unlocks the next exercise in the lesson after completing the current one
+    /// </summary>
+    /// <param name="currentExerciseId">The ID of the exercise that was just completed</param>
+    /// <returns>True if a next exercise was unlocked, false otherwise</returns>
+    public async Task<bool> UnlockNextExerciseAsync(string currentExerciseId)
+    {
+        var currentExercise = await _context.Exercises.FindAsync(currentExerciseId);
+        if (currentExercise == null)
+            return false;
+
+        // Find the next exercise in the same lesson by OrderIndex
+        var nextExercise = await _context
+            .Exercises.Where(e =>
+                e.LessonId == currentExercise.LessonId
+                && e.OrderIndex > currentExercise.OrderIndex
+            )
+            .OrderBy(e => e.OrderIndex)
+            .FirstOrDefaultAsync();
+
+        if (nextExercise == null)
+            return false; // No next exercise in this lesson
+
+        if (!nextExercise.IsLocked)
+            return false; // Already unlocked
+
+        nextExercise.IsLocked = false;
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Unlocks the first exercise in a lesson (called when a lesson is unlocked)
+    /// </summary>
+    /// <param name="lessonId">The ID of the lesson</param>
+    /// <returns>True if an exercise was unlocked, false otherwise</returns>
+    public async Task<bool> UnlockFirstExerciseInLessonAsync(string lessonId)
+    {
+        var firstExercise = await _context
+            .Exercises.Where(e => e.LessonId == lessonId)
+            .OrderBy(e => e.OrderIndex)
+            .FirstOrDefaultAsync();
+
+        if (firstExercise == null)
+            return false; // No exercises in this lesson
+
+        if (!firstExercise.IsLocked)
+            return false; // Already unlocked
+
+        firstExercise.IsLocked = false;
+        await _context.SaveChangesAsync();
+
+        return true;
+    }
+
+    /// <summary>
+    /// Calculates the next OrderIndex for a new exercise in a lesson
+    /// </summary>
+    /// <param name="lessonId">The ID of the lesson</param>
+    /// <returns>The next available OrderIndex (0 if no exercises exist, otherwise max + 1)</returns>
+    private async Task<int> GetNextOrderIndexForLessonAsync(string lessonId)
+    {
+        var maxOrderIndex = await _context
+            .Exercises.Where(e => e.LessonId == lessonId)
+            .MaxAsync(e => (int?)e.OrderIndex);
+
+        return (maxOrderIndex ?? -1) + 1;
     }
 }

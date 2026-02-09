@@ -5,9 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class LessonService(BackendDbContext context)
+public class LessonService(BackendDbContext context, ExerciseService exerciseService)
 {
     private readonly BackendDbContext _context = context;
+    private readonly ExerciseService _exerciseService = exerciseService;
 
     /// <summary>
     /// Gets the next lesson after the current one, even if it's in the next course
@@ -58,6 +59,7 @@ public class LessonService(BackendDbContext context)
 
     /// <summary>
     /// Unlocks the next lesson after completing the current one
+    /// Also unlocks the first exercise in the newly unlocked lesson
     /// </summary>
     /// <param name="currentLessonId">The ID of the lesson that was just completed</param>
     /// <returns>True if a next lesson was unlocked, false otherwise</returns>
@@ -73,6 +75,9 @@ public class LessonService(BackendDbContext context)
 
         nextLesson.IsLocked = false;
         await _context.SaveChangesAsync();
+
+        // Unlock the first exercise in this lesson
+        await _exerciseService.UnlockFirstExerciseInLessonAsync(nextLesson.Id);
 
         return true;
     }
@@ -126,7 +131,7 @@ public class LessonService(BackendDbContext context)
     }
 
     /// <summary>
-    /// Unlocks a specific lesson
+    /// Unlocks a specific lesson and its first exercise (admin/manual unlock)
     /// </summary>
     /// <param name="lessonId">The ID of the lesson to unlock</param>
     public async Task UnlockLessonAsync(string lessonId)
@@ -136,6 +141,9 @@ public class LessonService(BackendDbContext context)
         {
             lesson.IsLocked = false;
             await _context.SaveChangesAsync();
+
+            // Also unlock the first exercise
+            await _exerciseService.UnlockFirstExerciseInLessonAsync(lessonId);
         }
     }
 
@@ -150,13 +158,16 @@ public class LessonService(BackendDbContext context)
             await _context.Courses.FindAsync(dto.CourseId)
             ?? throw new ArgumentException($"Course with ID '{dto.CourseId}' not found.");
 
+        // Auto-calculate OrderIndex if not provided
+        int orderIndex = dto.OrderIndex ?? await GetNextOrderIndexForCourseAsync(dto.CourseId);
+
         var lesson = new Lesson
         {
             CourseId = course.Id,
             Title = dto.Title,
             Description = dto.Description,
             EstimatedDurationMinutes = dto.EstimatedDurationMinutes,
-            OrderIndex = dto.OrderIndex,
+            OrderIndex = orderIndex,
             LessonContent = dto.Content, // Store Editor.js JSON directly in database
             IsLocked = true, // Default to locked
             CreatedAt = DateTime.UtcNow,
@@ -218,5 +229,19 @@ public class LessonService(BackendDbContext context)
             .ThenInclude(c => c.Language)
             .Include(l => l.Exercises)
             .FirstOrDefaultAsync(l => l.Id == lessonId);
+    }
+
+    /// <summary>
+    /// Calculates the next OrderIndex for a new lesson in a course
+    /// </summary>
+    /// <param name="courseId">The ID of the course</param>
+    /// <returns>The next available OrderIndex (0 if no lessons exist, otherwise max + 1)</returns>
+    private async Task<int> GetNextOrderIndexForCourseAsync(string courseId)
+    {
+        var maxOrderIndex = await _context
+            .Lessons.Where(l => l.CourseId == courseId)
+            .MaxAsync(l => (int?)l.OrderIndex);
+
+        return (maxOrderIndex ?? -1) + 1;
     }
 }
