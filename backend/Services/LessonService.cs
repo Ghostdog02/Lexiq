@@ -200,7 +200,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         if (dto.OrderIndex.HasValue)
             lesson.OrderIndex = dto.OrderIndex.Value;
         if (dto.LessonContent != null)
-            lesson.LessonContent = dto.LessonContent;  // Update Editor.js content
+            lesson.LessonContent = dto.LessonContent; // Update Editor.js content
 
         await _context.SaveChangesAsync();
         return lesson;

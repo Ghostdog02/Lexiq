@@ -114,11 +114,17 @@ public static class ServiceCollectionExtensions
                         // Debug: Log ALL cookies received
                         Console.WriteLine($"[JWT] Request Path: {context.Request.Path}");
                         Console.WriteLine($"[JWT] Request Host: {context.Request.Host}");
-                        Console.WriteLine($"[JWT] Cookie Header: {context.Request.Headers["Cookie"]}");
-                        Console.WriteLine($"[JWT] All Cookies Count: {context.Request.Cookies.Count}");
+                        Console.WriteLine(
+                            $"[JWT] Cookie Header: {context.Request.Headers.Cookie}"
+                        );
+                        Console.WriteLine(
+                            $"[JWT] All Cookies Count: {context.Request.Cookies.Count}"
+                        );
                         foreach (var cookie in context.Request.Cookies)
                         {
-                            Console.WriteLine($"[JWT]   Cookie: {cookie.Key} = {(cookie.Key == "AuthToken" ? $"{cookie.Value.Length} chars" : cookie.Value)}");
+                            Console.WriteLine(
+                                $"[JWT]   Cookie: {cookie.Key} = {(cookie.Key == "AuthToken" ? $"{cookie.Value.Length} chars" : cookie.Value)}"
+                            );
                         }
 
                         var token = context.Request.Cookies["AuthToken"];

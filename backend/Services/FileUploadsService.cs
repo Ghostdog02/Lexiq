@@ -3,16 +3,10 @@ using FileInfo = Backend.Api.Models.FileInfo;
 
 namespace Backend.Api.Services
 {
-    public class FileUploadsService : IFileUploadsService
+    public class FileUploadsService(IWebHostEnvironment environment) : IFileUploadsService
     {
-        private readonly IWebHostEnvironment _environment;
-        private readonly Dictionary<string, FileTypeConfig> _fileTypeConfigs;
-
-        public FileUploadsService(IWebHostEnvironment environment)
-        {
-            _environment = environment;
-            _fileTypeConfigs = InitializeFileTypeConfigs();
-        }
+        private readonly IWebHostEnvironment _environment = environment;
+        private readonly Dictionary<string, FileTypeConfig> _fileTypeConfigs = InitializeFileTypeConfigs();
 
         private static Dictionary<string, FileTypeConfig> InitializeFileTypeConfigs()
         {

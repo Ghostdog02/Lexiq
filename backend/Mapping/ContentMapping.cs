@@ -37,7 +37,7 @@ public static class ContentMappingExtensions
             entity.OrderIndex,
             entity.LessonContent,  // Editor.js JSON content
             entity.IsLocked,
-            entity.Exercises.Count,
+            entity.Exercises.Select(e => e.ToDto()).ToList(),
             CompletedExercises: progress?.CompletedExercises,
             EarnedXp: progress?.EarnedXp,
             TotalPossibleXp: progress?.TotalPossibleXp,
