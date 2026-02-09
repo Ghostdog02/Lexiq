@@ -6,20 +6,29 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class ExerciseProgressService(BackendDbContext context, LessonService lessonService)
+public class ExerciseProgressService(
+    BackendDbContext context,
+    LessonService lessonService,
+    ExerciseService exerciseService
+)
 {
     private readonly BackendDbContext _context = context;
     private readonly LessonService _lessonService = lessonService;
+    private readonly ExerciseService _exerciseService = exerciseService;
 
     public const double DefaultCompletionThreshold = 0.70;
 
     public async Task<SubmitAnswerResponse> SubmitAnswerAsync(
-        string userId, string exerciseId, string answer)
+        string userId,
+        string exerciseId,
+        string answer
+    )
     {
-        var exercise = await _context.Exercises
-            .Include(e => (e as MultipleChoiceExercise)!.Options)
-            .Include(e => e.Lesson)
-            .FirstOrDefaultAsync(e => e.Id == exerciseId)
+        var exercise =
+            await _context
+                .Exercises.Include(e => (e as MultipleChoiceExercise)!.Options)
+                .Include(e => e.Lesson)
+                .FirstOrDefaultAsync(e => e.Id == exerciseId)
             ?? throw new ArgumentException("Exercise not found");
 
         if (exercise.Lesson?.IsLocked == true)
@@ -29,8 +38,9 @@ public class ExerciseProgressService(BackendDbContext context, LessonService les
         var pointsEarned = isCorrect ? exercise.Points : 0;
 
         // Upsert progress
-        var progress = await _context.UserExerciseProgress
-            .FirstOrDefaultAsync(p => p.UserId == userId && p.ExerciseId == exerciseId);
+        var progress = await _context.UserExerciseProgress.FirstOrDefaultAsync(p =>
+            p.UserId == userId && p.ExerciseId == exerciseId
+        );
 
         if (progress == null)
         {
@@ -40,10 +50,12 @@ public class ExerciseProgressService(BackendDbContext context, LessonService les
                 ExerciseId = exerciseId,
                 IsCompleted = isCorrect,
                 PointsEarned = pointsEarned,
-                CompletedAt = isCorrect ? DateTime.UtcNow : null
+                CompletedAt = isCorrect ? DateTime.UtcNow : null,
             };
+            
             _context.UserExerciseProgress.Add(progress);
         }
+
         else
         {
             progress.IsCompleted = isCorrect;
@@ -52,6 +64,13 @@ public class ExerciseProgressService(BackendDbContext context, LessonService les
         }
 
         await _context.SaveChangesAsync();
+
+        // Unlock the next exercise if this one was completed successfully
+        var nextExerciseUnlocked = false;
+        if (isCorrect)
+        {
+            nextExerciseUnlocked = await _exerciseService.UnlockNextExerciseAsync(exerciseId);
+        }
 
         var lessonProgress = await GetLessonProgressAsync(userId, exercise.LessonId);
 
@@ -64,12 +83,12 @@ public class ExerciseProgressService(BackendDbContext context, LessonService les
         );
     }
 
-    public async Task<CompleteLessonResponse> CompleteLessonAsync(
-        string userId, string lessonId)
+    public async Task<CompleteLessonResponse> CompleteLessonAsync(string userId, string lessonId)
     {
-        var lesson = await _context.Lessons
-            .Include(l => l.Exercises)
-            .FirstOrDefaultAsync(l => l.Id == lessonId)
+        var lesson =
+            await _context
+                .Lessons.Include(l => l.Exercises)
+                .FirstOrDefaultAsync(l => l.Id == lessonId)
             ?? throw new ArgumentException("Lesson not found");
 
         var lessonProgress = await GetLessonProgressAsync(userId, lessonId);
@@ -98,16 +117,16 @@ public class ExerciseProgressService(BackendDbContext context, LessonService les
                     nextLesson.Title,
                     nextLesson.CourseId,
                     wasUnlocked,
-                    nextLesson.IsLocked)
+                    nextLesson.IsLocked
+                )
                 : null
         );
     }
 
-    public async Task<LessonProgressSummary> GetLessonProgressAsync(
-        string userId, string lessonId)
+    public async Task<LessonProgressSummary> GetLessonProgressAsync(string userId, string lessonId)
     {
-        var exercises = await _context.Exercises
-            .Where(e => e.LessonId == lessonId)
+        var exercises = await _context
+            .Exercises.Where(e => e.LessonId == lessonId)
             .Select(e => new { e.Id, e.Points })
             .ToListAsync();
 
@@ -118,16 +137,16 @@ public class ExerciseProgressService(BackendDbContext context, LessonService les
 
         var exerciseIds = exercises.Select(e => e.Id).ToList();
 
-        var progressRecords = await _context.UserExerciseProgress
-            .Where(p => p.UserId == userId && exerciseIds.Contains(p.ExerciseId))
+        var progressRecords = await _context
+            .UserExerciseProgress.Where(p =>
+                p.UserId == userId && exerciseIds.Contains(p.ExerciseId)
+            )
             .ToListAsync();
 
         var completedCount = progressRecords.Count(p => p.IsCompleted);
         var earnedXp = progressRecords.Sum(p => p.PointsEarned);
         var totalPossibleXp = exercises.Sum(e => e.Points);
-        var completionPercentage = totalPossibleXp > 0
-            ? (double)earnedXp / totalPossibleXp
-            : 1.0;
+        var completionPercentage = totalPossibleXp > 0 ? (double)earnedXp / totalPossibleXp : 1.0;
 
         return new LessonProgressSummary(
             CompletedExercises: completedCount,
@@ -147,7 +166,7 @@ public class ExerciseProgressService(BackendDbContext context, LessonService les
             FillInBlankExercise fib => ValidateFillInBlank(fib, answer),
             TranslationExercise te => ValidateTranslation(te, answer),
             ListeningExercise le => ValidateListening(le, answer),
-            _ => false
+            _ => false,
         };
     }
 
@@ -179,8 +198,8 @@ public class ExerciseProgressService(BackendDbContext context, LessonService les
 
         if (!string.IsNullOrEmpty(exercise.AcceptedAnswers))
         {
-            var alternatives = exercise.AcceptedAnswers
-                .Split(',')
+            var alternatives = exercise
+                .AcceptedAnswers.Split(',')
                 .Select(a =>
                 {
                     var alt = exercise.TrimWhitespace ? a.Trim() : a;
@@ -221,8 +240,8 @@ public class ExerciseProgressService(BackendDbContext context, LessonService les
 
         if (!string.IsNullOrEmpty(exercise.AcceptedAnswers))
         {
-            var alternatives = exercise.AcceptedAnswers
-                .Split(',')
+            var alternatives = exercise
+                .AcceptedAnswers.Split(',')
                 .Select(a =>
                 {
                     var alt = a.Trim();
@@ -276,12 +295,11 @@ public class ExerciseProgressService(BackendDbContext context, LessonService les
     {
         return exercise switch
         {
-            MultipleChoiceExercise mce =>
-                mce.Options.FirstOrDefault(o => o.IsCorrect)?.OptionText,
+            MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)?.OptionText,
             FillInBlankExercise fib => fib.CorrectAnswer,
             TranslationExercise te => te.TargetText,
             ListeningExercise le => le.CorrectAnswer,
-            _ => null
+            _ => null,
         };
     }
 }
