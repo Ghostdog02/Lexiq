@@ -59,6 +59,7 @@ public static class ExerciseSeeder
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 OrderIndex = 0,
+                IsLocked = false, // First exercise is unlocked
                 Explanation =
                     "'Ciao' is an informal greeting used for both hello and goodbye in Italian.",
                 Options =
@@ -153,6 +154,7 @@ public static class ExerciseSeeder
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 OrderIndex = 0,
+                IsLocked = false, // First exercise is unlocked
                 Explanation = "'Cinque' is the Italian word for 5.",
                 Options =
                 [
@@ -230,6 +232,7 @@ public static class ExerciseSeeder
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 OrderIndex = 0,
+                IsLocked = false, // First exercise is unlocked
                 Explanation = "'Verde' means green in Italian.",
                 Options =
                 [
@@ -307,6 +310,7 @@ public static class ExerciseSeeder
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 OrderIndex = 0,
+                IsLocked = false, // First exercise is unlocked
                 Explanation = "'Il pane' is Italian for bread.",
                 Options =
                 [
@@ -400,6 +404,7 @@ public static class ExerciseSeeder
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 OrderIndex = 0,
+                IsLocked = false, // First exercise is unlocked
                 Explanation = "'Destra' means right. 'Sinistra' means left.",
                 Options =
                 [
@@ -493,6 +498,7 @@ public static class ExerciseSeeder
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 OrderIndex = 0,
+                IsLocked = false, // First exercise is unlocked
                 Explanation = "'Io' is the first-person singular pronoun: I.",
                 Options =
                 [
@@ -586,6 +592,7 @@ public static class ExerciseSeeder
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 OrderIndex = 0,
+                IsLocked = false, // First exercise is unlocked
                 Explanation = "'Venerdi' is Friday.",
                 Options =
                 [
@@ -663,6 +670,7 @@ public static class ExerciseSeeder
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 OrderIndex = 0,
+                IsLocked = false, // First exercise is unlocked
                 Explanation = "'Dove' means 'Where' in Italian.",
                 Options =
                 [
