@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS publish
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS publish
 WORKDIR /src
 
 COPY *.sln ./
@@ -11,13 +11,12 @@ RUN dotnet restore ./Backend.Api.csproj
 COPY . .
 RUN dotnet publish "Backend.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
-    rm -rf /var/lib/apt/lists/* && \
-    curl -sSL https://aka.ms/getvsdbgsh | /bin/sh /dev/stdin -v latest -l /app/vsdbg  
+RUN apk add --no-cache curl icu-libs
+
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
 COPY --from=publish /app/publish .
 
