@@ -39,6 +39,8 @@ services:
     container_name: lexiq-backend
     ports: 
       - "8080:8080"
+    volumes:
+      - backend-uploads:/app/wwwroot
     secrets: 
       - backend_env
     depends_on:
@@ -78,3 +80,4 @@ services:
     
 volumes:
   db-data:
+  backend-uploads:
