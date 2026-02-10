@@ -32,7 +32,7 @@
           @case (ExerciseType.MultipleChoice) {
             <div class="multiple-choice">
               <div class="options-list">
-                @for (option of $any(currentExercise).options; track option.id; let i = $index) {
+                @for (option of currentMultipleChoice?.options; track option.id; let i = $index) {
                   <button
                     type="button"
                     class="option-btn"
@@ -60,7 +60,7 @@
           @case (ExerciseType.FillInBlank) {
             <div class="fill-in-blank">
               <div class="question-display">
-                <p class="question-text">{{ $any(currentExercise).question }}</p>
+                <p class="question-text">{{ currentFillInBlank?.question }}</p>
               </div>
               <div class="answer-input-wrapper">
                 <input
@@ -76,7 +76,7 @@
               @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
                 <div class="correct-answer-reveal">
                   <span class="label">Correct answer:</span>
-                  <span class="answer">{{ $any(currentExercise).correctAnswer }}</span>
+                  <span class="answer">{{ currentFillInBlank?.correctAnswer }}</span>
                 </div>
               }
             </div>
@@ -86,14 +86,14 @@
           @case (ExerciseType.Translation) {
             <div class="translation">
               <div class="source-section">
-                <div class="lang-badge">{{ $any(currentExercise).sourceLanguageCode | uppercase }}</div>
-                <p class="source-text">{{ $any(currentExercise).sourceText }}</p>
+                <div class="lang-badge">{{ currentTranslation?.sourceLanguageCode | uppercase }}</div>
+                <p class="source-text">{{ currentTranslation?.sourceText }}</p>
               </div>
               <div class="arrow-divider">
                 <span>&#x27A1;</span>
               </div>
               <div class="target-section">
-                <div class="lang-badge">{{ $any(currentExercise).targetLanguageCode | uppercase }}</div>
+                <div class="lang-badge">{{ currentTranslation?.targetLanguageCode | uppercase }}</div>
                 <textarea
                   class="translation-input"
                   [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
@@ -107,7 +107,7 @@
               @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
                 <div class="correct-answer-reveal">
                   <span class="label">Expected translation:</span>
-                  <span class="answer">{{ $any(currentExercise).targetText }}</span>
+                  <span class="answer">{{ currentTranslation?.targetText }}</span>
                 </div>
               }
             </div>
@@ -117,9 +117,9 @@
           @case (ExerciseType.Listening) {
             <div class="listening">
               <div class="audio-section">
-                @if ($any(currentExercise).audioUrl) {
+                @if (currentListening?.audioUrl) {
                   <audio controls class="audio-player">
-                    <source [src]="$any(currentExercise).audioUrl" type="audio/mpeg">
+                    <source [src]="currentListening?.audioUrl" type="audio/mpeg">
                     Your browser does not support the audio element.
                   </audio>
                 } @else {
@@ -128,8 +128,8 @@
                     <p>No audio available</p>
                   </div>
                 }
-                @if ($any(currentExercise).maxReplays) {
-                  <p class="replay-hint">Max replays: {{ $any(currentExercise).maxReplays }}</p>
+                @if (currentListening?.maxReplays) {
+                  <p class="replay-hint">Max replays: {{ currentListening?.maxReplays }}</p>
                 }
               </div>
               <div class="answer-input-wrapper">
@@ -146,7 +146,7 @@
               @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
                 <div class="correct-answer-reveal">
                   <span class="label">Correct answer:</span>
-                  <span class="answer">{{ $any(currentExercise).correctAnswer }}</span>
+                  <span class="answer">{{ currentListening?.correctAnswer }}</span>
                 </div>
               }
             </div>

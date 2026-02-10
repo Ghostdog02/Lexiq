@@ -6,7 +6,11 @@ import {
   AnyExercise,
   ExerciseType,
   ExerciseAnswerForm,
-  ExerciseViewerForm
+  ExerciseViewerForm,
+  MultipleChoiceExercise,
+  FillInBlankExercise,
+  TranslationExercise,
+  ListeningExercise
 } from '../../models/exercise.interface';
 import { SubmitAnswerResponse } from '../../models/lesson.interface';
 import { LessonService } from '../../services/lesson.service';
@@ -101,6 +105,50 @@ export class ExerciseViewerComponent implements OnInit {
   get exerciseProgress(): number {
     if (this.exercises.length === 0) return 0;
     return (this.submissionResults.size / this.exercises.length) * 100;
+  }
+
+  /**
+   * Type-safe getter for MultipleChoiceExercise.
+   * Returns the current exercise as MultipleChoiceExercise if type matches.
+   */
+  get currentMultipleChoice(): MultipleChoiceExercise | null {
+    const exercise = this.currentExercise;
+    return exercise?.exerciseType === ExerciseType.MultipleChoice
+      ? exercise as MultipleChoiceExercise
+      : null;
+  }
+
+  /**
+   * Type-safe getter for FillInBlankExercise.
+   * Returns the current exercise as FillInBlankExercise if type matches.
+   */
+  get currentFillInBlank(): FillInBlankExercise | null {
+    const exercise = this.currentExercise;
+    return exercise?.exerciseType === ExerciseType.FillInBlank
+      ? exercise as FillInBlankExercise
+      : null;
+  }
+
+  /**
+   * Type-safe getter for TranslationExercise.
+   * Returns the current exercise as TranslationExercise if type matches.
+   */
+  get currentTranslation(): TranslationExercise | null {
+    const exercise = this.currentExercise;
+    return exercise?.exerciseType === ExerciseType.Translation
+      ? exercise as TranslationExercise
+      : null;
+  }
+
+  /**
+   * Type-safe getter for ListeningExercise.
+   * Returns the current exercise as ListeningExercise if type matches.
+   */
+  get currentListening(): ListeningExercise | null {
+    const exercise = this.currentExercise;
+    return exercise?.exerciseType === ExerciseType.Listening
+      ? exercise as ListeningExercise
+      : null;
   }
 
   previousExercise() {
