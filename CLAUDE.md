@@ -237,11 +237,12 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 
 ### CI/CD Pipeline
 
-Three-stage pipeline in `.github/workflows/`:
+Four-stage pipeline in `.github/workflows/`:
 
 1. **build-and-push-docker.yml** - Builds and pushes Docker images to GHCR
 2. **development.yml** - Orchestrates the full CI/CD workflow
-3. **continious-delivery.yml** - Deploys to Hetzner production server
+3. **continuous-delivery.yml** - Deploys to Hetzner production server
+4. **codeql.yml** - Security scanning with GitHub Advanced Security (runs on push/PR/schedule)
 
 **Deployment flow:**
 - Triggered on push to `master` or `fix/ci-cd`
@@ -249,7 +250,13 @@ Three-stage pipeline in `.github/workflows/`:
 - Builds both frontend and backend Docker images
 - Pushes to GitHub Container Registry (ghcr.io)
 - SSHs into Hetzner server and runs `scripts/deploy.sh`
-- deploy.sh pulls images, rebuilds containers, and verifies health
+
+**Deployment script** (`scripts/deploy.sh`):
+- Loads environment variables from `/tmp/.deploy.env` (passed by CD workflow)
+- Authenticates to GHCR using GitHub token
+- Pulls latest images, stops old containers, starts new ones
+- Logs to `/var/log/lexiq/deployment/` with GitHub Actions annotations
+- Exit codes: 1 (system/file error), 3 (auth/pull failed), 4 (container start failed)
 
 ## Backend Patterns & Conventions
 
@@ -909,6 +916,24 @@ If cookies aren't being sent from frontend to backend:
 2. **Check CORS**: Must have `AllowCredentials()` with specific origin (not wildcard)
 3. **Frontend requests**: Must include `withCredentials: true` in HTTP requests
 4. **Cookie settings**: `SameSite=Lax` works with proxy (same-origin), otherwise needs `SameSite=None` + `Secure=true`
+
+#### Docker Container Issues
+
+**Container fails to start:**
+1. Check container logs: `docker compose logs <service-name>`
+2. Verify secrets files exist: `backend/Database/password.txt`, `backend/.env`
+3. Check port conflicts: `sudo lsof -i :8080` (backend), `sudo lsof -i :4200` (frontend)
+4. Ensure database is ready: Backend retries 10 times (3s delay) waiting for SQL Server
+
+**Health check failures:**
+- Backend health: `curl http://localhost:8080/health`
+- Frontend health: `curl http://localhost:4200` (should return HTML)
+- Database health: `docker compose exec db /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P <password> -Q "SELECT 1"`
+
+**Volume/permission issues:**
+- SQL Server data: Ensure `~/mssql-data` directory has correct permissions
+- Upload directory: Check `backend/static/uploads` is writable by container user
+- Log directory: Verify `/var/log/lexiq` exists on production server
 
 ## Key Controllers & Endpoints
 
