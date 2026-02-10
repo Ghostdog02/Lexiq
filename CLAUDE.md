@@ -294,6 +294,9 @@ This allows sending different exercise types in a single API response with autom
 
 - **Async all the way**: All service methods must be async
 - **Include chains**: Use `.Include()` and `.ThenInclude()` for eager loading related entities
+- **Eager load child collections for polymorphic types**: Use `.ThenInclude(e => (e as ChildType)!.ChildCollection)`
+  - Example: `.Include(l => l.Exercises).ThenInclude(e => (e as MultipleChoiceExercise)!.Options)`
+  - EF Core handles cast gracefully for non-matching types (TPH pattern)
 - **OrderBy**: Always order collections by `OrderIndex` for consistent sequencing
 - **Null handling**: Use null-coalescing operators for optional relationships
 - **No repository pattern**: Services directly access DbContext (simple enough for current needs)
@@ -539,6 +542,21 @@ feature/
 ├── feature.service.ts        # Backend communication
 ├── feature.interface.ts      # TypeScript interfaces
 └── feature-form.service.ts   # Form factory (if complex forms)
+```
+
+### Form to Runtime Object Conversion
+
+**Form controls may use different property names than runtime interfaces:**
+- Form: `exerciseType` → Runtime: `type`
+- Form: `question` (FillInBlank) → Runtime: `text`
+- Always map explicitly when converting form values to API-bound objects
+
+```typescript
+const runtimeObject = {
+  ...baseFields,
+  type: formValue.exerciseType,  // Explicit mapping
+  text: formValue.question        // Map form field to runtime property
+};
 ```
 
 ## Frontend Design System
@@ -877,6 +895,10 @@ When creating new components, ensure:
 - `LimitFileUploads` has a misleading code comment ("10 MB") but the actual limit is 100 MB
 - Verbose JWT debug logging (`Console.WriteLine`) is active in `AddJwtAuthentication` — remove before production
 - **Exercise unlocking**: Hybrid strategy - first exercise unlocks with lesson, rest unlock sequentially on completion (infinite retries allowed)
+- **Frontend/Backend property name mismatches cause silent failures** in Angular templates
+  - `@switch` statements won't match if property name is wrong
+  - Template expressions return undefined without error
+  - Always verify API response matches TypeScript interface property names
 
 ### Common Debugging Scenarios
 
@@ -916,6 +938,19 @@ If cookies aren't being sent from frontend to backend:
 2. **Check CORS**: Must have `AllowCredentials()` with specific origin (not wildcard)
 3. **Frontend requests**: Must include `withCredentials: true` in HTTP requests
 4. **Cookie settings**: `SameSite=Lax` works with proxy (same-origin), otherwise needs `SameSite=None` + `Secure=true`
+
+#### Frontend/Backend Interface Mismatch
+
+If data loads in API but not in UI:
+
+1. **Check API response in Network tab** - Copy full JSON response
+2. **Compare property names** - Backend may use different names than frontend interfaces
+3. **Common mismatches**:
+   - Backend: `type: "MultipleChoice"` → Frontend expects: `exerciseType`
+   - Backend: `text: "..."` (FillInBlank) → Frontend expects: `question`
+   - Backend: `difficultyLevel: 0` (number) → Frontend expects: `DifficultyLevel` enum
+4. **Fix**: Update frontend interfaces to match API response structure
+5. **Symptom**: `@switch` statements won't match, template expressions return undefined without errors
 
 #### Docker Container Issues
 
