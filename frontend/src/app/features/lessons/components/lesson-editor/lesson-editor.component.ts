@@ -192,21 +192,24 @@ export class LessonEditorComponent implements OnInit {
     const exercises: AnyExercise[] = this.exercises.controls.map(exerciseForm => {
       const exerciseValue = exerciseForm.getRawValue();
       const baseExercise = {
+        id: '',
+        lessonId: '',
         title: exerciseValue.title,
         instructions: exerciseValue.instructions,
         estimatedDurationMinutes: exerciseValue.estimatedDurationMinutes,
         difficultyLevel: exerciseValue.difficultyLevel,
         points: exerciseValue.points,
+        orderIndex: 0,
         explanation: exerciseValue.explanation,
-        exerciseType: exerciseValue.exerciseType,
-        question: exerciseValue.question
+        type: exerciseValue.exerciseType
       };
 
       switch (exerciseValue.exerciseType) {
         case ExerciseType.FillInBlank:
           return {
             ...baseExercise,
-            exerciseType: ExerciseType.FillInBlank,
+            type: ExerciseType.FillInBlank,
+            text: exerciseValue.question,
             correctAnswer: exerciseValue.correctAnswer,
             acceptedAnswers: exerciseValue.acceptedAnswers,
             caseSensitive: exerciseValue.caseSensitive,
@@ -216,7 +219,7 @@ export class LessonEditorComponent implements OnInit {
         case ExerciseType.Translation:
           return {
             ...baseExercise,
-            exerciseType: ExerciseType.Translation,
+            type: ExerciseType.Translation,
             sourceText: exerciseValue.sourceText,
             targetText: exerciseValue.targetText,
             sourceLanguageCode: exerciseValue.sourceLanguageCode,
@@ -227,18 +230,18 @@ export class LessonEditorComponent implements OnInit {
         case ExerciseType.Listening:
           return {
             ...baseExercise,
-            exerciseType: ExerciseType.Listening,
+            type: ExerciseType.Listening,
+            audioUrl: exerciseValue.audioUrl,
             correctAnswer: exerciseValue.correctAnswer,
             acceptedAnswers: exerciseValue.acceptedAnswers,
             caseSensitive: exerciseValue.caseSensitive,
-            maxReplays: exerciseValue.maxReplays,
-            audioUrl: exerciseValue.audioUrl
+            maxReplays: exerciseValue.maxReplays
           } as ListeningExercise;
 
         case ExerciseType.MultipleChoice:
           return {
             ...baseExercise,
-            exerciseType: ExerciseType.MultipleChoice,
+            type: ExerciseType.MultipleChoice,
             options: exerciseValue.options || []
           } as MultipleChoiceExercise;
 
