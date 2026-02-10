@@ -4,8 +4,8 @@
     <div class="exercise-card card">
       <!-- Exercise header -->
       <div class="exercise-header">
-        <span class="exercise-type-badge" [attr.data-type]="currentExercise.exerciseType">
-          @switch (currentExercise.exerciseType) {
+        <span class="exercise-type-badge" [attr.data-type]="currentExercise.type">
+          @switch (currentExercise.type) {
             @case (ExerciseType.MultipleChoice) { Multiple Choice }
             @case (ExerciseType.FillInBlank) { Fill in the Blank }
             @case (ExerciseType.Translation) { Translation }
@@ -27,7 +27,7 @@
 
       <!-- Exercise content based on type -->
       <div class="exercise-content">
-        @switch (currentExercise.exerciseType) {
+        @switch (currentExercise.type) {
           <!-- Multiple Choice -->
           @case (ExerciseType.MultipleChoice) {
             <div class="multiple-choice">
@@ -60,7 +60,7 @@
           @case (ExerciseType.FillInBlank) {
             <div class="fill-in-blank">
               <div class="question-display">
-                <p class="question-text">{{ currentFillInBlank?.question }}</p>
+                <p class="question-text">{{ currentFillInBlank?.text }}</p>
               </div>
               <div class="answer-input-wrapper">
                 <input
