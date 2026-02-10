@@ -1,6 +1,7 @@
 using Backend.Api.Dtos;
 using Backend.Database;
 using Backend.Database.Entities;
+using Backend.Database.Entities.Exercises;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
@@ -228,6 +229,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .Lessons.Include(l => l.Course)
             .ThenInclude(c => c.Language)
             .Include(l => l.Exercises)
+            .ThenInclude(e => (e as MultipleChoiceExercise)!.Options)
             .FirstOrDefaultAsync(l => l.Id == lessonId);
     }
 
