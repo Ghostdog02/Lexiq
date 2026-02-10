@@ -113,7 +113,7 @@ export class ExerciseViewerComponent implements OnInit {
    */
   get currentMultipleChoice(): MultipleChoiceExercise | null {
     const exercise = this.currentExercise;
-    return exercise?.exerciseType === ExerciseType.MultipleChoice
+    return exercise?.type === ExerciseType.MultipleChoice
       ? exercise as MultipleChoiceExercise
       : null;
   }
@@ -124,7 +124,7 @@ export class ExerciseViewerComponent implements OnInit {
    */
   get currentFillInBlank(): FillInBlankExercise | null {
     const exercise = this.currentExercise;
-    return exercise?.exerciseType === ExerciseType.FillInBlank
+    return exercise?.type === ExerciseType.FillInBlank
       ? exercise as FillInBlankExercise
       : null;
   }
@@ -135,7 +135,7 @@ export class ExerciseViewerComponent implements OnInit {
    */
   get currentTranslation(): TranslationExercise | null {
     const exercise = this.currentExercise;
-    return exercise?.exerciseType === ExerciseType.Translation
+    return exercise?.type === ExerciseType.Translation
       ? exercise as TranslationExercise
       : null;
   }
@@ -146,7 +146,7 @@ export class ExerciseViewerComponent implements OnInit {
    */
   get currentListening(): ListeningExercise | null {
     const exercise = this.currentExercise;
-    return exercise?.exerciseType === ExerciseType.Listening
+    return exercise?.type === ExerciseType.Listening
       ? exercise as ListeningExercise
       : null;
   }
