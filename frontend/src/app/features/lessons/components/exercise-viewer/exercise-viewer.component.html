@@ -1,0 +1,249 @@
+<div class="exercises-view fade-in" [formGroup]="exerciseForm">
+  @if (currentExercise) {
+    <!-- Exercise card -->
+    <div class="exercise-card card">
+      <!-- Exercise header -->
+      <div class="exercise-header">
+        <span class="exercise-type-badge" [attr.data-type]="currentExercise.exerciseType">
+          @switch (currentExercise.exerciseType) {
+            @case (ExerciseType.MultipleChoice) { Multiple Choice }
+            @case (ExerciseType.FillInBlank) { Fill in the Blank }
+            @case (ExerciseType.Translation) { Translation }
+            @case (ExerciseType.Listening) { Listening }
+          }
+        </span>
+        @if (currentExercise.points) {
+          <span class="points-badge">+{{ currentExercise.points }} XP</span>
+        }
+      </div>
+
+      <!-- Exercise title and instructions -->
+      @if (currentExercise.title) {
+        <h2 class="exercise-title">{{ currentExercise.title }}</h2>
+      }
+      @if (currentExercise.instructions) {
+        <p class="exercise-instructions">{{ currentExercise.instructions }}</p>
+      }
+
+      <!-- Exercise content based on type -->
+      <div class="exercise-content">
+        @switch (currentExercise.exerciseType) {
+          <!-- Multiple Choice -->
+          @case (ExerciseType.MultipleChoice) {
+            <div class="multiple-choice">
+              <div class="options-list">
+                @for (option of $any(currentExercise).options; track option.id; let i = $index) {
+                  <button
+                    type="button"
+                    class="option-btn"
+                    [class]="getOptionClass(option.id, option.isCorrect)"
+                    [disabled]="isCurrentSubmitted"
+                    (click)="selectMultipleChoiceOption(option.id)"
+                    [attr.aria-pressed]="isOptionSelected(option.id)"
+                  >
+                    <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E', 'F'][i] }}</span>
+                    <span class="option-text">{{ option.optionText }}</span>
+                    @if (isCurrentSubmitted) {
+                      @if (option.isCorrect) {
+                        <span class="result-icon correct">&#x2713;</span>
+                      } @else if (isOptionSelected(option.id)) {
+                        <span class="result-icon incorrect">&#x2717;</span>
+                      }
+                    }
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Fill in the Blank -->
+          @case (ExerciseType.FillInBlank) {
+            <div class="fill-in-blank">
+              <div class="question-display">
+                <p class="question-text">{{ $any(currentExercise).question }}</p>
+              </div>
+              <div class="answer-input-wrapper">
+                <input
+                  type="text"
+                  class="answer-input"
+                  [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
+                  [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
+                  placeholder="Type your answer..."
+                  [formControl]="currentAnswerGroup.controls.answer"
+                  aria-label="Your answer"
+                />
+              </div>
+              @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
+                <div class="correct-answer-reveal">
+                  <span class="label">Correct answer:</span>
+                  <span class="answer">{{ $any(currentExercise).correctAnswer }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Translation -->
+          @case (ExerciseType.Translation) {
+            <div class="translation">
+              <div class="source-section">
+                <div class="lang-badge">{{ $any(currentExercise).sourceLanguageCode | uppercase }}</div>
+                <p class="source-text">{{ $any(currentExercise).sourceText }}</p>
+              </div>
+              <div class="arrow-divider">
+                <span>&#x27A1;</span>
+              </div>
+              <div class="target-section">
+                <div class="lang-badge">{{ $any(currentExercise).targetLanguageCode | uppercase }}</div>
+                <textarea
+                  class="translation-input"
+                  [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
+                  [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
+                  placeholder="Write your translation..."
+                  [formControl]="currentAnswerGroup.controls.answer"
+                  rows="3"
+                  aria-label="Your translation"
+                ></textarea>
+              </div>
+              @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
+                <div class="correct-answer-reveal">
+                  <span class="label">Expected translation:</span>
+                  <span class="answer">{{ $any(currentExercise).targetText }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Listening -->
+          @case (ExerciseType.Listening) {
+            <div class="listening">
+              <div class="audio-section">
+                @if ($any(currentExercise).audioUrl) {
+                  <audio controls class="audio-player">
+                    <source [src]="$any(currentExercise).audioUrl" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                  </audio>
+                } @else {
+                  <div class="no-audio">
+                    <span class="icon">&#x1F50A;</span>
+                    <p>No audio available</p>
+                  </div>
+                }
+                @if ($any(currentExercise).maxReplays) {
+                  <p class="replay-hint">Max replays: {{ $any(currentExercise).maxReplays }}</p>
+                }
+              </div>
+              <div class="answer-input-wrapper">
+                <input
+                  type="text"
+                  class="answer-input"
+                  [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
+                  [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
+                  placeholder="Type what you hear..."
+                  [formControl]="currentAnswerGroup.controls.answer"
+                  aria-label="Your answer"
+                />
+              </div>
+              @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
+                <div class="correct-answer-reveal">
+                  <span class="label">Correct answer:</span>
+                  <span class="answer">{{ $any(currentExercise).correctAnswer }}</span>
+                </div>
+              }
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Feedback after submission -->
+      @if (isCurrentSubmitted && currentSubmission) {
+        <div class="feedback" [class.correct]="currentSubmission.isCorrect" [class.incorrect]="!currentSubmission.isCorrect">
+          @if (currentSubmission.isCorrect) {
+            <span class="feedback-icon">&#x1F389;</span>
+            <span class="feedback-text">Correct! Great job!</span>
+          } @else {
+            <span class="feedback-icon">&#x1F914;</span>
+            <span class="feedback-text">Not quite. Keep practicing!</span>
+          }
+          @if (currentExercise.explanation) {
+            <p class="explanation">{{ currentExercise.explanation }}</p>
+          }
+        </div>
+      }
+
+      <!-- Action buttons -->
+      <div class="exercise-actions">
+        @if (!isCurrentSubmitted) {
+          <button
+            class="btn primary"
+            [disabled]="!currentAnswerValue"
+            (click)="submitAnswer()"
+            aria-label="Submit answer"
+          >
+            Check Answer
+          </button>
+        } @else {
+          @if (currentExerciseIndex < exercises.length - 1) {
+            <button class="btn primary" (click)="nextExercise()" aria-label="Next exercise">
+              Continue
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          } @else {
+            <button class="btn success" (click)="finishLesson()" aria-label="Finish lesson">
+              <span class="icon">&#x1F3C6;</span>
+              Complete Lesson
+            </button>
+          }
+        }
+      </div>
+    </div>
+
+    <!-- Navigation dots -->
+    <div class="exercise-nav">
+      <button
+        class="nav-btn"
+        [disabled]="currentExerciseIndex === 0"
+        (click)="previousExercise()"
+        aria-label="Previous exercise"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <div class="nav-dots">
+        @for (exercise of exercises; track $index) {
+          <button
+            class="nav-dot"
+            [class.active]="$index === currentExerciseIndex"
+            [class.completed]="getSubmission($index)"
+            [class.correct]="getSubmission($index)?.isCorrect === true"
+            [class.incorrect]="getSubmission($index)?.isCorrect === false"
+            (click)="goToExercise($index)"
+            [attr.aria-label]="'Go to exercise ' + ($index + 1)"
+          ></button>
+        }
+      </div>
+
+      <button
+        class="nav-btn"
+        [disabled]="currentExerciseIndex === exercises.length - 1"
+        (click)="nextExercise()"
+        aria-label="Next exercise"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Back to content link -->
+    <button class="btn-link" (click)="onBackToContent()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Back to lesson content
+    </button>
+  }
+</div>

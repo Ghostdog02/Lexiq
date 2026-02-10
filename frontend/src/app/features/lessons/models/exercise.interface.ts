@@ -121,3 +121,31 @@ export type TranslationForm = FormGroup<TranslationFormControls>;
 export type ListeningForm = FormGroup<ListeningFormControls>;
 export type ExerciseForm = FormGroup<any>;
 export type QuestionOptionForm = FormGroup<QuestionOptionFormControls>;
+
+// ---------------------------------------------------------------------------
+// Exercise Answer Forms (for solving exercises)
+// ---------------------------------------------------------------------------
+
+/**
+ * Form controls for a single exercise answer.
+ * The `answer` control holds:
+ *   - MultipleChoice: selected option ID (radio button value)
+ *   - FillInBlank: typed text (input)
+ *   - Translation: typed translation (textarea)
+ *   - Listening: typed transcription (input)
+ */
+export interface ExerciseAnswerControls {
+  answer: FormControl<string>;
+}
+
+export type ExerciseAnswerForm = FormGroup<ExerciseAnswerControls>;
+
+/**
+ * Top-level form for the exercise viewer.
+ * Contains a FormArray with one ExerciseAnswerForm per exercise in the lesson.
+ */
+export interface ExerciseViewerFormControls {
+  exercises: FormArray<ExerciseAnswerForm>;
+}
+
+export type ExerciseViewerForm = FormGroup<ExerciseViewerFormControls>;

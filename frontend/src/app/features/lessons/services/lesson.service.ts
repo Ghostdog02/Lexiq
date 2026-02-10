@@ -10,7 +10,6 @@ import {
   CompleteLessonResponse
 } from '../models/lesson.interface';
 import { Course } from '../models/course.interface';
-import { AnyExercise, ExerciseType, DifficultyLevel } from '../models/exercise.interface';
 
 /** Icon set that cycles based on lesson order */
 const LESSON_ICONS = ['📚', '✏️', '🎯', '💡', '🔤', '🗣️', '📝', '🎓'];
@@ -117,6 +116,12 @@ export class LessonService {
     }
   }
 
+  /**
+   * Submit an answer for a specific exercise.
+   * @param exerciseId The ID of the exercise
+   * @param answer The user's answer (option ID for multiple choice, text for others)
+   * @returns Server response with correctness, points, and lesson progress
+   */
   async submitExerciseAnswer(exerciseId: string, answer: string): Promise<SubmitAnswerResponse> {
     return await firstValueFrom(
       this.httpClient.post<SubmitAnswerResponse>(
@@ -127,6 +132,11 @@ export class LessonService {
     );
   }
 
+  /**
+   * Mark a lesson as completed.
+   * @param lessonId The ID of the lesson to complete
+   * @returns Completion status, XP earned, and next lesson info
+   */
   async completeLesson(lessonId: string): Promise<CompleteLessonResponse> {
     return await firstValueFrom(
       this.httpClient.post<CompleteLessonResponse>(
