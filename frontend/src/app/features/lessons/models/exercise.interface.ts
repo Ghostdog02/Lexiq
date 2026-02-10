@@ -15,14 +15,15 @@ export enum ExerciseType {
 
 export interface Exercise {
   id: string;
+  lessonId: string;
   title: string;
   instructions: string;
-  question: string;
   estimatedDurationMinutes: number;
-  difficultyLevel: DifficultyLevel;
+  difficultyLevel: DifficultyLevel | number;
   points: number;
+  orderIndex: number;
   explanation?: string;
-  exerciseType: ExerciseType;
+  type: ExerciseType;  // Backend returns "type" not "exerciseType"
 }
 
 export interface ExerciseFormControls {
@@ -40,6 +41,7 @@ export interface QuestionOption {
   id: string;
   optionText: string;
   isCorrect: boolean;
+  orderIndex: number;
 }
 
 export interface QuestionOptionFormControls {
@@ -48,29 +50,30 @@ export interface QuestionOptionFormControls {
 }
 
 export interface MultipleChoiceExercise extends Exercise {
-  exerciseType: ExerciseType.MultipleChoice;
+  type: ExerciseType.MultipleChoice;
   options: QuestionOption[];
 }
 
 export interface FillInBlankExercise extends Exercise {
-  exerciseType: ExerciseType.FillInBlank;
+  type: ExerciseType.FillInBlank;
+  text: string;
   correctAnswer: string;
-  acceptedAnswers?: string;
+  acceptedAnswers?: string | null;
   caseSensitive: boolean;
   trimWhitespace: boolean;
 }
 
 export interface ListeningExercise extends Exercise {
-  exerciseType: ExerciseType.Listening;
-  correctAnswer: string;
-  acceptedAnswers?: string;
-  caseSensitive: boolean;
+  type: ExerciseType.Listening;
   audioUrl: string;
+  correctAnswer: string;
+  acceptedAnswers?: string | null;
+  caseSensitive: boolean;
   maxReplays: number;
 }
 
 export interface TranslationExercise extends Exercise {
-  exerciseType: ExerciseType.Translation;
+  type: ExerciseType.Translation;
   sourceText: string;
   targetText: string;
   sourceLanguageCode: string;
