@@ -30,8 +30,8 @@ export class HomeComponent implements OnInit {
     this.loadCoursesFromApi();
   }
 
-  @HostListener('window:scroll', ['$event'])
-  onScroll(event: Event): void {
+  @HostListener('window:scroll')
+  onScroll(): void {
     const currentLessonElement = document.getElementById(`lesson-${this.currentLessonId}`);
     if (currentLessonElement) {
       const rect = currentLessonElement.getBoundingClientRect();
@@ -107,28 +107,6 @@ export class HomeComponent implements OnInit {
     if (currentLesson) {
       currentLesson.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-  }
-
-  getPathPoints(): string {
-    // Generate SVG path points for a straight centered path
-    const lessons = this.getAllLessons();
-    let path = '';
-    const x = 100; // Center of the 200px wide viewbox
-
-    if (lessons.length === 0) {
-      return '';
-    }
-
-    // Move to the starting point of the first lesson
-    path += `M ${x},${1 * 180 + 100}`;
-
-    // Draw lines to subsequent lessons
-    for (let i = 1; i < lessons.length; i++) {
-      const y = i * 180 + 100;
-      path += ` L ${x},${y}`;
-    }
-
-    return path;
   }
 
   getAllLessons(): Lesson[] {

@@ -1,196 +1,121 @@
 <main class="learning-path-container">
- 
+
   <section class="home-grid">
 
-    <div class="path-wrapper">
-
+    <section class="path-wrapper">
       <div class="path-content">
-        <!-- Loading State -->
         @if (isLoading) {
-          <div class="loading-state">
-            <div class="loading-spinner"></div>
-            <p>Loading courses...</p>
-          </div>
-        }
-
-        <!-- Error State -->
-        @if (error) {
-          <div class="error-state">
-            <p>{{ error }}</p>
-            <button class="btn-retry" (click)="loadCoursesFromApi()">Try Again</button>
-          </div>
-        }
-
-        <!-- Empty State -->
-        @if (!isLoading && !error && courses.length === 0) {
-          <div class="empty-state">
-            <p>No courses available yet.</p>
-            <button class="btn-create" (click)="redirectToCreateExercise()">Create your first lesson</button>
-          </div>
-        }
-
-        <!-- SVG Path Line -->
-        @if (!isLoading && !error && courses.length > 0) {
-          <svg class="path-line" [attr.viewBox]="'0 0 200 ' + (getAllLessons().length * 180 + 200)" preserveAspectRatio="xMidYMin meet">
-            <defs>
-              <linearGradient id="pathGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style="stop-color: var(--accent); stop-opacity: 0.8" />
-                <stop offset="100%" style="stop-color: var(--accent-dark); stop-opacity: 0.4" />
-              </linearGradient>
-            </defs>
-            <path
-              [attr.d]="getPathPoints()"
-              fill="none"
-              stroke="url(#pathGradient)"
-              stroke-width="4"
-              stroke-linecap="round"
-              stroke-dasharray="8,8"
-              class="animated-path"
-            />
-          </svg>
-        }
-
-        <!-- Courses and Lessons -->
-        @if (!isLoading && !error && courses.length > 0) {
-        <div class="units-container">
-          @for (course of courses; track course.courseId; let i = $index) {
-
-            <header class="unit-header" [style.--unit-color]="course.color">
-              <div class="unit-number">Course {{ i + 1 }}</div>
-              <h2 class="unit-title">{{ course.title }}</h2>
-              <p class="unit-description">{{ course.description }}</p>
-            </header>
-
-            <section class="lessons-grid">
-              @for (lesson of course.lessons; track lesson.lessonId) {
-                <article
-                  [id]="'lesson-' + lesson.lessonId"
-                  class="lesson-node"
-                  [class.completed]="lesson.status === 'completed'"
-                  [class.in-progress]="lesson.status === 'in-progress'"
-                  [class.available]="lesson.status === 'available'"
-                  [class.locked]="lesson.status === 'locked'"
-                  [class.current]="lesson.lessonId === currentLessonId"
-                  (click)="onLessonClick(lesson)"
-                >
-
-                  <!-- Progress ring for in-progress lessons -->
-                  @if (lesson.status === 'in-progress') {
-                    <svg class="progress-ring" width="90" height="90">
-                      <circle
-                        cx="45"
-                        cy="45"
-                        r="42"
-                        stroke="rgba(124, 92, 255, 0.2)"
-                        stroke-width="3"
-                        fill="none"
-                      />
-                      <circle
-                        cx="45"
-                        cy="45"
-                        r="42"
-                        stroke="var(--accent)"
-                        stroke-width="3"
-                        fill="none"
-                        [style.stroke-dasharray]="'263.89'"
-                        stroke-linecap="round"
-                        class="progress-circle"
-                      />
-                    </svg>
-                  }
-
-                  <!-- Lesson icon with status overlays -->
-                  <figure class="lesson-icon-wrapper">
-                    <!-- <span class="lesson-icon">{{ lesson.icon }}</span> -->
-
-                    @if (lesson.status === 'completed') {
-                      <span class="checkmark">✓</span>
-                    }
-
-                    @if (lesson.status === 'locked') {
-                      <div class="lock-overlay">
-                        <span class="lock-icon">🔒</span>
-                      </div>
-                    }
-                  </figure>
-
-                  <div class="lesson-info">
-                    <h3 class="lesson-title">{{ lesson.title }}</h3>
-                    <p class="lesson-description">{{ lesson.description }}</p>
-                    <!-- <footer class="lesson-xp">
-                      <span class="xp-badge">{{ lesson.xp }} XP</span>
-                    </footer> -->
-                  </div>
-
-                </article>
-              }
-            </section>
-
-          }
+        <div class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>Loading courses...</p>
         </div>
         }
+
+        @if (error) {
+        <div class="error-state">
+          <p>{{ error }}</p>
+          <button class="btn-retry" (click)="loadCoursesFromApi()">Try Again</button>
+        </div>
+        }
+
+        @if (!isLoading && !error && courses.length === 0) {
+        <div class="empty-state">
+          <p>No courses available yet.</p>
+          <button class="btn-create" (click)="redirectToCreateExercise()">Create your first lesson</button>
+        </div>
+        }
+
+        @if (!isLoading && !error && courses.length > 0) {
+        <section class="units-container">
+          @for (course of courses; track course.courseId; let i = $index) {
+
+          <header class="unit-header" [style.--unit-color]="course.color">
+            <h2 class="unit-title">{{ course.title }}</h2>
+            <p class="unit-description">{{ course.description }}</p>
+          </header>
+
+          <section class="lessons-grid">
+            @for (lesson of course.lessons; track lesson.lessonId) {
+            <article [id]="'lesson-' + lesson.lessonId" class="lesson-node"
+              [class.completed]="lesson.status === 'completed'" [class.in-progress]="lesson.status === 'in-progress'"
+              [class.available]="lesson.status === 'available'" [class.locked]="lesson.status === 'locked'"
+              [class.current]="lesson.lessonId === currentLessonId" (click)="onLessonClick(lesson)">
+              <figure class="lesson-icon-wrapper">
+                <!-- <span class="lesson-icon">{{ lesson.icon }}</span> -->
+
+                @if (lesson.status === 'completed') {
+                <span class="checkmark">✓</span>
+                }
+
+                @if (lesson.status === 'locked') {
+                <div class="lock-overlay">
+                  <span class="lock-icon">🔒</span>
+                </div>
+                }
+              </figure>
+
+              <div class="lesson-info">
+                <h3 class="lesson-title">{{ lesson.title }}</h3>
+                <p class="lesson-description">{{ lesson.description }}</p>
+              </div>
+
+            </article>
+            }
+          </section>
+
+          }
+        </section>
+        }
       </div>
-    </div>
+    </section>
 
     <section class="sidebar">
-      
+
       <header class="header-stats">
-        
+
         <article class="stat-card">
-        
+
           <figure class="stat-icon">🔥</figure>
-        
+
           <div class="stat-content">
-        
+
             <data [value]="currentStreak" class="stat-value">{{ currentStreak }}</data>
-        
+
             <span class="stat-label">Day streak</span>
-        
+
           </div>
-        
+
         </article>
-      
-        
+
+
         <article class="stat-card">
-        
+
           <figure class="stat-icon">⭐</figure>
-        
+
           <div class="stat-content">
-        
+
             <data [value]="totalXp" class="stat-value">{{ totalXp }}</data>
-        
+
             <span class="stat-label">Total XP</span>
-        
+
           </div>
-        
+
         </article>
-      
+
       </header>
 
 
       <section class="sidebar-buttons">
 
-        <button
-          class="jump-button"
-          (click)="scrollToCurrentLesson()"
-          aria-label="Jump to current lesson"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            @if (!isUserBelowLesson) {
-              <path d="M12 5V19M12 19L19 12M12 19L5 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            } @else {
-              <path d="M12 19V5M12 5L19 12M12 5L5 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            }
-          </svg>
-
+        <button class="jump-button" (click)="scrollToCurrentLesson()" aria-label="Jump to current lesson">
           @if (!isUserBelowLesson) {
-          
-            <span aria-hidden="true">↓</span>
-          
+
+          <span aria-hidden="true">↓</span>
+
           } @else {
-          
-            <span aria-hidden="true">↑</span>
-          
+
+          <span aria-hidden="true">↑</span>
+
           }
         </button>
 
@@ -198,11 +123,11 @@
           <span aria-hidden="true">+</span>
         </button>
 
-      
+
       </section>
-    
+
     </section>
-  
+
   </section>
 
 </main>
