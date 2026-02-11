@@ -1,7 +1,5 @@
 <main class="learning-path-container">
-
   <section class="home-grid">
-
     <section class="path-wrapper">
       <div class="path-content">
         @if (isLoading) {
@@ -39,7 +37,9 @@
             <article [id]="'lesson-' + lesson.lessonId" class="lesson-node"
               [class.completed]="lesson.status === 'completed'" [class.in-progress]="lesson.status === 'in-progress'"
               [class.available]="lesson.status === 'available'" [class.locked]="lesson.status === 'locked'"
-              [class.current]="lesson.lessonId === currentLessonId" (click)="onLessonClick(lesson)">
+              [class.admin-override]="lesson.status === 'locked' && isAdmin"
+              [class.current]="lesson.lessonId === currentLessonId" 
+              (click)="onLessonClick(lesson)">
               <figure class="lesson-icon-wrapper">
                 <!-- <span class="lesson-icon">{{ lesson.icon }}</span> -->
 
@@ -57,6 +57,15 @@
               <div class="lesson-info">
                 <h3 class="lesson-title">{{ lesson.title }}</h3>
                 <p class="lesson-description">{{ lesson.description }}</p>
+
+                @if (lesson.status !== 'locked' && lesson.totalPossibleXp) {
+                <div class="lesson-progress">
+                  <div class="progress-track">
+                    <div class="progress-fill" [style.width.%]="(lesson.earnedXp ?? 0) / lesson.totalPossibleXp * 100"></div>
+                  </div>
+                  <span class="xp-label">{{ lesson.earnedXp ?? 0 }} / {{ lesson.totalPossibleXp }} XP</span>
+                </div>
+                }
               </div>
 
             </article>
@@ -81,7 +90,7 @@
 
             <data [value]="currentStreak" class="stat-value">{{ currentStreak }}</data>
 
-            <span class="stat-label">Day streak</span>
+            <span class="stat-label">Daily streak</span>
 
           </div>
 
@@ -104,30 +113,19 @@
 
       </header>
 
-
       <section class="sidebar-buttons">
-
         <button class="jump-button" (click)="scrollToCurrentLesson()" aria-label="Jump to current lesson">
           @if (!isUserBelowLesson) {
-
-          <span aria-hidden="true">↓</span>
-
+            <span aria-hidden="true">↓</span>
           } @else {
-
-          <span aria-hidden="true">↑</span>
-
+            <span aria-hidden="true">↑</span>
           }
         </button>
 
         <button class="add-unit-button" (click)="redirectToCreateExercise()" aria-label="Add new unit">
           <span aria-hidden="true">+</span>
         </button>
-
-
       </section>
-
     </section>
-
   </section>
-
 </main>

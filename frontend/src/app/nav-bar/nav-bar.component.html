@@ -1,4 +1,11 @@
 <aside id="mainAside">
+    @if (userIsAdmin) {
+      <div class="admin-badge">
+        <span class="crown-icon">👑</span>
+        <span class="admin-text">ADMIN</span>
+      </div>
+    }
+
     <ul class="sideBarLinks">
         <li><a routerLink="/"><span class="icon">🏠</span> Home</a></li>
 

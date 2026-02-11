@@ -13,12 +13,17 @@ import { RouterLink } from '@angular/router';
 export class NavBarComponent implements OnInit {
   public authService = inject(AuthService);
   private authListenerSubs: Subscription = new Subscription();
+  private adminListenerSubs: Subscription = new Subscription();
   public userIsAuthenticated: boolean = false;
-  
+  public userIsAdmin: boolean = false;
+
   ngOnInit(): void {
-    // this.userIsAuthenticated = this.authService.getIsAuth();
     this.authListenerSubs = this.authService
       .getAuthStatusListener()
       .subscribe((isAuthenticated) => (this.userIsAuthenticated = isAuthenticated));
+
+    this.adminListenerSubs = this.authService
+      .getAdminStatusListener()
+      .subscribe((isAdmin) => (this.userIsAdmin = isAdmin));
   }
 }

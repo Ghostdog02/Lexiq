@@ -1,6 +1,7 @@
 import { Component, HostListener, inject, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { LessonService } from '../../services/lesson.service';
+import { AuthService } from '../../../../auth/auth.service';
 import { Lesson, LessonStatus } from '../../models/lesson.interface';
 import { CourseWithLessons } from '../../models/course.interface';
 
@@ -19,14 +20,17 @@ export class HomeComponent implements OnInit {
   isUserBelowLesson: boolean = false;
   isLoading: boolean = true;
   error: string | null = null;
+  isAdmin: boolean = false;
 
   // Color palette for courses (cycles if more courses than colors)
   private readonly courseColors = ['#7c5cff', '#9178ff', '#5a3ce6', '#a78bfa', '#8b5cf6', '#7c3aed'];
 
   private router = inject(Router);
   private lessonService = inject(LessonService);
+  private authService = inject(AuthService);
 
   ngOnInit() {
+    this.isAdmin = this.authService.getIsAdmin();
     this.loadCoursesFromApi();
   }
 
@@ -95,7 +99,7 @@ export class HomeComponent implements OnInit {
   }
 
   onLessonClick(lesson: Lesson) {
-    if (lesson.status === 'available' || lesson.status === 'in-progress' || lesson.status === 'completed') {
+    if (lesson.status === 'available' || lesson.status === 'in-progress' || lesson.status === 'completed' || this.isAdmin) {
       if (lesson.lessonId) {
         this.router.navigate(['/lesson', lesson.lessonId]);
       }
@@ -111,12 +115,6 @@ export class HomeComponent implements OnInit {
 
   getAllLessons(): Lesson[] {
     return this.courses.flatMap(course => course.lessons);
-  }
-
-  getLessonPosition(lessonIndex: number): { x: number, y: number } {
-    const y = lessonIndex * 180 + 100;
-    const x = lessonIndex % 2 === 0 ? 50 : -50;
-    return { x, y };
   }
 
   redirectToCreateExercise() {

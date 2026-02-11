@@ -12,6 +12,32 @@
     overflow-y: auto;
 }
 
+.admin-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 160, 0, 0.1) 100%);
+  border: 2px solid rgba(255, 193, 7, 0.4);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+
+  .crown-icon {
+    font-size: 1.5rem;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .admin-text {
+    font-size: 0.9rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    color: #ffc107;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+}
+
 .sideBarLinks{
     display: flex;
     flex-direction: column;

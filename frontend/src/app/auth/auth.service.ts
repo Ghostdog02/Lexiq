@@ -14,8 +14,10 @@ export class AuthService {
   private router = inject(Router);
 
   private authStatusListener = new BehaviorSubject<boolean>(false);
+  private adminStatusListener = new BehaviorSubject<boolean>(false);
 
   public isLogged: boolean = false;
+  public isAdmin: boolean = false;
 
   /**
    * Initialize auth state by checking backend /auth-status endpoint.
@@ -24,14 +26,27 @@ export class AuthService {
   async initializeAuthState(): Promise<void> {
     this.isLogged = await this.getInitialValue();
     this.changeAuthStatus(this.isLogged);
+
+    if (this.isLogged) {
+      this.isAdmin = await this.checkAdminStatus();
+      this.adminStatusListener.next(this.isAdmin);
+    }
   }
 
   getAuthStatusListener() {
     return this.authStatusListener.asObservable();
   }
 
+  getAdminStatusListener() {
+    return this.adminStatusListener.asObservable();
+  }
+
   getIsAuth() {
     return this.isLogged;
+  }
+
+  getIsAdmin() {
+    return this.isAdmin;
   }
 
   async getInitialValue() {
@@ -44,6 +59,21 @@ export class AuthService {
       );
 
       return response?.isLogged ?? false;
+    } catch {
+      return false;
+    }
+  }
+
+  async checkAdminStatus(): Promise<boolean> {
+    try {
+      const response = await firstValueFrom(
+        this.httpClient.get<{ isAdmin: boolean; roles: string[] }>(
+          AUTH_API_URL + '/is-admin',
+          { withCredentials: true }
+        )
+      );
+
+      return response?.isAdmin ?? false;
     } catch {
       return false;
     }
@@ -65,9 +95,13 @@ export class AuthService {
       );
 
       this.changeAuthStatus(true);
+      this.isAdmin = await this.checkAdminStatus();
+      this.adminStatusListener.next(this.isAdmin);
       this.router.navigateByUrl('/');
     } catch {
       this.changeAuthStatus(false);
+      this.isAdmin = false;
+      this.adminStatusListener.next(false);
     }
   }
 
@@ -80,6 +114,8 @@ export class AuthService {
       );
 
       this.changeAuthStatus(false);
+      this.isAdmin = false;
+      this.adminStatusListener.next(false);
       this.router.navigate(['/']);
     } catch (error: any) {
       throw new Error(`An error occurred during logout: ${error.message}`);
