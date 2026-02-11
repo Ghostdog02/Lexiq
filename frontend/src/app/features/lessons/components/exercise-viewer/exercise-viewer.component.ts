@@ -14,6 +14,7 @@ import {
 } from '../../models/exercise.interface';
 import { SubmitAnswerResponse } from '../../models/lesson.interface';
 import { LessonService } from '../../services/lesson.service';
+import { AuthService } from '../../../../auth/auth.service';
 
 /**
  * Container component for the exercise-solving flow.
@@ -35,10 +36,13 @@ export class ExerciseViewerComponent implements OnInit {
   private router = inject(Router);
   private fb = inject(NonNullableFormBuilder);
   private lessonService = inject(LessonService);
+  private authService = inject(AuthService);
 
   @Input({ required: true }) exercises!: AnyExercise[];
 
   @Input({ required: true }) lessonId!: string;
+
+  isAdmin!: boolean;
 
   @Output() backToContent = new EventEmitter<void>();
 
@@ -54,9 +58,12 @@ export class ExerciseViewerComponent implements OnInit {
 
   ExerciseType = ExerciseType;
 
-  ngOnInit() {
+  async ngOnInit() {
     this.buildForm();
     this.calculateTotalXp();
+    await this.restorePreviousProgress();
+    this.authService.getAuthStatusListener()
+      .subscribe((isAdmin) => this.isAdmin = isAdmin);
   }
 
   /**
@@ -75,6 +82,33 @@ export class ExerciseViewerComponent implements OnInit {
 
   private calculateTotalXp() {
     this.totalPossibleXp = this.exercises.reduce((sum, ex) => sum + (ex.points || 10), 0);
+  }
+
+  private async restorePreviousProgress() {
+    const submissions = await this.lessonService.getLessonSubmissions(this.lessonId);
+
+    submissions.forEach((response, index) => {
+      // Skip exercises that were never attempted (no correctAnswer means no attempt)
+      const wasAttempted = response.isCorrect || response.correctAnswer !== null;
+      if (!wasAttempted) return;
+
+      this.submissionResults.set(index, response);
+      this.exercisesFormArray.at(index).disable();
+    });
+
+    // Update XP from the shared lessonProgress summary
+    const lastSubmission = submissions.find(s => s.lessonProgress);
+    if (lastSubmission) {
+      this.earnedXp = lastSubmission.lessonProgress.earnedXp;
+    }
+
+    // Start at first incomplete unlocked exercise
+    const firstIncomplete = this.exercises.findIndex(
+      (ex, i) => !this.submissionResults.has(i) && !ex.isLocked
+    );
+    if (firstIncomplete >= 0) {
+      this.currentExerciseIndex = firstIncomplete;
+    }
   }
 
   get exercisesFormArray(): FormArray<ExerciseAnswerForm> {
@@ -100,6 +134,10 @@ export class ExerciseViewerComponent implements OnInit {
 
   get isCurrentSubmitted(): boolean {
     return this.submissionResults.has(this.currentExerciseIndex);
+  }
+
+  get isCurrentLocked(): boolean {
+    return this.currentExercise?.isLocked && !this.isAdmin ? true : false;
   }
 
   get exerciseProgress(): number {
@@ -165,19 +203,28 @@ export class ExerciseViewerComponent implements OnInit {
 
   goToExercise(index: number) {
     if (index >= 0 && index < this.exercises.length) {
-      this.currentExerciseIndex = index;
+      // Only allow navigation to unlocked exercises or already attempted ones
+      const targetExercise = this.exercises[index];
+      if (!targetExercise.isLocked || this.submissionResults.has(index)) {
+        this.currentExerciseIndex = index;
+      }
     }
   }
 
+  isExerciseAccessible(index: number): boolean {
+    const exercise = this.exercises[index];
+    return !exercise.isLocked || this.submissionResults.has(index);
+  }
+
   selectMultipleChoiceOption(optionId: string) {
-    if (!this.isCurrentSubmitted) {
+    if (!this.isCurrentSubmitted && !this.isCurrentLocked) {
       this.currentAnswerGroup.controls.answer.setValue(optionId);
     }
   }
 
   async submitAnswer() {
     const exercise = this.currentExercise;
-    if (!exercise || this.isCurrentSubmitted || this.isSubmitting) return;
+    if (!exercise || this.isCurrentSubmitted || this.isSubmitting || this.isCurrentLocked) return;
 
     const answerValue = this.currentAnswerValue;
     if (!answerValue) return;
@@ -192,6 +239,11 @@ export class ExerciseViewerComponent implements OnInit {
 
       this.earnedXp = result.lessonProgress.earnedXp;
       this.totalPossibleXp = result.lessonProgress.totalPossibleXp;
+
+      // If answered correctly and there's a next exercise, unlock it in the local state
+      if (result.isCorrect && this.currentExerciseIndex < this.exercises.length - 1) {
+        this.exercises[this.currentExerciseIndex + 1].isLocked = false;
+      }
     } catch (err) {
       console.error('❌ Failed to submit answer:', err);
     } finally {
