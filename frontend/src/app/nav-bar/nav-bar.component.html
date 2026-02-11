@@ -1,6 +1,5 @@
 <aside id="mainAside">
     <ul class="sideBarLinks">
-
         <li><a routerLink="/"><span class="icon">🏠</span> Home</a></li>
 
         <li><a routerLink="/leaderboard"><span class="icon">🏆</span> Leaderboard</a></li>
@@ -10,10 +9,9 @@
         <li><a routerLink="/help"><span class="icon">❓</span> Help</a></li>
 
         @if (userIsAuthenticated) {
-          <li><a (click)="authService.logoutUser()"><span class="icon">🚪</span> Logout</a></li>
+          <li><a routerLink="/" (click)="authService.logoutUser()"><span class="icon">🚪</span> Logout</a></li>
         } @else {
           <li><a routerLink="/google-login"><span class="icon">🔑</span> Login</a></li>
         }
-
     </ul>
 </aside>

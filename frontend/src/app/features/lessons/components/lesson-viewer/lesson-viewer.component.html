@@ -1,90 +1,81 @@
 <div class="lesson-detail-container">
-  <!-- Header -->
   <header class="lesson-header">
     <button class="btn-back" (click)="goBack()" aria-label="Go back to home">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" />
       </svg>
     </button>
 
     @if (lesson) {
-      <div class="header-info">
-        <h1 class="lesson-title">{{ lesson.title }}</h1>
-        <p class="lesson-meta">
-          <span class="meta-item">
-            <span class="icon">&#x23F1;</span>
-            {{ lesson.estimatedDurationMinutes }} min
-          </span>
-          <span class="meta-item">
-            <span class="icon">&#x1F9E9;</span>
-            {{ lesson.exercises.length }} exercises
-          </span>
-        </p>
-      </div>
+    <div class="header-info">
+      <h1 class="lesson-title">{{ lesson.title }}</h1>
+      <p class="lesson-meta">
+        <span class="meta-item">
+          <span class="icon">&#x23F1;</span>
+          {{ lesson.estimatedDurationMinutes }} min
+        </span>
+        <span class="meta-item">
+          <span class="icon">&#x1F9E9;</span>
+          {{ lesson.exercises.length }} exercises
+        </span>
+      </p>
+    </div>
     }
   </header>
 
-  <!-- Main content -->
   <main class="lesson-main" role="main">
     @if (!lesson) {
-      <!-- No lesson found -->
-      <div class="empty-state">
-        <span class="empty-icon">&#x1F4DA;</span>
-        <h2>Lesson not found</h2>
-        <p>The lesson you're looking for doesn't exist or hasn't been created yet.</p>
-        <button class="btn primary" (click)="goBack()">Go Back Home</button>
-      </div>
+    <div class="empty-state">
+      <span class="empty-icon">&#x1F4DA;</span>
+      <h2>Lesson not found</h2>
+      <p>The lesson you're looking for doesn't exist or hasn't been created yet.</p>
+      <button class="btn primary" (click)="goBack()">Go Back Home</button>
+    </div>
     } @else {
-      <!-- Content View -->
-      @if (currentView === 'content') {
-        <div class="content-view fade-in">
-          <!-- Lesson description -->
-          <div class="section-wrapper">
-            <h3 class="section-label"><span class="icon">📋</span> Instructions</h3>
-            <div class="lesson-description card">
-              <p>{{ lesson.description }}</p>
-            </div>
-          </div>
-
-          <!-- Rendered markdown content -->
-          @if (lesson.content) {
-            <div class="section-wrapper">
-              <h3 class="section-label" id="second-section-label"><span class="icon">📖</span> Textbook Content</h3>
-              <div class="lesson-content card">
-                <div class="markdown-content" [innerHTML]="parseContent(lesson.content)"></div>
-              </div>
-            </div>
-          }
-
-          <!-- Start exercises button -->
-          @if (lesson.exercises.length > 0) {
-            <div class="action-section">
-              <button class="btn primary large" (click)="startExercises()" aria-label="Start exercises">
-                <span class="icon">&#x1F3AF;</span>
-                Start Exercises
-              </button>
-              <p class="action-hint">{{ lesson.exercises.length }} exercises to complete</p>
-            </div>
-          } @else {
-            <div class="action-section">
-              <button class="btn no-exercises-btn large" disabled aria-label="No exercises available">
-                <span class="icon">&#x1F4AD;</span>
-                This lesson has no exercises yet
-              </button>
-              <p class="action-hint">Add exercises to activate this lesson</p>
-            </div>
-          }
+    @if (currentView === 'content') {
+    <div class="content-view fade-in">
+      <div class="section-wrapper">
+        <h3 class="section-label"><span class="icon">📋</span> Instructions</h3>
+        <div class="lesson-description card">
+          <p>{{ lesson.description }}</p>
         </div>
+      </div>
+
+      @if (lesson.content) {
+      <div class="section-wrapper">
+        <h3 class="section-label" id="second-section-label"><span class="icon">📖</span> Textbook Content</h3>
+        <div class="lesson-content card">
+          <div class="markdown-content" [innerHTML]="parseContent(lesson.content)"></div>
+        </div>
+      </div>
       }
 
-      <!-- Exercises View — delegated to ExerciseViewerComponent -->
-      @if (currentView === 'exercises' && lesson.exercises.length > 0) {
-        <app-exercise-viewer
-          [exercises]="$any(lesson.exercises)"
-          [lessonId]="lesson.lessonId"
-          (backToContent)="goToContent()"
-        />
+      @if (lesson.exercises.length > 0) {
+      <div class="action-section">
+        <button class="btn primary large" (click)="startExercises()" aria-label="Start exercises">
+          <span class="icon">&#x1F3AF;</span>
+          Start Exercises
+        </button>
+        <p class="action-hint">{{ lesson.exercises.length }} exercises to complete</p>
+      </div>
+      } @else {
+      <div class="action-section">
+        <button class="btn no-exercises-btn large" disabled aria-label="No exercises available">
+          <span class="icon">&#x1F4AD;</span>
+          This lesson has no exercises yet
+        </button>
+        <p class="action-hint">Add exercises to activate this lesson</p>
+      </div>
       }
+    </div>
+    }
+
+    <!-- Exercises View — delegated to ExerciseViewerComponent -->
+    @if (currentView === 'exercises' && lesson.exercises.length > 0) {
+    <app-exercise-viewer [exercises]="$any(lesson.exercises)" [lessonId]="lesson.lessonId"
+      (backToContent)="goToContent()" />
+    }
     }
   </main>
 </div>
