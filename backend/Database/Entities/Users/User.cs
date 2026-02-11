@@ -11,4 +11,6 @@ public class User : IdentityUser
     public List<UserLanguage> UserLanguages { get; set; } = [];
 
     public List<UserExerciseProgress> ExerciseProgress { get; set; } = [];
+
+    public int TotalPointsEarned { get; set; }
 }
