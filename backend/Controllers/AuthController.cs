@@ -1,6 +1,8 @@
 using Backend.Api.Mapping;
+using Backend.Api.Middleware;
 using Backend.Api.Services;
 using Backend.Database.Entities.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -94,6 +96,30 @@ public class AuthController(
             }
         );
     }
+
+    /// <summary>
+    /// Check if the current user has admin or content creator privileges.
+    /// Returns { isAdmin: bool, roles: string[] }
+    /// </summary>
+    [HttpGet("is-admin")]
+    [Authorize]
+    public async Task<IActionResult> IsAdmin()
+    {
+        var user = HttpContext.GetCurrentUser();
+        if (user == null)
+        {
+            return Unauthorized(new { message = "User not found" });
+        }
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var canBypassLocks = roles.Contains("Admin") || roles.Contains("ContentCreator");
+
+        return Ok(new IsAdminResponse
+        {
+            IsAdmin = canBypassLocks,
+            Roles = roles.ToList()
+        });
+    }
 }
 
 public class GoogleLoginRequest
@@ -109,4 +135,10 @@ public class AuthStatusResponse
 {
     public string Message { get; set; } = string.Empty;
     public bool IsLogged { get; set; }
+}
+
+public class IsAdminResponse
+{
+    public bool IsAdmin { get; set; }
+    public List<string> Roles { get; set; } = [];
 }

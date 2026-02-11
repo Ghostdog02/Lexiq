@@ -27,4 +27,16 @@ public static class UserExtensions
     {
         user.LastLoginDate = DateTime.Now;
     }
+
+    /// <summary>
+    /// Check if user can bypass lesson/exercise locks (Admin or ContentCreator role).
+    /// </summary>
+    public static async Task<bool> CanBypassLocksAsync(
+        this User user,
+        UserManager<User> userManager
+    )
+    {
+        var roles = await userManager.GetRolesAsync(user);
+        return roles.Contains("Admin") || roles.Contains("ContentCreator");
+    }
 }
