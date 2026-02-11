@@ -129,7 +129,7 @@ backend/
 │   ├── CourseService.cs           # Course business logic
 │   ├── LessonService.cs           # Lesson business logic
 │   ├── ExerciseService.cs         # Exercise business logic
-│   ├── ExerciseProgressService.cs # Exercise answer validation, progress tracking, sequential unlocking
+│   ├── ExerciseProgressService.cs # Exercise answer validation, progress tracking, sequential unlocking, unified progress queries
 │   ├── LanguageService.cs         # Language business logic
 │   ├── UserLanguageService.cs     # Enrollment logic
 │   ├── FileUploadsService.cs      # File upload handling
@@ -308,6 +308,12 @@ This allows sending different exercise types in a single API response with autom
 - **Idempotent unlocks**: All unlock methods check `IsLocked` before modifying (safe to call multiple times)
 - **Cascade unlocking**: `LessonService.UnlockNextLessonAsync()` calls `ExerciseService.UnlockFirstExerciseInLessonAsync()`
 - **Service dependency chain**: ExerciseService → LessonService → ExerciseProgressService (avoid circular dependencies)
+- **Admin bypass pattern**: Use `UserExtensions.CanBypassLocksAsync(user, userManager)` to check if user can bypass locks (Admin or ContentCreator role)
+- **Lock validation layers**: Check locks in both service layer (ExerciseProgressService.SubmitAnswerAsync) AND controller layer (ExerciseController.GetExercise)
+- **Unified progress fetching**: `GetFullLessonProgressAsync` returns both `LessonProgressSummary` and per-exercise progress dict in one query via `LessonProgressResult`. Avoid calling separate methods for summary vs. exercise-level progress.
+- **Batch progress for lists**: Use `GetProgressForLessonsAsync(userId, lessonIds)` when loading progress for multiple lessons — avoids N+1 queries in controller loops
+- **GroupJoin for left-join queries**: Use EF Core `GroupJoin` to left-join exercises with user progress in a single database round-trip (see `ExerciseProgressService`)
+- **Submission endpoints return all items**: `GetLessonSubmissionsAsync` returns `SubmitAnswerResponse` for EVERY exercise in lesson, not just attempted ones. Frontend must filter appropriately.
 
 Example from `LessonService.cs`:
 ```csharp
@@ -511,6 +517,41 @@ ngOnInit() {
 }
 ```
 
+### Service Initialization Pattern
+
+Services don't have lifecycle hooks - use APP_INITIALIZER for startup logic:
+
+```typescript
+// In app.config.ts
+function initializeAuth(authService: AuthService) {
+  return () => authService.initializeAuthState();
+}
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    {
+      provide: APP_INITIALIZER,
+      useFactory: initializeAuth,
+      deps: [AuthService],
+      multi: true
+    }
+  ]
+};
+```
+
+### Frontend Import Paths
+
+- Auth service from features: `import { AuthService } from '../../../../auth/auth.service';`
+- Services are at app root, features are nested deeper - count `../` levels carefully
+
+### Form Restoration from Backend
+
+When restoring component state from previous submissions:
+- Backend may return data for ALL items (not just completed ones)
+- Distinguish "never attempted" from "attempted incorrectly" by checking discriminator fields
+- Example: `wasAttempted = response.isCorrect || response.correctAnswer !== null`
+- Don't skip restoration based solely on success/failure flags
+
 ### Editor.js Integration
 
 The rich text editor implements `ControlValueAccessor` for seamless Reactive Forms integration:
@@ -577,6 +618,10 @@ Use CSS variables defined in `frontend/src/styles.scss`:
 --accent: #7c5cff;       // Primary purple accent
 --accent-light: #9178ff; // Lighter purple (hover states, links)
 --accent-dark: #5a3ce6;  // Darker purple (gradients, shadows)
+
+// Admin/Privilege Colors
+--admin-gold: #ffc107;  // Golden accent for admin badges/overrides
+--admin-gold-dark: #ffa000; // Darker gold for borders/shadows
 
 // Text Colors
 --white: #ffffff;        // Primary text
@@ -800,13 +845,6 @@ transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 ```
 
-**Floating logo effect:**
-```scss
-img {
-  animation: float 6s ease-in-out infinite;
-}
-```
-
 ### Accessibility
 
 - All interactive elements must have `aria-label` attributes
@@ -930,6 +968,20 @@ If you get 401 errors on authenticated endpoints:
    - Always use `ClaimTypes.NameIdentifier` to extract user ID, NOT `JwtRegisteredClaimNames.Sub`
    - If you see empty userId in logs but claims show `nameidentifier`, this is the issue
 
+5. **HttpContext.GetCurrentUser() Not Found**:
+   - The extension method is in `Backend.Api.Middleware` namespace
+   - Add `using Backend.Api.Middleware;` to controllers that use `HttpContext.GetCurrentUser()`
+
+#### Exercise Progress Not Restoring
+
+If previously submitted exercises don't show when returning to a lesson:
+
+1. Check `restorePreviousProgress()` logic in exercise-viewer component
+2. Backend returns `SubmitAnswerResponse` for ALL exercises (attempted or not)
+3. "Never attempted" vs "attempted incorrectly" have same values: `pointsEarned: 0, isCorrect: false`
+4. **Fix**: Check discriminator field - `correctAnswer !== null` indicates actual attempt
+5. Pattern: `const wasAttempted = response.isCorrect || response.correctAnswer !== null`
+
 #### Cookie Not Being Sent
 
 If cookies aren't being sent from frontend to backend:
@@ -976,7 +1028,7 @@ If data loads in API but not in UI:
 
 | Controller | Base Route | Key Endpoints | Auth Required |
 |-----------|-----------|---------------|---------------|
-| AuthController | `/api/auth` | `POST /google-login`, `POST /logout`, `GET /auth-status` | Mixed |
+| AuthController | `/api/auth` | `POST /google-login`, `POST /logout`, `GET /auth-status`, `GET /is-admin` | Mixed |
 | CourseController | `/api/courses` | `GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Admin/Creator for mutations |
 | LessonController | `/api/lessons` | `GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Admin/Creator for mutations |
 | ExerciseController | `/api/exercises` | `GET /lesson/{lessonId}`, `POST /`, `PUT /{id}`, `DELETE /{id}`, `POST /{id}/submit` | Admin/Creator for mutations; submit for any user |
