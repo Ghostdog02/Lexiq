@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { inject, Injectable, OnInit } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
@@ -9,7 +9,7 @@ const BACKEND_API_URL = import.meta.env.BACKEND_API_URL || 'http://localhost:808
 const AUTH_API_URL = (BACKEND_API_URL || '/api') + '/auth';
 
 @Injectable({ providedIn: 'root' })
-export class AuthService implements OnInit {
+export class AuthService {
   private httpClient = inject(HttpClient);
   private router = inject(Router);
 
@@ -17,7 +17,11 @@ export class AuthService implements OnInit {
 
   public isLogged: boolean = false;
 
-  async ngOnInit() {
+  /**
+   * Initialize auth state by checking backend /auth-status endpoint.
+   * Called by APP_INITIALIZER before app starts.
+   */
+  async initializeAuthState(): Promise<void> {
     this.isLogged = await this.getInitialValue();
     this.changeAuthStatus(this.isLogged);
   }
