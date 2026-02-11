@@ -35,24 +35,25 @@
 
 .learning-path-container {
   @include animated-background;
-  padding: 2rem 1rem;
+  padding: 2rem clamp(1rem, 3vw, 3rem);
+  max-width: 1600px;
+  margin: 0 auto;
 }
 
 .home-grid {
   display: flex;
   justify-content: center;
-  gap: 3rem;
+  gap: clamp(2rem, 4vw, 4rem);
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
-  position: fixed;
-  top: 5.5rem;
-  right: 5rem;
-  width: 380px;
-  padding: 0.5rem 0;
+  gap: 1.55rem;
+  position: sticky;
+  align-self: flex-start;
+  top: 2rem;
+  flex: 0 0 clamp(280px, 25vw, 380px);
 }
 
 .header-stats {
@@ -66,6 +67,7 @@
     padding: 1.125rem 1.5rem;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.875rem;
     flex: 1;
 
@@ -170,8 +172,8 @@
 }
 
 .path-wrapper {
-  flex: 1;
-  margin-right: 25em; 
+  flex: 1 1 auto;
+  max-width: 800px;
 }
 
 .add-unit-button {
@@ -180,7 +182,7 @@
 
 .unit-header {
   text-align: center;
-  margin: 4rem 0 2rem;
+  margin: 0 0 2rem;
   padding: 2rem;
   background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
   border-radius: var(--radius);
@@ -287,9 +289,10 @@
 }
 
 .lesson-icon-wrapper {
-  position: relative;  
+  position: relative;
   width: 90px;
   height: 90px;
+  flex-shrink: 0;
   margin-top: .5em;
   display: flex;
   align-items: center;
@@ -367,4 +370,49 @@
 
 .jump-button {
   @include sidebar-button;
+}
+
+/* Responsive layout */
+@media (max-width: 1024px) {
+  .home-grid {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .sidebar {
+    position: relative;
+    top: 0;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 600px;
+    order: -1;
+  }
+
+  .path-wrapper {
+    width: 100%;
+    max-width: 800px;
+  }
+}
+
+@media (max-width: 768px) {
+  .learning-path-container {
+    padding: 1rem;
+  }
+
+  .lesson-node {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    text-align: center;
+  }
+
+  .lesson-icon-wrapper {
+    width: 70px;
+    height: 70px;
+    margin-top: 0;
+  }
+
+  .sidebar-buttons {
+    flex-direction: column;
+  }
 }
