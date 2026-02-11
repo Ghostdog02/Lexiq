@@ -121,9 +121,59 @@
 // --------------------------------------------------------------------------
 .exercises-view {
   .exercise-card {
-    min-height: 400px;
+    min-height: 25rem;
     display: flex;
     flex-direction: column;
+
+    // Locked state
+    &.locked {
+      .exercise-content,
+      .exercise-title,
+      .exercise-instructions {
+        filter: blur(0.25rem);
+        pointer-events: none;
+        user-select: none;
+      }
+    }
+
+    // Locked overlay
+    .locked-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(26, 36, 41, 0.95);
+      backdrop-filter: blur(0.625rem);
+      border-radius: var(--radius);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease-out;
+
+      .locked-content {
+        text-align: center;
+        padding: 2.5rem;
+
+        .lock-icon {
+          font-size: 4rem;
+          margin-bottom: 1.25rem;
+          display: block;
+          filter: drop-shadow(0 0 1.25rem rgba(124, 92, 255, 0.3));
+        }
+
+        h3 {
+          font-size: 1.75rem;
+          font-weight: 700;
+          color: var(--white);
+          margin-bottom: 0.75rem;
+        }
+
+        p {
+          font-size: 1rem;
+          color: var(--text-secondary);
+          margin: 0;
+        }
+      }
+    }
 
     .exercise-header {
       display: flex;
@@ -151,6 +201,16 @@
         align-items: center;
         gap: 4px;
         text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+      }
+
+      .locked-badge {
+        color: var(--muted);
+        font-weight: 600;
+        font-size: 0.8125rem;
+        background: rgba(139, 152, 165, 0.1);
+        padding: 0.375rem 0.75rem;
+        border-radius: 0.375rem;
+        border: 1px solid rgba(139, 152, 165, 0.2);
       }
     }
 
@@ -524,7 +584,22 @@
       }
 
       &.incorrect {
-        background: #ef4444;
+        background: var(--color-error);
+      }
+
+      &.locked {
+        background: var(--muted);
+        opacity: 0.3;
+        cursor: not-allowed;
+
+        &:hover {
+          background: var(--muted);
+        }
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
       }
     }
   }

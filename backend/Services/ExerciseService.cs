@@ -27,14 +27,22 @@ public class ExerciseService(BackendDbContext context)
 
     public async Task<Exercise> CreateExerciseAsync(CreateExerciseDto dto)
     {
-        // Auto-calculate OrderIndex if not provided
         int orderIndex = dto.OrderIndex ?? await GetNextOrderIndexForLessonAsync(dto.LessonId);
 
+        var exercise = MapToEntity(dto, dto.LessonId, orderIndex);
+
+        _context.Exercises.Add(exercise);
+        await _context.SaveChangesAsync();
+        return exercise;
+    }
+
+    public Exercise MapToEntity(CreateExerciseDto dto, string lessonId, int orderIndex)
+    {
         Exercise exercise = dto switch
         {
             CreateMultipleChoiceExerciseDto mcDto => new MultipleChoiceExercise
             {
-                LessonId = mcDto.LessonId,
+                LessonId = lessonId,
                 Title = mcDto.Title,
                 Instructions = mcDto.Instructions,
                 EstimatedDurationMinutes = mcDto.EstimatedDurationMinutes,
@@ -53,7 +61,7 @@ public class ExerciseService(BackendDbContext context)
             },
             CreateFillInBlankExerciseDto fibDto => new FillInBlankExercise
             {
-                LessonId = fibDto.LessonId,
+                LessonId = lessonId,
                 Title = fibDto.Title,
                 Instructions = fibDto.Instructions,
                 EstimatedDurationMinutes = fibDto.EstimatedDurationMinutes,
@@ -69,7 +77,7 @@ public class ExerciseService(BackendDbContext context)
             },
             CreateListeningExerciseDto lDto => new ListeningExercise
             {
-                LessonId = lDto.LessonId,
+                LessonId = lessonId,
                 Title = lDto.Title,
                 Instructions = lDto.Instructions,
                 EstimatedDurationMinutes = lDto.EstimatedDurationMinutes,
@@ -85,7 +93,7 @@ public class ExerciseService(BackendDbContext context)
             },
             CreateTranslationExerciseDto tDto => new TranslationExercise
             {
-                LessonId = tDto.LessonId,
+                LessonId = lessonId,
                 Title = tDto.Title,
                 Instructions = tDto.Instructions,
                 EstimatedDurationMinutes = tDto.EstimatedDurationMinutes,
@@ -103,9 +111,6 @@ public class ExerciseService(BackendDbContext context)
         };
 
         exercise.CreatedAt = DateTime.UtcNow;
-
-        _context.Exercises.Add(exercise);
-        await _context.SaveChangesAsync();
         return exercise;
     }
 

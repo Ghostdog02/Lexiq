@@ -7,20 +7,19 @@ export interface Lesson {
   lessonId: string;
   courseId: string;
   courseName: string;
-  content: string;
   title: string;
   description?: string;
   estimatedDurationMinutes?: number;
   orderIndex: number;
   lessonContent: string;
   isLocked: boolean;
-  exerciseCount: number;
   exercises: Exercise[];
-  status: LessonStatus;
   completedExercises?: number;
   earnedXp?: number;
   totalPossibleXp?: number;
   isCompleted?: boolean;
+  // Derived client-side, not from API
+  status: LessonStatus;
 }
 
 export interface LessonProgressSummary {
@@ -38,6 +37,14 @@ export interface SubmitAnswerResponse {
   correctAnswer: string | null;
   explanation: string | null;
   lessonProgress: LessonProgressSummary;
+}
+
+// Saved progress loaded from backend (maps exerciseId → progress)
+export interface UserExerciseProgress {
+  exerciseId: string;
+  isCompleted: boolean;
+  pointsEarned: number;
+  completedAt: string | null;
 }
 
 export interface CompleteLessonResponse {

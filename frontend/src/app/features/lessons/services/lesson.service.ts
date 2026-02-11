@@ -7,8 +7,16 @@ import {
   Lesson,
   UpdateLessonApiResponse,
   SubmitAnswerResponse,
-  CompleteLessonResponse
+  CompleteLessonResponse,
+  UserExerciseProgress
 } from '../models/lesson.interface';
+import {
+  Exercise,
+  MultipleChoiceExercise,
+  FillInBlankExercise,
+  TranslationExercise,
+  ListeningExercise
+} from '../models/exercise.interface';
 import { Course } from '../models/course.interface';
 
 /** Icon set that cycles based on lesson order */
@@ -68,8 +76,20 @@ export class LessonService {
       title: lesson.title,
       description: lesson.description || null,
       estimatedDurationMinutes: lesson.estimatedDuration || null,
-      orderIndex: 0, // TODO: Make this dynamic based on existing lessons in course
-      content: lesson.content
+      orderIndex: null,
+      content: lesson.content,
+      exercises: lesson.exercises.map((ex, i) => ({
+        lessonId: '',
+        title: ex.title,
+        instructions: ex.instructions,
+        estimatedDurationMinutes: ex.estimatedDurationMinutes,
+        difficultyLevel: ex.difficultyLevel,
+        points: ex.points,
+        orderIndex: i,
+        explanation: ex.explanation,
+        type: ex.type,
+        ...this.mapExerciseTypeFields(ex)
+      }))
     };
 
     const result = await firstValueFrom(
@@ -80,13 +100,54 @@ export class LessonService {
     return result;
   }
 
+  private mapExerciseTypeFields(ex: Exercise): Record<string, unknown> {
+    switch (ex.type) {
+      case 'MultipleChoice': {
+        const mc = ex as MultipleChoiceExercise;
+        return { options: mc.options };
+      }
+      case 'FillInBlank': {
+        const fib = ex as FillInBlankExercise;
+        return {
+          text: fib.text,
+          correctAnswer: fib.correctAnswer,
+          acceptedAnswers: fib.acceptedAnswers,
+          caseSensitive: fib.caseSensitive,
+          trimWhitespace: fib.trimWhitespace
+        };
+      }
+      case 'Translation': {
+        const t = ex as TranslationExercise;
+        return {
+          sourceText: t.sourceText,
+          targetText: t.targetText,
+          sourceLanguageCode: t.sourceLanguageCode,
+          targetLanguageCode: t.targetLanguageCode,
+          matchingThreshold: t.matchingThreshold
+        };
+      }
+      case 'Listening': {
+        const l = ex as ListeningExercise;
+        return {
+          audioUrl: l.audioUrl,
+          correctAnswer: l.correctAnswer,
+          acceptedAnswers: l.acceptedAnswers,
+          caseSensitive: l.caseSensitive,
+          maxReplays: l.maxReplays
+        };
+      }
+      default:
+        return {};
+    }
+  }
+
   async updateLesson(lessonId: string, updates: Lesson): Promise<UpdateLessonApiResponse | null> {
     try {
       const updateDto = {
         title: updates.title,
         description: updates.description,
         estimatedDurationMinutes: updates.estimatedDurationMinutes,
-        lessonContent: updates.content
+        lessonContent: updates.lessonContent
       };
 
       const result = await firstValueFrom(
@@ -145,5 +206,45 @@ export class LessonService {
         { withCredentials: true }
       )
     );
+  }
+
+  /**
+   * Get user's saved exercise progress for a lesson.
+   * Used to restore progress state after page refresh.
+   * @param lessonId The ID of the lesson
+   * @returns Array of exercise progress records
+   */
+  async getLessonProgress(lessonId: string): Promise<UserExerciseProgress[]> {
+    try {
+      return await firstValueFrom(
+        this.httpClient.get<UserExerciseProgress[]>(
+          `/api/exercise/lesson/${lessonId}/progress`,
+          { withCredentials: true }
+        )
+      );
+    } catch (error) {
+      console.error(`❌ Failed to fetch progress for lesson ${lessonId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Get all previous submission results for a lesson's exercises, ordered by exercise OrderIndex.
+   * Used to restore the submissionResults map after page refresh.
+   * @param lessonId The ID of the lesson
+   * @returns Array of SubmitAnswerResponse in exercise order
+   */
+  async getLessonSubmissions(lessonId: string): Promise<SubmitAnswerResponse[]> {
+    try {
+      return await firstValueFrom(
+        this.httpClient.get<SubmitAnswerResponse[]>(
+          `/api/exercise/lesson/${lessonId}/submissions`,
+          { withCredentials: true }
+        )
+      );
+    } catch (error) {
+      console.error(`❌ Failed to fetch submissions for lesson ${lessonId}:`, error);
+      return [];
+    }
   }
 }

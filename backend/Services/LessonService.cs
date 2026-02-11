@@ -169,12 +169,24 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             Description = dto.Description,
             EstimatedDurationMinutes = dto.EstimatedDurationMinutes,
             OrderIndex = orderIndex,
-            LessonContent = dto.Content, // Store Editor.js JSON directly in database
-            IsLocked = true, // Default to locked
+            LessonContent = dto.Content,
+            IsLocked = true,
             CreatedAt = DateTime.UtcNow,
         };
 
         _context.Lessons.Add(lesson);
+
+        if (dto.Exercises is { Count: > 0 })
+        {
+            for (var i = 0; i < dto.Exercises.Count; i++)
+            {
+                var exerciseDto = dto.Exercises[i];
+                var exercise = _exerciseService.MapToEntity(exerciseDto, lesson.Id, exerciseDto.OrderIndex ?? i);
+                exercise.IsLocked = i != 0; // First exercise unlocked, rest locked
+                _context.Exercises.Add(exercise);
+            }
+        }
+
         await _context.SaveChangesAsync();
         return lesson;
     }

@@ -17,7 +17,9 @@ public abstract record ExerciseDto(
     DifficultyLevel DifficultyLevel,
     int Points,
     int OrderIndex,
-    string? Explanation
+    string? Explanation,
+    bool IsLocked,
+    UserExerciseProgressDto? UserProgress
 );
 
 public record MultipleChoiceExerciseDto(
@@ -30,6 +32,8 @@ public record MultipleChoiceExerciseDto(
     int Points,
     int OrderIndex,
     string? Explanation,
+    bool IsLocked,
+    UserExerciseProgressDto? UserProgress,
     List<ExerciseOptionDto> Options
 )
     : ExerciseDto(
@@ -41,7 +45,9 @@ public record MultipleChoiceExerciseDto(
         DifficultyLevel,
         Points,
         OrderIndex,
-        Explanation
+        Explanation,
+        IsLocked,
+        UserProgress
     );
 
 public record FillInBlankExerciseDto(
@@ -54,6 +60,8 @@ public record FillInBlankExerciseDto(
     int Points,
     int OrderIndex,
     string? Explanation,
+    bool IsLocked,
+    UserExerciseProgressDto? UserProgress,
     string Text,
     string CorrectAnswer,
     string? AcceptedAnswers,
@@ -69,7 +77,9 @@ public record FillInBlankExerciseDto(
         DifficultyLevel,
         Points,
         OrderIndex,
-        Explanation
+        Explanation,
+        IsLocked,
+        UserProgress
     );
 
 public record ListeningExerciseDto(
@@ -82,6 +92,8 @@ public record ListeningExerciseDto(
     int Points,
     int OrderIndex,
     string? Explanation,
+    bool IsLocked,
+    UserExerciseProgressDto? UserProgress,
     string AudioUrl,
     string CorrectAnswer,
     string? AcceptedAnswers,
@@ -97,7 +109,9 @@ public record ListeningExerciseDto(
         DifficultyLevel,
         Points,
         OrderIndex,
-        Explanation
+        Explanation,
+        IsLocked,
+        UserProgress
     );
 
 public record TranslationExerciseDto(
@@ -110,6 +124,8 @@ public record TranslationExerciseDto(
     int Points,
     int OrderIndex,
     string? Explanation,
+    bool IsLocked,
+    UserExerciseProgressDto? UserProgress,
     string SourceText,
     string TargetText,
     string SourceLanguageCode,
@@ -125,7 +141,9 @@ public record TranslationExerciseDto(
         DifficultyLevel,
         Points,
         OrderIndex,
-        Explanation
+        Explanation,
+        IsLocked,
+        UserProgress
     );
 
 public record ExerciseOptionDto(string Id, string OptionText, bool IsCorrect, int OrderIndex);
@@ -256,4 +274,11 @@ public record UpdateExerciseDto(
     int? Points,
     int? OrderIndex,
     string? Explanation
+);
+
+public record UserExerciseProgressDto(
+    string ExerciseId,
+    bool IsCompleted,
+    int PointsEarned,
+    DateTime? CompletedAt
 );

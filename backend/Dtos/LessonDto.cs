@@ -23,7 +23,8 @@ public record CreateLessonDto(
     string? Description,
     int? EstimatedDurationMinutes,
     int? OrderIndex, // Optional - auto-calculated if null
-    string Content // Editor.js JSON content
+    string Content, // Editor.js JSON content
+    List<CreateExerciseDto>? Exercises = null
 );
 
 public record UpdateLessonDto(

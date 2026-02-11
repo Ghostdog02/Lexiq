@@ -25,7 +25,11 @@ public static class ContentMappingExtensions
         );
     }
 
-    public static LessonDto ToDto(this Lesson entity, LessonProgressSummary? progress = null)
+    public static LessonDto ToDto(
+        this Lesson entity,
+        LessonProgressSummary? progress = null,
+        Dictionary<string, UserExerciseProgressDto>? exerciseProgress = null
+    )
     {
         return new LessonDto(
             entity.Id,
@@ -37,7 +41,7 @@ public static class ContentMappingExtensions
             entity.OrderIndex,
             entity.LessonContent,  // Editor.js JSON content
             entity.IsLocked,
-            entity.Exercises.Select(e => e.ToDto()).ToList(),
+            entity.Exercises.Select(e => e.ToDto(exerciseProgress)).ToList(),
             CompletedExercises: progress?.CompletedExercises,
             EarnedXp: progress?.EarnedXp,
             TotalPossibleXp: progress?.TotalPossibleXp,
@@ -45,8 +49,13 @@ public static class ContentMappingExtensions
         );
     }
 
-    public static ExerciseDto ToDto(this Exercise entity)
+    public static ExerciseDto ToDto(
+        this Exercise entity,
+        Dictionary<string, UserExerciseProgressDto>? userProgress = null
+    )
     {
+        var progress = userProgress?.GetValueOrDefault(entity.Id);
+
         return entity switch
         {
             MultipleChoiceExercise mce => new MultipleChoiceExerciseDto(
@@ -59,6 +68,8 @@ public static class ContentMappingExtensions
                 mce.Points,
                 mce.OrderIndex,
                 mce.Explanation,
+                mce.IsLocked,
+                progress,
                 mce.Options.Select(o => new ExerciseOptionDto(
                         o.Id,
                         o.OptionText,
@@ -77,6 +88,8 @@ public static class ContentMappingExtensions
                 fib.Points,
                 fib.OrderIndex,
                 fib.Explanation,
+                fib.IsLocked,
+                progress,
                 fib.Text,
                 fib.CorrectAnswer,
                 fib.AcceptedAnswers,
@@ -93,6 +106,8 @@ public static class ContentMappingExtensions
                 le.Points,
                 le.OrderIndex,
                 le.Explanation,
+                le.IsLocked,
+                progress,
                 le.AudioUrl,
                 le.CorrectAnswer,
                 le.AcceptedAnswers,
@@ -109,6 +124,8 @@ public static class ContentMappingExtensions
                 te.Points,
                 te.OrderIndex,
                 te.Explanation,
+                te.IsLocked,
+                progress,
                 te.SourceText,
                 te.TargetText,
                 te.SourceLanguageCode,

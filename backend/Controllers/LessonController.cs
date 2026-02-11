@@ -71,12 +71,13 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
         if (currentUser == null)
             return Unauthorized(new { message = "User is not authorized." });
 
-        var result = new List<LessonDto>();
-        foreach (var lesson in lessons)
-        {
-            var progress = await _progressService.GetLessonProgressAsync(currentUser.Id, lesson.Id);
-            result.Add(lesson.ToDto(progress));
-        }
+        var lessonIds = lessons.Select(l => l.Id).ToList();
+        var progressMap = await _progressService.GetProgressForLessonsAsync(
+            currentUser.Id,
+            lessonIds
+        );
+
+        var result = lessons.Select(l => l.ToDto(progressMap.GetValueOrDefault(l.Id))).ToList();
 
         return Ok(result);
     }
@@ -97,8 +98,9 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
 
         var currentUser = HttpContext.GetCurrentUser();
 
-        var progress = await _progressService.GetLessonProgressAsync(currentUser.Id, lessonId);
-        return Ok(lesson.ToDto(progress));
+        var progress = await _progressService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
+
+        return Ok(lesson.ToDto(progress.Summary, progress.ExerciseProgress));
     }
 
     /// <summary>

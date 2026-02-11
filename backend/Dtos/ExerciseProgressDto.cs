@@ -37,3 +37,8 @@ public record NextLessonInfo(
     bool WasUnlocked,
     bool IsLocked
 );
+
+public record LessonProgressResult(
+    LessonProgressSummary Summary,
+    Dictionary<string, UserExerciseProgressDto> ExerciseProgress
+);

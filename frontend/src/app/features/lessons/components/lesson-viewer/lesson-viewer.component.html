@@ -42,11 +42,11 @@
         </div>
       </div>
 
-      @if (lesson.content) {
+      @if (lesson.lessonContent) {
       <div class="section-wrapper">
         <h3 class="section-label" id="second-section-label"><span class="icon">📖</span> Textbook Content</h3>
         <div class="lesson-content card">
-          <div class="markdown-content" [innerHTML]="parseContent(lesson.content)"></div>
+          <div class="markdown-content" [innerHTML]="parseContent(lesson.lessonContent)"></div>
         </div>
       </div>
       }

@@ -13,6 +13,13 @@ export enum ExerciseType {
   Translation = 'Translation'
 }
 
+export interface UserExerciseProgressDto {
+  exerciseId: string;
+  isCompleted: boolean;
+  pointsEarned: number;
+  completedAt: string | null;
+}
+
 export interface Exercise {
   id: string;
   lessonId: string;
@@ -23,7 +30,7 @@ export interface Exercise {
   points: number;
   orderIndex: number;
   explanation?: string;
-  type: ExerciseType;  // Backend returns "type" not "exerciseType"
+  type: ExerciseType;
 }
 
 export interface ExerciseFormControls {
