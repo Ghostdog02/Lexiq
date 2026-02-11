@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
@@ -18,7 +17,7 @@ public class UserLanguageController(UserLanguageService userLanguageService) : C
     [HttpGet]
     public async Task<ActionResult<List<UserLanguageDto>>> GetMyLanguages()
     {
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
             return Unauthorized();
 
@@ -29,7 +28,7 @@ public class UserLanguageController(UserLanguageService userLanguageService) : C
     [HttpPost("enroll")]
     public async Task<ActionResult<UserLanguageDto>> Enroll([FromBody] EnrollLanguageDto dto)
     {
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
             return Unauthorized();
 
@@ -43,7 +42,7 @@ public class UserLanguageController(UserLanguageService userLanguageService) : C
     [HttpDelete("{languageId}")]
     public async Task<IActionResult> Unenroll(int languageId)
     {
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
             return Unauthorized();
 

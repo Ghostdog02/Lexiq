@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
@@ -85,7 +84,7 @@ public class ExerciseController(
         if (string.IsNullOrWhiteSpace(request.Answer))
             return BadRequest(new { message = "Answer cannot be empty" });
 
-        var userId = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId == null)
             return Unauthorized();
 
