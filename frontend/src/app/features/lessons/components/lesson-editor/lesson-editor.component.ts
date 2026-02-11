@@ -11,7 +11,8 @@ import {
   TranslationExercise,
   ListeningExercise,
   MultipleChoiceExercise,
-  AnyExercise
+  AnyExercise,
+  Exercise
 } from '../../models/exercise.interface';
 import { LessonService } from '../../services/lesson.service';
 import { LessonFormService } from '../../services/lesson-form.service';
@@ -124,10 +125,6 @@ export class LessonEditorComponent implements OnInit {
     }
   }
 
-  onImageUploaded(url: string): void {
-    this.lessonForm.patchValue({ mediaUrl: url });
-  }
-
   parseContent(content: string): SafeHtml {
     return this.sanitizer.bypassSecurityTrustHtml(this.contentParser.parse(content));
   }
@@ -191,7 +188,7 @@ export class LessonEditorComponent implements OnInit {
 
     const exercises: AnyExercise[] = this.exercises.controls.map(exerciseForm => {
       const exerciseValue = exerciseForm.getRawValue();
-      const baseExercise = {
+      const baseExercise: Exercise = {
         id: '',
         lessonId: '',
         title: exerciseValue.title,
