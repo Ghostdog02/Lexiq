@@ -120,42 +120,51 @@ jobs:
             
             bash /tmp/scripts/deploy.sh
 
-      - name: Verify Deployment
-        if: always()
-        uses: appleboy/ssh-action@v1.2.4
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          script: |
-            DEPLOY_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
-            export DEPLOY_DIR
+        - name: Copy deployment script to server
+          uses: appleboy/scp-action@v1.0.0
+          with:
+            host: ${{ secrets.HETZNER_PROD_HOST }}
+            username: ${{ secrets.HETZNER_PROD_USERNAME }}
+            key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+            passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+            port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+            source: "scripts/deploy.sh"
+            target: "/tmp/"
 
-            bash /tmp/scripts/verify-deployment.sh
+        - name: Copy verify-deployment script to server
+          uses: appleboy/scp-action@v1.0.0
+          with:
+            host: ${{ secrets.HETZNER_PROD_HOST }}
+            username: ${{ secrets.HETZNER_PROD_USERNAME }}
+            key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+            passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+            port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+            source: "scripts/verify-deployment.sh"
+            target: "/tmp/"
 
-      - name: Cleanup
-        if: always()
-        uses: appleboy/ssh-action@v1.2.4
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          script: |
-            rm -f /tmp/scripts/deploy.sh
-            rm -f /tmp/.deploy.env
+        - name: Copy docker-compose and nginx files to server
+          uses: appleboy/scp-action@v1.0.0
+          with:
+            host: ${{ secrets.HETZNER_PROD_HOST }}
+            username: ${{ secrets.HETZNER_PROD_USERNAME }}
+            key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+            passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+            port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+            source: "docker-compose.prod.yml,nginx.conf"
+            target: "/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
 
-            echo "::group::Docker Cleanup"
-            echo "Cleaning up unused Docker images..."
-            if docker image prune -f; then
-              echo "✅ Docker cleanup complete"
-            else
-              echo "⚠️ Docker cleanup had issues"
-            fi
-            echo "::endgroup::"
+        - name: Deploy with Docker Compose to Hetzner (Debian 13)
+          uses: appleboy/ssh-action@v1.2.5
+          with:
+            host: ${{ secrets.HETZNER_PROD_HOST }}
+            username: ${{ secrets.HETZNER_PROD_USERNAME }}
+            key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+            passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+            port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+            command_timeout: 30m
+            script: |
+              set
+              TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
 
       - name: Deployment Success Notice
         if: success() 
@@ -166,29 +175,75 @@ jobs:
         run: |
           echo "::error::❌ Deployment failed!"
 
-      - name: Notify on failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const repoUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
-            const message = `❌ **Deployment failed!**\n\nCheck the [workflow logs](${repoUrl}) for details.`;
-            
-            // If it's a Pull Request, comment on the PR
-            if (context.payload.pull_request) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                body: message
-              });
-            } 
-            // Otherwise, comment on the Commit
-            else {
-              await github.rest.repos.createCommitComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                commit_sha: context.sha,
-                body: message
-              });
-            }
+        - name: Verify Deployment
+          if: always()
+          uses: appleboy/ssh-action@v1.2.5
+          with:
+            host: ${{ secrets.HETZNER_PROD_HOST }}
+            username: ${{ secrets.HETZNER_PROD_USERNAME }}
+            key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+            passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+            port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+            script: |
+              DEPLOY_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+              export DEPLOY_DIR
+
+              bash /tmp/scripts/verify-deployment.sh
+
+        - name: Cleanup
+          if: always()
+          uses: appleboy/ssh-action@v1.2.5
+          with:
+            host: ${{ secrets.HETZNER_PROD_HOST }}
+            username: ${{ secrets.HETZNER_PROD_USERNAME }}
+            key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+            passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+            port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+            script: |
+              rm -f /tmp/scripts/deploy.sh
+              rm -f /tmp/.deploy.env
+
+              echo "::group::Docker Cleanup"
+              echo "Cleaning up unused Docker images..."
+              if docker image prune -f; then
+                echo "✅ Docker cleanup complete"
+              else
+                echo "⚠️ Docker cleanup had issues"
+              fi
+              echo "::endgroup::"
+
+        - name: Deployment Success Notice
+          if: success() 
+          run: echo "::notice::✅ Deployment successful!"
+
+        - name: Deployment Failure Notice
+          if: failure()
+          run: |
+            echo "::error::❌ Deployment failed!"
+
+        - name: Notify on failure
+          if: failure()
+          uses: actions/github-script@v8
+          with:
+            script: |
+              const repoUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+              const message = `❌ **Deployment failed!**\n\nCheck the [workflow logs](${repoUrl}) for details.`;
+              
+              // If it's a Pull Request, comment on the PR
+              if (context.payload.pull_request) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.payload.pull_request.number,
+                  body: message
+                });
+              } 
+              // Otherwise, comment on the Commit
+              else {
+                await github.rest.repos.createCommitComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  commit_sha: context.sha,
+                  body: message
+                });
+              }
