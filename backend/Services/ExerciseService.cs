@@ -27,6 +27,9 @@ public class ExerciseService(BackendDbContext context)
 
     public async Task<Exercise> CreateExerciseAsync(CreateExerciseDto dto)
     {
+        if (string.IsNullOrEmpty(dto.LessonId))
+            throw new ArgumentException("LessonId is required when creating an exercise directly.");
+
         int orderIndex = dto.OrderIndex ?? await GetNextOrderIndexForLessonAsync(dto.LessonId);
 
         var exercise = MapToEntity(dto, dto.LessonId, orderIndex);

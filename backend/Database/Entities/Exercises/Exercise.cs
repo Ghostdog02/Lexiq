@@ -1,8 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Backend.Database.Entities.Exercises;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum DifficultyLevel
 {
     Beginner,

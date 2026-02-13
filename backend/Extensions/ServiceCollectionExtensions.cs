@@ -167,11 +167,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddControllersWithOptions(this IServiceCollection services)
     {
         services
-            .AddControllers()
-            .ConfigureApiBehaviorOptions(options =>
-            {
-                options.SuppressModelStateInvalidFilter = true;
-            });
+            .AddControllers();
 
         return services;
     }

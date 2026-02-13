@@ -11,11 +11,10 @@ import {
   UserExerciseProgress
 } from '../models/lesson.interface';
 import {
-  Exercise,
-  MultipleChoiceExercise,
-  FillInBlankExercise,
-  TranslationExercise,
-  ListeningExercise
+  CreateExerciseBase,
+  CreateExerciseDto,
+  ExerciseFormValue,
+  ExerciseType,
 } from '../models/exercise.interface';
 import { Course } from '../models/course.interface';
 
@@ -71,73 +70,79 @@ export class LessonService {
   }
 
   async createLesson(lesson: CreateLessonDto): Promise<CreateLessonApiResponse> {
-    const createLessonDto = {
+    const payload = {
       courseId: lesson.courseId,
       title: lesson.title,
       description: lesson.description || null,
       estimatedDurationMinutes: lesson.estimatedDuration || null,
       orderIndex: null,
       content: lesson.content,
-      exercises: lesson.exercises.map((ex, i) => ({
-        lessonId: '',
-        title: ex.title,
-        instructions: ex.instructions,
-        estimatedDurationMinutes: ex.estimatedDurationMinutes,
-        difficultyLevel: ex.difficultyLevel,
-        points: ex.points,
-        orderIndex: i,
-        explanation: ex.explanation,
-        type: ex.type,
-        ...this.mapExerciseTypeFields(ex)
-      }))
+      exercises: lesson.exercises.map((ex, i) => this.mapFormToCreateDto(ex, i))
     };
 
     const result = await firstValueFrom(
-      this.httpClient.post<CreateLessonApiResponse>('/api/lesson', createLessonDto, { withCredentials: true })
+      this.httpClient.post<CreateLessonApiResponse>('/api/lesson', payload, { withCredentials: true })
     );
 
     console.log('✅ Lesson created:', result);
     return result;
   }
 
-  private mapExerciseTypeFields(ex: Exercise): Record<string, unknown> {
-    switch (ex.type) {
-      case 'MultipleChoice': {
-        const mc = ex as MultipleChoiceExercise;
-        return { options: mc.options };
-      }
-      case 'FillInBlank': {
-        const fib = ex as FillInBlankExercise;
+  private mapFormToCreateDto(formValue: ExerciseFormValue, index: number): CreateExerciseDto {
+    const base: CreateExerciseBase = {
+      title: formValue.title,
+      instructions: formValue.instructions,
+      estimatedDurationMinutes: formValue.estimatedDurationMinutes,
+      difficultyLevel: formValue.difficultyLevel,
+      points: formValue.points,
+      orderIndex: index,
+      explanation: formValue.explanation,
+    };
+
+    switch (formValue.exerciseType) {
+      case ExerciseType.MultipleChoice:
         return {
-          text: fib.text,
-          correctAnswer: fib.correctAnswer,
-          acceptedAnswers: fib.acceptedAnswers,
-          caseSensitive: fib.caseSensitive,
-          trimWhitespace: fib.trimWhitespace
+          type: ExerciseType.MultipleChoice,
+          ...base,
+          options: formValue.options.map((opt, i) => ({
+            optionText: opt.optionText,
+            isCorrect: opt.isCorrect,
+            orderIndex: i,
+          })),
         };
-      }
-      case 'Translation': {
-        const t = ex as TranslationExercise;
+
+      case ExerciseType.FillInBlank:
         return {
-          sourceText: t.sourceText,
-          targetText: t.targetText,
-          sourceLanguageCode: t.sourceLanguageCode,
-          targetLanguageCode: t.targetLanguageCode,
-          matchingThreshold: t.matchingThreshold
+          type: ExerciseType.FillInBlank,
+          ...base,
+          text: formValue.question,
+          correctAnswer: formValue.correctAnswer,
+          acceptedAnswers: formValue.acceptedAnswers,
+          caseSensitive: formValue.caseSensitive,
+          trimWhitespace: formValue.trimWhitespace,
         };
-      }
-      case 'Listening': {
-        const l = ex as ListeningExercise;
+
+      case ExerciseType.Translation:
         return {
-          audioUrl: l.audioUrl,
-          correctAnswer: l.correctAnswer,
-          acceptedAnswers: l.acceptedAnswers,
-          caseSensitive: l.caseSensitive,
-          maxReplays: l.maxReplays
+          type: ExerciseType.Translation,
+          ...base,
+          sourceText: formValue.sourceText,
+          targetText: formValue.targetText,
+          sourceLanguageCode: formValue.sourceLanguageCode,
+          targetLanguageCode: formValue.targetLanguageCode,
+          matchingThreshold: formValue.matchingThreshold,
         };
-      }
-      default:
-        return {};
+
+      case ExerciseType.Listening:
+        return {
+          type: ExerciseType.Listening,
+          ...base,
+          audioUrl: formValue.audioUrl,
+          correctAnswer: formValue.correctAnswer,
+          acceptedAnswers: formValue.acceptedAnswers,
+          caseSensitive: formValue.caseSensitive,
+          maxReplays: formValue.maxReplays,
+        };
     }
   }
 

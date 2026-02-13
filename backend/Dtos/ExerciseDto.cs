@@ -154,7 +154,7 @@ public record ExerciseOptionDto(string Id, string OptionText, bool IsCorrect, in
 [JsonDerivedType(typeof(CreateListeningExerciseDto), typeDiscriminator: "Listening")]
 [JsonDerivedType(typeof(CreateTranslationExerciseDto), typeDiscriminator: "Translation")]
 public abstract record CreateExerciseDto(
-    string LessonId,
+    string? LessonId, // Null when nested inside CreateLessonDto (lesson assigns its own ID)
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -165,7 +165,7 @@ public abstract record CreateExerciseDto(
 );
 
 public record CreateMultipleChoiceExerciseDto(
-    string LessonId,
+    string? LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -187,7 +187,7 @@ public record CreateMultipleChoiceExerciseDto(
     );
 
 public record CreateFillInBlankExerciseDto(
-    string LessonId,
+    string? LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -213,7 +213,7 @@ public record CreateFillInBlankExerciseDto(
     );
 
 public record CreateListeningExerciseDto(
-    string LessonId,
+    string? LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
@@ -239,7 +239,7 @@ public record CreateListeningExerciseDto(
     );
 
 public record CreateTranslationExerciseDto(
-    string LessonId,
+    string? LessonId,
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
