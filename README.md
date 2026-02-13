@@ -7,6 +7,13 @@
 
 A modern, full-stack language learning platform designed for Bulgarian speakers learning Italian, built as a technical showcase for professional recruitment.
 
+## 👥 Contributors
+
+| Contributor | Role | GitHub |
+|-------------|------|--------|
+| **Ghostdog02** | Project Lead | [@Ghostdog02](https://github.com/Ghostdog02) |
+| **powercell12** | Frontend Design | [@powercell12](https://github.com/powercell12) |
+
 ## 📋 Table of Contents
 
 - [Project Overview](#-project-overview)
