@@ -191,6 +191,7 @@ namespace Backend.Api.Controllers
             }
 
             SetCorsHeaders();
+            Response.Headers["Cache-Control"] = "public, max-age=31536000, immutable";
 
             return PhysicalFile(path, contentType, enableRangeProcessing: true);
         }

@@ -38,6 +38,8 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
   private apiUrl = import.meta.env.BACKEND_API_URL;
   private onChange: any = () => { };
   private onTouched: any = () => { };
+  private changeDebounceTimer: any = null;
+  private lastSavedContent: string = '';
 
   constructor(private http: HttpClient) { }
 
@@ -91,9 +93,22 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
       autofocus: true,
       logLevel: 'ERROR' as any,
       onChange: async (api, event) => {
-        const content = await this.editor.save();
-        this.onChange(JSON.stringify(content));
-        this.onTouched();
+        // Debounce to avoid excessive saves on mouse movements
+        if (this.changeDebounceTimer) {
+          clearTimeout(this.changeDebounceTimer);
+        }
+
+        this.changeDebounceTimer = setTimeout(async () => {
+          const content = await this.editor.save();
+          const serialized = JSON.stringify(content);
+
+          // Only trigger onChange if content actually changed
+          if (serialized !== this.lastSavedContent) {
+            this.lastSavedContent = serialized;
+            this.onChange(serialized);
+            this.onTouched();
+          }
+        }, 300); // 300ms debounce
       }
     });
   }
@@ -262,6 +277,7 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
     if (value && this.editor) {
       try {
         const data = typeof value === 'string' ? JSON.parse(value) : value;
+        this.lastSavedContent = typeof value === 'string' ? value : JSON.stringify(value);
         this.editor.render(data);
       } catch (error) {
         console.error('Failed to write value to editor:', error);
@@ -283,6 +299,9 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
   }
 
   ngOnDestroy(): void {
+    if (this.changeDebounceTimer) {
+      clearTimeout(this.changeDebounceTimer);
+    }
     if (this.editor) {
       this.editor.destroy();
     }
