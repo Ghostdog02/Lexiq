@@ -7,12 +7,6 @@ import {
   DifficultyLevel,
   ExerciseForm,
   ExerciseType,
-  FillInBlankExercise,
-  TranslationExercise,
-  ListeningExercise,
-  MultipleChoiceExercise,
-  AnyExercise,
-  Exercise
 } from '../../models/exercise.interface';
 import { LessonService } from '../../services/lesson.service';
 import { LessonFormService } from '../../services/lesson-form.service';
@@ -186,75 +180,13 @@ export class LessonEditorComponent implements OnInit {
   private buildLessonPayload(): CreateLessonDto {
     const formValue = this.lessonForm.getRawValue();
 
-    const exercises: AnyExercise[] = this.exercises.controls.map(exerciseForm => {
-      const exerciseValue = exerciseForm.getRawValue();
-      const baseExercise: Exercise = {
-        id: '',
-        lessonId: '',
-        title: exerciseValue.title,
-        instructions: exerciseValue.instructions,
-        estimatedDurationMinutes: exerciseValue.estimatedDurationMinutes,
-        difficultyLevel: exerciseValue.difficultyLevel,
-        points: exerciseValue.points,
-        orderIndex: 0,
-        explanation: exerciseValue.explanation,
-        type: exerciseValue.exerciseType
-      };
-
-      switch (exerciseValue.exerciseType) {
-        case ExerciseType.FillInBlank:
-          return {
-            ...baseExercise,
-            type: ExerciseType.FillInBlank,
-            text: exerciseValue.question,
-            correctAnswer: exerciseValue.correctAnswer,
-            acceptedAnswers: exerciseValue.acceptedAnswers,
-            caseSensitive: exerciseValue.caseSensitive,
-            trimWhitespace: exerciseValue.trimWhitespace
-          } as FillInBlankExercise;
-
-        case ExerciseType.Translation:
-          return {
-            ...baseExercise,
-            type: ExerciseType.Translation,
-            sourceText: exerciseValue.sourceText,
-            targetText: exerciseValue.targetText,
-            sourceLanguageCode: exerciseValue.sourceLanguageCode,
-            targetLanguageCode: exerciseValue.targetLanguageCode,
-            matchingThreshold: exerciseValue.matchingThreshold
-          } as TranslationExercise;
-
-        case ExerciseType.Listening:
-          return {
-            ...baseExercise,
-            type: ExerciseType.Listening,
-            audioUrl: exerciseValue.audioUrl,
-            correctAnswer: exerciseValue.correctAnswer,
-            acceptedAnswers: exerciseValue.acceptedAnswers,
-            caseSensitive: exerciseValue.caseSensitive,
-            maxReplays: exerciseValue.maxReplays
-          } as ListeningExercise;
-
-        case ExerciseType.MultipleChoice:
-          return {
-            ...baseExercise,
-            type: ExerciseType.MultipleChoice,
-            options: exerciseValue.options || []
-          } as MultipleChoiceExercise;
-
-        default:
-          throw new Error(`Unknown exercise type: ${exerciseValue.exerciseType}`);
-      }
-    });
-
     return {
       title: formValue.title,
       description: formValue.description,
       estimatedDuration: formValue.estimatedDuration,
-      mediaUrl: formValue.mediaUrl,
       content: formValue.content,
       courseId: formValue.courseId,
-      exercises
+      exercises: this.exercises.controls.map(ex => ex.getRawValue())
     };
   }
 

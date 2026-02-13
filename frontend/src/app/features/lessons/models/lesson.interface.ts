@@ -1,5 +1,5 @@
 import { FormArray, FormControl, FormGroup } from "@angular/forms";
-import { Exercise, ExerciseForm, ExerciseType } from "./exercise.interface";
+import { Exercise, ExerciseForm, ExerciseFormValue, ExerciseType } from "./exercise.interface";
 
 export type LessonStatus = 'locked' | 'available' | 'in-progress' | 'completed';
 
@@ -86,10 +86,9 @@ export interface CreateLessonDto {
   title: string;
   description: string;
   estimatedDuration: number;
-  mediaUrl?: string;
   content: string;
   courseId: string;
-  exercises: Exercise[];
+  exercises: ExerciseFormValue[];
 }
 
 export interface LessonFormControls {

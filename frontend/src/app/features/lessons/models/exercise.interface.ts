@@ -31,6 +31,7 @@ export interface Exercise {
   orderIndex: number;
   explanation?: string;
   type: ExerciseType;
+  isLocked: boolean;
 }
 
 export interface ExerciseFormControls {
@@ -133,27 +134,116 @@ export type ExerciseForm = FormGroup<any>;
 export type QuestionOptionForm = FormGroup<QuestionOptionFormControls>;
 
 // ---------------------------------------------------------------------------
-// Exercise Answer Forms (for solving exercises)
+// Form value types — the shape returned by FormGroup.getRawValue()
 // ---------------------------------------------------------------------------
 
-/**
- * Form controls for a single exercise answer.
- * The `answer` control holds:
- *   - MultipleChoice: selected option ID (radio button value)
- *   - FillInBlank: typed text (input)
- *   - Translation: typed translation (textarea)
- *   - Listening: typed transcription (input)
- */
+interface BaseExerciseFormValue {
+  title: string;
+  instructions: string;
+  estimatedDurationMinutes: number;
+  question: string;
+  difficultyLevel: DifficultyLevel;
+  points: number;
+  explanation: string;
+}
+
+export interface MultipleChoiceFormValue extends BaseExerciseFormValue {
+  exerciseType: ExerciseType.MultipleChoice;
+  options: { optionText: string; isCorrect: boolean }[];
+}
+
+export interface FillInBlankFormValue extends BaseExerciseFormValue {
+  exerciseType: ExerciseType.FillInBlank;
+  correctAnswer: string;
+  acceptedAnswers: string;
+  caseSensitive: boolean;
+  trimWhitespace: boolean;
+}
+
+export interface TranslationFormValue extends BaseExerciseFormValue {
+  exerciseType: ExerciseType.Translation;
+  sourceText: string;
+  targetText: string;
+  sourceLanguageCode: string;
+  targetLanguageCode: string;
+  matchingThreshold: number;
+}
+
+export interface ListeningFormValue extends BaseExerciseFormValue {
+  exerciseType: ExerciseType.Listening;
+  audioUrl: string;
+  correctAnswer: string;
+  acceptedAnswers: string;
+  caseSensitive: boolean;
+  maxReplays: number;
+}
+
+export type ExerciseFormValue =
+  | MultipleChoiceFormValue
+  | FillInBlankFormValue
+  | TranslationFormValue
+  | ListeningFormValue;
+
+// ---------------------------------------------------------------------------
+// Backend Create DTOs — the shape the API expects
+// ---------------------------------------------------------------------------
+
+export interface CreateExerciseBase {
+  title: string;
+  instructions: string;
+  estimatedDurationMinutes: number;
+  difficultyLevel: DifficultyLevel;
+  points: number;
+  orderIndex: number;
+  explanation: string;
+}
+
+export interface CreateMultipleChoiceDto extends CreateExerciseBase {
+  type: ExerciseType.MultipleChoice;
+  options: { optionText: string; isCorrect: boolean; orderIndex: number }[];
+}
+
+export interface CreateFillInBlankDto extends CreateExerciseBase {
+  type: ExerciseType.FillInBlank;
+  text: string;
+  correctAnswer: string;
+  acceptedAnswers: string;
+  caseSensitive: boolean;
+  trimWhitespace: boolean;
+}
+
+export interface CreateTranslationDto extends CreateExerciseBase {
+  type: ExerciseType.Translation;
+  sourceText: string;
+  targetText: string;
+  sourceLanguageCode: string;
+  targetLanguageCode: string;
+  matchingThreshold: number;
+}
+
+export interface CreateListeningDto extends CreateExerciseBase {
+  type: ExerciseType.Listening;
+  audioUrl: string;
+  correctAnswer: string;
+  acceptedAnswers: string;
+  caseSensitive: boolean;
+  maxReplays: number;
+}
+
+export type CreateExerciseDto =
+  | CreateMultipleChoiceDto
+  | CreateFillInBlankDto
+  | CreateTranslationDto
+  | CreateListeningDto;
+
+// ---------------------------------------------------------------------------
+
 export interface ExerciseAnswerControls {
   answer: FormControl<string>;
 }
 
 export type ExerciseAnswerForm = FormGroup<ExerciseAnswerControls>;
 
-/**
- * Top-level form for the exercise viewer.
- * Contains a FormArray with one ExerciseAnswerForm per exercise in the lesson.
- */
 export interface ExerciseViewerFormControls {
   exercises: FormArray<ExerciseAnswerForm>;
 }
