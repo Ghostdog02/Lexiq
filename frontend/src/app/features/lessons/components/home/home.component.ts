@@ -25,13 +25,24 @@ export class HomeComponent implements OnInit {
   // Color palette for courses (cycles if more courses than colors)
   private readonly courseColors = ['#7c5cff', '#9178ff', '#5a3ce6', '#a78bfa', '#8b5cf6', '#7c3aed'];
 
+  // Icon set for lessons (cycles if more lessons than icons)
+  private readonly lessonIcons = ['📚', '✏️', '🎯', '💡', '🔤', '🗣️', '📝', '🎓'];
+
   private router = inject(Router);
   private lessonService = inject(LessonService);
   private authService = inject(AuthService);
 
-  ngOnInit() {
+  async ngOnInit() {
     this.isAdmin = this.authService.getIsAdmin();
     this.loadCoursesFromApi();
+    await this.loadUserXp();
+  }
+
+  private async loadUserXp(): Promise<void> {
+    const xpData = await this.lessonService.getCurrentUserXp();
+    if (xpData) {
+      this.totalXp = xpData.totalXp;
+    }
   }
 
   @HostListener('window:scroll')
@@ -60,9 +71,10 @@ export class HomeComponent implements OnInit {
           const lessonsFromApi = await this.lessonService.getLessonsByCourse(course.courseId);
 
           // Derive status from progress fields for each lesson
-          const lessonsWithStatus = lessonsFromApi.map(lesson => ({
+          const lessonsWithStatus = lessonsFromApi.map((lesson, lessonIndex) => ({
             ...lesson,
-            status: this.deriveLessonStatus(lesson)
+            status: this.deriveLessonStatus(lesson),
+            icon: this.lessonIcons[lessonIndex % this.lessonIcons.length]
           }));
 
           return {

@@ -21,6 +21,13 @@ import { Course } from '../models/course.interface';
 /** Icon set that cycles based on lesson order */
 const LESSON_ICONS = ['📚', '✏️', '🎯', '💡', '🔤', '🗣️', '📝', '🎓'];
 
+export interface UserXp {
+  userId: string;
+  totalXp: number;
+  completedExercises: number;
+  lastActivityAt: string | null;
+}
+
 /**
  * Service for managing lessons and courses.
  * All data is fetched from the API — no local caching.
@@ -250,6 +257,24 @@ export class LessonService {
     } catch (error) {
       console.error(`❌ Failed to fetch submissions for lesson ${lessonId}:`, error);
       return [];
+    }
+  }
+
+  /**
+   * Get current authenticated user's total XP and stats.
+   * @returns User XP data including total points, completed exercises, and last activity
+   */
+  async getCurrentUserXp(): Promise<UserXp | null> {
+    try {
+      return await firstValueFrom(
+        this.httpClient.get<UserXp>(
+          `/api/user/xp`,
+          { withCredentials: true }
+        )
+      );
+    } catch (error) {
+      console.error(`❌ Failed to fetch user XP:`, error);
+      return null;
     }
   }
 }
