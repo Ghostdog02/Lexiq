@@ -20,6 +20,7 @@ export interface Lesson {
   isCompleted?: boolean;
   // Derived client-side, not from API
   status: LessonStatus;
+  icon?: string; // Assigned dynamically by UI
 }
 
 export interface LessonProgressSummary {

@@ -41,7 +41,7 @@
               [class.current]="lesson.lessonId === currentLessonId" 
               (click)="onLessonClick(lesson)">
               <figure class="lesson-icon-wrapper">
-                <!-- <span class="lesson-icon">{{ lesson.icon }}</span> -->
+                <span class="lesson-icon">{{ lesson.icon }}</span>
 
                 @if (lesson.status === 'completed') {
                 <span class="checkmark">✓</span>
