@@ -17,3 +17,10 @@ public record CreateUserDto(
     string PhoneNumber,
     DateTime RegistrationDate
 );
+
+public record UserXpDto(
+    string UserId,
+    int TotalXp,
+    int CompletedExercises,
+    DateTime? LastActivityAt
+);

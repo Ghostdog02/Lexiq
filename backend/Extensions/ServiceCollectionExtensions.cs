@@ -75,6 +75,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFileUploadsService, FileUploadsService>();
         services.AddScoped<FileUploadsService>();
         services.AddScoped<ExerciseProgressService>();
+        services.AddScoped<UserXpService>();
 
         return services;
     }
