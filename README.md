@@ -5,7 +5,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-Proprietary-orange)]()
 
-A modern, full-stack language learning platform designed for Bulgarian speakers learning Italian, built as a technical showcase for professional recruitment.
+A modern, full-stack language learning platform designed for Bulgarian speakers learning Italian.
 
 ## 👥 Contributors
 
@@ -32,9 +32,7 @@ A modern, full-stack language learning platform designed for Bulgarian speakers 
 
 **Lexiq** is a comprehensive language learning application that provides an interactive, gamified learning experience. The platform features a structured curriculum with courses, lessons, and exercises, complemented by a progress tracking system and XP-based achievements.
 
-This project serves dual purposes:
-1. **Practical Tool**: A functional language learning platform for Bulgarian speakers studying Italian
-2. **Technical Showcase**: Demonstration of full-stack development skills for professional recruitment in Bulgaria
+A functional language learning platform for Bulgarian speakers studying Italian.
 
 **Team**: Collaborative effort between a Backend/DevOps specialist and a Frontend developer with Machine Learning interests.
 
@@ -49,9 +47,8 @@ This project serves dual purposes:
 
 ### Target Audience
 
-- Bulgarian speakers learning Italian (primary)
+- Bulgarian speakers learning Italian
 - Language learners seeking structured, self-paced education
-- Recruiters evaluating full-stack development capabilities
 
 ## ✨ Features
 
