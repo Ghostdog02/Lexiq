@@ -55,8 +55,11 @@ frontend/src/app/
 ├── nav-bar/                         # Navigation sidebar
 ├── not-found/                       # 404 page (lazy loaded)
 ├── shared/
-│   └── components/
-│       └── editor/                  # EditorJS ControlValueAccessor wrapper
+│   ├── _buttons.scss               # Shared button mixin (@include buttons.system)
+│   ├── _cards.scss                 # Shared card mixin (@include cards.system)
+│   ├── components/
+│   │   └── editor/                  # EditorJS ControlValueAccessor wrapper + dark theme
+│   └── services/
 ├── app.routes.ts                    # Route definitions
 └── app.config.ts                    # App configuration & providers
 ```
@@ -210,6 +213,12 @@ export class EditorComponent implements ControlValueAccessor {
 }
 ```
 
+**Styling**:
+- Editor component uses external `styleUrl` (not inline `styles`)
+- Dark theme (`::ng-deep` overrides with `!important`) lives in `editor.component.scss`
+- Container styles (glass background, border, focus state) also in `editor.component.scss`
+- Consuming components (e.g. lesson-editor) should NOT add Editor.js `::ng-deep` overrides
+
 Content is stored as JSON in Editor.js format.
 
 ### Component Organization
@@ -284,6 +293,10 @@ feature/
 - **Reuse mixins** from `styles.scss` via `@use`: `@use '../path/styles.scss' as styles;` then `@include styles.animated-background`
 - **Never use `@import`** for Sass — always use `@use` with a namespace (Dart Sass 3.0 requirement)
 - **Component styles**: Always use SCSS, use `@use` for `styles.scss` only when mixins are needed
+- **Shared button mixin**: `@use 'path/to/shared/buttons' as buttons;` then `@include buttons.system;` — provides `.btn` with variants (primary, secondary, small, icon-only, link-btn, success, large, no-exercises-btn)
+- **Shared card mixin**: `@use 'path/to/shared/cards' as cards;` then `@include cards.system;` — provides `.card` glass morphism pattern with inner glow border and responsive breakpoint
+- **Editor.js dark theme**: Lives in `shared/components/editor/editor.component.scss` with `::ng-deep` — consuming components should NOT duplicate these overrides
+- **Fixing `!important`**: Nest overrides inside parent class for equal specificity + source-order win; `:has()` pseudo-class provides high specificity naturally
 
 ### Color Palette (CSS Custom Properties)
 
