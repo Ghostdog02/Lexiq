@@ -12,7 +12,7 @@ declare const google: any;
   styleUrl: './google-login.component.scss',
 })
 export class GoogleLoginComponent implements AfterViewInit, OnDestroy {
-  authService = inject(AuthService);
+  private authService = inject(AuthService);
   private checkInterval: any;
 
   ngAfterViewInit(): void {

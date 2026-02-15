@@ -11,8 +11,7 @@ import {
 import { LessonService } from '../../services/lesson.service';
 import { LessonFormService } from '../../services/lesson-form.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { debounceTime } from 'rxjs/operators';
-import { distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { EditorComponent } from '../../../../shared/components/editor/editor.component';
 import { ContentParserService } from '../../../../shared/services/content-parser.service';
@@ -34,7 +33,6 @@ export class LessonEditorComponent implements OnInit {
   private readonly router = inject(Router);
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[];
-  // courses: { id: string; title: string }[] = [];
   courses: Course[] = [];
   ExerciseType = ExerciseType;
 

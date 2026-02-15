@@ -18,9 +18,6 @@ import {
 } from '../models/exercise.interface';
 import { Course } from '../models/course.interface';
 
-/** Icon set that cycles based on lesson order */
-const LESSON_ICONS = ['📚', '✏️', '🎯', '💡', '🔤', '🗣️', '📝', '🎓'];
-
 export interface UserXp {
   userId: string;
   totalXp: number;

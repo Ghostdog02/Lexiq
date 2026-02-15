@@ -3,7 +3,6 @@ import { inject, Injectable } from '@angular/core';
 
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
-import { FormGroup } from '@angular/forms';
 
 const BACKEND_API_URL = import.meta.env.BACKEND_API_URL || 'http://localhost:8080/api';
 const AUTH_API_URL = (BACKEND_API_URL || '/api') + '/auth';
@@ -120,11 +119,5 @@ export class AuthService {
     } catch (error: any) {
       throw new Error(`An error occurred during logout: ${error.message}`);
     }
-  }
-
-  hasValidationErrors(fieldName: string, form: FormGroup) {
-    const field = form.get(fieldName);
-
-    return !!(field?.errors && (field?.touched || field?.dirty));
   }
 }

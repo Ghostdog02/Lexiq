@@ -86,7 +86,6 @@ export class HomeComponent implements OnInit {
       );
 
       this.courses = coursesWithLessons;
-      this.updateTotalXp();
 
       // Set current lesson to first non-locked lesson
       this.setCurrentLesson();
@@ -111,10 +110,8 @@ export class HomeComponent implements OnInit {
   }
 
   onLessonClick(lesson: Lesson) {
-    if (lesson.status === 'available' || lesson.status === 'in-progress' || lesson.status === 'completed' || this.isAdmin) {
-      if (lesson.lessonId) {
-        this.router.navigate(['/lesson', lesson.lessonId]);
-      }
+    if ((lesson.status !== 'locked' || this.isAdmin) && lesson.lessonId) {
+      this.router.navigate(['/lesson', lesson.lessonId]);
     }
   }
 
@@ -140,8 +137,4 @@ export class HomeComponent implements OnInit {
     return 'available';
   }
 
-  private updateTotalXp(): void {
-    const allLessons = this.getAllLessons();
-    this.totalXp = allLessons.reduce((sum, l) => sum + (l.earnedXp ?? 0), 0);
-  }
 }

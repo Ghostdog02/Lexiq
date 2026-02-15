@@ -13,13 +13,6 @@ export enum ExerciseType {
   Translation = 'Translation'
 }
 
-export interface UserExerciseProgressDto {
-  exerciseId: string;
-  isCompleted: boolean;
-  pointsEarned: number;
-  completedAt: string | null;
-}
-
 export interface Exercise {
   id: string;
   lessonId: string;
