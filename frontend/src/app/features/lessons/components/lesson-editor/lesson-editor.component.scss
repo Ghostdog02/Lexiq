@@ -44,11 +44,6 @@
   to { opacity: 1; }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-
 .slide-in { animation: slideIn 0.3s ease-out forwards; }
 .slide-in-right { animation: slideInRight 0.2s ease-out forwards; }
 .fade-in { animation: fadeIn 0.3s ease forwards; }
@@ -687,52 +682,6 @@
   }
 }
 
-.select-wrapper {
-  position: relative;
-
-  .select-icon {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 16px;
-    pointer-events: none;
-    z-index: 1;
-    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  select {
-    padding-left: 42px;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23b8c4cf%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
-    background-size: 10px;
-    cursor: pointer;
-
-    color: var(--white);
-
-    &:invalid {
-      color: #6b7280; // Gray color for placeholder state
-    }
-
-    option {
-      background-color: var(--panel);
-      color: var(--white);
-
-      &:disabled {
-       color: var(--muted);
-      }
-    }
-
-    &:focus ~ .select-icon {
-      transform: translateY(-50%) scale(1.15);
-    }
-  }
-}
-
-.mt-2 { margin-top: 1rem; }
-
 .exercises-list {
   display: flex;
   flex-direction: column;
@@ -1338,16 +1287,6 @@
   }
 }
 
-.badge {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 100px;
-  text-transform: uppercase;
-  background: rgba(255,255,255,0.1);
-  color: var(--white);
-}
-
 .card-footer {
   .btn.ghost {
     width: 100%;
@@ -1394,35 +1333,6 @@
       font-size: 0.6875rem;
       color: var(--muted);
     }
-  }
-}
-
-// Validation error styling
-.error-message {
-  display: block;
-  color: #ff6b6b;
-  font-size: 12px;
-  font-weight: 500;
-  margin-top: 6px;
-  padding-left: 4px;
-  animation: slideIn 0.2s ease-out;
-
-  &::before {
-    content: '⚠️ ';
-    margin-right: 4px;
-  }
-}
-
-// Invalid input styling
-input.invalid,
-textarea.invalid,
-select.invalid {
-  border-color: #ff6b6b !important;
-  background: rgba(255, 107, 107, 0.05) !important;
-
-  &:focus {
-    border-color: #ff6b6b !important;
-    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1) !important;
   }
 }
 
