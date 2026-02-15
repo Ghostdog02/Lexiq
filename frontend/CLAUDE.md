@@ -45,14 +45,12 @@ frontend/src/app/
 │   │   │   ├── lesson-editor/       # Create/edit lessons (route: /create-lesson, lazy)
 │   │   │   └── lesson-viewer/       # View lesson content (route: /lesson/:id, lazy)
 │   │   ├── models/                  # course.interface, lesson.interface, exercise.interface
-│   │   ├── services/                # lesson.service, lesson-form.service, form-validation.service
-│   │   └── constants/               # lesson-form.constants
+│   │   └── services/                # lesson.service, lesson-form.service
 │   └── users/
 │       ├── components/
 │       │   ├── leaderboard/         # User rankings
 │       │   └── profile/             # User profile & achievements
-│       ├── models/                  # leaderboard.interface, user.model
-│       └── services/                # leaderboard.service
+│       └── models/                  # leaderboard.interface, user.model
 ├── help/                            # Help & FAQ (component + service)
 ├── nav-bar/                         # Navigation sidebar
 ├── not-found/                       # 404 page (lazy loaded)
@@ -72,7 +70,7 @@ frontend/src/app/
 - **State management**: Service-based with RxJS Observables (no Redux/NgRx)
   - AuthService uses BehaviorSubject for auth state
   - LessonService uses Subject for event broadcasting
-- **Dependency injection** uses a mix of `inject()` (e.g. AuthService) and constructor injection (e.g. LessonService)
+- **Dependency injection**: Always use `inject()` function — do NOT use constructor injection
 - **Subscription cleanup** via `takeUntilDestroyed(DestroyRef)` operator
 - **Component styles**: Always use SCSS (configured in `angular.json`)
 - **Bootstrap 5** is included but should be used minimally (prefer custom design system)
@@ -283,8 +281,9 @@ feature/
 - **No `!important`** — increase specificity instead (exception: Editor.js overrides via `::ng-deep`)
 - **Use `rem` units** for new styles, not `px` — base is 16px
 - **Reuse CSS variables** from `src/styles.scss` (colors, radii, shadows, glass effects)
-- **Reuse mixins** from `styles.scss`: `@include animated-background`, `@include flex-column`, `@include custom-scrollbar()`
-- **Component styles**: Always use SCSS, import `styles.scss` only when mixins are needed
+- **Reuse mixins** from `styles.scss` via `@use`: `@use '../path/styles.scss' as styles;` then `@include styles.animated-background`
+- **Never use `@import`** for Sass — always use `@use` with a namespace (Dart Sass 3.0 requirement)
+- **Component styles**: Always use SCSS, use `@use` for `styles.scss` only when mixins are needed
 
 ### Color Palette (CSS Custom Properties)
 

@@ -78,6 +78,11 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 - Frontend: `withCredentials: true` in HTTP requests
 - Cookie: `SameSite=Lax` works with proxy
 
+### Sass Convention
+- All component SCSS files use `@use` (not `@import`) to import `styles.scss`
+- Namespace convention: `@use 'path/styles.scss' as styles;`
+- Mixins accessed via namespace: `@include styles.animated-background`
+
 ## Detailed Documentation
 
 | Area | File | Covers |
