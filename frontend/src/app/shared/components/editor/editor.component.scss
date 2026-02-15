@@ -1,0 +1,399 @@
+// ==============================================
+// Editor.js Container
+// ==============================================
+
+#editorjs {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  color: var(--white);
+  transition: all 0.2s ease;
+  width: 100%;
+  font-family: inherit;
+  min-height: 12.5rem;
+  position: relative;
+  z-index: 1;
+  padding: 0;
+
+  &:focus-within {
+    border-color: var(--accent);
+    background: var(--glass-hover);
+  }
+
+  // ============================================
+  // Editor.js Dark Theme Overrides
+  //
+  // !important is required throughout ::ng-deep
+  // because Editor.js injects its own stylesheets
+  // dynamically. This is the documented project
+  // exception (see frontend/CLAUDE.md).
+  // ============================================
+
+  ::ng-deep {
+    // Core
+    .codex-editor {
+      color: var(--white);
+      z-index: inherit;
+      padding: 0.75rem 1rem;
+      min-height: 12.5rem;
+    }
+
+    .codex-editor__redactor {
+      padding-bottom: 3.125rem !important;
+    }
+
+    .ce-block__content {
+      max-width: 100%;
+    }
+
+    // Typography
+    h1, h2, h3, h4, h5, h6, p, div {
+      color: inherit;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-weight: 700;
+    }
+
+    // Placeholders
+    .ce-header[data-placeholder]::before,
+    .cdx-block[data-placeholder]::before {
+      color: rgba(255, 255, 255, 0.3) !important;
+      opacity: 1 !important;
+    }
+
+    // Block selection
+    .ce-block--selected .ce-block__content {
+      background: rgba(124, 92, 255, 0.05);
+    }
+
+    .ce-block--selected:has(.image-tool) .ce-block__content {
+      background: transparent !important;
+    }
+
+    // Toolbox & popover containers (old + new class names)
+    .ce-inline-toolbar,
+    .ce-conversion-toolbar,
+    .ce-settings,
+    .ce-popover,
+    .ce-toolbox {
+      background: var(--panel) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--white) !important;
+      box-shadow: var(--shadow) !important;
+      backdrop-filter: blur(10px);
+      border-radius: 0.5rem !important;
+    }
+
+    .ce-popover__container {
+      background: var(--panel) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 0.5rem !important;
+      box-shadow: var(--shadow) !important;
+    }
+
+    // Popover text
+    .ce-popover__item-label,
+    .ce-popover-item__title,
+    .ce-popover-item__secondary-title {
+      color: var(--white) !important;
+    }
+
+    // Popover items (old + new class names)
+    .ce-popover__item,
+    .ce-popover-item {
+      color: var(--white) !important;
+
+      &:hover { background: var(--glass-hover) !important; }
+    }
+
+    // Popover search (old)
+    .ce-popover__search {
+      background: var(--bg-dark) !important;
+      border-bottom: 1px solid var(--border) !important;
+
+      input {
+        color: var(--white) !important;
+        background: transparent !important;
+
+        &::placeholder { color: var(--muted) !important; }
+      }
+    }
+
+    // Popover search (new)
+    .ce-popover-header {
+      background: var(--bg-dark) !important;
+      border-bottom: 1px solid var(--border) !important;
+    }
+
+    .ce-popover-search__input {
+      color: var(--white) !important;
+      background: transparent !important;
+
+      &::placeholder { color: var(--muted) !important; }
+    }
+
+    // Active & focused popover items
+    .ce-popover__item--active,
+    .ce-popover-item--active {
+      background: var(--accent) !important;
+      color: var(--white) !important;
+
+      .ce-popover__item-icon,
+      .ce-popover-item__icon {
+        background: rgba(255, 255, 255, 0.2) !important;
+      }
+    }
+
+    .ce-popover__item--focused,
+    .ce-popover-item--focused {
+      background: var(--glass-hover) !important;
+    }
+
+    // Toolbar hover states
+    .ce-inline-toolbar__dropdown:hover,
+    .ce-inline-toolbar__toggler:hover,
+    .ce-conversion-tool:hover,
+    .ce-settings__button:hover {
+      background: var(--glass-hover) !important;
+    }
+
+    // Settings buttons (active/selected)
+    .ce-settings__button--active,
+    .ce-settings__button--selected {
+      background: var(--glass-hover) !important;
+      color: var(--accent-light) !important;
+      border-color: var(--accent) !important;
+    }
+
+    // Tune settings
+    .ce-tune-toggler,
+    .cdx-settings-button {
+      background: var(--glass) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--white) !important;
+
+      &:hover { background: var(--glass-hover) !important; }
+
+      &--active {
+        background: rgba(124, 92, 255, 0.2) !important;
+        border-color: var(--accent-light) !important;
+        color: var(--white) !important;
+      }
+    }
+
+    // Image tune settings
+    .image-tool__tune {
+      background: transparent !important;
+
+      .cdx-settings-button {
+        background: var(--glass) !important;
+        color: var(--white) !important;
+
+        &[data-tune="withBorder"],
+        &[data-tune="stretched"],
+        &[data-tune="withBackground"] {
+          color: var(--white) !important;
+
+          &.cdx-settings-button--active {
+            background: rgba(124, 92, 255, 0.25) !important;
+            color: var(--white) !important;
+            font-weight: 600 !important;
+          }
+        }
+      }
+    }
+
+    // Popover icons
+    .ce-popover__item-icon,
+    .ce-popover-item__icon {
+      background: var(--bg-dark) !important;
+      color: var(--accent-light) !important;
+      border-radius: 0.375rem !important;
+      border: 1px solid var(--border) !important;
+
+      svg {
+        color: var(--accent-light) !important;
+
+        path { stroke: var(--accent-light) !important; }
+      }
+    }
+
+    // Toolbox buttons ("/" menu)
+    .ce-toolbox__button {
+      color: var(--accent-light) !important;
+      background: var(--bg-dark) !important;
+      border-radius: 0.375rem !important;
+      border: 1px solid var(--border) !important;
+
+      &:hover {
+        background: var(--glass-hover) !important;
+        border-color: var(--accent) !important;
+      }
+
+      svg {
+        color: var(--accent-light) !important;
+
+        path { stroke: var(--accent-light) !important; }
+      }
+    }
+
+    // Empty states
+    .ce-popover__nothing-found-message,
+    .ce-popover-nothing-found-message {
+      color: var(--muted) !important;
+    }
+
+    .ce-popover__items,
+    .ce-popover-items {
+      background: transparent !important;
+    }
+
+    // Toolbar add/settings buttons
+    .ce-toolbar__plus,
+    .ce-toolbar__settings-btn {
+      color: var(--muted);
+      background-color: rgba(255, 255, 255, 0.05);
+
+      &:hover {
+        color: var(--white);
+        background-color: var(--accent);
+      }
+    }
+
+    // Image tool
+    .image-tool {
+      --bg-color: transparent;
+      --front-color: var(--white);
+      --border-color: var(--border);
+      background: transparent !important;
+
+      &__image {
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0.5rem !important;
+      }
+
+      &__image-picture {
+        background: transparent !important;
+      }
+
+      &__caption {
+        background: var(--glass) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 0.375rem !important;
+        color: var(--white) !important;
+
+        &::placeholder { color: var(--muted) !important; }
+
+        &:focus {
+          border-color: var(--accent) !important;
+          background: var(--glass-hover) !important;
+        }
+      }
+    }
+
+    .image-tool--empty,
+    .image-tool__image-preloader {
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0.5rem !important;
+    }
+
+    // CDX button
+    .cdx-button {
+      background: var(--glass) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--white) !important;
+      border-radius: 0.375rem !important;
+
+      &:hover {
+        background: var(--glass-hover) !important;
+        border-color: var(--accent) !important;
+      }
+
+      svg {
+        color: var(--accent-light) !important;
+
+        path { stroke: var(--accent-light) !important; }
+      }
+    }
+
+    // Attaches tool
+    .cdx-attaches {
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0.5rem !important;
+      color: var(--white) !important;
+
+      &--with-file { background: transparent !important; }
+
+      &__file-icon {
+        background: var(--accent-dark) !important;
+        border-radius: 0.375rem !important;
+
+        svg path { stroke: var(--white) !important; }
+      }
+
+      &__file-info,
+      &__title { color: var(--white) !important; }
+
+      &__size { color: var(--muted) !important; }
+
+      &__download-button {
+        background: var(--accent) !important;
+        color: var(--white) !important;
+        border-radius: 0.375rem !important;
+
+        &:hover { background: var(--accent-light) !important; }
+
+        svg path { stroke: var(--white) !important; }
+      }
+    }
+
+    // CDX generic input
+    .cdx-input {
+      background: var(--glass) !important;
+      border: 1px solid var(--border) !important;
+      color: var(--white) !important;
+      border-radius: 0.375rem !important;
+
+      &::placeholder { color: var(--muted) !important; }
+
+      &:focus {
+        border-color: var(--accent) !important;
+        background: var(--glass-hover) !important;
+      }
+    }
+
+    // Table tool
+    .tc-table {
+      background: var(--bg-dark) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 0.5rem !important;
+
+      &__cell {
+        border-color: var(--border) !important;
+        color: var(--white) !important;
+      }
+
+      &__inp { color: var(--white) !important; }
+    }
+
+    .tc-toolbox {
+      background: var(--panel) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 0.375rem !important;
+      box-shadow: var(--shadow) !important;
+
+      &__toggler {
+        color: var(--muted) !important;
+
+        &:hover { color: var(--white) !important; }
+
+        svg path { stroke: currentColor !important; }
+      }
+    }
+  }
+}

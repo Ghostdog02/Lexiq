@@ -14,14 +14,7 @@ import { firstValueFrom } from 'rxjs';
   template: `
     <div #editorContainer id="editorjs"></div>
   `,
-  styles: [`
-    #editorjs {
-      border: 1px solid #e0e0e0;
-      border-radius: 4px;
-      padding: 20px;
-      min-height: 400px;
-    }
-  `],
+  styleUrl: './editor.component.scss',
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
