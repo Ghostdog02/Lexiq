@@ -189,6 +189,12 @@ When restoring component state from previous submissions:
 
 ### Editor.js Integration
 
+**Performance Optimization**:
+- Editor onChange fires on ALL interactions (focus, mouse moves, selection changes)
+- Debounce with 300ms timeout + content comparison to prevent excessive saves
+- Track `lastSavedContent` string and only call `onChange()` if different
+- Clear timeout on `ngOnDestroy()` to prevent memory leaks
+
 The rich text editor implements `ControlValueAccessor` for seamless Reactive Forms integration:
 
 ```typescript
@@ -563,6 +569,16 @@ When creating new components, ensure:
 - `Exercise` interface in `exercise.interface.ts` must include `isLocked: boolean` — backend `ExerciseDto` returns it, exercise-viewer depends on it
 
 ## Common Debugging Scenarios
+
+### 400 Bad Request on POST/PUT
+
+If you get 400 errors with no details:
+1. **Check ModelState is enabled**: Ensure backend `SuppressModelStateInvalidFilter` is NOT set to true
+2. **Check Network tab**: Response body shows which field failed validation
+3. **Common causes**:
+   - Enum sent as string but backend expects int (add JsonStringEnumConverter to backend enum)
+   - Type discriminator missing or not first property (JSON polymorphism)
+   - Required field is null or empty
 
 ### Cookie Not Being Sent
 

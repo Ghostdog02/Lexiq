@@ -68,6 +68,16 @@ backend/
 
 ## Key Patterns
 
+### JSON Polymorphism for Exercise DTOs
+- Type discriminator MUST be first property in JSON: `{ "type": "MultipleChoice", ...rest }`
+- Frontend mapping: `return { type: ExerciseType.X, ...base }` NOT `{ ...base, type: ... }`
+- System.Text.Json fails with "must specify a type discriminator" if type is not first
+
+### Enum Serialization
+- Add `[JsonConverter(typeof(JsonStringEnumConverter))]` to enums for string serialization
+- Frontend sends "Beginner", backend receives DifficultyLevel.Beginner (not 0)
+- Required for: DifficultyLevel, ExerciseType, LessonStatus
+
 ### Service Registration
 - Organized via extension methods in `Extensions/ServiceCollectionExtensions.cs`
 - Each feature has its own extension method (AddCorsPolicy, AddDatabaseContext, AddApplicationServices, etc.)
@@ -159,6 +169,7 @@ public abstract record ExerciseDto(...);
 
 ## Service Layer Guidelines
 
+- **Nullable LessonId in CreateExerciseDto**: Optional when nested inside CreateLessonDto (parent assigns ID), required for standalone creation. Standalone path validates: `if (string.IsNullOrEmpty(dto.LessonId)) throw ArgumentException`
 - **Async all the way**: All service methods must be async
 - **Include chains**: Use `.Include()` and `.ThenInclude()` for eager loading related entities
 - **Eager load child collections for polymorphic types**: Use `.ThenInclude(e => (e as ChildType)!.ChildCollection)`

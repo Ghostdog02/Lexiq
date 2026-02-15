@@ -45,6 +45,12 @@ docker compose logs           # view logs
 
 ## Architecture Overview
 
+### User Progress & XP
+
+- **XP Calculation**: `SELECT SUM(PointsEarned) FROM UserExerciseProgress WHERE UserId = @id`
+- **Endpoints**: `GET /api/user/xp` (authenticated), `GET /api/user/{id}/xp` (public for leaderboard)
+- **Progress Tracking**: UserExerciseProgress table (composite key: UserId + ExerciseId)
+
 ### Content Hierarchy
 
 ```
