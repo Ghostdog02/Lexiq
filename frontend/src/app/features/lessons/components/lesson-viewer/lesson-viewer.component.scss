@@ -1,4 +1,9 @@
 @use '../../../../../styles.scss' as styles;
+@use '../../../../shared/buttons' as buttons;
+@use '../../../../shared/cards' as cards;
+
+@include buttons.system;
+@include cards.system;
 
 :host {
   @include styles.animated-background;
@@ -22,9 +27,6 @@
   }
 }
 
-// --------------------------------------------------------------------------
-// Header Section
-// --------------------------------------------------------------------------
 .lesson-header {
   margin-bottom: 48px;
   position: relative;
@@ -110,114 +112,8 @@
       }
     }
   }
-
 }
 
-// --------------------------------------------------------------------------
-// Shared Components & Cards
-// --------------------------------------------------------------------------
-.card {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%);
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 40px;
-  position: relative;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-
-  // Inner glow border
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 24px;
-    padding: 1px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent 40%);
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
-
-  @media (max-width: 768px) {
-    padding: 24px;
-    border-radius: 20px;
-  }
-}
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 14px 28px;
-  border-radius: 100px;
-  font-weight: 700;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
-  border: none;
-  outline: none;
-
-  &.primary {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-    color: var(--white);
-    box-shadow: 0 8px 20px rgba(90, 60, 230, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-
-    &:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 28px rgba(90, 60, 230, 0.4);
-      filter: brightness(1.1);
-    }
-
-    &:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    &:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      box-shadow: none;
-      filter: grayscale(0.5);
-    }
-  }
-
-  &.no-exercises-btn {
-    background: linear-gradient(135deg, rgba(139, 152, 165, 0.25) 0%, rgba(107, 114, 128, 0.2) 100%);
-    color: rgba(255, 255, 255, 0.6);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    cursor: not-allowed;
-    opacity: 0.8;
-
-    &:hover {
-      transform: none;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    .icon {
-      opacity: 0.6;
-    }
-  }
-
-  &.large {
-    width: 100%;
-    padding: 18px;
-    font-size: 18px;
-  }
-
-  .icon {
-    font-size: 1.2em;
-  }
-}
-
-// --------------------------------------------------------------------------
-// Content View
-// --------------------------------------------------------------------------
 .content-view {
   display: flex;
   flex-direction: column;
@@ -315,9 +211,6 @@
   }
 }
 
-// --------------------------------------------------------------------------
-// Empty State
-// --------------------------------------------------------------------------
 .empty-state {
   text-align: center;
   padding: 80px 20px;
@@ -347,9 +240,6 @@
   }
 }
 
-// --------------------------------------------------------------------------
-// Animations
-// --------------------------------------------------------------------------
 .fade-in { animation: fadeIn 0.4s ease-out; }
 
 @keyframes fadeIn {
@@ -361,4 +251,3 @@
   from { opacity: 0; transform: translateY(-20px); }
   to { opacity: 1; transform: translateY(0); }
 }
-
