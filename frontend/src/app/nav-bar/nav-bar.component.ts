@@ -1,6 +1,6 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../auth/auth.service';
-import { Subscription } from 'rxjs';
 import { RouterLink } from '@angular/router';
 
 @Component({
@@ -12,18 +12,19 @@ import { RouterLink } from '@angular/router';
 })
 export class NavBarComponent implements OnInit {
   public authService = inject(AuthService);
-  private authListenerSubs: Subscription = new Subscription();
-  private adminListenerSubs: Subscription = new Subscription();
-  public userIsAuthenticated: boolean = false;
-  public userIsAdmin: boolean = false;
+  private destroyRef = inject(DestroyRef);
+  public userIsAuthenticated = false;
+  public userIsAdmin = false;
 
   ngOnInit(): void {
-    this.authListenerSubs = this.authService
+    this.authService
       .getAuthStatusListener()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((isAuthenticated) => (this.userIsAuthenticated = isAuthenticated));
 
-    this.adminListenerSubs = this.authService
+    this.authService
       .getAdminStatusListener()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((isAdmin) => (this.userIsAdmin = isAdmin));
   }
 }

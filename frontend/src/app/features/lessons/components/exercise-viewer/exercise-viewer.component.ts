@@ -1,4 +1,5 @@
-import { Component, Input, Output, EventEmitter, OnInit, inject } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, inject, DestroyRef } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, NonNullableFormBuilder, FormArray } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -37,6 +38,7 @@ export class ExerciseViewerComponent implements OnInit {
   private fb = inject(NonNullableFormBuilder);
   private lessonService = inject(LessonService);
   private authService = inject(AuthService);
+  private destroyRef = inject(DestroyRef);
 
   @Input({ required: true }) exercises!: AnyExercise[];
 
@@ -62,7 +64,8 @@ export class ExerciseViewerComponent implements OnInit {
     this.buildForm();
     this.calculateTotalXp();
     await this.restorePreviousProgress();
-    this.authService.getAuthStatusListener()
+    this.authService.getAdminStatusListener()
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((isAdmin) => this.isAdmin = isAdmin);
   }
 
@@ -137,7 +140,7 @@ export class ExerciseViewerComponent implements OnInit {
   }
 
   get isCurrentLocked(): boolean {
-    return this.currentExercise?.isLocked && !this.isAdmin ? true : false;
+    return !!this.currentExercise?.isLocked && !this.isAdmin;
   }
 
   get exerciseProgress(): number {
