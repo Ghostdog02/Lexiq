@@ -4,20 +4,20 @@
     <p class="page-subtitle">See how you stack up against other learners</p>
 
     <div class="timeframe-selector">
-      <button 
-        class="timeframe-btn" 
+      <button
+        class="timeframe-btn"
         [class.active]="timeFrame === 'weekly'"
         (click)="setTimeFrame('weekly')">
         Weekly
       </button>
-      <button 
-        class="timeframe-btn" 
+      <button
+        class="timeframe-btn"
         [class.active]="timeFrame === 'monthly'"
         (click)="setTimeFrame('monthly')">
         Monthly
       </button>
-      <button 
-        class="timeframe-btn" 
+      <button
+        class="timeframe-btn"
         [class.active]="timeFrame === 'allTime'"
         (click)="setTimeFrame('allTime')">
         All Time
@@ -26,20 +26,25 @@
   </div>
 
   <div class="leaderboard-list">
-    <div 
-      *ngFor="let user of leaderboardUsers" 
+    @for (user of leaderboardUsers; track user.rank) {
+    <div
       class="leaderboard-card"
       [class.current-user]="isCurrentUser(user)"
       [class.top-three]="user.rank <= 3">
-      
+
       <div class="rank-section">
         <div class="rank-badge" [class]="getRankBadgeClass(user.rank)">
-          <span class="rank-icon" *ngIf="user.rank <= 3">{{ getRankIcon(user.rank) }}</span>
-          <span class="rank-number" *ngIf="user.rank > 3">#{{ user.rank }}</span>
+          @if (user.rank <= 3) {
+          <span class="rank-icon">{{ getRankIcon(user.rank) }}</span>
+          } @else {
+          <span class="rank-number">#{{ user.rank }}</span>
+          }
         </div>
         <div class="rank-change" [class]="getChangeClass(user.change)">
           <span class="change-icon">{{ getChangeIcon(user.change) }}</span>
-          <span class="change-value" *ngIf="user.change !== 0">{{ user.change < 0 ? -user.change : user.change }}</span>
+          @if (user.change !== 0) {
+          <span class="change-value">{{ user.change < 0 ? -user.change : user.change }}</span>
+          }
         </div>
       </div>
 
@@ -77,5 +82,6 @@
         </div>
       </div>
     </div>
+    }
   </div>
 </div>

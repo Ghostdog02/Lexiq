@@ -1,11 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { Language, Achievement } from '../../models/user.model';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './profile.component.html',
   styleUrls: ['./profile.component.scss']
 })
@@ -136,10 +135,10 @@ export class ProfileComponent implements OnInit {
   }
 
   formatDate(date: Date): string {
-    return new Intl.DateTimeFormat('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     }).format(date);
   }
 

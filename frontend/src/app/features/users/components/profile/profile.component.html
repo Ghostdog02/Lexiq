@@ -51,7 +51,8 @@
         <p>See more</p>
       </span>
       <div class="languages-list">
-        <div *ngFor="let language of enrolledLanguages | slice:0:3" class="language-card">
+        @for (language of enrolledLanguages.slice(0, 3); track language.id) {
+        <div class="language-card">
           <div class="language-header">
             <div class="language-info">
               <span class="flag">{{ language.flag }}</span>
@@ -64,7 +65,7 @@
               <div class="xp-value">{{ language.totalXp.toLocaleString() }} XP</div>
             </div>
           </div>
-          
+
           <div class="progress-section">
             <div class="progress-bar">
               <div class="progress-fill" [style.width.%]="language.progress"></div>
@@ -72,6 +73,7 @@
             <div class="progress-text">{{ language.xp }}/{{ (language.level + 1) * 500 }} XP to level {{ language.level + 1 }}</div>
           </div>
         </div>
+        }
       </div>
     </section>
 
@@ -82,7 +84,8 @@
       </span>
       <div class="achievements-subsection">
         <div class="achievements-grid">
-          <div *ngFor="let achievement of unlockedAchievements | slice:0:3" class="achievement-card unlocked">
+          @for (achievement of unlockedAchievements.slice(0, 3); track achievement.id) {
+          <div class="achievement-card unlocked">
             <div class="achievement-icon">{{ achievement.icon }}</div>
             <div class="achievement-content">
               <h4 class="achievement-name">{{ achievement.name }}</h4>
@@ -93,16 +96,19 @@
               </div>
             </div>
           </div>
+          }
         </div>
       </div>
     </section>
   </div>
   <div class="content-grid">
-    <section class="achievements-section"> 
-      <div class="achievements-subsection" *ngIf="lockedAchievements.length > 0">
+    <section class="achievements-section">
+      @if (lockedAchievements.length > 0) {
+      <div class="achievements-subsection">
         <h3 class="subsection-title">Locked Achievements ({{ lockedAchievements.length }})</h3>
         <div class="locked-achievements-grid">
-          <div *ngFor="let achievement of lockedAchievements | slice:0:3" class="achievement-card locked">
+          @for (achievement of lockedAchievements.slice(0, 3); track achievement.id) {
+          <div class="achievement-card locked">
             <div class="achievement-icon locked-icon">{{ achievement.icon }}</div>
             <div class="achievement-content">
               <h4 class="achievement-name">{{ achievement.name }}</h4>
@@ -118,8 +124,10 @@
               </div>
             </div>
           </div>
+          }
         </div>
       </div>
+      }
     </section>
   </div>
 </div>

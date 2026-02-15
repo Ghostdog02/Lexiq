@@ -4,7 +4,7 @@ import ImageTool from '@editorjs/image';
 // @ts-ignore - EditorJS plugins may not have type definitions
 import AttachesTool from '@editorjs/attaches';
 
-import { Component, OnInit, ViewChild, ElementRef, forwardRef, OnDestroy, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, forwardRef, OnDestroy, Output, EventEmitter, inject } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -36,12 +36,11 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
 
   private editor!: EditorJS;
   private apiUrl = import.meta.env.BACKEND_API_URL;
+  private http = inject(HttpClient);
   private onChange: any = () => { };
   private onTouched: any = () => { };
   private changeDebounceTimer: any = null;
   private lastSavedContent: string = '';
-
-  constructor(private http: HttpClient) { }
 
   ngOnInit(): void {
     this.initializeEditor();

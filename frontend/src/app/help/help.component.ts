@@ -1,5 +1,4 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HelpService } from './help.service';
 import { HelpCategory, FaqItem } from './help.interface';
@@ -7,19 +6,18 @@ import { HelpCategory, FaqItem } from './help.interface';
 @Component({
   selector: 'app-help',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './help.component.html',
   styleUrls: ['./help.component.scss']
 })
 export class HelpComponent implements OnInit {
+  private helpService = inject(HelpService);
+
   categories: HelpCategory[] = [];
   allFaqs: FaqItem[] = [];
   filteredFaqs: FaqItem[] = [];
-  searchQuery: string = '';
+  searchQuery = '';
   selectedCategory: string | null = null;
-  isFocused: boolean = false; // Tracks search bar glow
-
-  constructor(private helpService: HelpService) {}
 
   ngOnInit(): void {
     this.helpService.getCategories().subscribe(cats => this.categories = cats);
@@ -31,7 +29,7 @@ export class HelpComponent implements OnInit {
 
   toggleFaq(item: FaqItem): void {
     this.allFaqs.forEach(f => {
-      if (f.id !== item.id) 
+      if (f.id !== item.id)
         f.isOpen = false;
     });
     item.isOpen = !item.isOpen;
@@ -39,12 +37,12 @@ export class HelpComponent implements OnInit {
 
   filterFaqs(): void {
     const query = this.searchQuery.toLowerCase();
-    
+
     this.filteredFaqs = this.allFaqs.filter(faq => {
-      const matchesSearch = faq.question.toLowerCase().includes(query) || 
+      const matchesSearch = faq.question.toLowerCase().includes(query) ||
                             faq.answer.toLowerCase().includes(query);
       const matchesCategory = this.selectedCategory ? faq.categoryId === this.selectedCategory : true;
-      
+
       return matchesSearch && matchesCategory;
     });
   }
@@ -53,12 +51,4 @@ export class HelpComponent implements OnInit {
     this.selectedCategory = this.selectedCategory === categoryId ? null : categoryId;
     this.filterFaqs();
   }
-
-  triggerShake(elementId: string) {
-    const el = document.getElementById(elementId);
-    if (el) {
-      el.classList.add('shake-anim');
-      setTimeout(() => el.classList.remove('shake-anim'), 500);
-    }
-  } 
 }

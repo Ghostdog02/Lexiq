@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -33,7 +33,7 @@ export interface UserXp {
   providedIn: 'root'
 })
 export class LessonService {
-  constructor(private httpClient: HttpClient) {}
+  private httpClient = inject(HttpClient);
 
   async getCourses(): Promise<Course[]> {
     const result = await firstValueFrom(

@@ -1,16 +1,14 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
 import { LeaderboardUser } from '../../models/leaderboard.interface';
-
 
 @Component({
   selector: 'app-leaderboard',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: './leaderboard.component.html',
   styleUrls: ['./leaderboard.component.scss']
 })
-export class LeaderboardComponent implements OnInit {
+export class LeaderboardComponent {
   currentUser = {
     name: 'Alex Rodriguez',
     rank: 4
@@ -121,13 +119,8 @@ export class LeaderboardComponent implements OnInit {
     }
   ];
 
-  ngOnInit(): void {
-    // Component initialization
-  }
-
   setTimeFrame(timeFrame: 'weekly' | 'monthly' | 'allTime'): void {
     this.timeFrame = timeFrame;
-    // In a real app, this would fetch new data based on the timeframe
   }
 
   isCurrentUser(user: LeaderboardUser): boolean {
