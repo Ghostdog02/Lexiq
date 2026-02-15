@@ -1,4 +1,4 @@
-@import '../../../../../styles.scss';
+@use '../../../../../styles.scss' as styles;
 
 :host {
   display: block;
@@ -6,7 +6,7 @@
 }
 
 .page-split-view {
-  @include animated-background;
+  @include styles.animated-background;
   display: grid;
   grid-template-columns: minmax(500px, 1fr) 1fr;
   min-height: 100vh;

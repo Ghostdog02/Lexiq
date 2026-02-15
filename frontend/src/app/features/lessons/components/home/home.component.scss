@@ -1,4 +1,4 @@
-@import '../../../../../styles.scss';
+@use '../../../../../styles.scss' as styles;
 
 @mixin glass-card {
   background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
@@ -34,7 +34,7 @@
 }
 
 .learning-path-container {
-  @include animated-background;
+  @include styles.animated-background;
   padding: 2rem clamp(1rem, 3vw, 3rem);
   max-width: 1600px;
   margin: 0 auto;

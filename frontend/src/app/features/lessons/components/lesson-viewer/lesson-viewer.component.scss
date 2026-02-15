@@ -1,7 +1,7 @@
-@import '../../../../../styles.scss';
+@use '../../../../../styles.scss' as styles;
 
 :host {
-  @include animated-background;
+  @include styles.animated-background;
   display: flex;
   justify-content: flex-start;
   width: 100%;
