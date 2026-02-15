@@ -1,0 +1,146 @@
+/// Shared button system for the Lexiq design system.
+/// Include this mixin in component SCSS files that need button styling.
+///
+/// Usage:
+///   @use 'path/to/shared/buttons' as buttons;
+///   @include buttons.system;
+
+$_transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+@mixin system {
+  .btn {
+    padding: 0.625rem 1.125rem;
+    border-radius: 100px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    border: none;
+    transition: $_transition;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+
+    .icon {
+      transition: transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 1rem;
+    }
+
+    &.primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+      color: var(--white);
+      padding: 0.875rem 1.5rem;
+      font-size: 0.9375rem;
+      box-shadow: 0 4px 15px rgba(124, 92, 255, 0.3);
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(124, 92, 255, 0.4);
+
+        .icon { transform: scale(1.1); }
+      }
+
+      &:active { transform: translateY(0); }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+    }
+
+    &.secondary {
+      background: transparent;
+      color: var(--muted);
+
+      &:hover {
+        color: var(--white);
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-1px);
+      }
+    }
+
+    &.small {
+      padding: 0.375rem 0.875rem;
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--white);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.15);
+        transform: translateY(-1px);
+      }
+    }
+
+    &.icon-only {
+      padding: 0;
+      width: 1.75rem;
+      height: 1.75rem;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.875rem;
+      border-radius: 50%;
+
+      &:hover {
+        color: var(--white);
+        background: rgba(255, 255, 255, 0.1);
+        transform: scale(1.05);
+      }
+
+      &.delete-btn:hover {
+        color: #ff5c5c;
+        background: rgba(255, 92, 92, 0.1);
+      }
+    }
+
+    &.link-btn {
+      background: transparent;
+      color: var(--accent-light);
+      padding: 0;
+      text-align: left;
+      width: fit-content;
+
+      &:hover {
+        color: var(--accent);
+
+        .icon { transform: scale(1.2) rotate(90deg); }
+      }
+    }
+
+    &.success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: var(--white);
+      box-shadow: 0 0.5rem 1.25rem rgba(16, 185, 129, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+
+      &:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.15);
+      }
+
+      &:active { transform: translateY(0); }
+    }
+
+    &.large {
+      width: 100%;
+      padding: 1.125rem;
+      font-size: 1.125rem;
+    }
+
+    &.no-exercises-btn {
+      background: linear-gradient(135deg, rgba(139, 152, 165, 0.25) 0%, rgba(107, 114, 128, 0.2) 100%);
+      color: rgba(255, 255, 255, 0.6);
+      box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: not-allowed;
+      opacity: 0.8;
+
+      &:hover {
+        transform: none;
+        box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.2);
+      }
+
+      .icon { opacity: 0.6; }
+    }
+  }
+}
