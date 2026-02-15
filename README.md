@@ -304,14 +304,6 @@ A functional language learning platform for Bulgarian speakers studying Italian.
 
 ## 🔮 Planned Enhancements
 
-### Short-term (Next Release)
-
-- [ ] **Error Handling Middleware**: Centralized exception handling with user-friendly messages
-- [ ] **Logging Infrastructure**: Structured logging with Serilog
-- [ ] **DTO Validation**: FluentValidation for request validation
-- [ ] **Leaderboard UI**: Display top learners with XP rankings
-- [ ] **Daily Streak Tracking**: Calculate and display user consistency
-
 ### Medium-term
 
 - [ ] **Email Notifications**: Lesson completion certificates, progress reports
@@ -328,13 +320,6 @@ A functional language learning platform for Bulgarian speakers studying Italian.
 - [ ] **Content Marketplace**: User-generated lesson sharing
 - [ ] **Mobile Apps**: Native iOS and Android applications
 - [ ] **Integration APIs**: Third-party LMS integration
-
-### Known Technical Debt
-
-- JWT debug logging should be removed before production
-- File upload comment claims 10MB limit but actual limit is 100MB
-- No centralized error handling middleware
-- Lesson status is derived client-side (not returned by API)
 
 ## 🚀 Getting Started
 
