@@ -209,7 +209,7 @@ return await _context.Lessons
 - **Max file size**: 100MB (configured in ServiceCollectionExtensions)
 - **CORS headers**: Enabled for cross-origin resource access
 - **Cache-Control**: 1-year max-age for uploaded files
-- Upload endpoints: `/api/uploads/image`, `/api/uploads/file`
+- Upload endpoints: `POST /api/uploads/{fileType}`, `POST /api/uploads/any`, `GET /api/uploads/{fileType}/{filename}`, `GET /api/uploads/list/{fileType}`
 
 ## Authorization Roles
 
