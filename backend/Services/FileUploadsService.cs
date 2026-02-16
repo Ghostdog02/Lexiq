@@ -147,7 +147,6 @@ namespace Backend.Api.Services
                 return FileUploadResult.Failure("URL is required");
             }
 
-            // Get configuration for file type
             if (!_fileTypeConfigs.TryGetValue(fileType, out var config))
             {
                 return FileUploadResult.Failure("Invalid file type");
@@ -158,7 +157,6 @@ namespace Backend.Api.Services
                 using var httpClient = new HttpClient();
                 var fileBytes = await httpClient.GetByteArrayAsync(url);
 
-                // Validate size
                 if (fileBytes.Length > config.MaxSize)
                 {
                     return FileUploadResult.Failure("File size exceeds limit");
@@ -173,7 +171,6 @@ namespace Backend.Api.Services
                     extension = config.AllowedExtensions.First(); // Use default extension
                 }
 
-                // Create uploads directory
                 var basePath =
                     _environment.WebRootPath
                     ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
