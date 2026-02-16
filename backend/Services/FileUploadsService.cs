@@ -8,6 +8,27 @@ namespace Backend.Api.Services
         private readonly IWebHostEnvironment _environment = environment;
         private readonly Dictionary<string, FileTypeConfig> _fileTypeConfigs = InitializeFileTypeConfigs();
 
+        private static string SanitizeFilename(string filename)
+        {
+            if (string.IsNullOrWhiteSpace(filename))
+                throw new ArgumentException("Filename cannot be null or empty", nameof(filename));
+
+            var sanitized = Path.GetFileName(filename);
+
+            if (sanitized.Contains("..") || sanitized.Contains("/") || sanitized.Contains("\\"))
+                throw new ArgumentException("Invalid filename", nameof(filename));
+
+            return sanitized;
+        }
+
+        private bool IsPathWithinUploadsDirectory(string filePath, string uploadsFolder)
+        {
+            var fullFilePath = Path.GetFullPath(filePath);
+            var fullUploadsFolder = Path.GetFullPath(uploadsFolder);
+
+            return fullFilePath.StartsWith(fullUploadsFolder, StringComparison.OrdinalIgnoreCase);
+        }
+
         private static Dictionary<string, FileTypeConfig> InitializeFileTypeConfigs()
         {
             return new Dictionary<string, FileTypeConfig>
@@ -307,47 +328,54 @@ namespace Backend.Api.Services
         {
             try
             {
+                var sanitizedFilename = SanitizeFilename(filename);
                 var basePath =
                     _environment.WebRootPath
                     ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
 
-                // If fileType is specified, search in that folder only
                 if (!string.IsNullOrEmpty(fileType) && _fileTypeConfigs.TryGetValue(fileType, out var config))
                 {
-                    var filePath = Path.Combine(basePath, "uploads", config.Folder, filename);
+                    var uploadsFolder = Path.Combine(basePath, "uploads", config.Folder);
+                    var filePath = Path.Combine(uploadsFolder, sanitizedFilename);
+
+                    if (!IsPathWithinUploadsDirectory(filePath, uploadsFolder))
+                        return FileUploadResult.Failure("Invalid file path");
 
                     if (File.Exists(filePath))
                     {
                         var fileInfo = new System.IO.FileInfo(filePath);
-                        var extension = Path.GetExtension(filename).TrimStart('.');
+                        var extension = Path.GetExtension(sanitizedFilename).TrimStart('.');
 
                         return FileUploadResult.Success(
-                            url: $"{baseUrl}/api/uploads/{fileType}/{filename}",
-                            name: filename,
+                            url: $"{baseUrl}/api/uploads/{fileType}/{sanitizedFilename}",
+                            name: sanitizedFilename,
                             size: fileInfo.Length,
                             extension: extension,
-                            title: Path.GetFileNameWithoutExtension(filename)
+                            title: Path.GetFileNameWithoutExtension(sanitizedFilename)
                         );
                     }
                 }
                 else
                 {
-                    // Search all folders if no specific type provided
                     foreach (var typeConfig in _fileTypeConfigs)
                     {
-                        var filePath = Path.Combine(basePath, "uploads", typeConfig.Value.Folder, filename);
+                        var uploadsFolder = Path.Combine(basePath, "uploads", typeConfig.Value.Folder);
+                        var filePath = Path.Combine(uploadsFolder, sanitizedFilename);
+
+                        if (!IsPathWithinUploadsDirectory(filePath, uploadsFolder))
+                            continue;
 
                         if (File.Exists(filePath))
                         {
                             var fileInfo = new System.IO.FileInfo(filePath);
-                            var extension = Path.GetExtension(filename).TrimStart('.');
+                            var extension = Path.GetExtension(sanitizedFilename).TrimStart('.');
 
                             return FileUploadResult.Success(
-                                url: $"{baseUrl}/api/uploads/{typeConfig.Key}/{filename}",
-                                name: filename,
+                                url: $"{baseUrl}/api/uploads/{typeConfig.Key}/{sanitizedFilename}",
+                                name: sanitizedFilename,
                                 size: fileInfo.Length,
                                 extension: extension,
-                                title: Path.GetFileNameWithoutExtension(filename)
+                                title: Path.GetFileNameWithoutExtension(sanitizedFilename)
                             );
                         }
                     }
@@ -365,6 +393,8 @@ namespace Backend.Api.Services
         {
             try
             {
+                var sanitizedFilename = SanitizeFilename(filename);
+
                 if (!_fileTypeConfigs.TryGetValue(fileType, out var config))
                 {
                     return null;
@@ -374,7 +404,11 @@ namespace Backend.Api.Services
                     _environment.WebRootPath
                     ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
 
-                var filePath = Path.Combine(basePath, "uploads", config.Folder, filename);
+                var uploadsFolder = Path.Combine(basePath, "uploads", config.Folder);
+                var filePath = Path.Combine(uploadsFolder, sanitizedFilename);
+
+                if (!IsPathWithinUploadsDirectory(filePath, uploadsFolder))
+                    return null;
 
                 return File.Exists(filePath) ? filePath : null;
             }
@@ -388,13 +422,19 @@ namespace Backend.Api.Services
         {
             try
             {
+                var sanitizedFilename = SanitizeFilename(filename);
                 var basePath =
                     _environment.WebRootPath
                     ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
 
                 foreach (var typeConfig in _fileTypeConfigs)
                 {
-                    var filePath = Path.Combine(basePath, "uploads", typeConfig.Value.Folder, filename);
+                    var uploadsFolder = Path.Combine(basePath, "uploads", typeConfig.Value.Folder);
+                    var filePath = Path.Combine(uploadsFolder, sanitizedFilename);
+
+                    if (!IsPathWithinUploadsDirectory(filePath, uploadsFolder))
+                        continue;
+
                     if (File.Exists(filePath))
                     {
                         return filePath;
