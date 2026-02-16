@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - dix/refactor
+      - fix/refactor
       - master
   pull_request:
     branches:
