@@ -83,6 +83,12 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 - Namespace convention: `@use 'path/styles.scss' as styles;`
 - Mixins accessed via namespace: `@include styles.animated-background`
 
+## Project Guidelines
+
+**For specific rules and workflows, always consult:**
+- **[`.claude/RULES.md`](.claude/RULES.md)** → Git conventions, commit format, branching strategy, PR guidelines
+- **[`.claude/SKILLS.md`](.claude/SKILLS.md)** → MCP tools usage, agent strategies, task workflows, debugging playbooks
+
 ## Detailed Documentation
 
 | Area | File | Covers |
@@ -91,3 +97,5 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 | Frontend | [`frontend/CLAUDE.md`](frontend/CLAUDE.md) | Structure, Angular patterns, forms, design system, routes, debugging |
 | CI/CD | [`.github/workflows/CLAUDE.md`](.github/workflows/CLAUDE.md) | Docker, pipeline, deployment, health checks, debugging |
 | Database Entities | [`backend/Database/ENTITIES_DOCUMENTATION.md`](backend/Database/ENTITIES_DOCUMENTATION.md) | Comprehensive entity documentation |
+| Rules & Conventions | [`.claude/RULES.md`](.claude/RULES.md) | Git workflows, commit standards, branching |
+| Skills & Workflows | [`.claude/SKILLS.md`](.claude/SKILLS.md) | Tool usage, agent strategies, debugging playbooks |
