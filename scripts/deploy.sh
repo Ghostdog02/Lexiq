@@ -9,7 +9,6 @@ readonly ENVIRONMENT_FILE="/tmp/.deploy.env"
 LOG_DIR="/var/log/lexiq/deployment"
 LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"  
 
-
 # Exit codes
 readonly EXIT_SUCCESS=0
 readonly EXIT_SYSTEM_UPDATE_FAILED=1
@@ -19,13 +18,26 @@ readonly EXIT_DOCKER_AUTH_FAILED=3
 readonly EXIT_DOCKER_START_FAILED=4
 
 # ============================================================================
+# SECURITY & REDACTION HELPERS
+# ============================================================================
+
+mask_ips() {
+  # Replaces standard IPv4 addresses with [REDACTED_IP]
+  sed -E 's/\b([0-9]{1,3}\.){3}[0-9]{1,3}\b/[REDACTED_IP]/g'
+}
+
+# ============================================================================
 # GITHUB ACTIONS LOGGING HELPERS
 # ============================================================================
 
 log() {
   local level="$1"      # First argument: "error", "warning", or "notice"
   shift                 # Remove first argument, leaving only the message parts
-  local message="$*"    # Combine all remaining arguments into one string
+  
+  # Mask IPs in the message itself before processing
+  local message
+  message=$(echo "$*" | mask_ips)
+  
   local timestamp
   timestamp=$(date +"%Y-%m-%d %H:%M:%S")
   
@@ -91,7 +103,8 @@ load_env() {
     export REGISTRY
     export REPO_LOWER
     export BRANCH
-    
+    export EVENT
+
     # Debug: show what we have
     log_info "REGISTRY=${REGISTRY}"
     log_info "REPO_LOWER=${REPO_LOWER}"
@@ -118,10 +131,10 @@ trap_error() {
   log_error "Command failed at line ${line_number} with exit code ${exit_code}"
   log_error "Failed command: ${command}"
   
-  # Show last 20 lines of log
+  # Show last 20 lines of log with a final redaction pass
   if [ -f "$LOG_FILE" ]; then
     echo "::group::Last 20 log lines"
-    tail -20 "$LOG_FILE"
+    tail -20 "$LOG_FILE" | mask_ips
     echo "::endgroup::"
   fi
   
@@ -155,7 +168,7 @@ update_system() {
   start_group "System Updates"
   
   log_info "Updating system packages..."
-  if sudo apt update 2>&1 | tee -a "$LOG_FILE"; then
+  if sudo apt update 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "System package list updated"
   else
     log_error "System update failed"
@@ -164,7 +177,7 @@ update_system() {
   fi
   
   log_info "Upgrading system packages..."
-  if sudo apt upgrade -y 2>&1 | tee -a "$LOG_FILE"; then
+  if sudo apt upgrade -y 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "System packages upgraded"
   else
     log_warning "System upgrade had issues (non-critical)"
@@ -221,7 +234,7 @@ pull_docker_images() {
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_PULL_FAILED
   
   log_info "Pulling latest Docker images..."
-  if docker compose pull 2>&1 | tee -a "$LOG_FILE"; then
+  if docker compose pull 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Docker images pulled"
   else
     log_error "Docker pull failed"
@@ -238,7 +251,7 @@ stop_containers() {
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
   
   log_info "Stopping existing containers..."
-  if docker compose down 2>&1 | tee -a "$LOG_FILE"; then
+  if docker compose down 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Containers stopped"
   else
     log_warning "Issue stopping containers"
@@ -253,13 +266,13 @@ start_containers() {
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
   
   log_info "Starting containers..."
-  if docker compose up -d --wait 2>&1 | tee -a "$LOG_FILE"; then
+  if docker compose up -d --wait 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Containers started"
   else
     log_error "Failed to start containers"
     
     echo "::group::Container Logs"
-    docker compose logs --tail=100 2>&1 | tee -a "$LOG_FILE"
+    docker compose logs --tail=100 2>&1 | mask_ips | tee -a "$LOG_FILE"
     echo "::endgroup::"
     
     end_group
