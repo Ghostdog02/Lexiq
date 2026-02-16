@@ -82,6 +82,7 @@ jobs:
             DEPLOY_DIR="$TARGET_DIR"
             REGISTRY="${{ env.REGISTRY }}"
             REPO_LOWER="${{ env.REPO_LOWER }}"
+            EVENT="${{ github.event_name }}"
             ENVEOF
             
             chmod 600 /tmp/.deploy.env
