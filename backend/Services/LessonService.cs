@@ -11,11 +11,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     private readonly BackendDbContext _context = context;
     private readonly ExerciseService _exerciseService = exerciseService;
 
-    /// <summary>
-    /// Gets the next lesson after the current one, even if it's in the next course
-    /// </summary>
-    /// <param name="currentLessonId">The ID of the current lesson</param>
-    /// <returns>The next lesson, or null if this is the last lesson in the language</returns>
     public async Task<Lesson?> GetNextLessonAsync(string currentLessonId)
     {
         var currentLesson = await _context
@@ -58,12 +53,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         return firstLessonInNextCourse;
     }
 
-    /// <summary>
-    /// Unlocks the next lesson after completing the current one
-    /// Also unlocks the first exercise in the newly unlocked lesson
-    /// </summary>
-    /// <param name="currentLessonId">The ID of the lesson that was just completed</param>
-    /// <returns>True if a next lesson was unlocked, false otherwise</returns>
     public async Task<bool> UnlockNextLessonAsync(string currentLessonId)
     {
         var nextLesson = await GetNextLessonAsync(currentLessonId);
@@ -83,11 +72,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         return true;
     }
 
-    /// <summary>
-    /// Checks if a lesson is the last one in its course
-    /// </summary>
-    /// <param name="lessonId">The ID of the lesson to check</param>
-    /// <returns>True if this is the last lesson in the course</returns>
     public async Task<bool> IsLastLessonInCourseAsync(string lessonId)
     {
         var lesson = await _context.Lessons.FindAsync(lessonId);
@@ -101,11 +85,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         return !hasNextLessonInCourse;
     }
 
-    /// <summary>
-    /// Gets the first lesson of a specific course
-    /// </summary>
-    /// <param name="courseId">The ID of the course</param>
-    /// <returns>The first lesson in the course</returns>
     public async Task<Lesson?> GetFirstLessonInCourseAsync(string courseId)
     {
         return await _context
@@ -114,11 +93,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .FirstOrDefaultAsync();
     }
 
-    /// <summary>
-    /// Gets all lessons for a specific course, ordered by OrderIndex
-    /// </summary>
-    /// <param name="courseId">The ID of the course</param>
-    /// <returns>List of lessons in the course</returns>
     public async Task<List<Lesson>?> GetLessonsByCourseAsync(string courseId)
     {
         var courseExists = await _context.Courses.AnyAsync(c => c.Id == courseId);
@@ -131,10 +105,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .ToListAsync();
     }
 
-    /// <summary>
-    /// Unlocks a specific lesson and its first exercise (admin/manual unlock)
-    /// </summary>
-    /// <param name="lessonId">The ID of the lesson to unlock</param>
     public async Task UnlockLessonAsync(string lessonId)
     {
         var lesson = await _context.Lessons.FindAsync(lessonId);
@@ -148,11 +118,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         }
     }
 
-    /// <summary>
-    /// Creates a new lesson with Editor.js content stored in the database
-    /// </summary>
-    /// <param name="dto">The lesson creation data including Editor.js JSON content</param>
-    /// <returns>The created lesson</returns>
     public async Task<Lesson> CreateLessonAsync(CreateLessonDto dto)
     {
         var course =
@@ -230,11 +195,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         return true;
     }
 
-    /// <summary>
-    /// Gets the lesson with full navigation properties
-    /// </summary>
-    /// <param name="lessonId">The ID of the lesson</param>
-    /// <returns>The lesson with its course and language included</returns>
     public async Task<Lesson?> GetLessonWithDetailsAsync(string lessonId)
     {
         return await _context
@@ -245,11 +205,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .FirstOrDefaultAsync(l => l.Id == lessonId);
     }
 
-    /// <summary>
-    /// Calculates the next OrderIndex for a new lesson in a course
-    /// </summary>
-    /// <param name="courseId">The ID of the course</param>
-    /// <returns>The next available OrderIndex (0 if no lessons exist, otherwise max + 1)</returns>
     private async Task<int> GetNextOrderIndexForCourseAsync(string courseId)
     {
         var maxOrderIndex = await _context

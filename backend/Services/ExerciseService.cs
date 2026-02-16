@@ -159,11 +159,6 @@ public class ExerciseService(BackendDbContext context)
         return true;
     }
 
-    /// <summary>
-    /// Unlocks the next exercise in the lesson after completing the current one
-    /// </summary>
-    /// <param name="currentExerciseId">The ID of the exercise that was just completed</param>
-    /// <returns>True if a next exercise was unlocked, false otherwise</returns>
     public async Task<bool> UnlockNextExerciseAsync(string currentExerciseId)
     {
         var currentExercise = await _context.Exercises.FindAsync(currentExerciseId);
@@ -191,11 +186,6 @@ public class ExerciseService(BackendDbContext context)
         return true;
     }
 
-    /// <summary>
-    /// Unlocks the first exercise in a lesson (called when a lesson is unlocked)
-    /// </summary>
-    /// <param name="lessonId">The ID of the lesson</param>
-    /// <returns>True if an exercise was unlocked, false otherwise</returns>
     public async Task<bool> UnlockFirstExerciseInLessonAsync(string lessonId)
     {
         var firstExercise = await _context
@@ -215,11 +205,6 @@ public class ExerciseService(BackendDbContext context)
         return true;
     }
 
-    /// <summary>
-    /// Calculates the next OrderIndex for a new exercise in a lesson
-    /// </summary>
-    /// <param name="lessonId">The ID of the lesson</param>
-    /// <returns>The next available OrderIndex (0 if no exercises exist, otherwise max + 1)</returns>
     private async Task<int> GetNextOrderIndexForLessonAsync(string lessonId)
     {
         var maxOrderIndex = await _context
