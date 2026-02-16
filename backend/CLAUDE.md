@@ -155,6 +155,12 @@ public static CourseDto ToDto(this Course entity) => new(
 var courseDto = course.ToDto();
 ```
 
+### DTO Conventions
+- Use `record` types for all DTOs (immutable, positional parameters)
+- No inline classes in controllers — always define DTOs in `Dtos/` folder
+- No anonymous objects in `Ok()` responses — use typed DTOs
+- Group related DTOs in one file (e.g., `AuthDtos.cs`, `UploadDtos.cs`)
+
 ## Polymorphic DTOs
 
 Exercise types use .NET 8+ JSON polymorphism for type discrimination:
@@ -179,9 +185,8 @@ public abstract record ExerciseDto(...);
 - **Null handling**: Use null-coalescing operators for optional relationships
 - **No repository pattern**: Services directly access DbContext
 - **Upsert pattern**: `FirstOrDefaultAsync` → create if null, update if exists (see `ExerciseProgressService.SubmitAnswerAsync`)
-- **User from JWT**: Access via `HttpContext.GetCurrentUser()` in controllers (returns full User entity, not just ID)
-  - Do NOT use `User.FindFirstValue(JwtRegisteredClaimNames.Sub)` — claim is mapped to `ClaimTypes.NameIdentifier`
-  - UserContextMiddleware pre-loads the user entity before controllers execute
+- **User from JWT**: All controllers use `HttpContext.GetCurrentUser()` exclusively (returns full User entity, not just ID)
+  - Do NOT use `User.FindFirstValue()` — UserContextMiddleware pre-loads the user entity before controllers execute
 - **Auto-increment OrderIndex**: When `OrderIndex` is null in DTOs, calculate as `MaxAsync(e => (int?)e.OrderIndex) ?? -1 + 1` in parent entity
 - **Idempotent unlocks**: All unlock methods check `IsLocked` before modifying (safe to call multiple times)
 - **Cascade unlocking**: `LessonService.UnlockNextLessonAsync()` calls `ExerciseService.UnlockFirstExerciseInLessonAsync()`
@@ -300,39 +305,23 @@ Backend loads secrets from `/run/secrets/backend_env` in production (Docker secr
 | LanguageController | `/api/languages` | `GET /`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Public read, Admin write |
 | UserLanguageController | `/api/userLanguages` | `GET /user/{userId}`, `POST /enroll`, `DELETE /unenroll` | Yes |
 | UserManagementController | `/api/userManagement` | `GET /users`, `GET /users/{id}`, `POST /roles`, etc. | Admin only |
-| UploadsController | `/api/uploads` | `POST /image`, `POST /file`, `GET /files` | Yes |
+| UploadsController | `/api/uploads` | `POST /{fileType}`, `GET /{fileType}/{filename}`, `GET /list/{fileType}` | Yes |
 
 ## Known Limitations
 
 - No validation layer on backend DTOs (validation done in entity layer)
 - No error handling middleware (returns raw exceptions)
-- No logging infrastructure configured (ILogger available but not set up)
 - `ExerciseProgressService` validates answers server-side — frontend sends answer strings (option IDs for MC, text for others)
 - Lesson completion requires 70% XP threshold (`ExerciseProgressService.DefaultCompletionThreshold`)
 - `UserExerciseProgress.ExerciseId` FK uses `DeleteBehavior.NoAction` (SQL Server multiple cascade path constraint)
 - `Lesson.status` is NOT returned by the API — frontend derives it from `isLocked`, `isCompleted`, `completedExercises` fields
-- `LimitFileUploads` has a misleading code comment ("10 MB") but the actual limit is 100 MB
-- Verbose JWT debug logging (`Console.WriteLine`) is active in `AddJwtAuthentication` — remove before production
 - **Exercise unlocking**: Hybrid strategy — first exercise unlocks with lesson, rest unlock sequentially on completion (infinite retries allowed)
 
 ## Common Debugging Scenarios
 
 ### 401 Unauthorized Errors
 
-1. **Check JWT authentication logs**:
-   ```
-   [JWT] OnMessageReceived: Token = Present (XXX chars)
-   [JWT] OnTokenValidated: Claims = sub=..., email=..., ...
-   ```
-
-2. **Verify UserContextMiddleware**:
-   ```
-   🔍 UserContextMiddleware: IsAuthenticated = True
-   🔍 UserContextMiddleware: UserId from JWT = <guid>
-   🔍 UserContextMiddleware: User found in DB = True
-   ```
-
-3. **Common causes**:
+1. **Common causes**:
    - **Stale JWT after DB reset**: Clear browser cookies and re-login
    - **Missing AuthToken cookie**: Check browser DevTools → Application → Cookies
    - **User not found in DB**: JWT has old user ID from before database reset
