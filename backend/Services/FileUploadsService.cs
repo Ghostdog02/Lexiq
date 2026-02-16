@@ -72,8 +72,6 @@ namespace Backend.Api.Services
             string baseUrl
         )
         {
-            Console.WriteLine(_environment.ContentRootPath);
-
             if (file == null || file.Length == 0)
             {
                 return FileUploadResult.Failure("No file uploaded");
@@ -101,8 +99,6 @@ namespace Backend.Api.Services
 
             try
             {
-                Console.WriteLine("Got to uploading service try catch");
-
                 var basePath =
                     _environment.WebRootPath
                     ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
@@ -118,11 +114,9 @@ namespace Backend.Api.Services
                 var uniqueFileName = $"{Guid.NewGuid()}{extension}";
                 var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
-                // Save file
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
-                    Console.WriteLine("Saved image");
                 }
 
                 // Build URL - serve via controller endpoint

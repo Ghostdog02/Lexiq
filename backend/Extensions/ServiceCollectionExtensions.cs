@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection LimitFileUploads(this IServiceCollection services)
     {
-        long maxFileSizeInBytes = 100 * 1024 * 1024; // 10 MB
+        long maxFileSizeInBytes = 100 * 1024 * 1024; // 100 MB
 
         services.Configure<FormOptions>(options =>
         {
@@ -72,8 +72,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LanguageService>();
         services.AddScoped<ExerciseService>();
         services.AddScoped<UserLanguageService>();
-        services.AddScoped<IFileUploadsService, FileUploadsService>();
         services.AddScoped<FileUploadsService>();
+        services.AddScoped<IFileUploadsService>(sp => sp.GetRequiredService<FileUploadsService>());
         services.AddScoped<ExerciseProgressService>();
         services.AddScoped<UserXpService>();
 
@@ -112,49 +112,7 @@ public static class ServiceCollectionExtensions
                 {
                     OnMessageReceived = context =>
                     {
-                        // Debug: Log ALL cookies received
-                        Console.WriteLine($"[JWT] Request Path: {context.Request.Path}");
-                        Console.WriteLine($"[JWT] Request Host: {context.Request.Host}");
-                        Console.WriteLine(
-                            $"[JWT] Cookie Header: {context.Request.Headers.Cookie}"
-                        );
-                        Console.WriteLine(
-                            $"[JWT] All Cookies Count: {context.Request.Cookies.Count}"
-                        );
-                        foreach (var cookie in context.Request.Cookies)
-                        {
-                            Console.WriteLine(
-                                $"[JWT]   Cookie: {cookie.Key} = {(cookie.Key == "AuthToken" ? $"{cookie.Value.Length} chars" : cookie.Value)}"
-                            );
-                        }
-
-                        var token = context.Request.Cookies["AuthToken"];
-                        context.Token = token;
-                        Console.WriteLine(
-                            $"[JWT] OnMessageReceived: Token = {(string.IsNullOrEmpty(token) ? "MISSING" : $"Present ({token.Length} chars)")}"
-                        );
-                        return Task.CompletedTask;
-                    },
-                    OnAuthenticationFailed = context =>
-                    {
-                        Console.WriteLine(
-                            $"[JWT] OnAuthenticationFailed: {context.Exception.Message}"
-                        );
-                        return Task.CompletedTask;
-                    },
-                    OnTokenValidated = context =>
-                    {
-                        var claims = context.Principal?.Claims.Select(c => $"{c.Type}={c.Value}");
-                        Console.WriteLine(
-                            $"[JWT] OnTokenValidated: Claims = {string.Join(", ", claims ?? [])}"
-                        );
-                        return Task.CompletedTask;
-                    },
-                    OnChallenge = context =>
-                    {
-                        Console.WriteLine(
-                            $"[JWT] OnChallenge: Error={context.Error}, Description={context.ErrorDescription}"
-                        );
+                        context.Token = context.Request.Cookies["AuthToken"];
                         return Task.CompletedTask;
                     },
                 };

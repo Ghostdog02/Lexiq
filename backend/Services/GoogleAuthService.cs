@@ -11,10 +11,13 @@ public interface IGoogleAuthService
     Task<User?> LoginUser(GoogleJsonWebSignature.Payload payload);
 }
 
-public class GoogleAuthService(UserManager<User> userManager)
-    : IGoogleAuthService
+public class GoogleAuthService(
+    UserManager<User> userManager,
+    ILogger<GoogleAuthService> logger
+) : IGoogleAuthService
 {
     private readonly UserManager<User> _userManager = userManager;
+    private readonly ILogger<GoogleAuthService> _logger = logger;
 
     public async Task<GoogleJsonWebSignature.Payload?> ValidateGoogleTokenAsync(string idToken)
     {
@@ -25,17 +28,16 @@ public class GoogleAuthService(UserManager<User> userManager)
                 Audience =
                 [
                     Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")
-                        ?? throw new Exception("GOOGLE_CLIENT_ID not found"),
+                        ?? throw new InvalidOperationException("GOOGLE_CLIENT_ID not found"),
                 ],
-                IssuedAtClockTolerance = TimeSpan.FromSeconds(1600), //1 hour
+                IssuedAtClockTolerance = TimeSpan.FromSeconds(1600),
             };
 
-            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
-            return payload;
+            return await GoogleJsonWebSignature.ValidateAsync(idToken, settings);
         }
         catch (InvalidJwtException ex)
         {
-            Console.WriteLine($"Token validation failed: {ex.Message}");
+            _logger.LogWarning(ex, "Google token validation failed");
             return null;
         }
     }
@@ -53,24 +55,22 @@ public class GoogleAuthService(UserManager<User> userManager)
                 user = _userManager.MapGooglePayloadToUser(payload);
 
                 var result = await _userManager.CreateAsync(user);
-
                 if (!result.Succeeded)
                 {
-                    Console.WriteLine(
-                        $"User creation failed: {string.Join(", ", result.Errors.Select(e => e.Description))}"
+                    _logger.LogError(
+                        "User creation failed: {Errors}",
+                        string.Join(", ", result.Errors.Select(e => e.Description))
                     );
-
                     return null;
                 }
 
-                var roleAssignmentResult = await _userManager.AddToRoleAsync(user, "Student");
-
-                if (!roleAssignmentResult.Succeeded)
+                var roleResult = await _userManager.AddToRoleAsync(user, "Student");
+                if (!roleResult.Succeeded)
                 {
-                    Console.WriteLine(
-                        $"Role assignment failed: {string.Join(", ", roleAssignmentResult.Errors.Select(e => e.Description))}"
+                    _logger.LogError(
+                        "Role assignment failed: {Errors}",
+                        string.Join(", ", roleResult.Errors.Select(e => e.Description))
                     );
-
                     return null;
                 }
             }
@@ -78,8 +78,7 @@ public class GoogleAuthService(UserManager<User> userManager)
             var loginInfo = new UserLoginInfo("Google", payload.Subject, "Google");
             await _userManager.AddLoginAsync(user, loginInfo);
         }
-        
+
         return user;
     }
-
 }
