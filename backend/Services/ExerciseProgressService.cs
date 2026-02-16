@@ -274,38 +274,13 @@ public class ExerciseProgressService(
 
     private static bool ValidateFillInBlank(FillInBlankExercise exercise, string answer)
     {
-        var userInput = answer;
-        var correctAnswer = exercise.CorrectAnswer;
-
-        if (exercise.TrimWhitespace)
-        {
-            userInput = userInput.Trim();
-            correctAnswer = correctAnswer.Trim();
-        }
-
-        if (!exercise.CaseSensitive)
-        {
-            userInput = userInput.ToLowerInvariant();
-            correctAnswer = correctAnswer.ToLowerInvariant();
-        }
-
-        if (userInput == correctAnswer)
-            return true;
-
-        if (!string.IsNullOrEmpty(exercise.AcceptedAnswers))
-        {
-            var alternatives = exercise
-                .AcceptedAnswers.Split(',')
-                .Select(a =>
-                {
-                    var alt = exercise.TrimWhitespace ? a.Trim() : a;
-                    return exercise.CaseSensitive ? alt : alt.ToLowerInvariant();
-                });
-
-            return alternatives.Contains(userInput);
-        }
-
-        return false;
+        return ValidateTextAnswer(
+            answer,
+            exercise.CorrectAnswer,
+            exercise.AcceptedAnswers,
+            exercise.CaseSensitive,
+            exercise.TrimWhitespace
+        );
     }
 
     private static bool ValidateTranslation(TranslationExercise exercise, string answer)
@@ -322,26 +297,43 @@ public class ExerciseProgressService(
 
     private static bool ValidateListening(ListeningExercise exercise, string answer)
     {
-        var userInput = answer.Trim();
-        var correctAnswer = exercise.CorrectAnswer.Trim();
+        return ValidateTextAnswer(
+            answer,
+            exercise.CorrectAnswer,
+            exercise.AcceptedAnswers,
+            exercise.CaseSensitive,
+            trimWhitespace: true
+        );
+    }
 
-        if (!exercise.CaseSensitive)
+    private static bool ValidateTextAnswer(
+        string answer,
+        string correctAnswer,
+        string? acceptedAnswers,
+        bool caseSensitive,
+        bool trimWhitespace
+    )
+    {
+        var userInput = trimWhitespace ? answer.Trim() : answer;
+        var expected = trimWhitespace ? correctAnswer.Trim() : correctAnswer;
+
+        if (!caseSensitive)
         {
             userInput = userInput.ToLowerInvariant();
-            correctAnswer = correctAnswer.ToLowerInvariant();
+            expected = expected.ToLowerInvariant();
         }
 
-        if (userInput == correctAnswer)
+        if (userInput == expected)
             return true;
 
-        if (!string.IsNullOrEmpty(exercise.AcceptedAnswers))
+        if (!string.IsNullOrEmpty(acceptedAnswers))
         {
-            var alternatives = exercise
-                .AcceptedAnswers.Split(',')
+            var alternatives = acceptedAnswers
+                .Split(',')
                 .Select(a =>
                 {
-                    var alt = a.Trim();
-                    return exercise.CaseSensitive ? alt : alt.ToLowerInvariant();
+                    var alt = trimWhitespace ? a.Trim() : a;
+                    return caseSensitive ? alt : alt.ToLowerInvariant();
                 });
 
             return alternatives.Contains(userInput);
