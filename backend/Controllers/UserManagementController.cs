@@ -1,4 +1,4 @@
-﻿using Backend.Api.Dtos;
+using Backend.Api.Dtos;
 using Backend.Api.Mapping;
 using Backend.Api.Services;
 using Backend.Database;
@@ -17,137 +17,101 @@ public class UserManagementController(BackendDbContext context, UserManager<User
     private readonly BackendDbContext _context = context;
     private readonly UserManager<User> _userManager = userManager;
 
-    // GET: api/userManagement
     [HttpGet]
-    public async Task<ActionResult<List<UserDetailsDto>>> GetAsync()
+    public async Task<ActionResult<List<UserDetailsDto>>> GetAll()
     {
         var users = await _context.Users.MapUsersToDtos().ToListAsync();
 
-        if (users == null || users.Count == 0)
-        {
+        if (users.Count == 0)
             return NotFound("No users found.");
-        }
 
         return Ok(users);
     }
 
-    // GET api/userManagement/5
-    [HttpGet("{id:int}", Name = "GetUserById")]
-    public async Task<ActionResult<UserDetailsDto>> GetAsync(int id)
+    [HttpGet("{id}")]
+    public async Task<ActionResult<UserDetailsDto>> GetById(string id)
     {
-        var user = await _context.Users.FindAsync(id);
+        var user = await _userManager.FindByIdAsync(id);
 
         if (user == null)
-        {
             return NotFound($"User with ID {id} not found.");
-        }
 
-        UserDetailsDto dto = user.MapUserToDto();
-
-        return Ok(dto);
+        return Ok(user.MapUserToDto());
     }
 
-    // GET api/userManagement/example@gmail.com
-    [HttpGet("{email}", Name = "GetUserByEmail")]
-    public async Task<ActionResult<UserDetailsDto>> GetAsync(string email)
+    [HttpGet("email/{email}")]
+    public async Task<ActionResult<UserDetailsDto>> GetByEmail(string email)
     {
-        User? user = await _userManager.FindByEmailAsync(email);
+        var user = await _userManager.FindByEmailAsync(email);
 
         if (user == null)
-        {
-            return NotFound($"User with ID {email} not found.");
-        }
+            return NotFound($"User with email {email} not found.");
 
-        UserDetailsDto dto = user.MapUserToDto();
-
-        return Ok(dto);
+        return Ok(user.MapUserToDto());
     }
 
-    // POST api/userManagement/assignRole
     [HttpPost("assignRole")]
-    public async Task<ActionResult> AssignRoleAsync([FromBody] UserRoleDto userRoleDto)
+    public async Task<IActionResult> AssignRole([FromBody] UserRoleDto userRoleDto)
     {
-        User? user = await _userManager.FindByIdAsync(userRoleDto.UserId.ToString());
+        var user = await _userManager.FindByIdAsync(userRoleDto.UserId.ToString());
 
         if (user == null)
-        {
             return NotFound($"User with ID {userRoleDto.UserId} not found.");
-        }
 
-        var rolesCount = await _userManager.GetRolesAsync(user);
-
-        if (rolesCount.Count() != 0)
-        {
+        var roles = await _userManager.GetRolesAsync(user);
+        if (roles.Count != 0)
             return NoContent();
-        }
 
         var result = await _userManager.AddToRoleAsync(user, userRoleDto.RoleName);
-
         if (!result.Succeeded)
-        {
             return BadRequest(result.Errors);
-        }
 
         await _context.SaveChangesAsync();
 
         return NoContent();
     }
 
-    // PUT api/userManagement/5
     [HttpPut("{id}")]
-    public async Task<IResult> Put(int id, [FromBody] UpdateUserDto dto)
+    public async Task<IActionResult> Update(string id, [FromBody] UpdateUserDto dto)
     {
-        User? existingUser = await _userManager.FindByIdAsync(id.ToString());
+        var existingUser = await _userManager.FindByIdAsync(id);
 
         if (existingUser == null)
-        {
-            return Results.NotFound($"User with id {id} was not found.");
-        }
+            return NotFound($"User with id {id} was not found.");
 
         existingUser.UpdateUserCredentials(dto, _userManager);
-
         await _userManager.UpdateAsync(existingUser);
-
         await _context.SaveChangesAsync();
 
-        return Results.NoContent();
+        return NoContent();
     }
 
-    // PUT api/userManagement/updateLoginDate/5
-    [HttpPut("updateLoginDate/{id}", Name = "UpdateLastLoginDateAsync")]
-    public async Task<IResult> UpdateLastLoginDateAsync(int id)
+    [HttpPut("updateLoginDate/{id}")]
+    public async Task<IActionResult> UpdateLastLoginDate(string id)
     {
-        User? existingUser = await _userManager.FindByIdAsync(id.ToString());
+        var existingUser = await _userManager.FindByIdAsync(id);
 
         if (existingUser == null)
-        {
-            return Results.NotFound($"User with id {id} was not found.");
-        }
+            return NotFound($"User with id {id} was not found.");
 
         existingUser.UpdateLastLoginDate();
-
         await _userManager.UpdateAsync(existingUser);
-
         await _context.SaveChangesAsync();
 
-        return Results.NoContent();
+        return NoContent();
     }
 
-    // DELETE api/userManagementApi/5
     [HttpDelete("{id}")]
-    public async Task<IResult> DeleteAsync(int id)
+    public async Task<IActionResult> Delete(string id)
     {
-        User? existingUser = await _userManager.FindByIdAsync(id.ToString());
+        var existingUser = await _userManager.FindByIdAsync(id);
 
         if (existingUser == null)
-        {
-            return Results.NotFound($"User with id {id} was not found.");
-        }
+            return NotFound($"User with id {id} was not found.");
 
         await _userManager.DeleteAsync(existingUser);
-
         await _context.SaveChangesAsync();
 
-        return Results.NoContent();
+        return NoContent();
     }
 }
