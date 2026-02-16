@@ -9,15 +9,6 @@ public record UserDetailsDto(
     DateTime RegistrationDate
 );
 
-public record CreateUserDto(
-    string Email,
-    string FullName,
-    string SecurityStamp,
-    string ConcurrencyStamp,
-    string PhoneNumber,
-    DateTime RegistrationDate
-);
-
 public record UserXpDto(
     string UserId,
     int TotalXp,

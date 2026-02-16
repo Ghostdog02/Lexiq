@@ -25,12 +25,9 @@ public static class UserExtensions
 
     public static void UpdateLastLoginDate(this User user)
     {
-        user.LastLoginDate = DateTime.Now;
+        user.LastLoginDate = DateTime.UtcNow;
     }
 
-    /// <summary>
-    /// Check if user can bypass lesson/exercise locks (Admin or ContentCreator role).
-    /// </summary>
     public static async Task<bool> CanBypassLocksAsync(
         this User user,
         UserManager<User> userManager
