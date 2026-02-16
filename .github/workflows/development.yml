@@ -15,7 +15,7 @@ env:
 
 jobs:
   build-and-push-docker:
-    uses: Ghostdog02/Lexiq/.github/workflows/build-and-push-docker.yml@fix/ci-cd
+    uses: Ghostdog02/Lexiq/.github/workflows/build-and-push-docker.yml@fix/refactor
     with:
       config-path: .github/workflows/build-and-push-docker.yml
     permissions:
@@ -48,7 +48,7 @@ jobs:
 
   continuous-delivery:
     needs: pull-and-test
-    uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@feature/ci-cd
+    uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@fix/refactor
     permissions:
       packages: read
       issues: write

@@ -29,52 +29,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
-      - name: Set lowercase repo name
-        run: echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-
-      - name: Replace all slashesh with dashes
+      - name: Set environment variables
         run: |
+          echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
           BRANCH="${{ github.ref_name }}"
-          BRANCH="${BRANCH//\//-}"
-          echo "BRANCH=$BRANCH" >> $GITHUB_ENV
+          echo "BRANCH=${BRANCH//\//-}" >> $GITHUB_ENV
 
-      - name: Copy deployment script to server
-        uses: appleboy/scp-action@v0.1.7
+      - name: Copy files and scripts to server
+        uses: appleboy/scp-action@v1.0.1
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
           key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          source: "scripts/deploy.sh"
-          target: "/tmp/"
+          # Combined all transfers into one step to reduce SSH overhead
+          source: "scripts/deploy.sh,scripts/verify-deployment.sh,docker-compose.prod.yml,nginx.conf"
+          target: "/tmp/deploy_assets_${{ github.run_id }}"
+          strip_components: 0
 
-      - name: Copy verify-deployment script to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          source: "scripts/verify-deployment.sh"
-          target: "/tmp/"
-
-      - name: Copy docker-compose file to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          source: "docker-compose.prod.yml"
-          target: "/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
-
-      - name: Deploy with Docker Compose to Hetzner (Debian 13)
-        uses: appleboy/ssh-action@v1.2.4
+      - name: Deploy with Docker Compose
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
@@ -84,100 +61,34 @@ jobs:
           command_timeout: 30m
           script: |
             set -e
+            ASSETS="/tmp/deploy_assets_${{ github.run_id }}"
             TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
-
-            if [ -f "$TARGET_DIR/docker-compose.prod.yml" ]; then
-              mv -f "$TARGET_DIR/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
-              echo "✅ Renamed docker-compose.yml"
-            else
-              echo "❌ Error: docker-compose.prod.yml not found"
-              exit 1
-            fi
-
-            # Write environment file with all needed variables
-            cat > /tmp/.deploy.env << 'ENVEOF'
+            
+            mkdir -p "$TARGET_DIR"
+            
+            # Move files to final destination
+            cp "$ASSETS/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
+            [ -f "$ASSETS/nginx.conf" ] && cp "$ASSETS/nginx.conf" "$TARGET_DIR/"
+            
+            # Create environment file
+            cat > /tmp/.deploy.env << ENVEOF
             HOME_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}"
-            BRANCH="${{ github.ref_name }}"
+            BRANCH="${{ env.BRANCH }}"
             REPO="${{ github.repository }}"
             COMMIT="${{ github.sha }}"
             ACTOR="${{ github.actor }}"
-            EVENT="${{ github.event_name }}"
-            USERNAME="${{ secrets.HETZNER_PROD_USERNAME }}"
             DOCKER_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
             DOCKER_USERNAME="${{ github.actor }}"
-            DEPLOY_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+            DEPLOY_DIR="$TARGET_DIR"
             REGISTRY="${{ env.REGISTRY }}"
             REPO_LOWER="${{ env.REPO_LOWER }}"
-            BRANCH="${{ env.BRANCH }}"
             ENVEOF
             
             chmod 600 /tmp/.deploy.env
-            
-            # Debug: show what was written
-            echo "=== Environment file content ==="
-            cat /tmp/.deploy.env
-            echo "================================"
-            
-            bash /tmp/scripts/deploy.sh
-
-      - name: Copy deployment script to server
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          source: "scripts/deploy.sh"
-          target: "/tmp/"
-
-      - name: Copy verify-deployment script to server
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          source: "scripts/verify-deployment.sh"
-          target: "/tmp/"
-
-      - name: Copy docker-compose and nginx files to server
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          source: "docker-compose.prod.yml,nginx.conf"
-          target: "/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
-
-      - name: Deploy with Docker Compose to Hetzner (Debian 13)
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          command_timeout: 30m
-          script: |
-            set
-            TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
-
-      - name: Deployment Success Notice
-        if: success() 
-        run: echo "::notice::✅ Deployment successful!"
-
-      - name: Deployment Failure Notice
-        if: failure()
-        run: |
-          echo "::error::❌ Deployment failed!"
+            bash "$ASSETS/scripts/deploy.sh"
 
       - name: Verify Deployment
-        if: always()
-        uses: appleboy/ssh-action@v1.2.5
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
@@ -185,14 +96,12 @@ jobs:
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           script: |
-            DEPLOY_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
-            export DEPLOY_DIR
+            export DEPLOY_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+            bash "/tmp/deploy_assets_${{ github.run_id }}/scripts/verify-deployment.sh"
 
-            bash /tmp/scripts/verify-deployment.sh
-
-      - name: Cleanup
+      - name: Cleanup Server
         if: always()
-        uses: appleboy/ssh-action@v1.2.5
+        uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
@@ -200,50 +109,31 @@ jobs:
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           script: |
-            rm -f /tmp/scripts/deploy.sh
+            rm -rf "/tmp/deploy_assets_${{ github.run_id }}"
             rm -f /tmp/.deploy.env
+            docker image prune -f
 
-            echo "::group::Docker Cleanup"
-            echo "Cleaning up unused Docker images..."
-            if docker image prune -f; then
-              echo "✅ Docker cleanup complete"
-            else
-              echo "⚠️ Docker cleanup had issues"
-            fi
-            echo "::endgroup::"
-
-      - name: Deployment Success Notice
-        if: success() 
-        run: echo "::notice::✅ Deployment successful!"
-
-      - name: Deployment Failure Notice
-        if: failure()
+      - name: Final Status Notices
+        if: always()
         run: |
-          echo "::error::❌ Deployment failed!"
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "::notice::✅ Deployment successful!"
+          else
+            echo "::error::❌ Deployment failed!"
+          fi
 
       - name: Notify on failure
         if: failure()
-        uses: actions/github-script@v8
+        uses: actions/github-script@v7
         with:
           script: |
-            const repoUrl = `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
-            const message = `❌ **Deployment failed!**\n\nCheck the [workflow logs](${repoUrl}) for details.`;
+            const message = `❌ **Deployment failed!**\n\nCheck the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.`;
+            const payload = context.payload.pull_request ? 
+              { issue_number: context.payload.pull_request.number } : 
+              { commit_sha: context.sha };
             
-            // If it's a Pull Request, comment on the PR
             if (context.payload.pull_request) {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                body: message
-              });
-            } 
-            // Otherwise, comment on the Commit
-            else {
-              await github.rest.repos.createCommitComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                commit_sha: context.sha,
-                body: message
-              });
+              await github.rest.issues.createComment({ ...context.repo, ...payload, body: message });
+            } else {
+              await github.rest.repos.createCommitComment({ ...context.repo, ...payload, body: message });
             }
