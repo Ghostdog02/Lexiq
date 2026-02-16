@@ -42,8 +42,7 @@ Four-stage pipeline in `.github/workflows/`:
 
 ### Deployment Flow
 
-- Triggered on push to `master` or `fix/ci-cd`
-- Note: `continuous-delivery` job currently references `@feature/ci-cd` — may need updating to match
+- Triggered on push to `master` or `fix/refactor`
 - Builds both frontend and backend Docker images
 - Pushes to GitHub Container Registry (ghcr.io)
 - SSHs into Hetzner server and runs `scripts/deploy.sh`
@@ -53,6 +52,7 @@ Four-stage pipeline in `.github/workflows/`:
 - Loads environment variables from `/tmp/.deploy.env` (passed by CD workflow)
 - Authenticates to GHCR using GitHub token
 - Pulls latest images, stops old containers, starts new ones
+- **Security**: Masks IPv4 addresses in logs via `mask_ips()` function to prevent infrastructure details from leaking
 - Logs to `/var/log/lexiq/deployment/` with GitHub Actions annotations
 - Exit codes: 1 (system/file error), 3 (auth/pull failed), 4 (container start failed)
 
