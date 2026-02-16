@@ -38,7 +38,7 @@ jobs:
           echo "BRANCH=${BRANCH//\//-}" >> $GITHUB_ENV
 
       - name: Copy files and scripts to server
-        uses: appleboy/scp-action@v1.0.1
+        uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
@@ -51,7 +51,7 @@ jobs:
           strip_components: 0
 
       - name: Deploy with Docker Compose
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
@@ -88,7 +88,7 @@ jobs:
             bash "$ASSETS/scripts/deploy.sh"
 
       - name: Verify Deployment
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
@@ -101,7 +101,7 @@ jobs:
 
       - name: Cleanup Server
         if: always()
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
           username: ${{ secrets.HETZNER_PROD_USERNAME }}
