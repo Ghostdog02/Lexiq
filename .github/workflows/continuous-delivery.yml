@@ -46,10 +46,24 @@ jobs:
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
           # Combined all transfers into one step to reduce SSH overhead
-          source: "scripts/deploy.sh,scripts/verify-deployment.sh,docker-compose.prod.yml,nginx.conf"
+          source: "scripts/deploy.sh,scripts/verify-deployment.sh"
           target: "/tmp/deploy_assets_${{ github.run_id }}"
           strip_components: 0
-
+      
+      - name: Copy files and scripts to server
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.HETZNER_PROD_HOST }}
+          username: ${{ secrets.HETZNER_PROD_USERNAME }}
+          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          # Combined all transfers into one step to reduce SSH overhead
+          source: "docker-compose.prod.yml"
+          target: "/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+          strip_components: 0
+      
+        
       - name: Deploy with Docker Compose
         uses: appleboy/ssh-action@v1.2.5
         with:
@@ -68,7 +82,6 @@ jobs:
             
             # Move files to final destination
             cp "$ASSETS/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
-            [ -f "$ASSETS/nginx.conf" ] && cp "$ASSETS/nginx.conf" "$TARGET_DIR/"
             
             # Create environment file
             cat > /tmp/.deploy.env << ENVEOF
