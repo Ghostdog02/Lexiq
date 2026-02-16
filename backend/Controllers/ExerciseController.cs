@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
 using Backend.Api.Middleware;
@@ -38,7 +37,6 @@ public class ExerciseController(
         if (exercise == null)
             return NotFound();
 
-        // Check if user can bypass locks
         var user = HttpContext.GetCurrentUser();
         var canBypassLocks = user != null && await user.CanBypassLocksAsync(_userManager);
 
@@ -81,9 +79,6 @@ public class ExerciseController(
         return NoContent();
     }
 
-    /// <summary>
-    /// Submit an answer for an exercise and get backend validation result
-    /// </summary>
     [HttpPost("{exerciseId}/submit")]
     public async Task<ActionResult<SubmitAnswerResponse>> SubmitAnswer(
         string exerciseId,
@@ -93,14 +88,14 @@ public class ExerciseController(
         if (string.IsNullOrWhiteSpace(request.Answer))
             return BadRequest(new { message = "Answer cannot be empty" });
 
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
+        var user = HttpContext.GetCurrentUser();
+        if (user == null)
             return Unauthorized();
 
         try
         {
-            SubmitAnswerResponse result = await _progressService.SubmitAnswerAsync(
-                userId,
+            var result = await _progressService.SubmitAnswerAsync(
+                user.Id,
                 exerciseId,
                 request.Answer
             );
@@ -117,36 +112,29 @@ public class ExerciseController(
         }
     }
 
-    /// <summary>
-    /// Get user's exercise progress for a specific lesson
-    /// </summary>
     [HttpGet("lesson/{lessonId}/progress")]
     public async Task<ActionResult<List<UserExerciseProgressDto>>> GetLessonProgress(
         string lessonId
     )
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
+        var user = HttpContext.GetCurrentUser();
+        if (user == null)
             return Unauthorized();
 
-        var fullProgress = await _progressService.GetFullLessonProgressAsync(userId, lessonId);
+        var fullProgress = await _progressService.GetFullLessonProgressAsync(user.Id, lessonId);
         return Ok(fullProgress.ExerciseProgress.Values.ToList());
     }
 
-    /// <summary>
-    /// Get all submission results for exercises in a lesson, ordered by exercise OrderIndex.
-    /// Used by the frontend to restore previous progress state.
-    /// </summary>
     [HttpGet("lesson/{lessonId}/submissions")]
     public async Task<ActionResult<List<SubmitAnswerResponse>>> GetLessonSubmissions(
         string lessonId
     )
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
+        var user = HttpContext.GetCurrentUser();
+        if (user == null)
             return Unauthorized();
 
-        var submissions = await _progressService.GetLessonSubmissionsAsync(userId, lessonId);
+        var submissions = await _progressService.GetLessonSubmissionsAsync(user.Id, lessonId);
         return Ok(submissions);
     }
 }

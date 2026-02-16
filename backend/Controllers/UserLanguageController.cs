@@ -1,6 +1,6 @@
-using System.Security.Claims;
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
+using Backend.Api.Middleware;
 using Backend.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,22 +17,22 @@ public class UserLanguageController(UserLanguageService userLanguageService) : C
     [HttpGet]
     public async Task<ActionResult<List<UserLanguageDto>>> GetMyLanguages()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
+        var user = HttpContext.GetCurrentUser();
+        if (user == null)
             return Unauthorized();
 
-        var userLanguages = await _userLanguageService.GetUserLanguagesAsync(userId);
+        var userLanguages = await _userLanguageService.GetUserLanguagesAsync(user.Id);
         return Ok(userLanguages.Select(ul => ul.ToDto()));
     }
 
     [HttpPost("enroll")]
     public async Task<ActionResult<UserLanguageDto>> Enroll([FromBody] EnrollLanguageDto dto)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
+        var user = HttpContext.GetCurrentUser();
+        if (user == null)
             return Unauthorized();
 
-        var userLanguage = await _userLanguageService.EnrollUserAsync(userId, dto.LanguageId);
+        var userLanguage = await _userLanguageService.EnrollUserAsync(user.Id, dto.LanguageId);
         if (userLanguage == null)
             return BadRequest(new { message = "Failed to enroll. Language might not exist." });
 
@@ -42,11 +42,11 @@ public class UserLanguageController(UserLanguageService userLanguageService) : C
     [HttpDelete("{languageId}")]
     public async Task<IActionResult> Unenroll(int languageId)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (userId == null)
+        var user = HttpContext.GetCurrentUser();
+        if (user == null)
             return Unauthorized();
 
-        var result = await _userLanguageService.UnenrollUserAsync(userId, languageId);
+        var result = await _userLanguageService.UnenrollUserAsync(user.Id, languageId);
         if (!result)
             return NotFound();
 
