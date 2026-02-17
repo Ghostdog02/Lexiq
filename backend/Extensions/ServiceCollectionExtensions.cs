@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using Backend.Api.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Backend.Database;
 using Backend.Database.Entities.Users;
 using Microsoft.AspNetCore.Authentication;
@@ -16,6 +17,17 @@ namespace Backend.Api.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddDataProtectionKeys(this IServiceCollection services)
+    {
+        var keyPath = Environment.GetEnvironmentVariable("DATA_PROTECTION_KEYS_PATH") ?? "/app/dataprotection-keys";
+
+        services
+            .AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(keyPath));
+
+        return services;
+    }
+
     public static IServiceCollection LimitFileUploads(this IServiceCollection services)
     {
         long maxFileSizeInBytes = 100 * 1024 * 1024; // 100 MB
