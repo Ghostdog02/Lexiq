@@ -4,6 +4,7 @@ WORKDIR /src
 COPY *.sln ./
 COPY Backend.Api.csproj ./
 COPY Database/Backend.Database.csproj ./Database/
+COPY wwwroot ./
 
 RUN dotnet restore ./Backend.Api.csproj
 
@@ -13,27 +14,14 @@ RUN dotnet publish "Backend.Api.csproj" -c Release -o /app/publish /p:UseAppHost
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
 
-# curl: required for the Docker health check (GET /health).
-# icu-libs: required for globalization support on Alpine (musl libc does not
-# bundle ICU). Without this, .NET string operations on non-ASCII characters
-# (Bulgarian, Italian) silently fall back to invariant culture.
 RUN apk add --no-cache curl icu-libs
 
-# Tell the .NET runtime to use the system ICU libraries installed above
-# instead of the invariant-culture fallback.
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
 COPY --from=publish /app/publish .
 
-# Create upload directory structure for file storage
-RUN mkdir -p /app/wwwroot/uploads/images \
-             /app/wwwroot/uploads/documents \
-             /app/wwwroot/uploads/videos \
-             /app/wwwroot/uploads/audio \
-             /app/wwwroot/uploads/files \
-             /app/certs && \
-    chmod -R 755 /app/wwwroot /app/certs
+COPY --from=publish /src/wwwroot ./wwwroot
 
-EXPOSE 80 443
+EXPOSE 80
 
 ENTRYPOINT ["dotnet", "Backend.Api.dll"]
