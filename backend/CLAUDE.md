@@ -78,6 +78,12 @@ backend/
 - Frontend sends "Beginner", backend receives DifficultyLevel.Beginner (not 0)
 - Required for: DifficultyLevel, ExerciseType, LessonStatus
 
+### IFormFile Model Binding
+- `<Nullable>enable</Nullable>` + `[ApiController]` makes non-nullable `IFormFile` implicitly `[Required]`
+- FormData field name MUST match the parameter name (e.g. `IFormFile file` → field `"file"`)
+- Mismatch returns 400 ProblemDetails **before** controller action runs — no breakpoint will hit
+- `SanitizeFilename` and other validators that throw must be inside try-catch to avoid raw 500s
+
 ### Service Registration
 - Organized via extension methods in `Extensions/ServiceCollectionExtensions.cs`
 - Each feature has its own extension method (AddCorsPolicy, AddDatabaseContext, AddApplicationServices, etc.)
