@@ -33,12 +33,13 @@ TAG=latest docker compose -f docker-compose.prod.yml up --build
 
 ## CI/CD Pipeline
 
-Four-stage pipeline in `.github/workflows/`:
+Five workflows in `.github/workflows/`:
 
 1. **build-and-push-docker.yml** — Builds and pushes Docker images to GHCR
 2. **development.yml** — Orchestrates the full CI/CD workflow
 3. **continuous-delivery.yml** — Deploys to Hetzner production server
 4. **codeql.yml** — Security scanning with GitHub Advanced Security (runs on push/PR/schedule)
+5. **infrastructure-update.yml** — Weekly OS + infrastructure image updates (Sundays 02:00 UTC)
 
 ### Deployment Flow
 
@@ -64,6 +65,22 @@ The CD job minimises SSH handshakes to 3 per run:
 2. **SSH deploy+verify** — runs `deploy.sh` then `verify-deployment.sh` in a single connection; the compose file is `cp`'d to the production directory inside this step
 3. **SSH cleanup** (`always`) — removes temp assets and prunes dangling images
 
+### `build-and-push-docker.yml` Layer Cache
+
+Both build jobs use `docker/setup-buildx-action` (required for BuildKit) and `cache-from/cache-to` with `type=gha`:
+- **`scope=frontend`** and **`scope=backend`** keep the two caches isolated in the GHA store
+- On routine source-only pushes, `npm ci` and `dotnet restore` layers are served from cache — the most expensive steps are skipped entirely
+- When `no-cache: true` triggers (Dockerfile or dependency manifest changed), the build runs from scratch and then refreshes the cache for subsequent runs
+- **Do NOT remove `setup-buildx-action`** — without it the GHA cache driver is unavailable and `cache-from/cache-to` silently does nothing
+
+### `infrastructure-update.yml`
+
+Runs every Sunday at 02:00 UTC (also `workflow_dispatch`). Two SSH steps:
+1. **OS update** — `apt-get update && apt-get upgrade -y` on the host
+2. **Image update** — `docker compose pull db certbot` then `docker compose up -d --wait db certbot` (no-op if images unchanged) + `docker image prune -f`
+
+App images (`backend`, `frontend`) are intentionally excluded — those are managed by the main CD pipeline.
+
 ## Testing Deployment Locally
 
 1. Ensure secrets files exist:
@@ -78,9 +95,18 @@ The CD job minimises SSH handshakes to 3 per run:
 
 ### Docker Services
 
-- **db**: SQL Server 2022 with health checks
-- **backend**: ASP.NET Core 10.0 API (port 8080)
-- **frontend**: Angular 21 + nginx (port 4200)
+- **db**: SQL Server 2022 with health checks (`mcr.microsoft.com/mssql/server:2022-latest`)
+- **backend**: ASP.NET Core 10.0 API (port 8080) — Alpine-based image (`aspnet:10.0-alpine`, ~120 MB runtime)
+- **frontend**: Angular 21 + nginx (port 4200) — Alpine-based image (`nginx-unprivileged:stable-alpine`)
+- **certbot**: Let's Encrypt renewal sidecar
+
+### Backend Alpine Image Notes
+
+The backend uses `dotnet/sdk:10.0-alpine` (build) and `dotnet/aspnet:10.0-alpine` (runtime). Alpine uses musl libc which does not bundle ICU. Two things are required for correct behaviour with Bulgarian and Italian text:
+- `apk add icu-libs` installed in the final image
+- `ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false` set in the Dockerfile
+
+**Do NOT remove either of these.** Without `icu-libs`, .NET string operations on non-ASCII characters silently fall back to invariant culture and produce incorrect sort/compare results.
 
 ### Health Checks
 
