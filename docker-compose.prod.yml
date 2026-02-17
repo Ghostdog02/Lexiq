@@ -36,16 +36,16 @@ services:
     secrets:
       - backend_env
     environment:
-      ASPNETCORE_URLS: "http://+:80"
+      ASPNETCORE_URLS: "http://+:8080"
     expose:
-      - "80"
+      - "8080"
     volumes:
       - backend-uploads:/app/wwwroot
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl --fail --silent http://localhost:80/health || exit 1"]
+      test: ["CMD-SHELL", "curl --fail --silent http://localhost:8080/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
