@@ -34,6 +34,7 @@ public class Program
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        services.AddDataProtectionKeys();
         services.AddCorsPolicy();
         services.AddDatabaseContext();
         services.AddApplicationServices();

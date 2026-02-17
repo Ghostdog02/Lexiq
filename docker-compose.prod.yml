@@ -39,6 +39,7 @@ services:
       - "8080"
     volumes:
       - backend-uploads:/app/wwwroot
+      - backend-dataprotection:/app/dataprotection-keys
     depends_on:
       db:
         condition: service_healthy
@@ -84,5 +85,6 @@ services:
 volumes:
   db-data:
   backend-uploads:
+  backend-dataprotection:
   letsencrypt-certs:
   certbot-webroot:
