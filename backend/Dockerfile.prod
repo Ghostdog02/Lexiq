@@ -22,6 +22,6 @@ COPY --from=publish /app/publish .
 
 COPY --from=publish /src/wwwroot ./wwwroot
 
-EXPOSE 80
+EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "Backend.Api.dll"]
