@@ -212,8 +212,10 @@ deploy_containers() {
 
   # Pull first so that if the registry is unreachable, running containers are
   # never touched.
-  log_info "Pulling latest Docker images..."
-  if docker compose pull 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
+  # Pull only app images. db and certbot are pulled by the weekly
+  # infrastructure-update workflow to keep app deployments fast.
+  log_info "Pulling latest app images (backend, frontend)..."
+  if docker compose pull backend frontend 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Docker images pulled"
   else
     log_error "Docker pull failed"
