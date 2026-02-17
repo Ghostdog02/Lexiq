@@ -45,7 +45,10 @@ public class UploadsController(FileUploadsService fileUploadService) : Controlle
     }
 
     [HttpPost("{fileType}-by-url")]
-    public async Task<IActionResult> UploadByUrl(string fileType, [FromBody] FileUrlRequestDto request)
+    public async Task<IActionResult> UploadByUrl(
+        string fileType,
+        [FromBody] FileUrlRequestDto request
+    )
     {
         var result = await _fileUploadService.UploadFileByUrlAsync(request.Url, fileType, BaseUrl);
         return BuildEditorJsFileResponse(result);
@@ -61,7 +64,10 @@ public class UploadsController(FileUploadsService fileUploadService) : Controlle
 
         var provider = new FileExtensionContentTypeProvider();
         if (!provider.TryGetContentType(path, out var contentType))
-            contentType = DefaultContentTypes.GetValueOrDefault(fileType, "application/octet-stream");
+            contentType = DefaultContentTypes.GetValueOrDefault(
+                fileType,
+                "application/octet-stream"
+            );
 
         SetCorsHeaders();
 
@@ -95,7 +101,12 @@ public class UploadsController(FileUploadsService fileUploadService) : Controlle
         [FromQuery] int pageSize = 10
     )
     {
-        var result = await _fileUploadService.GetFilesByTypeAsync(fileType, page, pageSize, BaseUrl);
+        var result = await _fileUploadService.GetFilesByTypeAsync(
+            fileType,
+            page,
+            pageSize,
+            BaseUrl
+        );
         return BuildListResponse(result);
     }
 
@@ -124,8 +135,19 @@ public class UploadsController(FileUploadsService fileUploadService) : Controlle
 
         var response = new FileListResponseDto(
             Success: 1,
-            Data: result.Files.Select(f => new FileItemDto(f.Url, f.Name, f.Size, f.Extension, f.Title)),
-            Pagination: new PaginationDto(result.Page, result.PageSize, result.TotalCount, result.TotalPages)
+            Data: result.Files.Select(f => new FileItemDto(
+                f.Url,
+                f.Name,
+                f.Size,
+                f.Extension,
+                f.Title
+            )),
+            Pagination: new PaginationDto(
+                result.Page,
+                result.PageSize,
+                result.TotalCount,
+                result.TotalPages
+            )
         );
 
         return Ok(response);
@@ -136,16 +158,18 @@ public class UploadsController(FileUploadsService fileUploadService) : Controlle
         if (!result.IsSuccess)
             return BadRequest(new ErrorResponseDto(0, result.Message));
 
-        return Ok(new EditorJsFileUploadResponse
-        {
-            Success = 1,
-            File = new EditorJsFileData
+        return Ok(
+            new EditorJsFileUploadResponse
             {
-                Url = result.Url,
-                Size = result.Size,
-                Name = result.Name,
-                Extension = result.Extension,
-            },
-        });
+                Success = 1,
+                File = new EditorJsFileData
+                {
+                    Url = result.Url,
+                    Size = result.Size,
+                    Name = result.Name,
+                    Extension = result.Extension,
+                },
+            }
+        );
     }
 }

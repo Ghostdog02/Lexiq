@@ -111,17 +111,17 @@ namespace Backend.Api.Services
                 );
             }
 
-            var sanitizedOriginalName = SanitizeFilename(file.FileName);
-            var extension = Path.GetExtension(sanitizedOriginalName).ToLowerInvariant();
-            if (!config.AllowedExtensions.Contains(extension))
-            {
-                return FileUploadResult.Failure(
-                    $"Invalid file type. Allowed: {string.Join(", ", config.AllowedExtensions)}"
-                );
-            }
-
             try
             {
+                var sanitizedOriginalName = SanitizeFilename(file.FileName);
+                var extension = Path.GetExtension(sanitizedOriginalName).ToLowerInvariant();
+                if (!config.AllowedExtensions.Contains(extension))
+                {
+                    return FileUploadResult.Failure(
+                        $"Invalid file type. Allowed: {string.Join(", ", config.AllowedExtensions)}"
+                    );
+                }
+
                 var basePath =
                     _environment.WebRootPath
                     ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
@@ -193,7 +193,9 @@ namespace Backend.Api.Services
                     var sanitizedUrlFilename = SanitizeFilename(urlFilename);
                     extension = Path.GetExtension(sanitizedUrlFilename).ToLowerInvariant();
                 }
-                if (string.IsNullOrEmpty(extension) || !config.AllowedExtensions.Contains(extension))
+                if (
+                    string.IsNullOrEmpty(extension) || !config.AllowedExtensions.Contains(extension)
+                )
                 {
                     extension = config.AllowedExtensions.First(); // Use default extension
                 }
@@ -465,8 +467,8 @@ namespace Backend.Api.Services
 
     public class FileTypeConfig
     {
-        public string[] AllowedExtensions { get; set; }
-        public string Folder { get; set; }
+        public required string[] AllowedExtensions { get; set; }
+        public required string Folder { get; set; }
         public long MaxSize { get; set; }
     }
 }
