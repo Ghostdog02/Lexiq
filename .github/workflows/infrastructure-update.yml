@@ -1,0 +1,98 @@
+name: "Infrastructure Update"
+
+# Handles maintenance tasks that are independent of application deployments:
+#   - OS package updates (apt)
+#   - Infrastructure image pulls (db, certbot)
+# Runs weekly so app deploys stay fast and don't touch host packages or
+# stable images that rarely change.
+on:
+  schedule:
+    - cron: '0 2 * * 0'  # Every Sunday at 02:00 UTC
+  workflow_dispatch:
+
+jobs:
+  update-infrastructure:
+    name: Update OS packages and infrastructure images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Update OS packages
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.HETZNER_PROD_HOST }}
+          username: ${{ secrets.HETZNER_PROD_USERNAME }}
+          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          command_timeout: 10m
+          script: |
+            echo "::group::System package update"
+
+            echo "::notice::Updating package lists..."
+            if sudo apt-get update -q; then
+              echo "::notice::✅ Package lists updated"
+            else
+              echo "::error::apt-get update failed"
+              echo "::endgroup::"
+              exit 1
+            fi
+
+            echo "::notice::Upgrading packages..."
+            if sudo apt-get upgrade -y -q; then
+              echo "::notice::✅ Packages upgraded"
+            else
+              echo "::warning::apt-get upgrade had issues (non-critical, continuing)"
+            fi
+
+            echo "::endgroup::"
+
+      - name: Pull and recreate infrastructure containers
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.HETZNER_PROD_HOST }}
+          username: ${{ secrets.HETZNER_PROD_USERNAME }}
+          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          command_timeout: 10m
+          script: |
+            DEPLOY_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+            cd "$DEPLOY_DIR"
+
+            echo "::group::Pull infrastructure images (db, certbot)"
+            echo "::notice::Pulling latest db and certbot images..."
+            if docker compose pull db certbot; then
+              echo "::notice::✅ Images pulled"
+            else
+              echo "::error::docker compose pull failed"
+              echo "::endgroup::"
+              exit 1
+            fi
+            echo "::endgroup::"
+
+            # compose up is a no-op when the image ID and config are unchanged,
+            # so containers only restart when a new image was actually pulled.
+            echo "::group::Recreate containers if images changed"
+            echo "::notice::Applying image updates..."
+            if docker compose up -d --wait db certbot; then
+              echo "::notice::✅ Infrastructure containers up to date"
+            else
+              echo "::error::Failed to recreate infrastructure containers"
+              echo "::endgroup::"
+              exit 1
+            fi
+            echo "::endgroup::"
+
+            echo "::group::Prune dangling images"
+            docker image prune -f
+            echo "::notice::✅ Dangling images pruned"
+            echo "::endgroup::"
+
+      - name: Final Status Notice
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "::notice::✅ Infrastructure update completed successfully"
+          else
+            echo "::error::❌ Infrastructure update failed — check logs above"
+          fi
