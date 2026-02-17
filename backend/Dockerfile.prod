@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS publish
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS publish
 WORKDIR /src
 
 COPY *.sln ./
@@ -10,12 +10,18 @@ RUN dotnet restore ./Backend.Api.csproj
 COPY . .
 RUN dotnet publish "Backend.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
-    rm -rf /var/lib/apt/lists/*
+# curl: required for the Docker health check (GET /health).
+# icu-libs: required for globalization support on Alpine (musl libc does not
+# bundle ICU). Without this, .NET string operations on non-ASCII characters
+# (Bulgarian, Italian) silently fall back to invariant culture.
+RUN apk add --no-cache curl icu-libs
+
+# Tell the .NET runtime to use the system ICU libraries installed above
+# instead of the invariant-culture fallback.
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
 COPY --from=publish /app/publish .
 
