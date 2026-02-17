@@ -20,17 +20,6 @@ public static class WebApplicationExtensions
         return app;
     }
 
-    public static WebApplication ConfigureHttpPort(this WebApplication app)
-    {
-        var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
-        if (!string.IsNullOrEmpty(url) && !app.Urls.Contains(url))
-        {
-            app.Urls.Add(url);
-        }
-
-        return app;
-    }
-
     public static WebApplication ConfigureStaticFiles(this WebApplication app)
     {
         app.UseStaticFiles(
