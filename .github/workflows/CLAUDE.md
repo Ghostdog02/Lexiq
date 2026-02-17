@@ -95,6 +95,14 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
 - SSH deployment to Hetzner server via `scripts/deploy.sh`
 - Production HTTPS auto-provisioned via **LettuceEncrypt** (Let's Encrypt)
 
+### SSL / Let's Encrypt Bootstrap
+
+- **Named volumes vs host paths**: `letsencrypt-certs` is a Docker named volume — unrelated to the host's `/etc/letsencrypt/`. Never write SSL files to host paths; always use `docker compose run` so writes land in the correct volume.
+- **`certbot --webroot` never writes `options-ssl-nginx.conf`** — only the `--nginx` plugin does. `init-letsencrypt.sh` must explicitly download this file into the volume via `docker compose run certbot`.
+- **HTTP-first bootstrap**: On fresh deploy, `docker-entrypoint.sh` detects missing certs and starts nginx with `nginx.acme-only.conf` (HTTP-only, port 80, serves ACME challenges). After `init-letsencrypt.sh` issues certs it switches to `nginx.prod.conf` via `nginx -s reload` — no container restart needed.
+- **`init-letsencrypt.sh` is a one-time manual script** — run once on a new server. Subsequent CD deployments start HTTPS directly because certs persist in the named volume across `docker compose down/up`.
+- **Staging mode**: `STAGING=1 scripts/init-letsencrypt.sh` to test cert issuance without hitting Let's Encrypt rate limits.
+
 ## Known Limitations
 
 - The `pull-and-test` CI job does not actually run tests — it only authenticates to GHCR
