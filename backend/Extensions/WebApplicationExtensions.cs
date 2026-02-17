@@ -23,7 +23,7 @@ public static class WebApplicationExtensions
     public static WebApplication ConfigureHttpPort(this WebApplication app)
     {
         var url = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
-        if (!string.IsNullOrEmpty(url))
+        if (!string.IsNullOrEmpty(url) && !app.Urls.Contains(url))
         {
             app.Urls.Add(url);
         }
