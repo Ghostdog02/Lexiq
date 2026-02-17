@@ -36,15 +36,11 @@ services:
     secrets:
       - backend_env
     environment:
-      USE_HTTPS: "true"
-      CERT_STORAGE_PATH: "/app/certs"
-      CERT_PASSWORD: "${CERT_PASSWORD:-lexiq-cert-password}"
+      ASPNETCORE_URLS: "http://+:80"
     expose:
       - "80"
-      - "443"
     volumes:
       - backend-uploads:/app/wwwroot
-      - backend-certs:/app/certs
     depends_on:
       db:
         condition: service_healthy
@@ -90,6 +86,5 @@ services:
 volumes:
   db-data:
   backend-uploads:
-  backend-certs:
   letsencrypt-certs:
   certbot-webroot:

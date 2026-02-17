@@ -101,7 +101,7 @@ backend/
 - SameSite=Lax; `Secure` flag set automatically when the request is HTTPS
 - All controllers require authentication unless explicitly marked with `[AllowAnonymous]`
 - CORS configured for frontend origin (environment variable: `ANGULAR_PORT`)
-- Production HTTPS auto-provisioned via **LettuceEncrypt** (Let's Encrypt)
+- Production HTTPS terminated at nginx (certbot manages the cert); backend speaks plain HTTP internally
 
 ### UserContextMiddleware
 - Registered after `UseAuthentication()` but before `UseAuthorization()` in the pipeline
@@ -255,8 +255,6 @@ JWT_EXPIRATION_HOURS=24         # default if unset
 
 # Production only
 ASPNETCORE_ENVIRONMENT=production
-CERT_STORAGE_PATH=/app/certs    # Let's Encrypt cert directory
-CERT_PASSWORD=<cert-password>   # Cert store password
 ```
 
 Backend loads secrets from `/run/secrets/backend_env` in production (Docker secrets).

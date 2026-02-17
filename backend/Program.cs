@@ -1,8 +1,6 @@
-using System.Net;
 using Backend.Api.Extensions;
 using Backend.Database.Extensions;
 using DotNetEnv;
-using LettuceEncrypt;
 
 namespace Backend.Api;
 
@@ -22,35 +20,20 @@ public class Program
 
         var builder = WebApplication.CreateBuilder(args);
 
-        var useHttps =
-            Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")?.ToLower() == "production";
-
-        ConfigureKestrel(builder, useHttps);
-        ConfigureServices(builder.Services, useHttps);
+        ConfigureServices(builder.Services);
 
         var app = builder.Build();
         app.Environment.EnsureUploadDirectoryStructure();
 
-        ConfigureMiddleware(app, useHttps);
+        ConfigureMiddleware(app);
 
         await InitializeDatabaseAsync(app.Services);
 
         app.Run();
     }
 
-    private static void ConfigureServices(IServiceCollection services, bool useHttps)
+    private static void ConfigureServices(IServiceCollection services)
     {
-        if (useHttps)
-        {
-            var certPath = Environment.GetEnvironmentVariable("CERT_STORAGE_PATH") ?? "/app/certs";
-            var certPassword =
-                Environment.GetEnvironmentVariable("CERT_PASSWORD") ?? "lexiq-cert-password";
-
-            services
-                .AddLettuceEncrypt()
-                .PersistDataToDirectory(new DirectoryInfo(certPath), certPassword);
-        }
-
         services.AddCorsPolicy();
         services.AddDatabaseContext();
         services.AddApplicationServices();
@@ -63,20 +46,10 @@ public class Program
         services.AddHealthChecks();
     }
 
-    private static void ConfigureMiddleware(WebApplication app, bool useHttps)
+    private static void ConfigureMiddleware(WebApplication app)
     {
         app.UseRouting();
-
-        if (useHttps)
-        {
-            app.UseHttpsRedirection();
-        }
-        
-        else
-        {
-            app.ConfigureHttpPort();
-        }
-
+        app.ConfigureHttpPort();
         app.UseCors("AllowAngular");
         app.UseStaticFiles();
         app.UseSwaggerWithUI();
@@ -91,31 +64,5 @@ public class Program
     {
         await serviceProvider.MigrateDbAsync();
         await SeedData.InitializeAsync(serviceProvider);
-    }
-
-    private static void ConfigureKestrel(WebApplicationBuilder builder, bool useHttps)
-    {
-        if (useHttps)
-        {
-            builder.WebHost.UseKestrel(kestrel =>
-            {
-                var appServices = kestrel.ApplicationServices;
-
-                // HTTP on port 80 (required for ACME HTTP-01 challenge)
-                kestrel.ListenAnyIP(80);
-
-                // HTTPS on port 443 with Let's Encrypt
-                kestrel.ListenAnyIP(
-                    443,
-                    listenOptions =>
-                    {
-                        listenOptions.UseHttps(httpsOptions =>
-                        {
-                            httpsOptions.UseLettuceEncrypt(appServices);
-                        });
-                    }
-                );
-            });
-        }
     }
 }
