@@ -51,10 +51,18 @@ Four-stage pipeline in `.github/workflows/`:
 
 - Loads environment variables from `/tmp/.deploy.env` (passed by CD workflow)
 - Authenticates to GHCR using GitHub token
-- Pulls latest images, stops old containers, starts new ones
+- Pulls latest images then does an **in-place `docker compose up -d --wait`** — no `docker compose down`. This keeps the DB container running across deploys, avoiding SQL Server's 30s cold-start and the full health-check cascade (db → backend → frontend) on every push.
+- **Do NOT add `apt update`/`apt upgrade`** to this script. OS package management has no place in a container deployment and was historically the biggest time sink (60-120s/run). Schedule host updates out-of-band.
 - **Security**: Masks IPv4 addresses in logs via `mask_ips()` function to prevent infrastructure details from leaking
 - Logs to `/var/log/lexiq/deployment/` with GitHub Actions annotations
-- Exit codes: 1 (system/file error), 3 (auth/pull failed), 4 (container start failed)
+- Exit codes: 1 (file not found), 3 (auth/pull failed), 4 (container start failed)
+
+### `continuous-delivery.yml` SSH Efficiency
+
+The CD job minimises SSH handshakes to 3 per run:
+1. **SCP** — transfers `scripts/deploy.sh`, `scripts/verify-deployment.sh`, and `docker-compose.prod.yml` in one connection to `/tmp/deploy_assets_<run_id>/`
+2. **SSH deploy+verify** — runs `deploy.sh` then `verify-deployment.sh` in a single connection; the compose file is `cp`'d to the production directory inside this step
+3. **SSH cleanup** (`always`) — removes temp assets and prunes dangling images
 
 ## Testing Deployment Locally
 
@@ -111,7 +119,7 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
 ## Known Limitations
 
 - The `pull-and-test` CI job does not actually run tests — it only authenticates to GHCR
-- `continuous-delivery` job references `@feature/ci-cd` — may need updating to match current branch naming
+- `continuous-delivery` job in `development.yml` references `@fix/refactor` — update the `uses:` pin when the main branch changes
 
 ## Common Debugging Scenarios
 
