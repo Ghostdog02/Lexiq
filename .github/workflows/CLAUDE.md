@@ -102,6 +102,11 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
 - **HTTP-first bootstrap**: On fresh deploy, `docker-entrypoint.sh` detects missing certs and starts nginx with `nginx.acme-only.conf` (HTTP-only, port 80, serves ACME challenges). After `init-letsencrypt.sh` issues certs it switches to `nginx.prod.conf` via `nginx -s reload` — no container restart needed.
 - **`init-letsencrypt.sh` is a one-time manual script** — run once on a new server. Subsequent CD deployments start HTTPS directly because certs persist in the named volume across `docker compose down/up`.
 - **Staging mode**: `STAGING=1 scripts/init-letsencrypt.sh` to test cert issuance without hitting Let's Encrypt rate limits.
+- **CRITICAL — separate certs per domain group**: `init-letsencrypt.sh` must issue **two separate** certbot certs:
+  - Frontend: `-d lexiqlanguage.eu -d www.lexiqlanguage.eu` → stored at `live/lexiqlanguage.eu/`
+  - API: `-d api.lexiqlanguage.eu` alone → stored at `live/api.lexiqlanguage.eu/`
+  Running all three in one command creates a SAN cert under `live/lexiqlanguage.eu/` only. `live/api.lexiqlanguage.eu/` never gets created, so `docker-entrypoint.sh` falls back to acme-only mode and nginx.prod.conf fails to reload. nginx stays HTTP-only forever, which means LettuceEncrypt's ACME challenge is never proxied to the backend → cert provisioning loops forever with `Connection refused`.
+- **LettuceEncrypt + certbot ACME coexistence**: `nginx.prod.conf`'s `api.lexiqlanguage.eu:80` block uses `try_files $uri @acme_backend` — certbot webroot tokens are served directly; LettuceEncrypt tokens (not in webroot) fall back to `proxy_pass http://backend:80`. Do NOT replace this with a plain `proxy_pass` or certbot renewal for the api cert will break.
 
 ## Known Limitations
 

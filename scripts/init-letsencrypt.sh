@@ -18,7 +18,13 @@
 
 set -euo pipefail
 
-DOMAINS=(lexiqlanguage.eu www.lexiqlanguage.eu api.lexiqlanguage.eu)
+# Frontend domains share one SAN cert (stored under the first domain name).
+FRONTEND_DOMAINS=(lexiqlanguage.eu www.lexiqlanguage.eu)
+# API subdomain gets its own cert so nginx can reference /live/api.lexiqlanguage.eu/
+# independently of the frontend cert.  Both certbot and LettuceEncrypt need
+# separate cert directories — a SAN cert under lexiqlanguage.eu/ is NOT found
+# at the api.lexiqlanguage.eu/ path that nginx.prod.conf and docker-entrypoint.sh expect.
+API_DOMAIN="api.lexiqlanguage.eu"
 EMAIL="admin@lexiqlanguage.eu"
 STAGING=${STAGING:-0}
 COMPOSE_FILE="docker-compose.prod.yml"
@@ -76,14 +82,17 @@ if [ "$STAGING" -eq 1 ]; then
     info "Using staging environment (avoids rate limits)"
 fi
 
-domain_args=""
-for domain in "${DOMAINS[@]}"; do
-    domain_args="$domain_args -d $domain"
+# Build frontend domain args
+frontend_args=""
+for domain in "${FRONTEND_DOMAINS[@]}"; do
+    frontend_args="$frontend_args -d $domain"
 done
 
 # Override the sidecar's renewal entrypoint with a one-shot certonly command.
 # The certbot service mounts letsencrypt-certs:/etc/letsencrypt and
 # certbot-webroot:/var/www/certbot — the same volumes nginx uses.
+
+info "Issuing certificate for frontend domains: ${FRONTEND_DOMAINS[*]}..."
 docker compose -f "$COMPOSE_FILE" run --rm \
     --entrypoint certbot \
     certbot certonly \
@@ -94,9 +103,29 @@ docker compose -f "$COMPOSE_FILE" run --rm \
     --agree-tos \
     --no-eff-email \
     --force-renewal \
-    $domain_args
+    $frontend_args
 
-success "Certificates issued successfully"
+success "Frontend certificate issued (live/lexiqlanguage.eu/)"
+
+# Issue a SEPARATE certificate for the API subdomain so that:
+# 1. nginx.prod.conf can reference /live/api.lexiqlanguage.eu/{fullchain,privkey}.pem
+# 2. docker-entrypoint.sh cert-detection check passes for both paths
+# 3. LettuceEncrypt (backend) ACME challenges can be proxied through nginx.prod.conf
+#    (nginx stays in acme-only mode when api cert is missing, breaking LettuceEncrypt)
+info "Issuing separate certificate for API subdomain: $API_DOMAIN..."
+docker compose -f "$COMPOSE_FILE" run --rm \
+    --entrypoint certbot \
+    certbot certonly \
+    --webroot \
+    -w /var/www/certbot \
+    $staging_arg \
+    --email "$EMAIL" \
+    --agree-tos \
+    --no-eff-email \
+    --force-renewal \
+    -d "$API_DOMAIN"
+
+success "API certificate issued (live/api.lexiqlanguage.eu/)"
 
 # ── Step 4: Switch nginx to HTTPS ───────────────────────────────────────────
 # Copy the production HTTPS config into the running container and reload.
