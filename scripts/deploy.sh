@@ -11,7 +11,6 @@ LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"
 
 # Exit codes
 readonly EXIT_SUCCESS=0
-readonly EXIT_SYSTEM_UPDATE_FAILED=1
 readonly EXIT_FILE_NOT_FOUND=1
 readonly EXIT_DOCKER_PULL_FAILED=3
 readonly EXIT_DOCKER_AUTH_FAILED=3
@@ -164,28 +163,6 @@ initialize() {
 # SYSTEM OPERATIONS
 # ============================================================================
 
-update_system() {
-  start_group "System Updates"
-  
-  log_info "Updating system packages..."
-  if sudo apt update 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
-    log_success "System package list updated"
-  else
-    log_error "System update failed"
-    end_group
-    exit $EXIT_SYSTEM_UPDATE_FAILED
-  fi
-  
-  log_info "Upgrading system packages..."
-  if sudo apt upgrade -y 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
-    log_success "System packages upgraded"
-  else
-    log_warning "System upgrade had issues (non-critical)"
-  fi
-  
-  end_group
-}
-
 install_dependencies() {
   start_group "Installing Dependencies"
   
@@ -195,7 +172,7 @@ install_dependencies() {
   else
       log_error "Docker is not installed"
       end_group
-      exit $EXIT_SYSTEM_UPDATE_FAILED
+      exit $EXIT_FILE_NOT_FOUND
   fi   
 
   end_group
@@ -228,11 +205,13 @@ authenticate_docker_registry() {
   end_group
 }
 
-pull_docker_images() {
-  start_group "Pulling Docker Images"
-  
+deploy_containers() {
+  start_group "Deploying Containers"
+
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_PULL_FAILED
-  
+
+  # Pull first so that if the registry is unreachable, running containers are
+  # never touched.
   log_info "Pulling latest Docker images..."
   if docker compose pull 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Docker images pulled"
@@ -241,44 +220,25 @@ pull_docker_images() {
     end_group
     exit $EXIT_DOCKER_PULL_FAILED
   fi
-  
-  end_group
-}
 
-stop_containers() {
-  start_group "Stopping Containers"
-  
-  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
-  
-  log_info "Stopping existing containers..."
-  if docker compose down 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
-    log_success "Containers stopped"
-  else
-    log_warning "Issue stopping containers"
-  fi
-  
-  end_group
-}
-
-start_containers() {
-  start_group "Starting Containers"
-  
-  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
-  
+  # In-place update: compose replaces only containers whose image or config
+  # changed.  Skipping `docker compose down` keeps the DB container running,
+  # which avoids SQL Server's 30-second cold-start and the health-check
+  # cascade (db → backend → frontend) on every deploy.
   log_info "Starting containers..."
   if docker compose up -d --wait 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Containers started"
   else
     log_error "Failed to start containers"
-    
+
     echo "::group::Container Logs"
     docker compose logs --tail=100 2>&1 | mask_ips | tee -a "$LOG_FILE"
     echo "::endgroup::"
-    
+
     end_group
     exit $EXIT_DOCKER_START_FAILED
   fi
-  
+
   end_group
 }
 
@@ -296,13 +256,10 @@ main() {
   
   export TAG="${BRANCH}"
   
-  update_system
   install_dependencies
-  
+
   authenticate_docker_registry
-  pull_docker_images
-  stop_containers
-  start_containers
+  deploy_containers
 
   local end_time
   end_time=$(date +%s)
