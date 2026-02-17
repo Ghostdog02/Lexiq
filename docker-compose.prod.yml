@@ -35,8 +35,6 @@ services:
     container_name: lexiq-backend
     secrets:
       - backend_env
-    environment:
-      ASPNETCORE_URLS: "http://+:8080"
     expose:
       - "8080"
     volumes:
