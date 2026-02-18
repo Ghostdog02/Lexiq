@@ -96,3 +96,27 @@ jobs:
           else
             echo "::error::❌ Infrastructure update failed — check logs above"
           fi
+
+  rebuild-app-images:
+    name: Rebuild app images with no cache
+    needs: update-infrastructure
+    uses: Ghostdog02/Lexiq/.github/workflows/build-and-push-docker.yml@fix/refactor
+    with:
+      config-path: .github/workflows/build-and-push-docker.yml
+      no-cache: true
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+
+  deploy-fresh-images:
+    name: Deploy fresh images to production
+    needs: rebuild-app-images
+    uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@fix/refactor
+    with:
+      config-path: .github/workflows/continuous-delivery.yml
+    permissions:
+      packages: read
+      issues: write
+      contents: write
+    secrets: inherit

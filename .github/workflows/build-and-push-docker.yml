@@ -6,6 +6,10 @@ on:
       config-path:
         required: true
         type: string
+      no-cache:
+        required: false
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -22,24 +26,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - name: Check for frontend Dockerfile changes
-        id: filter-frontend
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            dockerfile:
-              - 'frontend/Dockerfile.prod'
-
-      - name: Log frontend build cache status
-        run: |
-          if [ "${{ steps.filter-frontend.outputs.dockerfile }}" == "true" ]; then
-            echo "⚠️ Frontend Dockerfile changed - building with --no-cache to pull fresh base images"
-          else
-            echo "✅ Using GHA layer cache for faster frontend build"
-          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -71,7 +57,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          no-cache: ${{ steps.filter-frontend.outputs.dockerfile == 'true' }}
+          no-cache: ${{ inputs.no-cache }}
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
           build-args: |
@@ -87,24 +73,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
-      - name: Check for backend Dockerfile changes
-        id: filter-backend
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            dockerfile:
-              - 'backend/Dockerfile.prod'
-
-      - name: Log backend build cache status
-        run: |
-          if [ "${{ steps.filter-backend.outputs.dockerfile }}" == "true" ]; then
-            echo "⚠️ Backend Dockerfile changed - building with --no-cache to pull fresh base images"
-          else
-            echo "✅ Using GHA layer cache for faster backend build"
-          fi
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -136,6 +104,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          no-cache: ${{ steps.filter-backend.outputs.dockerfile == 'true' }}
+          no-cache: ${{ inputs.no-cache }}
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
