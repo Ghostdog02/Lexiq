@@ -41,8 +41,7 @@ log() {
   timestamp=$(date +"%Y-%m-%d %H:%M:%S")
   
   echo "[${timestamp}] ${message}" | tee -a "$LOG_FILE"
-  
-  # Send GitHub Actions annotations
+
   case "$level" in
     error)
       echo "::error::${message}"
@@ -94,17 +93,14 @@ load_env() {
   fi
 
   if [ -f "$ENVIRONMENT_FILE" ]; then
-    # Source the file
     . "$ENVIRONMENT_FILE"
     log_info "Loaded environment variables from $ENVIRONMENT_FILE"
-    
-    # Export variables needed by docker-compose
+
     export REGISTRY
     export REPO_LOWER
     export BRANCH
     export EVENT
 
-    # Debug: show what we have
     log_info "REGISTRY=${REGISTRY}"
     log_info "REPO_LOWER=${REPO_LOWER}"
     log_info "BRANCH=${BRANCH}"

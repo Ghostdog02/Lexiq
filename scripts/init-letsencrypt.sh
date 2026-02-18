@@ -29,7 +29,6 @@ EMAIL="admin@lexiqlanguage.eu"
 STAGING=${STAGING:-0}
 COMPOSE_FILE="docker-compose.prod.yml"
 
-# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -82,15 +81,10 @@ if [ "$STAGING" -eq 1 ]; then
     info "Using staging environment (avoids rate limits)"
 fi
 
-# Build frontend domain args
 frontend_args=""
 for domain in "${FRONTEND_DOMAINS[@]}"; do
     frontend_args="$frontend_args -d $domain"
 done
-
-# Override the sidecar's renewal entrypoint with a one-shot certonly command.
-# The certbot service mounts letsencrypt-certs:/etc/letsencrypt and
-# certbot-webroot:/var/www/certbot — the same volumes nginx uses.
 
 info "Issuing certificate for frontend domains: ${FRONTEND_DOMAINS[*]}..."
 docker compose -f "$COMPOSE_FILE" run --rm \
@@ -144,8 +138,6 @@ docker compose -f "$COMPOSE_FILE" run --rm \
 success "Certificate permissions fixed"
 
 # ── Step 4: Switch nginx to HTTPS ───────────────────────────────────────────
-# Copy the production HTTPS config into the running container and reload.
-# nginx will now find all the cert files that were just written to the volume.
 info "Switching nginx to HTTPS configuration..."
 docker compose -f "$COMPOSE_FILE" exec frontend sh -c \
     "cp /etc/nginx/nginx.prod.conf /etc/nginx/nginx.conf && nginx -s reload"
