@@ -127,6 +127,22 @@ docker compose -f "$COMPOSE_FILE" run --rm \
 
 success "API certificate issued (live/api.lexiqlanguage.eu/)"
 
+# ── Step 3.5: Fix cert permissions for non-root nginx ───────────────────────
+# The frontend image uses nginxinc/nginx-unprivileged (runs as nginx user, not
+# root). Certbot creates archive/ with 0700 and privkeys with 0600, so nginx
+# can't traverse the live/ → archive/ symlinks. Make directories traversable
+# and all cert files readable by all users in the container.
+info "Fixing certificate permissions for non-root nginx..."
+docker compose -f "$COMPOSE_FILE" run --rm \
+    --entrypoint sh \
+    certbot \
+    -c "
+        find /etc/letsencrypt/archive -type d -exec chmod 755 {} + && \
+        find /etc/letsencrypt/archive -type f -exec chmod 644 {} + && \
+        echo 'Certificate permissions fixed'
+    "
+success "Certificate permissions fixed"
+
 # ── Step 4: Switch nginx to HTTPS ───────────────────────────────────────────
 # Copy the production HTTPS config into the running container and reload.
 # nginx will now find all the cert files that were just written to the volume.
