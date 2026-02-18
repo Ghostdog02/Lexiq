@@ -206,12 +206,8 @@ deploy_containers() {
 
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_PULL_FAILED
 
-  # Pull first so that if the registry is unreachable, running containers are
-  # never touched.
-  # Pull only app images. db and certbot are pulled by the weekly
-  # infrastructure-update workflow to keep app deployments fast.
-  log_info "Pulling latest app images (backend, frontend)..."
-  if docker compose pull backend frontend 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
+  log_info "Pulling latest app images..."
+  if docker compose pull 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Docker images pulled"
   else
     log_error "Docker pull failed"
@@ -219,11 +215,8 @@ deploy_containers() {
     exit $EXIT_DOCKER_PULL_FAILED
   fi
 
-  # In-place update: compose replaces only containers whose image or config
-  # changed.  Skipping `docker compose down` keeps the DB container running,
-  # which avoids SQL Server's 30-second cold-start and the health-check
-  # cascade (db → backend → frontend) on every deploy.
   log_info "Starting containers..."
+  docker compose build --no-cache
   if docker compose up -d --wait 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Containers started"
   else

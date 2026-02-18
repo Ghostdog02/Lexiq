@@ -117,6 +117,4 @@ jobs:
       config-path: .github/workflows/continuous-delivery.yml
     permissions:
       packages: read
-      issues: write
-      contents: write
     secrets: inherit
