@@ -25,9 +25,9 @@ FRONTEND_DOMAINS=(lexiqlanguage.eu www.lexiqlanguage.eu)
 # separate cert directories — a SAN cert under lexiqlanguage.eu/ is NOT found
 # at the api.lexiqlanguage.eu/ path that nginx.prod.conf and docker-entrypoint.sh expect.
 API_DOMAIN="api.lexiqlanguage.eu"
-EMAIL="admin@lexiqlanguage.eu"
+EMAIL="alex.vesely07@gmail.com"
 STAGING=${STAGING:-0}
-COMPOSE_FILE="docker-compose.prod.yml"
+COMPOSE_FILE="docker-compose.yml"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
