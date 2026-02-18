@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Database.Migrations
 {
     [DbContext(typeof(BackendDbContext))]
-    [Migration("20260218173408_RemoveShadowPoperty")]
-    partial class RemoveShadowPoperty
+    [Migration("20260218180901_FixModelSnapshot")]
+    partial class FixModelSnapshot
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

@@ -5,22 +5,22 @@
 namespace Backend.Database.Migrations
 {
     /// <inheritdoc />
-    public partial class UpdatedEntites : Migration
+    public partial class RemoveShadowPoperty : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
                 name: "FK_UserExerciseProgress_Exercises_ExerciseId1",
-                table: "UserExerciseProgress");
+                table: "UserExerciseProgress"
+            );
 
             migrationBuilder.DropIndex(
                 name: "IX_UserExerciseProgress_ExerciseId1",
-                table: "UserExerciseProgress");
+                table: "UserExerciseProgress"
+            );
 
-            migrationBuilder.DropColumn(
-                name: "ExerciseId1",
-                table: "UserExerciseProgress");
+            migrationBuilder.DropColumn(name: "ExerciseId1", table: "UserExerciseProgress");
         }
 
         /// <inheritdoc />
@@ -30,19 +30,22 @@ namespace Backend.Database.Migrations
                 name: "ExerciseId1",
                 table: "UserExerciseProgress",
                 type: "nvarchar(450)",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserExerciseProgress_ExerciseId1",
                 table: "UserExerciseProgress",
-                column: "ExerciseId1");
+                column: "ExerciseId1"
+            );
 
             migrationBuilder.AddForeignKey(
                 name: "FK_UserExerciseProgress_Exercises_ExerciseId1",
                 table: "UserExerciseProgress",
                 column: "ExerciseId1",
                 principalTable: "Exercises",
-                principalColumn: "Id");
+                principalColumn: "Id"
+            );
         }
     }
 }
