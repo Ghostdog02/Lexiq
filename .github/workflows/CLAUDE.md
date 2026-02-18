@@ -159,6 +159,20 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
   - API: `-d api.lexiqlanguage.eu` alone → stored at `live/api.lexiqlanguage.eu/`
   Running all three in one command creates a SAN cert under `live/lexiqlanguage.eu/` only. `live/api.lexiqlanguage.eu/` never gets created, so `docker-entrypoint.sh` falls back to acme-only mode and nginx.prod.conf fails to reload.
 
+### Compose File Naming
+
+- CI copies `docker-compose.prod.yml` → `docker-compose.yml` on the server (line 67 of continuous-delivery.yml)
+- All server-side scripts (`deploy.sh`, `init-letsencrypt.sh`) must reference `docker-compose.yml`, not `docker-compose.prod.yml`
+- `init-letsencrypt.sh` resolves the path relative to its own location via `SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"`
+
+### Cert Permissions for nginx-unprivileged
+
+- Frontend uses `nginxinc/nginx-unprivileged` (runs as `nginx` user, not root)
+- Certbot creates `archive/` with `0700` — nginx can't follow `live/` → `archive/` symlinks
+- `init-letsencrypt.sh` step 3.5 runs `chmod 755` on archive dirs and `644` on cert files after issuance
+- Certbot sidecar has `--deploy-hook` to re-apply permissions after automatic renewal
+- Symptom: `BIO_new_file() failed (Permission denied)` on `nginx -s reload`
+
 ## Known Limitations
 
 - The `pull-and-test` CI job does not actually run tests — it only authenticates to GHCR
