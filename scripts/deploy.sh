@@ -215,8 +215,19 @@ deploy_containers() {
     exit $EXIT_DOCKER_PULL_FAILED
   fi
 
+  # Fix cert permissions for nginx-unprivileged (runs as non-root).
+  # Certbot creates archive/ with 0700 — nginx can't follow live/ symlinks.
+  # This runs every deploy (idempotent) since init-letsencrypt.sh only fixes
+  # permissions on first issuance, not on subsequent deploys.
+  if docker compose run --rm --entrypoint sh certbot -c \
+      "find /etc/letsencrypt/archive -type d -exec chmod 755 {} + && \
+       find /etc/letsencrypt/archive -type f -exec chmod 644 {} +" 2>/dev/null; then
+    log_success "Certificate permissions fixed"
+  else
+    log_info "No certificates to fix (fresh deploy)"
+  fi
+
   log_info "Starting containers..."
-  docker compose build --no-cache
   if docker compose up -d --wait 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Containers started"
   else
