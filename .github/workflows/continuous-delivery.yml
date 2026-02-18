@@ -45,7 +45,7 @@ jobs:
           key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          source: "scripts/deploy.sh,scripts/verify-deployment.sh,docker-compose.prod.yml"
+          source: "scripts/deploy.sh,scripts/verify-deployment.sh,docker-compose.prod.yml,scripts/init-letsencrypt.sh"
           target: "/tmp/deploy_assets_${{ github.run_id }}"
           strip_components: 0
 
@@ -65,6 +65,7 @@ jobs:
 
             mkdir -p "$TARGET_DIR"
             cp "$ASSETS/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
+            cp "$ASSETS/scripts/init-letsencrypt.sh" "$TARGET_DIR/scripts/init-letsencrypt.sh"
 
             # Create environment file
             cat > /tmp/.deploy.env << ENVEOF
