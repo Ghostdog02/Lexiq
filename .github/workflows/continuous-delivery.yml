@@ -63,7 +63,7 @@ jobs:
             ASSETS="/tmp/deploy_assets_${{ github.run_id }}"
             TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
 
-            mkdir -p "$TARGET_DIR"
+            mkdir -p "$TARGET_DIR/scripts"
             cp "$ASSETS/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
             cp "$ASSETS/scripts/init-letsencrypt.sh" "$TARGET_DIR/scripts/init-letsencrypt.sh"
 
