@@ -108,6 +108,18 @@ The backend uses `dotnet/sdk:10.0-alpine` (build) and `dotnet/aspnet:10.0-alpine
 
 **Do NOT remove either of these.** Without `icu-libs`, .NET string operations on non-ASCII characters silently fall back to invariant culture and produce incorrect sort/compare results.
 
+### Log Suppression
+
+All services use json-file logging with rotation (`max-size: "10m"`, `max-file: "3"`) in `docker-compose.prod.yml`.
+
+Backend ASP.NET Core verbosity is suppressed via environment variables — only warnings and errors surface in `docker compose logs`:
+```yaml
+Logging__LogLevel__Default: Warning
+Logging__LogLevel__Microsoft.AspNetCore: Warning
+Logging__LogLevel__Microsoft.EntityFrameworkCore: Warning
+```
+Override per-namespace as needed (e.g. set a specific namespace to `Debug` temporarily for troubleshooting).
+
 ### Health Checks
 
 - Backend health: `wget -q -O /dev/null -T 10 http://localhost:8080/health`

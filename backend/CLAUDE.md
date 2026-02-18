@@ -118,6 +118,13 @@ backend/
 - Development: `TrustServerCertificate=True, Encrypt=False`
 - Production: `TrustServerCertificate=True, Encrypt=True`
 
+### Data Protection Keys
+- Persisted to Docker named volume (`backend-dataprotection`) via `PersistKeysToFileSystem` in `ServiceCollectionExtensions.cs`
+- Path configurable via `DATA_PROTECTION_KEYS_PATH` env var (default `/app/dataprotection-keys`)
+- Keys are intentionally **not encrypted at rest** — Google OAuth-only app has no password reset/antiforgery flows; accepted trade-off
+- **Do NOT encrypt with the LE cert** — cert rotates every 90 days, invalidating all persisted keys and logging everyone out
+- The unencrypted-at-rest warning is suppressed at `Error` level in `appsettings.json` (intentional, not a bug)
+
 ## Database Schema
 
 Built with ASP.NET Core Identity. See `Database/ENTITIES_DOCUMENTATION.md` for comprehensive entity documentation.
@@ -341,6 +348,7 @@ Backend loads secrets from `/run/secrets/backend_env` in production (Docker secr
 - `UserExerciseProgress.ExerciseId` FK uses `DeleteBehavior.NoAction` (SQL Server multiple cascade path constraint)
 - `Lesson.status` is NOT returned by the API — frontend derives it from `isLocked`, `isCompleted`, `completedExercises` fields
 - **Exercise unlocking**: Hybrid strategy — first exercise unlocks with lesson, rest unlock sequentially on completion (infinite retries allowed)
+- **EF Core shadow FK gotcha**: `.WithMany()` without passing the navigation property creates a duplicate shadow FK (e.g. `ExerciseId1`). Always pass the inverse nav explicitly: `.WithMany(e => e.ExerciseProgress)`. See `BackendDbContext.cs` UserExerciseProgress configuration.
 
 ## Common Debugging Scenarios
 
