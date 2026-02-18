@@ -23,7 +23,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0  # Fetch full history for accurate change detection
+          fetch-depth: 2
 
       - name: Check for frontend Dockerfile changes
         id: filter-frontend
@@ -32,14 +32,11 @@ jobs:
           filters: |
             dockerfile:
               - 'frontend/Dockerfile.prod'
-              - 'frontend/package.json'
-              - 'frontend/package-lock.json'
-              - 'docker-compose.prod.yml'
 
       - name: Log frontend build cache status
         run: |
           if [ "${{ steps.filter-frontend.outputs.dockerfile }}" == "true" ]; then
-            echo "⚠️ Frontend Dockerfile or dependencies changed - building with --no-cache"
+            echo "⚠️ Frontend Dockerfile changed - building with --no-cache to pull fresh base images"
           else
             echo "✅ Using GHA layer cache for faster frontend build"
           fi
@@ -91,7 +88,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
-          fetch-depth: 0  # Fetch full history for accurate change detection
+          fetch-depth: 2
 
       - name: Check for backend Dockerfile changes
         id: filter-backend
@@ -100,13 +97,11 @@ jobs:
           filters: |
             dockerfile:
               - 'backend/Dockerfile.prod'
-              - 'backend/**/*.csproj'
-              - 'docker-compose.prod.yml'
 
       - name: Log backend build cache status
         run: |
           if [ "${{ steps.filter-backend.outputs.dockerfile }}" == "true" ]; then
-            echo "⚠️ Backend Dockerfile or dependencies changed - building with --no-cache"
+            echo "⚠️ Backend Dockerfile changed - building with --no-cache to pull fresh base images"
           else
             echo "✅ Using GHA layer cache for faster backend build"
           fi
