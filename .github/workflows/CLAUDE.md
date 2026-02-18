@@ -70,7 +70,8 @@ The CD job minimises SSH handshakes to 3 per run:
 Both build jobs use `docker/setup-buildx-action` (required for BuildKit) and `cache-from/cache-to` with `type=gha`:
 - **`scope=frontend`** and **`scope=backend`** keep the two caches isolated in the GHA store
 - On routine source-only pushes, `npm ci` and `dotnet restore` layers are served from cache — the most expensive steps are skipped entirely
-- When `no-cache: true` triggers (Dockerfile or dependency manifest changed), the build runs from scratch and then refreshes the cache for subsequent runs
+- When `package.json`, `package-lock.json`, or `*.csproj` change, the layer cache automatically invalidates the install layer (no full rebuild needed)
+- When `no-cache: true` triggers (only `Dockerfile.prod` changed), the build runs from scratch to pull fresh base images, then refreshes the cache
 - **Do NOT remove `setup-buildx-action`** — without it the GHA cache driver is unavailable and `cache-from/cache-to` silently does nothing
 
 ### `infrastructure-update.yml`
