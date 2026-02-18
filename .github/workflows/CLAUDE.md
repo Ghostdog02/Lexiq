@@ -69,18 +69,19 @@ The CD job minimises SSH handshakes to 3 per run:
 
 Both build jobs use `docker/setup-buildx-action` (required for BuildKit) and `cache-from/cache-to` with `type=gha`:
 - **`scope=frontend`** and **`scope=backend`** keep the two caches isolated in the GHA store
-- On routine source-only pushes, `npm ci` and `dotnet restore` layers are served from cache — the most expensive steps are skipped entirely
-- When `package.json`, `package-lock.json`, or `*.csproj` change, the layer cache automatically invalidates the install layer (no full rebuild needed)
-- When `no-cache: true` triggers (only `Dockerfile.prod` changed), the build runs from scratch to pull fresh base images, then refreshes the cache
+- Every push uses the layer cache unconditionally — `npm ci` and `dotnet restore` layers are served from cache on routine pushes
+- When `package.json`, `package-lock.json`, or `*.csproj` change, BuildKit automatically invalidates the install layer (no explicit `no-cache` needed)
+- `no-cache` is a boolean input (default `false`) — only the weekly infrastructure run passes `no-cache: true` to pull fresh base images
 - **Do NOT remove `setup-buildx-action`** — without it the GHA cache driver is unavailable and `cache-from/cache-to` silently does nothing
 
 ### `infrastructure-update.yml`
 
-Runs every Sunday at 02:00 UTC (also `workflow_dispatch`). Two SSH steps:
-1. **OS update** — `apt-get update && apt-get upgrade -y` on the host
-2. **Image update** — `docker compose pull db certbot` then `docker compose up -d --wait db certbot` (no-op if images unchanged) + `docker image prune -f`
+Runs every Sunday at 02:00 UTC (also `workflow_dispatch`). Three jobs in sequence:
+1. **`update-infrastructure`** — OS `apt-get upgrade` + `docker compose pull db certbot` + recreate containers + prune
+2. **`rebuild-app-images`** — calls `build-and-push-docker.yml` with `no-cache: true` to pull fresh base images (`node:*-alpine`, `nginx-unprivileged`, `dotnet/aspnet`) and push updated app images to GHCR
+3. **`deploy-fresh-images`** — calls `continuous-delivery.yml` to roll out the freshly built images to production
 
-App images (`backend`, `frontend`) are intentionally excluded — those are managed by the main CD pipeline.
+This is the only place `no-cache: true` is used — base image security patches land weekly as part of the maintenance window, not on every push.
 
 ## Testing Deployment Locally
 
