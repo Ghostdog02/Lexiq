@@ -72,7 +72,7 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<BackendDbContext>(
             options => options
                 .UseSqlServer(connectionString)
-                .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)),
+                .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)),
             ServiceLifetime.Scoped
         );
 
