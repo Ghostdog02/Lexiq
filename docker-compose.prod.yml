@@ -29,12 +29,22 @@ services:
       start_period: 30s
       timeout: 3s
     restart: unless-stopped
-  
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   backend:
     image:  ${REGISTRY}/${REPO_LOWER}-backend:${BRANCH}
     container_name: lexiq-backend
     secrets:
       - backend_env
+    environment:
+      # Suppress informational ASP.NET Core output; only warnings and errors
+      # surface in docker compose logs. Override per-namespace as needed.
+      Logging__LogLevel__Default: Warning
+      Logging__LogLevel__Microsoft.AspNetCore: Warning
+      Logging__LogLevel__Microsoft.EntityFrameworkCore: Warning
     expose:
       - "8080"
     volumes:
@@ -50,6 +60,10 @@ services:
       retries: 3
       start_period: 60s
     restart: unless-stopped
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   frontend:
     image:  ${REGISTRY}/${REPO_LOWER}-frontend:${BRANCH}
@@ -72,6 +86,10 @@ services:
       retries: 3
       start_period: 10s
     restart: unless-stopped
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   certbot:
     image: certbot/certbot:latest
@@ -81,6 +99,10 @@ services:
       - certbot-webroot:/var/www/certbot
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done;'"
     restart: unless-stopped
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 volumes:
   db-data:
