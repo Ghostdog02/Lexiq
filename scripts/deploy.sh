@@ -245,6 +245,36 @@ deploy_containers() {
 }
 
 # ============================================================================
+# CERTIFICATE MANAGEMENT
+# ============================================================================
+
+maybe_init_letsencrypt() {
+  start_group "Let's Encrypt Certificate Check"
+
+  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
+
+  # Find the volume by suffix to avoid hardcoding the compose project prefix
+  local vol_name
+  vol_name=$(docker volume ls --format '{{.Name}}' | grep 'letsencrypt-certs' | head -1 || true)
+
+  if [ -n "$vol_name" ]; then
+    local mountpoint
+    mountpoint=$(docker volume inspect "$vol_name" --format '{{.Mountpoint}}')
+    if [ -f "${mountpoint}/live/lexiqlanguage.eu/fullchain.pem" ]; then
+      log_info "Certificates already exist in ${vol_name} — skipping initialization"
+      end_group
+      return 0
+    fi
+  fi
+
+  log_info "No certificates found — running init-letsencrypt.sh..."
+  bash "${DEPLOY_DIR}/scripts/init-letsencrypt.sh" 2>&1 | mask_ips | tee -a "$LOG_FILE"
+  log_success "Certificate initialization complete"
+
+  end_group
+}
+
+# ============================================================================
 # MAIN DEPLOYMENT FLOW
 # ============================================================================
 
@@ -261,6 +291,7 @@ main() {
   install_dependencies
 
   authenticate_docker_registry
+  maybe_init_letsencrypt
   deploy_containers
 
   local end_time
