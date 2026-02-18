@@ -101,6 +101,7 @@ jobs:
             rm -rf "/tmp/deploy_assets_${{ github.run_id }}"
             rm -f /tmp/.deploy.env
             docker image prune -f
+            docker volume prune -f
 
       - name: Final Status Notices
         if: always()
