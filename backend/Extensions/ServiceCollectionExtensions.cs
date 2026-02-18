@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -69,7 +70,9 @@ public static class ServiceCollectionExtensions
         var connectionString = BuildConnectionString();
 
         services.AddDbContext<BackendDbContext>(
-            options => options.UseSqlServer(connectionString),
+            options => options
+                .UseSqlServer(connectionString)
+                .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)),
             ServiceLifetime.Scoped
         );
 
