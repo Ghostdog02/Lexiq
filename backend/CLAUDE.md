@@ -263,6 +263,18 @@ public async Task<IActionResult> CreateCourse(CreateCourseDto dto) { }
 - Always use `.WithMany(e => e.NavigationProperty)` in fluent configuration
 - Example fix: `.WithMany()` → `.WithMany(e => e.ExerciseProgress)` in `BackendDbContext`
 
+## EF Core 10 PendingModelChangesWarning
+
+- Thrown as an **error** by default in EF Core 10 during `MigrateAsync()` if model hash doesn't match snapshot
+- Suppressed via `ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning))` in `AddDatabaseContext()`
+- Migration class names MUST match file names and `[Migration]` attribute — mismatches break migration ID resolution
+
+## Database Migration Retry
+
+- `DatabaseExtensions.MigrateDbAsync()` retries with exponential backoff (3s, 6s, 12s...)
+- Creates fresh DbContext scope per retry to avoid dirty state
+- Fails fast on non-transient errors (`InvalidOperationException`) — no point retrying config issues
+
 ## Environment Variables
 
 Backend env vars are in `backend/.env` (mapped as Docker secret `backend_env`):
