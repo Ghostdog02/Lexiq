@@ -235,6 +235,27 @@ Apply roles via attributes:
 public async Task<IActionResult> CreateCourse(CreateCourseDto dto) { }
 ```
 
+## Port Configuration
+
+- Backend listens on **port 8080** (non-privileged, .NET 8+ default via `ASPNETCORE_HTTP_PORTS`)
+- The `dotnet/aspnet` base image sets `ASPNETCORE_HTTP_PORTS=8080` — no code or env var needed
+- **Do NOT set `ASPNETCORE_URLS`** in docker-compose or `.env` — it overrides `ASPNETCORE_HTTP_PORTS` and logs a warning: `Overriding HTTP_PORTS '8080'`
+- `ConfigureHttpPort()` was removed as redundant — ASP.NET Core reads port config natively
+
+## Data Protection Keys
+
+- Keys persisted to `/app/dataprotection-keys` via `AddDataProtectionKeys()` extension
+- Docker volume `backend-dataprotection` mounted at that path (survives container recreation)
+- Keys are **not encrypted at rest** — acceptable because JWT auth is independent of Data Protection
+- Do NOT use LE cert for key encryption: certs rotate every 90 days, making old keys unreadable
+- Warning suppressed in `appsettings.json`: `XmlKeyManager` log level set to `Error`
+
+## EF Core Shadow FK Gotcha
+
+- `.WithMany()` without a navigation property reference creates a shadow FK (e.g. `ExerciseId1`)
+- Always use `.WithMany(e => e.NavigationProperty)` in fluent configuration
+- Example fix: `.WithMany()` → `.WithMany(e => e.ExerciseProgress)` in `BackendDbContext`
+
 ## Environment Variables
 
 Backend env vars are in `backend/.env` (mapped as Docker secret `backend_env`):

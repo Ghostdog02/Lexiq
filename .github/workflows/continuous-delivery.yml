@@ -64,7 +64,7 @@ jobs:
             TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
 
             mkdir -p "$TARGET_DIR"
-            cp "$ASSETS/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.prod.yml"
+            cp "$ASSETS/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
 
             # Create environment file
             cat > /tmp/.deploy.env << ENVEOF

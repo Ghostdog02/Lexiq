@@ -110,9 +110,13 @@ The backend uses `dotnet/sdk:10.0-alpine` (build) and `dotnet/aspnet:10.0-alpine
 
 ### Health Checks
 
-- Backend health: `curl http://localhost:8080/health`
-- Frontend health: `curl http://localhost:4200` (should return HTML)
-- Database health: `docker compose exec db /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P <password> -Q "SELECT 1"`
+- Backend health: `wget -q -O /dev/null -T 10 http://localhost:8080/health`
+- Frontend health: `wget -q -O /dev/null -T 10 http://localhost:80/`
+- Database health: `docker compose exec db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P <password> -Q "SELECT 1" -C`
+
+**BusyBox wget gotcha**: Alpine images use BusyBox wget, NOT GNU wget. Only these flags work: `-q`, `-O`, `-T`, `-c`, `-S`, `-P`, `-U`, `-Y`. GNU-only flags (`--spider`, `--no-verbose`, `--tries`) silently fail with exit 1, making containers permanently unhealthy.
+
+**Health check output not in logs**: Docker health checks run in a separate exec — output does NOT appear in `docker compose logs`. Use `docker inspect --format='{{json .State.Health}}' <container>` to see health check results and error messages.
 
 ### Docker Secrets
 
@@ -127,7 +131,7 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
 - Production deployment uses nginx in frontend container
 - Images pushed to GitHub Container Registry (ghcr.io)
 - SSH deployment to Hetzner server via `scripts/deploy.sh`
-- Production HTTPS auto-provisioned via **LettuceEncrypt** (Let's Encrypt)
+- Production HTTPS terminated at **nginx** (certbot manages Let's Encrypt certs)
 
 ### SSL / Let's Encrypt Bootstrap
 
@@ -139,8 +143,7 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
 - **CRITICAL — separate certs per domain group**: `init-letsencrypt.sh` must issue **two separate** certbot certs:
   - Frontend: `-d lexiqlanguage.eu -d www.lexiqlanguage.eu` → stored at `live/lexiqlanguage.eu/`
   - API: `-d api.lexiqlanguage.eu` alone → stored at `live/api.lexiqlanguage.eu/`
-  Running all three in one command creates a SAN cert under `live/lexiqlanguage.eu/` only. `live/api.lexiqlanguage.eu/` never gets created, so `docker-entrypoint.sh` falls back to acme-only mode and nginx.prod.conf fails to reload. nginx stays HTTP-only forever, which means LettuceEncrypt's ACME challenge is never proxied to the backend → cert provisioning loops forever with `Connection refused`.
-- **LettuceEncrypt + certbot ACME coexistence**: `nginx.prod.conf`'s `api.lexiqlanguage.eu:80` block uses `try_files $uri @acme_backend` — certbot webroot tokens are served directly; LettuceEncrypt tokens (not in webroot) fall back to `proxy_pass http://backend:80`. Do NOT replace this with a plain `proxy_pass` or certbot renewal for the api cert will break.
+  Running all three in one command creates a SAN cert under `live/lexiqlanguage.eu/` only. `live/api.lexiqlanguage.eu/` never gets created, so `docker-entrypoint.sh` falls back to acme-only mode and nginx.prod.conf fails to reload.
 
 ## Known Limitations
 
@@ -158,9 +161,10 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
 4. Ensure database is ready: Backend retries 10 times (3s delay) waiting for SQL Server
 
 **Health check failures:**
-- Backend health: `curl http://localhost:8080/health`
-- Frontend health: `curl http://localhost:4200` (should return HTML)
-- Database health: `docker compose exec db /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P <password> -Q "SELECT 1"`
+- Backend health: `wget -q -O /dev/null -T 10 http://localhost:8080/health`
+- Frontend health: `wget -q -O /dev/null -T 10 http://localhost:80/`
+- Database health: `docker compose exec db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P <password> -Q "SELECT 1" -C`
+- **Debug output**: `docker inspect --format='{{json .State.Health}}' <container>` (health check output is NOT in `docker compose logs`)
 
 **Volume/permission issues:**
 - SQL Server data: Ensure `~/mssql-data` directory has correct permissions

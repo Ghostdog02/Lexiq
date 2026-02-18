@@ -1,6 +1,7 @@
 using Backend.Api.Extensions;
 using Backend.Database.Extensions;
 using DotNetEnv;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 namespace Backend.Api;
 
@@ -56,7 +57,8 @@ public class Program
         app.UseAuthentication();
         app.UseUserContext(); // Extract user entity from JWT
         app.UseAuthorization();
-        app.MapHealthChecks("/health");
+        HealthCheckOptions options = new() { AllowCachingResponses = true };
+        app.MapHealthChecks("/health", options);
         app.MapControllers();
     }
 
