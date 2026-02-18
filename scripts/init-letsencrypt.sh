@@ -27,7 +27,8 @@ FRONTEND_DOMAINS=(lexiqlanguage.eu www.lexiqlanguage.eu)
 API_DOMAIN="api.lexiqlanguage.eu"
 EMAIL="alex.vesely07@gmail.com"
 STAGING=${STAGING:-0}
-COMPOSE_FILE="docker-compose.yml"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+COMPOSE_FILE="${SCRIPT_DIR}/../docker-compose.yml"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
