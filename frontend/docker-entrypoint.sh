@@ -9,8 +9,8 @@ if [ "$ENVIRONMENT" = "production" ]; then
     # On a fresh deployment the letsencrypt-certs volume is empty, so we fall back
     # to HTTP-only mode so that ACME challenges can be served. Once init-letsencrypt.sh
     # issues real certificates it will switch nginx to HTTPS via `nginx -s reload`.
-    if [ -f /etc/letsencrypt/live/lexiqlanguage.eu/fullchain.pem ] && \
-       [ -f /etc/letsencrypt/live/api.lexiqlanguage.eu/fullchain.pem ]; then
+    if [ -r /etc/letsencrypt/live/lexiqlanguage.eu/fullchain.pem ] && \
+       [ -r /etc/letsencrypt/live/api.lexiqlanguage.eu/fullchain.pem ]; then
         echo "SSL certificates found, using production HTTPS configuration..."
         cp /etc/nginx/nginx.prod.conf /etc/nginx/nginx.conf
     else
