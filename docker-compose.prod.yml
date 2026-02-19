@@ -97,7 +97,8 @@ services:
     volumes:
       - letsencrypt-certs:/etc/letsencrypt
       - certbot-webroot:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet --deploy-hook \"find /etc/letsencrypt/archive -type d -exec chmod 755 {} + && find /etc/letsencrypt/archive -type f -exec chmod 644 {} +\"; sleep 12h & wait $${!}; done;'"
+      - ./scripts/certbot-entrypoint.sh:/certbot-entrypoint.sh:ro
+    entrypoint: ["/bin/sh", "/certbot-entrypoint.sh"]
     restart: unless-stopped
     logging:
       options:
