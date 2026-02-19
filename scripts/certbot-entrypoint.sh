@@ -14,6 +14,7 @@ trap exit TERM
 # nginx-unprivileged can't traverse live/ → archive/ symlinks.
 # Make directories traversable and cert files readable by all users.
 fix_permissions() {
+  chmod 755 /etc/letsencrypt/live 2>/dev/null
   find /etc/letsencrypt/archive -type d -exec chmod 755 {} + 2>/dev/null
   find /etc/letsencrypt/archive -type f -exec chmod 644 {} + 2>/dev/null
 }
@@ -32,7 +33,7 @@ while :; do
   certbot renew \
     --webroot -w /var/www/certbot \
     --quiet \
-    --deploy-hook "find /etc/letsencrypt/archive -type d -exec chmod 755 {} + && find /etc/letsencrypt/archive -type f -exec chmod 644 {} +"
+    --deploy-hook "chmod 755 /etc/letsencrypt/live && find /etc/letsencrypt/archive -type d -exec chmod 755 {} + && find /etc/letsencrypt/archive -type f -exec chmod 644 {} +"
   sleep 12h &
   wait $!
 done
