@@ -118,6 +118,13 @@ backend/
 - Development: `TrustServerCertificate=True, Encrypt=False`
 - Production: `TrustServerCertificate=True, Encrypt=True`
 
+### Data Protection Keys
+- Persisted to Docker named volume (`backend-dataprotection`) via `PersistKeysToFileSystem` in `ServiceCollectionExtensions.cs`
+- Path configurable via `DATA_PROTECTION_KEYS_PATH` env var (default `/app/dataprotection-keys`)
+- Keys are intentionally **not encrypted at rest** — Google OAuth-only app has no password reset/antiforgery flows; accepted trade-off
+- **Do NOT encrypt with the LE cert** — cert rotates every 90 days, invalidating all persisted keys and logging everyone out
+- The unencrypted-at-rest warning is suppressed at `Error` level in `appsettings.json` (intentional, not a bug)
+
 ## Database Schema
 
 Built with ASP.NET Core Identity. See `Database/ENTITIES_DOCUMENTATION.md` for comprehensive entity documentation.
@@ -235,6 +242,39 @@ Apply roles via attributes:
 public async Task<IActionResult> CreateCourse(CreateCourseDto dto) { }
 ```
 
+## Port Configuration
+
+- Backend listens on **port 8080** (non-privileged, .NET 8+ default via `ASPNETCORE_HTTP_PORTS`)
+- The `dotnet/aspnet` base image sets `ASPNETCORE_HTTP_PORTS=8080` — no code or env var needed
+- **Do NOT set `ASPNETCORE_URLS`** in docker-compose or `.env` — it overrides `ASPNETCORE_HTTP_PORTS` and logs a warning: `Overriding HTTP_PORTS '8080'`
+- `ConfigureHttpPort()` was removed as redundant — ASP.NET Core reads port config natively
+
+## Data Protection Keys
+
+- Keys persisted to `/app/dataprotection-keys` via `AddDataProtectionKeys()` extension
+- Docker volume `backend-dataprotection` mounted at that path (survives container recreation)
+- Keys are **not encrypted at rest** — acceptable because JWT auth is independent of Data Protection
+- Do NOT use LE cert for key encryption: certs rotate every 90 days, making old keys unreadable
+- Warning suppressed in `appsettings.json`: `XmlKeyManager` log level set to `Error`
+
+## EF Core Shadow FK Gotcha
+
+- `.WithMany()` without a navigation property reference creates a shadow FK (e.g. `ExerciseId1`)
+- Always use `.WithMany(e => e.NavigationProperty)` in fluent configuration
+- Example fix: `.WithMany()` → `.WithMany(e => e.ExerciseProgress)` in `BackendDbContext`
+
+## EF Core 10 PendingModelChangesWarning
+
+- Thrown as an **error** by default in EF Core 10 during `MigrateAsync()` if model hash doesn't match snapshot
+- Suppressed via `ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning))` in `AddDatabaseContext()`
+- Migration class names MUST match file names and `[Migration]` attribute — mismatches break migration ID resolution
+
+## Database Migration Retry
+
+- `DatabaseExtensions.MigrateDbAsync()` retries with exponential backoff (3s, 6s, 12s...)
+- Creates fresh DbContext scope per retry to avoid dirty state
+- Fails fast on non-transient errors (`InvalidOperationException`) — no point retrying config issues
+
 ## Environment Variables
 
 Backend env vars are in `backend/.env` (mapped as Docker secret `backend_env`):
@@ -320,6 +360,7 @@ Backend loads secrets from `/run/secrets/backend_env` in production (Docker secr
 - `UserExerciseProgress.ExerciseId` FK uses `DeleteBehavior.NoAction` (SQL Server multiple cascade path constraint)
 - `Lesson.status` is NOT returned by the API — frontend derives it from `isLocked`, `isCompleted`, `completedExercises` fields
 - **Exercise unlocking**: Hybrid strategy — first exercise unlocks with lesson, rest unlock sequentially on completion (infinite retries allowed)
+- **EF Core shadow FK gotcha**: `.WithMany()` without passing the navigation property creates a duplicate shadow FK (e.g. `ExerciseId1`). Always pass the inverse nav explicitly: `.WithMany(e => e.ExerciseProgress)`. See `BackendDbContext.cs` UserExerciseProgress configuration.
 
 ## Common Debugging Scenarios
 

@@ -51,8 +51,6 @@ jobs:
     uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@fix/refactor
     permissions:
       packages: read
-      issues: write
-      contents: write
     with:
       config-path: .github/workflows/continuous-delivery.yml
     secrets:

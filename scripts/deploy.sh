@@ -41,8 +41,7 @@ log() {
   timestamp=$(date +"%Y-%m-%d %H:%M:%S")
   
   echo "[${timestamp}] ${message}" | tee -a "$LOG_FILE"
-  
-  # Send GitHub Actions annotations
+
   case "$level" in
     error)
       echo "::error::${message}"
@@ -94,17 +93,14 @@ load_env() {
   fi
 
   if [ -f "$ENVIRONMENT_FILE" ]; then
-    # Source the file
     . "$ENVIRONMENT_FILE"
     log_info "Loaded environment variables from $ENVIRONMENT_FILE"
-    
-    # Export variables needed by docker-compose
+
     export REGISTRY
     export REPO_LOWER
     export BRANCH
     export EVENT
 
-    # Debug: show what we have
     log_info "REGISTRY=${REGISTRY}"
     log_info "REPO_LOWER=${REPO_LOWER}"
     log_info "BRANCH=${BRANCH}"
@@ -210,12 +206,8 @@ deploy_containers() {
 
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_PULL_FAILED
 
-  # Pull first so that if the registry is unreachable, running containers are
-  # never touched.
-  # Pull only app images. db and certbot are pulled by the weekly
-  # infrastructure-update workflow to keep app deployments fast.
-  log_info "Pulling latest app images (backend, frontend)..."
-  if docker compose pull backend frontend 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
+  log_info "Pulling latest app images..."
+  if docker compose pull 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Docker images pulled"
   else
     log_error "Docker pull failed"
@@ -223,10 +215,6 @@ deploy_containers() {
     exit $EXIT_DOCKER_PULL_FAILED
   fi
 
-  # In-place update: compose replaces only containers whose image or config
-  # changed.  Skipping `docker compose down` keeps the DB container running,
-  # which avoids SQL Server's 30-second cold-start and the health-check
-  # cascade (db → backend → frontend) on every deploy.
   log_info "Starting containers..."
   if docker compose up -d --wait 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Containers started"
@@ -240,6 +228,36 @@ deploy_containers() {
     end_group
     exit $EXIT_DOCKER_START_FAILED
   fi
+
+  end_group
+}
+
+# ============================================================================
+# CERTIFICATE MANAGEMENT
+# ============================================================================
+
+maybe_init_letsencrypt() {
+  start_group "Let's Encrypt Certificate Check"
+
+  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
+
+  # Find the volume by suffix to avoid hardcoding the compose project prefix
+  local vol_name
+  vol_name=$(docker volume ls --format '{{.Name}}' | grep 'letsencrypt-certs' | head -1 || true)
+
+  if [ -n "$vol_name" ]; then
+    local mountpoint
+    mountpoint=$(docker volume inspect "$vol_name" --format '{{.Mountpoint}}')
+    if [ -f "${mountpoint}/live/lexiqlanguage.eu/fullchain.pem" ]; then
+      log_info "Certificates already exist in ${vol_name} — skipping initialization"
+      end_group
+      return 0
+    fi
+  fi
+
+  log_info "No certificates found — running init-letsencrypt.sh..."
+  bash "${DEPLOY_DIR}/scripts/init-letsencrypt.sh" 2>&1 | mask_ips | tee -a "$LOG_FILE"
+  log_success "Certificate initialization complete"
 
   end_group
 }
@@ -261,6 +279,7 @@ main() {
   install_dependencies
 
   authenticate_docker_registry
+  maybe_init_letsencrypt
   deploy_containers
 
   local end_time

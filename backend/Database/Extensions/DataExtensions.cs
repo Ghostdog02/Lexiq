@@ -1,62 +1,59 @@
-﻿using Backend.Database;
+using Backend.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace Backend.Api.Extensions;
+namespace Backend.Database.Extensions;
 
 public static class DatabaseExtensions
 {
     public static async Task MigrateDbAsync(this IServiceProvider serviceProvider)
     {
-        using var scope = serviceProvider.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<BackendDbContextFactory>>();
+        var logger = serviceProvider.GetRequiredService<ILogger<BackendDbContext>>();
 
-        var retryCount = 0;
         const int maxRetries = 10;
-        const int delayMilliseconds = 3000;
+        const int baseDelayMs = 3000;
 
-        while (retryCount < maxRetries)
+        for (var attempt = 1; attempt <= maxRetries; attempt++)
         {
             try
             {
+                using var scope = serviceProvider.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
+
                 logger.LogInformation(
                     "Attempting to apply database migrations... (Attempt {Attempt}/{MaxRetries})",
-                    retryCount + 1,
+                    attempt,
                     maxRetries
                 );
 
-                var pendingMigrations = await dbContext.Database.GetPendingMigrationsAsync();
+                var pending = (await dbContext.Database.GetPendingMigrationsAsync()).ToList();
 
-                if (pendingMigrations.Any())
+                if (pending.Count > 0)
                 {
-                    logger.LogInformation(
-                        "Applying {Count} pending migrations",
-                        pendingMigrations.Count()
-                    );
+                    logger.LogInformation("Applying {Count} pending migrations", pending.Count);
                     await dbContext.Database.MigrateAsync();
                     logger.LogInformation("Database migrations applied successfully");
                 }
-                
+
                 else
                 {
                     logger.LogInformation("No pending migrations found");
                 }
 
-                return; // Success, exit the method
+                return;
             }
-            catch (Exception ex)
+                
+            catch (Exception ex) when (ex is not InvalidOperationException)
             {
-                retryCount++;
                 logger.LogWarning(
                     ex,
                     "Failed to apply migrations (Attempt {Attempt}/{MaxRetries})",
-                    retryCount,
+                    attempt,
                     maxRetries
                 );
 
-                if (retryCount >= maxRetries)
+                if (attempt >= maxRetries)
                 {
                     logger.LogError(
                         ex,
@@ -66,8 +63,9 @@ public static class DatabaseExtensions
                     throw;
                 }
 
-                logger.LogInformation("Retrying in {Delay}ms...", delayMilliseconds);
-                await Task.Delay(delayMilliseconds);
+                var delay = baseDelayMs * (1 << (attempt - 1)); // 3s, 6s, 12s, 24s...
+                logger.LogInformation("Retrying in {Delay}ms...", delay);
+                await Task.Delay(delay);
             }
         }
     }

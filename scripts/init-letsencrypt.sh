@@ -25,11 +25,11 @@ FRONTEND_DOMAINS=(lexiqlanguage.eu www.lexiqlanguage.eu)
 # separate cert directories — a SAN cert under lexiqlanguage.eu/ is NOT found
 # at the api.lexiqlanguage.eu/ path that nginx.prod.conf and docker-entrypoint.sh expect.
 API_DOMAIN="api.lexiqlanguage.eu"
-EMAIL="admin@lexiqlanguage.eu"
+EMAIL="alex.vesely07@gmail.com"
 STAGING=${STAGING:-0}
-COMPOSE_FILE="docker-compose.prod.yml"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+COMPOSE_FILE="${SCRIPT_DIR}/../docker-compose.yml"
 
-# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -82,15 +82,10 @@ if [ "$STAGING" -eq 1 ]; then
     info "Using staging environment (avoids rate limits)"
 fi
 
-# Build frontend domain args
 frontend_args=""
 for domain in "${FRONTEND_DOMAINS[@]}"; do
     frontend_args="$frontend_args -d $domain"
 done
-
-# Override the sidecar's renewal entrypoint with a one-shot certonly command.
-# The certbot service mounts letsencrypt-certs:/etc/letsencrypt and
-# certbot-webroot:/var/www/certbot — the same volumes nginx uses.
 
 info "Issuing certificate for frontend domains: ${FRONTEND_DOMAINS[*]}..."
 docker compose -f "$COMPOSE_FILE" run --rm \
@@ -127,9 +122,15 @@ docker compose -f "$COMPOSE_FILE" run --rm \
 
 success "API certificate issued (live/api.lexiqlanguage.eu/)"
 
+# ── Step 3.5: Fix cert permissions for non-root nginx ───────────────────────
+# Start the certbot sidecar whose entrypoint (certbot-entrypoint.sh) fixes
+# live/ and archive/ permissions automatically, then enters the renewal loop.
+info "Starting certbot sidecar to fix certificate permissions..."
+docker compose -f "$COMPOSE_FILE" up -d certbot
+sleep 2
+success "Certificate permissions fixed via certbot entrypoint"
+
 # ── Step 4: Switch nginx to HTTPS ───────────────────────────────────────────
-# Copy the production HTTPS config into the running container and reload.
-# nginx will now find all the cert files that were just written to the volume.
 info "Switching nginx to HTTPS configuration..."
 docker compose -f "$COMPOSE_FILE" exec frontend sh -c \
     "cp /etc/nginx/nginx.prod.conf /etc/nginx/nginx.conf && nginx -s reload"
