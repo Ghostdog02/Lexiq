@@ -1,13 +1,10 @@
 #!/bin/sh
 
 # Certbot sidecar entrypoint.
-# 1. Fixes certificate permissions for nginx-unprivileged on startup.
-# 2. Runs a renewal loop every 12 hours with a deploy-hook that
-#    re-applies permissions after each successful renewal.
+# Fixes certificate permissions for nginx-unprivileged on startup, then exits.
+# Certificate renewal is handled by the weekly infrastructure-update workflow.
 
 set -e
-
-trap exit TERM
 
 # ── Fix permissions on startup ────────────────────────────────────────
 # Certbot creates archive/ with 0700 and privkeys with 0600.
@@ -24,16 +21,3 @@ if [ -d /etc/letsencrypt/archive ]; then
   fix_permissions
   echo "Certificate permissions fixed."
 fi
-
-# ── Renewal loop ──────────────────────────────────────────────────────
-# certbot renew checks all managed certs; --deploy-hook runs only when
-# a cert is actually renewed (re-applies permissions for the new files).
-echo "Starting certbot renewal loop (every 12h)..."
-while :; do
-  certbot renew \
-    --webroot -w /var/www/certbot \
-    --quiet \
-    --deploy-hook "chmod 755 /etc/letsencrypt/live && find /etc/letsencrypt/archive -type d -exec chmod 755 {} + && find /etc/letsencrypt/archive -type f -exec chmod 644 {} +"
-  sleep 12h &
-  wait $!
-done

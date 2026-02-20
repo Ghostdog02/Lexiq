@@ -198,3 +198,15 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
 - SQL Server data: Ensure `~/mssql-data` directory has correct permissions
 - Upload directory: Check `backend/static/uploads` is writable by container user
 - Log directory: Verify `/var/log/lexiq` exists on production server
+
+### Mixed Content (frontend requests HTTP from HTTPS page)
+
+- **Cause**: `BACKEND_API_URL` GitHub repo variable set to an absolute `http://` URL baked into the Angular bundle at build time
+- **Fix**: Set `BACKEND_API_URL` to `/api` (relative path) — it inherits the page scheme and nginx proxies it to backend
+- **Where**: GitHub repo → Settings → Secrets and variables → Actions → Variables → `BACKEND_API_URL`
+
+### Frontend Falls Back to ACME-Only Mode Despite Valid Certs
+
+- **Cause**: Race condition — frontend checks cert readability before certbot finishes `chmod 755` on `archive/`
+- **Fix already applied**: `depends_on: certbot: condition: service_completed_successfully` in `docker-compose.prod.yml`
+- Certbot uses `restart: no` — one-shot permission-fix job that exits 0, then frontend starts
