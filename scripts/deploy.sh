@@ -256,7 +256,7 @@ maybe_init_letsencrypt() {
           log_info "Certificates already exist in ${vol_name} — skipping initialization"
           certs_exist=true
       else
-          log_warn "Volume exists, but certificates are missing in ${mountpoint}"
+          log_warning "Volume exists, but certificates are missing in ${mountpoint}"
       fi
   fi
 
