@@ -245,20 +245,28 @@ maybe_init_letsencrypt() {
   local vol_name
   vol_name=$(docker volume ls --format '{{.Name}}' | grep 'production_letsencrypt-certs' | head -1 || true)
 
+  local certs_exist=false
+
   if [ -n "$vol_name" ]; then
-    local mountpoint
-    mountpoint=$(docker volume inspect "$vol_name" --format '{{.Mountpoint}}')
-    log_info "Found existing Let's Encrypt volume: ${vol_name} at ${mountpoint}"
-    if [ -f "${mountpoint}/live/lexiqlanguage.eu/fullchain.pem" ]; then
-      log_info "Certificates already exist in ${vol_name} — skipping initialization"
+      local mountpoint
+      mountpoint=$(docker volume inspect "$vol_name" --format '{{.Mountpoint}}')
+      log_info "Found existing Let's Encrypt volume: ${vol_name} at ${mountpoint}"
+
+      if [ -f "${mountpoint}/live/lexiqlanguage.eu/fullchain.pem" ]; then
+          log_info "Certificates already exist in ${vol_name} — skipping initialization"
+          certs_exist=true
+      else
+          log_warn "Volume exists, but certificates are missing in ${mountpoint}"
+      fi
+  fi
+
+  if [ "$certs_exist" = false ]; then
+      log_info "Initializing certificates — running init-letsencrypt.sh..."
+      bash "${DEPLOY_DIR}/scripts/init-letsencrypt.sh" 2>&1 | mask_ips | tee -a "$LOG_FILE"
+      log_success "Certificate initialization complete"
+  else
       end_group
       return 0
-    fi
-  
-  else
-    log_info "No certificates found — running init-letsencrypt.sh..."
-    bash "${DEPLOY_DIR}/scripts/init-letsencrypt.sh" 2>&1 | mask_ips | tee -a "$LOG_FILE"
-    log_success "Certificate initialization complete"
   fi
 
   end_group
