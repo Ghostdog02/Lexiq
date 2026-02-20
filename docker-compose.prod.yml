@@ -76,6 +76,8 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+      certbot:
+        condition: service_completed_successfully
     volumes:
       - letsencrypt-certs:/etc/letsencrypt:ro
       - certbot-webroot:/var/www/certbot:ro
@@ -99,7 +101,7 @@ services:
       - certbot-webroot:/var/www/certbot
       - ./scripts/certbot-entrypoint.sh:/certbot-entrypoint.sh:ro
     entrypoint: ["/bin/sh", "/certbot-entrypoint.sh"]
-    restart: unless-stopped
+    restart: no
     logging:
       options:
         max-size: "10m"

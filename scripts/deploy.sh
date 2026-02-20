@@ -243,22 +243,32 @@ maybe_init_letsencrypt() {
 
   # Find the volume by suffix to avoid hardcoding the compose project prefix
   local vol_name
-  vol_name=$(docker volume ls --format '{{.Name}}' | grep 'letsencrypt-certs' | head -1 || true)
+  vol_name=$(docker volume ls --format '{{.Name}}' | grep 'production_letsencrypt-certs' | head -1 || true)
+
+  local certs_exist=false
 
   if [ -n "$vol_name" ]; then
     # Docker volumes live under /var/lib/docker/volumes/ which is owned by root (the daemon runs as root).
     # The deploy user cannot read that host path directly, so mount the volume into a throwaway container and check from inside.
     if docker run --rm -v "${vol_name}:/certs:ro" alpine \
         test -f /certs/live/lexiqlanguage.eu/fullchain.pem 2>/dev/null; then
+      certs_exist=true
       log_info "Certificates already exist in ${vol_name} — skipping initialization"
       end_group
       return 0
+    else
+        log_warning "Volume exists, but certificates are missing in ${vol_name}"
     fi
   fi
 
-  log_info "No certificates found — running init-letsencrypt.sh..."
-  bash "${DEPLOY_DIR}/scripts/init-letsencrypt.sh" 2>&1 | mask_ips | tee -a "$LOG_FILE"
-  log_success "Certificate initialization complete"
+  if [ "$certs_exist" = false ]; then
+      log_info "Initializing certificates — running init-letsencrypt.sh..."
+      bash "${DEPLOY_DIR}/scripts/init-letsencrypt.sh" 2>&1 | mask_ips | tee -a "$LOG_FILE"
+      log_success "Certificate initialization complete"
+  else
+      end_group
+      return 0
+  fi
 
   end_group
 }

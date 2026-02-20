@@ -88,6 +88,35 @@ jobs:
             echo "::notice::✅ Dangling images pruned"
             echo "::endgroup::"
 
+      - name: Renew SSL certificates
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.HETZNER_PROD_HOST }}
+          username: ${{ secrets.HETZNER_PROD_USERNAME }}
+          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
+          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
+          command_timeout: 5m
+          script: |
+            DEPLOY_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+            cd "$DEPLOY_DIR"
+
+            echo "::group::SSL certificate renewal"
+            echo "::notice::Running certbot renew (skips if cert not near expiry)..."
+            if docker compose run --rm \
+              --entrypoint certbot \
+              certbot renew \
+              --webroot -w /var/www/certbot \
+              --quiet \
+              --deploy-hook "chmod 755 /etc/letsencrypt/live && find /etc/letsencrypt/archive -type d -exec chmod 755 {} + && find /etc/letsencrypt/archive -type f -exec chmod 644 {} +"; then
+              echo "::notice::✅ Certificate renewal check complete"
+            else
+              echo "::error::certbot renew failed"
+              echo "::endgroup::"
+              exit 1
+            fi
+            echo "::endgroup::"
+
       - name: Final Status Notice
         if: always()
         run: |
