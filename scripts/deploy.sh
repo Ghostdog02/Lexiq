@@ -246,9 +246,10 @@ maybe_init_letsencrypt() {
   vol_name=$(docker volume ls --format '{{.Name}}' | grep 'letsencrypt-certs' | head -1 || true)
 
   if [ -n "$vol_name" ]; then
-    local mountpoint
-    mountpoint=$(docker volume inspect "$vol_name" --format '{{.Mountpoint}}')
-    if [ -f "${mountpoint}/live/lexiqlanguage.eu/fullchain.pem" ]; then
+    # Docker volumes live under /var/lib/docker/volumes/ which is owned by root (the daemon runs as root).
+    # The deploy user cannot read that host path directly, so mount the volume into a throwaway container and check from inside.
+    if docker run --rm -v "${vol_name}:/certs:ro" alpine \
+        test -f /certs/live/lexiqlanguage.eu/fullchain.pem 2>/dev/null; then
       log_info "Certificates already exist in ${vol_name} — skipping initialization"
       end_group
       return 0
