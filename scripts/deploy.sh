@@ -243,7 +243,7 @@ maybe_init_letsencrypt() {
 
   # Find the volume by suffix to avoid hardcoding the compose project prefix
   local vol_name
-  vol_name=$(docker volume ls --format '{{.Name}}' | grep 'letsencrypt-certs' | head -1 || true)
+  vol_name=$(docker volume ls --format '{{.Name}}' | grep 'production_letsencrypt-certs' | head -1 || true)
 
   if [ -n "$vol_name" ]; then
     local mountpoint
