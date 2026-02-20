@@ -248,6 +248,7 @@ maybe_init_letsencrypt() {
   if [ -n "$vol_name" ]; then
     local mountpoint
     mountpoint=$(docker volume inspect "$vol_name" --format '{{.Mountpoint}}')
+    log_info "Found existing Let's Encrypt volume: ${vol_name} at ${mountpoint}"
     if [ -f "${mountpoint}/live/lexiqlanguage.eu/fullchain.pem" ]; then
       log_info "Certificates already exist in ${vol_name} — skipping initialization"
       end_group
