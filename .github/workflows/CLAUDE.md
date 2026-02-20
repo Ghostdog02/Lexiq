@@ -152,6 +152,7 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
 - **Named volumes vs host paths**: `letsencrypt-certs` is a Docker named volume — unrelated to the host's `/etc/letsencrypt/`. Never write SSL files to host paths; always use `docker compose run` so writes land in the correct volume.
 - **`certbot --webroot` never writes `options-ssl-nginx.conf`** — only the `--nginx` plugin does. `init-letsencrypt.sh` must explicitly download this file into the volume via `docker compose run certbot`.
 - **HTTP-first bootstrap**: On fresh deploy, `docker-entrypoint.sh` detects missing certs and starts nginx with `nginx.acme-only.conf` (HTTP-only, port 80, serves ACME challenges). After `init-letsencrypt.sh` issues certs it switches to `nginx.prod.conf` via `nginx -s reload` — no container restart needed.
+- **`init-letsencrypt.sh` uses `--force-renewal`** — re-running on a live server burns Let's Encrypt quota (5 issuances per domain per 7 days). Do not re-run unless certs are corrupt/missing.
 - **`init-letsencrypt.sh` is a one-time manual script** — run once on a new server. Subsequent CD deployments start HTTPS directly because certs persist in the named volume across `docker compose down/up`.
 - **Staging mode**: `STAGING=1 scripts/init-letsencrypt.sh` to test cert issuance without hitting Let's Encrypt rate limits.
 - **CRITICAL — separate certs per domain group**: `init-letsencrypt.sh` must issue **two separate** certbot certs:
@@ -170,7 +171,7 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
 - Frontend uses `nginxinc/nginx-unprivileged` (runs as `nginx` user, not root)
 - Certbot creates `archive/` with `0700` — nginx can't follow `live/` → `archive/` symlinks
 - `init-letsencrypt.sh` step 3.5 runs `chmod 755` on archive dirs and `644` on cert files after issuance
-- Certbot sidecar has `--deploy-hook` to re-apply permissions after automatic renewal
+- `infrastructure-update.yml` renewal step uses `--deploy-hook` to re-apply permissions after each actual renewal
 - Symptom: `BIO_new_file() failed (Permission denied)` on `nginx -s reload`
 
 ## Known Limitations

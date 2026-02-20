@@ -73,7 +73,8 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 ### TLS Architecture (Production)
 
 - nginx (frontend container) is the **sole TLS terminator** for both `lexiqlanguage.eu` and `api.lexiqlanguage.eu`
-- certbot sidecar handles cert renewal; certs persist in `letsencrypt-certs` named volume
+- certbot sidecar fixes cert permissions on startup (one-shot, `restart: no`); renewal runs via weekly `infrastructure-update.yml` cron
+- certs persist in `letsencrypt-certs` named volume — survives all container restarts and redeploys
 - Backend speaks **plain HTTP on port 8080** inside the Docker network — no HTTPS, no LettuceEncrypt
 - nginx → backend: `proxy_pass http://backend:8080`
 
