@@ -254,11 +254,12 @@ maybe_init_letsencrypt() {
       end_group
       return 0
     fi
+  
+  else
+    log_info "No certificates found — running init-letsencrypt.sh..."
+    bash "${DEPLOY_DIR}/scripts/init-letsencrypt.sh" 2>&1 | mask_ips | tee -a "$LOG_FILE"
+    log_success "Certificate initialization complete"
   fi
-
-  log_info "No certificates found — running init-letsencrypt.sh..."
-  bash "${DEPLOY_DIR}/scripts/init-letsencrypt.sh" 2>&1 | mask_ips | tee -a "$LOG_FILE"
-  log_success "Certificate initialization complete"
 
   end_group
 }
