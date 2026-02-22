@@ -33,7 +33,7 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
   private onChange: any = () => { };
   private onTouched: any = () => { };
   private changeDebounceTimer: any = null;
-  private lastSavedContent: string = '';
+  private lastSavedBlocks: string = '';
 
   ngOnInit(): void {
     this.initializeEditor();
@@ -92,12 +92,14 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
 
         this.changeDebounceTimer = setTimeout(async () => {
           const content = await this.editor.save();
-          const serialized = JSON.stringify(content);
+          // Compare only blocks — `time` is a fresh timestamp on every save()
+          // and would make this check always pass, causing the live preview to
+          // re-render (and re-request images) on every mouse move.
+          const blocksJson = JSON.stringify(content.blocks);
 
-          // Only trigger onChange if content actually changed
-          if (serialized !== this.lastSavedContent) {
-            this.lastSavedContent = serialized;
-            this.onChange(serialized);
+          if (blocksJson !== this.lastSavedBlocks) {
+            this.lastSavedBlocks = blocksJson;
+            this.onChange(JSON.stringify(content));
             this.onTouched();
           }
         }, 300); // 300ms debounce
@@ -269,7 +271,7 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
     if (value && this.editor) {
       try {
         const data = typeof value === 'string' ? JSON.parse(value) : value;
-        this.lastSavedContent = typeof value === 'string' ? value : JSON.stringify(value);
+        this.lastSavedBlocks = JSON.stringify(data.blocks ?? []);
         this.editor.render(data);
       } catch (error) {
         console.error('Failed to write value to editor:', error);
