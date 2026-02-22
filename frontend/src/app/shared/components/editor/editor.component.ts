@@ -140,6 +140,12 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
     let updated = contentJson;
 
     for (const [blobUrl, { file, fileType }] of this.pendingFiles) {
+      if (!contentJson.includes(blobUrl)) {
+        // Block was removed from the editor — skip upload and free memory
+        URL.revokeObjectURL(blobUrl);
+        continue;
+      }
+
       const result = await this.uploadFile(file, fileType);
 
       if (result.success !== 1) {
