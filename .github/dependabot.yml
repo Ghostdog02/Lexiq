@@ -1,44 +1,57 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
-# https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
-
 version: 2
 updates:
-  # Docker images in Dockerfiles
   - package-ecosystem: "docker"
-    directory: "/frontend"  # Path to frontend Dockerfile
+    directory: "/frontend"
     schedule:
       interval: "weekly"
+      day: "monday"
     open-pull-requests-limit: 2
+    groups:
+      docker-frontend:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "docker"
-    directory: "/backend"  # Path to backend Dockerfile
+    directory: "/backend"
     schedule:
       interval: "weekly"
+      day: "monday"
     open-pull-requests-limit: 2
+    groups:
+      docker-backend:
+        update-types: ["minor", "patch"]
 
-  # Angular/npm dependencies
   - package-ecosystem: "npm"
-    directory: "/frontend" 
+    directory: "/frontend"
     schedule:
       interval: "weekly"
+      day: "monday"
     open-pull-requests-limit: 2
     ignore:
       - dependency-name: "*"
-        update-types: ["version-update:semver-major"]  # Ignore major updates
+        update-types: ["version-update:semver-major"]
+    groups:
+      npm-all:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "nuget"
     directory: "/backend"
     schedule:
       interval: "weekly"
+      day: "monday"
     open-pull-requests-limit: 2
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+    groups:
+      nuget-all:
+        update-types: ["minor", "patch"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+      day: "monday"
     open-pull-requests-limit: 2
+    groups:
+      actions-all:
+        update-types: ["minor", "patch"]
