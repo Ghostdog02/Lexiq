@@ -190,6 +190,11 @@ When restoring component state from previous submissions:
 
 ### Editor.js Integration
 
+**Upload Gotchas**:
+- When `uploader.uploadByFile` is provided, Editor.js ignores `field` and `endpoints` config entirely
+- The custom uploader's FormData field name must match the backend `IFormFile` parameter name (`"file"`)
+- File type is communicated via URL route (`/uploads/image`), NOT the FormData field name
+
 **Performance Optimization**:
 - Editor onChange fires on ALL interactions (focus, mouse moves, selection changes)
 - Debounce with 300ms timeout + content comparison to prevent excessive saves

@@ -96,7 +96,7 @@ public class BackendDbContext(DbContextOptions options)
 
             entity
                 .HasOne(uep => uep.Exercise)
-                .WithMany()
+                .WithMany(e => e.ExerciseProgress)
                 .HasForeignKey(uep => uep.ExerciseId)
                 .OnDelete(DeleteBehavior.NoAction);
         });

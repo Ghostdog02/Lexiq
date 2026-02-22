@@ -6,7 +6,8 @@ namespace Backend.Api.Services
     public class FileUploadsService(IWebHostEnvironment environment) : IFileUploadsService
     {
         private readonly IWebHostEnvironment _environment = environment;
-        private readonly Dictionary<string, FileTypeConfig> _fileTypeConfigs = InitializeFileTypeConfigs();
+        private readonly Dictionary<string, FileTypeConfig> _fileTypeConfigs =
+            InitializeFileTypeConfigs();
 
         private static string SanitizeFilename(string filename)
         {
@@ -21,7 +22,7 @@ namespace Backend.Api.Services
             return sanitized;
         }
 
-        private bool IsPathWithinUploadsDirectory(string filePath, string uploadsFolder)
+        private static bool IsPathWithinUploadsDirectory(string filePath, string uploadsFolder)
         {
             var fullFilePath = Path.GetFullPath(filePath);
             var fullUploadsFolder = Path.GetFullPath(uploadsFolder);
@@ -110,16 +111,17 @@ namespace Backend.Api.Services
                 );
             }
 
-            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!config.AllowedExtensions.Contains(extension))
-            {
-                return FileUploadResult.Failure(
-                    $"Invalid file type. Allowed: {string.Join(", ", config.AllowedExtensions)}"
-                );
-            }
-
             try
             {
+                var sanitizedOriginalName = SanitizeFilename(file.FileName);
+                var extension = Path.GetExtension(sanitizedOriginalName).ToLowerInvariant();
+                if (!config.AllowedExtensions.Contains(extension))
+                {
+                    return FileUploadResult.Failure(
+                        $"Invalid file type. Allowed: {string.Join(", ", config.AllowedExtensions)}"
+                    );
+                }
+
                 var basePath =
                     _environment.WebRootPath
                     ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
@@ -131,7 +133,7 @@ namespace Backend.Api.Services
                 }
 
                 // Generate unique filename
-                var originalFileName = Path.GetFileNameWithoutExtension(file.FileName);
+                var originalFileName = Path.GetFileNameWithoutExtension(sanitizedOriginalName);
                 var uniqueFileName = $"{Guid.NewGuid()}{extension}";
                 var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
@@ -145,7 +147,7 @@ namespace Backend.Api.Services
 
                 return FileUploadResult.Success(
                     url: fileUrl,
-                    name: file.FileName,
+                    name: sanitizedOriginalName,
                     size: file.Length,
                     extension: extension.TrimStart('.'),
                     title: originalFileName
@@ -183,8 +185,14 @@ namespace Backend.Api.Services
                     return FileUploadResult.Failure("File size exceeds limit");
                 }
 
-                // Determine extension from URL
-                var extension = Path.GetExtension(new Uri(url).LocalPath).ToLowerInvariant();
+                // Determine extension from URL — sanitize the filename segment before extracting
+                var urlFilename = Path.GetFileName(new Uri(url).LocalPath);
+                var extension = string.Empty;
+                if (!string.IsNullOrWhiteSpace(urlFilename))
+                {
+                    var sanitizedUrlFilename = SanitizeFilename(urlFilename);
+                    extension = Path.GetExtension(sanitizedUrlFilename).ToLowerInvariant();
+                }
                 if (
                     string.IsNullOrEmpty(extension) || !config.AllowedExtensions.Contains(extension)
                 )
@@ -333,7 +341,10 @@ namespace Backend.Api.Services
                     _environment.WebRootPath
                     ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
 
-                if (!string.IsNullOrEmpty(fileType) && _fileTypeConfigs.TryGetValue(fileType, out var config))
+                if (
+                    !string.IsNullOrEmpty(fileType)
+                    && _fileTypeConfigs.TryGetValue(fileType, out var config)
+                )
                 {
                     var uploadsFolder = Path.Combine(basePath, "uploads", config.Folder);
                     var filePath = Path.Combine(uploadsFolder, sanitizedFilename);
@@ -359,7 +370,11 @@ namespace Backend.Api.Services
                 {
                     foreach (var typeConfig in _fileTypeConfigs)
                     {
-                        var uploadsFolder = Path.Combine(basePath, "uploads", typeConfig.Value.Folder);
+                        var uploadsFolder = Path.Combine(
+                            basePath,
+                            "uploads",
+                            typeConfig.Value.Folder
+                        );
                         var filePath = Path.Combine(uploadsFolder, sanitizedFilename);
 
                         if (!IsPathWithinUploadsDirectory(filePath, uploadsFolder))
@@ -452,8 +467,8 @@ namespace Backend.Api.Services
 
     public class FileTypeConfig
     {
-        public string[] AllowedExtensions { get; set; }
-        public string Folder { get; set; }
+        public required string[] AllowedExtensions { get; set; }
+        public required string Folder { get; set; }
         public long MaxSize { get; set; }
     }
 }

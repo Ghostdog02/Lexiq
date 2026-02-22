@@ -6,6 +6,10 @@ on:
       config-path:
         required: true
         type: string
+      no-cache:
+        required: false
+        type: boolean
+        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -22,28 +26,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0  # Fetch full history for accurate change detection
-
-      - name: Check for frontend Dockerfile changes
-        id: filter-frontend
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            dockerfile:
-              - 'frontend/Dockerfile.prod'
-              - 'frontend/package.json'
-              - 'frontend/package-lock.json'
-              - 'docker-compose.prod.yml'
-
-      - name: Log frontend build cache status
-        run: |
-          if [ "${{ steps.filter-frontend.outputs.dockerfile }}" == "true" ]; then
-            echo "⚠️ Frontend Dockerfile or dependencies changed - building with --no-cache"
-          else
-            echo "✅ Using Docker layer cache for faster frontend build"
-          fi
-
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3.7.0
         with:
@@ -71,7 +57,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          no-cache: ${{ steps.filter-frontend.outputs.dockerfile == 'true' }}
+          no-cache: ${{ inputs.no-cache }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,mode=max,scope=frontend
           build-args: |
             NG_GOOGLE_CLIENT_ID=${{ vars.NG_GOOGLE_CLIENT_ID }}
             BACKEND_API_URL=${{ vars.BACKEND_API_URL }}
@@ -85,26 +73,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        with:
-          fetch-depth: 0  # Fetch full history for accurate change detection
 
-      - name: Check for backend Dockerfile changes
-        id: filter-backend
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            dockerfile:
-              - 'backend/Dockerfile.prod'
-              - 'backend/**/*.csproj'
-              - 'docker-compose.prod.yml'
-
-      - name: Log backend build cache status
-        run: |
-          if [ "${{ steps.filter-backend.outputs.dockerfile }}" == "true" ]; then
-            echo "⚠️ Backend Dockerfile or dependencies changed - building with --no-cache"
-          else
-            echo "✅ Using Docker layer cache for faster backend build"
-          fi
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3.7.0
@@ -133,4 +104,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          no-cache: ${{ steps.filter-backend.outputs.dockerfile == 'true' }}
+          no-cache: ${{ inputs.no-cache }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,mode=max,scope=backend

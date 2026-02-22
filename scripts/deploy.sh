@@ -11,7 +11,6 @@ LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"
 
 # Exit codes
 readonly EXIT_SUCCESS=0
-readonly EXIT_SYSTEM_UPDATE_FAILED=1
 readonly EXIT_FILE_NOT_FOUND=1
 readonly EXIT_DOCKER_PULL_FAILED=3
 readonly EXIT_DOCKER_AUTH_FAILED=3
@@ -42,8 +41,7 @@ log() {
   timestamp=$(date +"%Y-%m-%d %H:%M:%S")
   
   echo "[${timestamp}] ${message}" | tee -a "$LOG_FILE"
-  
-  # Send GitHub Actions annotations
+
   case "$level" in
     error)
       echo "::error::${message}"
@@ -95,17 +93,14 @@ load_env() {
   fi
 
   if [ -f "$ENVIRONMENT_FILE" ]; then
-    # Source the file
     . "$ENVIRONMENT_FILE"
     log_info "Loaded environment variables from $ENVIRONMENT_FILE"
-    
-    # Export variables needed by docker-compose
+
     export REGISTRY
     export REPO_LOWER
     export BRANCH
     export EVENT
 
-    # Debug: show what we have
     log_info "REGISTRY=${REGISTRY}"
     log_info "REPO_LOWER=${REPO_LOWER}"
     log_info "BRANCH=${BRANCH}"
@@ -164,28 +159,6 @@ initialize() {
 # SYSTEM OPERATIONS
 # ============================================================================
 
-update_system() {
-  start_group "System Updates"
-  
-  log_info "Updating system packages..."
-  if sudo apt update 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
-    log_success "System package list updated"
-  else
-    log_error "System update failed"
-    end_group
-    exit $EXIT_SYSTEM_UPDATE_FAILED
-  fi
-  
-  log_info "Upgrading system packages..."
-  if sudo apt upgrade -y 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
-    log_success "System packages upgraded"
-  else
-    log_warning "System upgrade had issues (non-critical)"
-  fi
-  
-  end_group
-}
-
 install_dependencies() {
   start_group "Installing Dependencies"
   
@@ -195,7 +168,7 @@ install_dependencies() {
   else
       log_error "Docker is not installed"
       end_group
-      exit $EXIT_SYSTEM_UPDATE_FAILED
+      exit $EXIT_FILE_NOT_FOUND
   fi   
 
   end_group
@@ -228,12 +201,12 @@ authenticate_docker_registry() {
   end_group
 }
 
-pull_docker_images() {
-  start_group "Pulling Docker Images"
-  
+deploy_containers() {
+  start_group "Deploying Containers"
+
   cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_PULL_FAILED
-  
-  log_info "Pulling latest Docker images..."
+
+  log_info "Pulling latest app images..."
   if docker compose pull 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Docker images pulled"
   else
@@ -241,44 +214,62 @@ pull_docker_images() {
     end_group
     exit $EXIT_DOCKER_PULL_FAILED
   fi
-  
-  end_group
-}
 
-stop_containers() {
-  start_group "Stopping Containers"
-  
-  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
-  
-  log_info "Stopping existing containers..."
-  if docker compose down 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
-    log_success "Containers stopped"
-  else
-    log_warning "Issue stopping containers"
-  fi
-  
-  end_group
-}
-
-start_containers() {
-  start_group "Starting Containers"
-  
-  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
-  
   log_info "Starting containers..."
   if docker compose up -d --wait 2>&1 | mask_ips | tee -a "$LOG_FILE"; then
     log_success "Containers started"
   else
     log_error "Failed to start containers"
-    
+
     echo "::group::Container Logs"
     docker compose logs --tail=100 2>&1 | mask_ips | tee -a "$LOG_FILE"
     echo "::endgroup::"
-    
+
     end_group
     exit $EXIT_DOCKER_START_FAILED
   fi
-  
+
+  end_group
+}
+
+# ============================================================================
+# CERTIFICATE MANAGEMENT
+# ============================================================================
+
+maybe_init_letsencrypt() {
+  start_group "Let's Encrypt Certificate Check"
+
+  cd "$DEPLOY_DIR" || exit $EXIT_DOCKER_START_FAILED
+
+  # Find the volume by suffix to avoid hardcoding the compose project prefix
+  local vol_name
+  vol_name=$(docker volume ls --format '{{.Name}}' | grep 'production_letsencrypt-certs' | head -1 || true)
+
+  local certs_exist=false
+
+  if [ -n "$vol_name" ]; then
+    # Docker volumes live under /var/lib/docker/volumes/ which is owned by root (the daemon runs as root).
+    # The deploy user cannot read that host path directly, so mount the volume into a throwaway container and check from inside.
+    if docker run --rm -v "${vol_name}:/certs:ro" alpine \
+        test -f /certs/live/lexiqlanguage.eu/fullchain.pem 2>/dev/null; then
+      certs_exist=true
+      log_info "Certificates already exist in ${vol_name} — skipping initialization"
+      end_group
+      return 0
+    else
+        log_warning "Volume exists, but certificates are missing in ${vol_name}"
+    fi
+  fi
+
+  if [ "$certs_exist" = false ]; then
+      log_info "Initializing certificates — running init-letsencrypt.sh..."
+      bash "${DEPLOY_DIR}/scripts/init-letsencrypt.sh" 2>&1 | mask_ips | tee -a "$LOG_FILE"
+      log_success "Certificate initialization complete"
+  else
+      end_group
+      return 0
+  fi
+
   end_group
 }
 
@@ -296,13 +287,11 @@ main() {
   
   export TAG="${BRANCH}"
   
-  update_system
   install_dependencies
-  
+
   authenticate_docker_registry
-  pull_docker_images
-  stop_containers
-  start_containers
+  maybe_init_letsencrypt
+  deploy_containers
 
   local end_time
   end_time=$(date +%s)

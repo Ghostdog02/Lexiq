@@ -113,7 +113,7 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
   private async uploadFile(file: File, fileType: string = 'file'): Promise<any> {
     try {
       const formData = new FormData();
-      formData.append(fileType, file);
+      formData.append('file', file);
 
       // Determine endpoint based on file type
       const endpoint = fileType === 'image'

@@ -37,7 +37,7 @@ jobs:
           BRANCH="${{ github.ref_name }}"
           echo "BRANCH=${BRANCH//\//-}" >> $GITHUB_ENV
 
-      - name: Copy files and scripts to server
+      - name: Copy deployment assets to server
         uses: appleboy/scp-action@v1.0.0
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
@@ -45,26 +45,11 @@ jobs:
           key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
           passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          # Combined all transfers into one step to reduce SSH overhead
-          source: "scripts/deploy.sh,scripts/verify-deployment.sh"
+          source: "scripts/deploy.sh,scripts/verify-deployment.sh,scripts/certbot-entrypoint.sh,docker-compose.prod.yml,scripts/init-letsencrypt.sh"
           target: "/tmp/deploy_assets_${{ github.run_id }}"
           strip_components: 0
-      
-      - name: Copy files and scripts to server
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          # Combined all transfers into one step to reduce SSH overhead
-          source: "docker-compose.prod.yml"
-          target: "/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
-          strip_components: 0
-      
-        
-      - name: Deploy with Docker Compose
+
+      - name: Deploy and Verify
         uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ secrets.HETZNER_PROD_HOST }}
@@ -77,8 +62,11 @@ jobs:
             set -e
             ASSETS="/tmp/deploy_assets_${{ github.run_id }}"
             TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
-            
-            mkdir -p "$TARGET_DIR"
+
+            mkdir -p "$TARGET_DIR/scripts"
+            cp "$ASSETS/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
+            cp "$ASSETS/scripts/init-letsencrypt.sh" "$TARGET_DIR/scripts/init-letsencrypt.sh"
+            cp "$ASSETS/scripts/certbot-entrypoint.sh" "$TARGET_DIR/scripts/certbot-entrypoint.sh"
 
             # Create environment file
             cat > /tmp/.deploy.env << ENVEOF
@@ -94,21 +82,12 @@ jobs:
             REPO_LOWER="${{ env.REPO_LOWER }}"
             EVENT="${{ github.event_name }}"
             ENVEOF
-            
+
             chmod 600 /tmp/.deploy.env
             bash "$ASSETS/scripts/deploy.sh"
 
-      - name: Verify Deployment
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          script: |
-            export DEPLOY_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
-            bash "/tmp/deploy_assets_${{ github.run_id }}/scripts/verify-deployment.sh"
+            export DEPLOY_DIR="$TARGET_DIR"
+            bash "$ASSETS/scripts/verify-deployment.sh"
 
       - name: Cleanup Server
         if: always()
@@ -123,6 +102,7 @@ jobs:
             rm -rf "/tmp/deploy_assets_${{ github.run_id }}"
             rm -f /tmp/.deploy.env
             docker image prune -f
+            docker volume prune -f
 
       - name: Final Status Notices
         if: always()
@@ -133,18 +113,3 @@ jobs:
             echo "::error::❌ Deployment failed!"
           fi
 
-      - name: Notify on failure
-        if: failure()
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const message = `❌ **Deployment failed!**\n\nCheck the [workflow logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.`;
-            const payload = context.payload.pull_request ? 
-              { issue_number: context.payload.pull_request.number } : 
-              { commit_sha: context.sha };
-            
-            if (context.payload.pull_request) {
-              await github.rest.issues.createComment({ ...context.repo, ...payload, body: message });
-            } else {
-              await github.rest.repos.createCommitComment({ ...context.repo, ...payload, body: message });
-            }

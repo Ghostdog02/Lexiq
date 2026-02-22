@@ -1,112 +1,140 @@
 #!/bin/bash
 
-# Let's Encrypt certificate initialization script
-# Run this once to generate initial certificates before starting the full stack
+# Let's Encrypt certificate initialization script.
+# Run this ONCE on a fresh server before the full stack is running.
+#
+# What this script does:
+#   1. Starts nginx in HTTP-only ACME mode (no certs required)
+#   2. Writes options-ssl-nginx.conf and ssl-dhparams.pem into the Docker volume
+#      (certbot's webroot renewal never creates these; only certbot --nginx does)
+#   3. Issues real certificates via certbot --webroot
+#   4. Switches nginx to HTTPS and reloads
+#
+# Usage:
+#   cd /path/to/lexiq
+#   scripts/init-letsencrypt.sh
+#
+# Set STAGING=1 to use Let's Encrypt staging environment (avoids rate limits during testing).
 
-set -e
+set -euo pipefail
 
-DOMAINS=(lexiqlanguage.eu www.lexiqlanguage.eu api.lexiqlanguage.eu)
-EMAIL="admin@lexiqlanguage.eu"
-STAGING=0  # Set to 1 for testing (avoids rate limits)
+# Frontend domains share one SAN cert (stored under the first domain name).
+FRONTEND_DOMAINS=(lexiqlanguage.eu www.lexiqlanguage.eu)
+# API subdomain gets its own cert so nginx can reference /live/api.lexiqlanguage.eu/
+# independently of the frontend cert.  Both certbot and LettuceEncrypt need
+# separate cert directories — a SAN cert under lexiqlanguage.eu/ is NOT found
+# at the api.lexiqlanguage.eu/ path that nginx.prod.conf and docker-entrypoint.sh expect.
+API_DOMAIN="api.lexiqlanguage.eu"
+EMAIL="alex.vesely07@gmail.com"
+STAGING=${STAGING:-0}
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+COMPOSE_FILE="${SCRIPT_DIR}/../docker-compose.yml"
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+NC='\033[0m'
+
+info()    { echo -e "${YELLOW}[init] $*${NC}"; }
+success() { echo -e "${GREEN}[init] $*${NC}"; }
+error()   { echo -e "${RED}[init] ERROR: $*${NC}" >&2; }
 
 echo -e "${GREEN}=== Let's Encrypt Certificate Initialization ===${NC}"
 
-# Check if running as root or with sudo
-if [ "$EUID" -ne 0 ]; then
-    echo -e "${RED}Please run with sudo${NC}"
-    exit 1
-fi
+# ── Step 1: Start nginx in HTTP-only ACME mode ─────────────────────────────
+# The entrypoint detects no certs → copies nginx.acme-only.conf automatically.
+info "Starting nginx in HTTP-only ACME mode..."
+docker compose -f "$COMPOSE_FILE" up -d frontend
 
-# Create required directories
-echo -e "${YELLOW}Creating directories...${NC}"
-mkdir -p /etc/letsencrypt
-mkdir -p ./certbot/www
-
-# Download recommended TLS parameters if not present
-if [ ! -f "/etc/letsencrypt/options-ssl-nginx.conf" ]; then
-    echo -e "${YELLOW}Downloading recommended TLS parameters...${NC}"
-    curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf > /etc/letsencrypt/options-ssl-nginx.conf
-fi
-
-if [ ! -f "/etc/letsencrypt/ssl-dhparams.pem" ]; then
-    echo -e "${YELLOW}Downloading DH parameters...${NC}"
-    curl -s https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem > /etc/letsencrypt/ssl-dhparams.pem
-fi
-
-# Create dummy certificates for nginx to start
-echo -e "${YELLOW}Creating dummy certificates for initial nginx startup...${NC}"
-for domain in "${DOMAINS[@]}"; do
-    # Skip www subdomain (uses same cert as main domain)
-    if [[ "$domain" == www.* ]]; then
-        continue
-    fi
-
-    cert_path="/etc/letsencrypt/live/$domain"
-    if [ ! -d "$cert_path" ]; then
-        mkdir -p "$cert_path"
-        openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
-            -keyout "$cert_path/privkey.pem" \
-            -out "$cert_path/fullchain.pem" \
-            -subj "/CN=localhost"
-        echo -e "${GREEN}Created dummy cert for $domain${NC}"
-    fi
-done
-
-# Start nginx temporarily to handle ACME challenges
-echo -e "${YELLOW}Starting nginx for ACME challenge...${NC}"
-docker compose -f docker-compose.prod.yml up -d frontend
-
-# Wait for nginx to start
+info "Waiting for nginx to start..."
 sleep 5
 
-# Delete dummy certificates
-echo -e "${YELLOW}Removing dummy certificates...${NC}"
-for domain in "${DOMAINS[@]}"; do
-    if [[ "$domain" == www.* ]]; then
-        continue
-    fi
-    rm -rf "/etc/letsencrypt/live/$domain"
-    rm -rf "/etc/letsencrypt/archive/$domain"
-    rm -rf "/etc/letsencrypt/renewal/$domain.conf"
-done
+if ! docker compose -f "$COMPOSE_FILE" exec frontend nginx -t -q 2>/dev/null; then
+    error "nginx failed to start. Check logs with: docker compose logs frontend"
+    exit 1
+fi
+success "nginx is running in HTTP-only mode"
 
-# Request real certificates
-echo -e "${YELLOW}Requesting Let's Encrypt certificates...${NC}"
+# ── Step 2: Write static SSL config files into the Docker volume ────────────
+# certbot's --webroot mode only issues/renews cert files. It never writes
+# options-ssl-nginx.conf or ssl-dhparams.pem (that's the --nginx plugin's job).
+# We download them from certbot's GitHub into the letsencrypt-certs volume
+# by running a one-shot command inside the certbot service container.
+info "Writing options-ssl-nginx.conf and ssl-dhparams.pem into Docker volume..."
+docker compose -f "$COMPOSE_FILE" run --rm \
+    --entrypoint sh \
+    certbot \
+    -c "
+        wget -q -O /etc/letsencrypt/options-ssl-nginx.conf \
+            'https://raw.githubusercontent.com/certbot/certbot/master/certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf' && \
+        wget -q -O /etc/letsencrypt/ssl-dhparams.pem \
+            'https://raw.githubusercontent.com/certbot/certbot/master/certbot/certbot/ssl-dhparams.pem' && \
+        echo 'SSL config files written successfully'
+    "
+success "SSL config files written to volume"
+
+# ── Step 3: Issue real certificates ─────────────────────────────────────────
+info "Requesting Let's Encrypt certificates..."
 
 staging_arg=""
-if [ $STAGING -eq 1 ]; then
+if [ "$STAGING" -eq 1 ]; then
     staging_arg="--staging"
-    echo -e "${YELLOW}Using staging environment (for testing)${NC}"
+    info "Using staging environment (avoids rate limits)"
 fi
 
-# Build domain arguments
-domain_args=""
-for domain in "${DOMAINS[@]}"; do
-    domain_args="$domain_args -d $domain"
+frontend_args=""
+for domain in "${FRONTEND_DOMAINS[@]}"; do
+    frontend_args="$frontend_args -d $domain"
 done
 
-docker run --rm \
-    -v /etc/letsencrypt:/etc/letsencrypt \
-    -v ./certbot/www:/var/www/certbot \
-    certbot/certbot certonly \
+info "Issuing certificate for frontend domains: ${FRONTEND_DOMAINS[*]}..."
+docker compose -f "$COMPOSE_FILE" run --rm \
+    --entrypoint certbot \
+    certbot certonly \
     --webroot \
     -w /var/www/certbot \
     $staging_arg \
-    --email $EMAIL \
+    --email "$EMAIL" \
     --agree-tos \
     --no-eff-email \
     --force-renewal \
-    $domain_args
+    $frontend_args
 
-# Reload nginx to use real certificates
-echo -e "${YELLOW}Reloading nginx with real certificates...${NC}"
-docker compose -f docker-compose.prod.yml exec frontend nginx -s reload
+success "Frontend certificate issued (live/lexiqlanguage.eu/)"
 
+# Issue a SEPARATE certificate for the API subdomain so that:
+# 1. nginx.prod.conf can reference /live/api.lexiqlanguage.eu/{fullchain,privkey}.pem
+# 2. docker-entrypoint.sh cert-detection check passes for both paths
+# 3. LettuceEncrypt (backend) ACME challenges can be proxied through nginx.prod.conf
+#    (nginx stays in acme-only mode when api cert is missing, breaking LettuceEncrypt)
+info "Issuing separate certificate for API subdomain: $API_DOMAIN..."
+docker compose -f "$COMPOSE_FILE" run --rm \
+    --entrypoint certbot \
+    certbot certonly \
+    --webroot \
+    -w /var/www/certbot \
+    $staging_arg \
+    --email "$EMAIL" \
+    --agree-tos \
+    --no-eff-email \
+    --force-renewal \
+    -d "$API_DOMAIN"
+
+success "API certificate issued (live/api.lexiqlanguage.eu/)"
+
+# ── Step 3.5: Fix cert permissions for non-root nginx ───────────────────────
+# Start the certbot sidecar whose entrypoint (certbot-entrypoint.sh) fixes
+# live/ and archive/ permissions automatically, then enters the renewal loop.
+info "Starting certbot sidecar to fix certificate permissions..."
+docker compose -f "$COMPOSE_FILE" up -d certbot
+sleep 2
+success "Certificate permissions fixed via certbot entrypoint"
+
+# ── Step 4: Switch nginx to HTTPS ───────────────────────────────────────────
+info "Switching nginx to HTTPS configuration..."
+docker compose -f "$COMPOSE_FILE" exec frontend sh -c \
+    "cp /etc/nginx/nginx.prod.conf /etc/nginx/nginx.conf && nginx -s reload"
+
+success "nginx is now running in HTTPS mode"
 echo -e "${GREEN}=== Certificate initialization complete! ===${NC}"
-echo -e "${GREEN}You can now start the full stack with: docker compose -f docker-compose.prod.yml up -d${NC}"
+echo -e "${GREEN}The full stack can now be started: docker compose -f $COMPOSE_FILE up -d${NC}"

@@ -12,4 +12,4 @@ services:
       dockerfile: Dockerfile.prod
       args:
         - NG_GOOGLE_CLIENT_ID=751309259564-eh1rt37l2jev2brt1b356g6n7k01s86v.apps.googleusercontent.com
-        - BACKEND_API_URL=http://lexiqlanguage.eu/api
+        - BACKEND_API_URL=/api

@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS publish
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS publish
 WORKDIR /src
 
 COPY *.sln ./
@@ -10,24 +10,15 @@ RUN dotnet restore ./Backend.Api.csproj
 COPY . .
 RUN dotnet publish "Backend.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache icu-libs
+
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
 
 COPY --from=publish /app/publish .
 
-# Create upload directory structure for file storage
-RUN mkdir -p /app/wwwroot/uploads/images \
-             /app/wwwroot/uploads/documents \
-             /app/wwwroot/uploads/videos \
-             /app/wwwroot/uploads/audio \
-             /app/wwwroot/uploads/files \
-             /app/certs && \
-    chmod -R 755 /app/wwwroot /app/certs
-
-EXPOSE 80 443
+EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "Backend.Api.dll"]

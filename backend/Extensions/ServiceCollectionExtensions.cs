@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
 using Backend.Api.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Backend.Database;
 using Backend.Database.Entities.Users;
 using Microsoft.AspNetCore.Authentication;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
@@ -16,6 +18,17 @@ namespace Backend.Api.Extensions;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddDataProtectionKeys(this IServiceCollection services)
+    {
+        var keyPath = Environment.GetEnvironmentVariable("DATA_PROTECTION_KEYS_PATH") ?? "/app/dataprotection-keys";
+
+        services
+            .AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(keyPath));
+
+        return services;
+    }
+
     public static IServiceCollection LimitFileUploads(this IServiceCollection services)
     {
         long maxFileSizeInBytes = 100 * 1024 * 1024; // 100 MB
@@ -57,7 +70,9 @@ public static class ServiceCollectionExtensions
         var connectionString = BuildConnectionString();
 
         services.AddDbContext<BackendDbContext>(
-            options => options.UseSqlServer(connectionString),
+            options => options
+                .UseSqlServer(connectionString)
+                .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)),
             ServiceLifetime.Scoped
         );
 
