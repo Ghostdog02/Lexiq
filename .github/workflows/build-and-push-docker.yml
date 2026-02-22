@@ -44,7 +44,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.REPO }}-frontend
           tags: |
             type=ref,event=branch
-            type=sha,prefix={{branch}}-,enable=${{ github.event_name == 'push' }}
+            type=sha,prefix={{branch}}-
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
@@ -91,7 +91,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.REPO }}-backend
           tags: |
             type=ref,event=branch
-            type=sha,prefix={{branch}}-,enable=${{ github.event_name == 'push' }}
+            type=sha,prefix={{branch}}-
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
