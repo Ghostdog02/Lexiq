@@ -19,7 +19,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build frontend
-        uses: docker/build-push-action@v6.18.0
+        uses: docker/build-push-action@v6.19.2
         with:
           context: ./frontend
           file: ./frontend/Dockerfile.prod
@@ -40,7 +40,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build backend
-        uses: docker/build-push-action@v6.19.0
+        uses: docker/build-push-action@v6.19.2
         with:
           context: ./backend
           file: ./backend/Dockerfile.prod
