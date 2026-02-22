@@ -34,6 +34,7 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
   private onTouched: any = () => { };
   private changeDebounceTimer: any = null;
   private lastSavedBlocks: string = '';
+  private pendingFiles = new Map<string, { file: File; fileType: string }>();
 
   ngOnInit(): void {
     this.initializeEditor();
@@ -55,7 +56,7 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
             types: 'image/*',
             uploader: {
               uploadByFile: (file: File) => {
-                return this.uploadFile(file, 'image');
+                return this.stageFile(file, 'image');
               },
               uploadByUrl: (url: string) => {
                 return this.uploadFileByUrl(url, 'image');
@@ -75,7 +76,7 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
             // types: 'application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             uploader: {
               uploadByFile: (file: File) => {
-                return this.uploadFile(file, 'file');
+                return this.stageFile(file, 'file');
               }
             }
           }
@@ -105,6 +106,51 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
         }, 300); // 300ms debounce
       }
     });
+  }
+
+  /**
+   * Stages a file locally using a blob URL instead of uploading immediately.
+   * The actual upload is deferred until uploadPendingFiles() is called on form submit.
+   */
+  private stageFile(file: File, fileType: string): any {
+    const blobUrl = URL.createObjectURL(file);
+    this.pendingFiles.set(blobUrl, { file, fileType });
+
+    const extension = file.name.split('.').pop() ?? '';
+    const title = file.name.slice(0, file.name.lastIndexOf('.')) || file.name;
+
+    return Promise.resolve({
+      success: 1,
+      file: {
+        url: blobUrl,
+        name: file.name,
+        size: file.size,
+        extension,
+        title,
+      },
+    });
+  }
+
+  /**
+   * Uploads all staged files to the server and replaces their blob URLs in the
+   * serialized EditorJS content. Called by LessonEditorComponent on form submit.
+   * Throws if any upload fails so the caller can block submission.
+   */
+  async uploadPendingFiles(contentJson: string): Promise<string> {
+    let updated = contentJson;
+
+    for (const [blobUrl, { file, fileType }] of this.pendingFiles) {
+      const result = await this.uploadFile(file, fileType);
+
+      if (result.success !== 1) {
+        throw new Error(`Failed to upload file: ${file.name}`);
+      }
+
+      updated = updated.replaceAll(blobUrl, result.file.url);
+    }
+
+    this.pendingFiles.clear();
+    return updated;
   }
 
   /**
@@ -295,6 +341,9 @@ export class EditorComponent implements OnInit, OnDestroy, ControlValueAccessor 
   ngOnDestroy(): void {
     if (this.changeDebounceTimer) {
       clearTimeout(this.changeDebounceTimer);
+    }
+    for (const blobUrl of this.pendingFiles.keys()) {
+      URL.revokeObjectURL(blobUrl);
     }
     if (this.editor) {
       this.editor.destroy();

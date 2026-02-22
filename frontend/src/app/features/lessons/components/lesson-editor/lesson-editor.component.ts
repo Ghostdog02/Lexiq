@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormArray, ReactiveFormsModule, FormGroup, AbstractControl } from '@angular/forms';
 import { CreateLessonDto, Lesson, LessonForm } from '../../models/lesson.interface';
@@ -25,6 +25,7 @@ import { Course } from '../../models/course.interface';
   styleUrl: './lesson-editor.component.scss'
 })
 export class LessonEditorComponent implements OnInit {
+  @ViewChild(EditorComponent) private editorComponent!: EditorComponent;
   readonly formService = inject(LessonFormService);
   private readonly lessonService = inject(LessonService);
   private readonly destroyRef = inject(DestroyRef);
@@ -149,16 +150,19 @@ export class LessonEditorComponent implements OnInit {
       return;
     }
 
-    const lessonData = this.buildLessonPayload();
-
     try {
+      const rawContent = this.lessonForm.controls.content.value ?? '';
+      const finalContent = await this.editorComponent.uploadPendingFiles(rawContent);
+      this.lessonForm.controls.content.setValue(finalContent, { emitEvent: false });
+
+      const lessonData = this.buildLessonPayload();
       const created = await this.lessonService.createLesson(lessonData);
       console.log('✅ Lesson created:', created);
       this.resetForm();
       this.router.navigate(['/']);
     } catch (error) {
       console.error('❌ Error creating lesson:', error);
-      // TODO: Show user-friendly error notification
+      alert('Failed to upload one or more files. Please try again.');
     }
   }
 
