@@ -193,12 +193,14 @@ When restoring component state from previous submissions:
 **Upload Gotchas**:
 - When `uploader.uploadByFile` is provided, Editor.js ignores `field` and `endpoints` config entirely
 - The custom uploader's FormData field name must match the backend `IFormFile` parameter name (`"file"`)
+- Files are **lazily uploaded** — `uploadByFile` returns a `blob:` URL immediately (no request); actual upload happens in `uploadPendingFiles(contentJson)` called by `LessonEditorComponent.onSubmit()`
+- `URL.revokeObjectURL()` called on all pending blob URLs in `ngOnDestroy()` to prevent memory leaks
 - File type is communicated via URL route (`/uploads/image`), NOT the FormData field name
 
 **Performance Optimization**:
 - Editor onChange fires on ALL interactions (focus, mouse moves, selection changes)
 - Debounce with 300ms timeout + content comparison to prevent excessive saves
-- Track `lastSavedContent` string and only call `onChange()` if different
+- Track `lastSavedBlocks` (`JSON.stringify(content.blocks)`) — do NOT compare full `save()` output; EditorJS always generates a fresh `time` timestamp making full-string comparison always differ
 - Clear timeout on `ngOnDestroy()` to prevent memory leaks
 
 The rich text editor implements `ControlValueAccessor` for seamless Reactive Forms integration:

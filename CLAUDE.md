@@ -79,6 +79,7 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 - nginx → backend: `proxy_pass http://backend:8080`
 - **`cap_add: NET_BIND_SERVICE`** required on the frontend service — `nginx-unprivileged` runs as a non-root user and cannot bind to ports < 1024 without this capability
 - **IPv6 listen directives required**: all nginx server blocks must have both `listen <port>` and `listen [::]:<port>` — Alpine's BusyBox wget resolves `localhost` to `::1` (IPv6) first; without the IPv6 directive nginx is unreachable from the healthcheck despite running correctly on IPv4
+- **`location ^~ /api` required**: plain `location /api` loses to regex locations (`~*`) for URLs like `/api/uploads/image/*.png` — nginx regex beats prefix in priority order; the `^~` modifier prevents regex matching for all `/api` paths
 
 ### Cross-Origin Cookie Setup (Development)
 
