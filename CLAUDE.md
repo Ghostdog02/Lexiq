@@ -77,6 +77,8 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 - certs persist in `letsencrypt-certs` named volume — survives all container restarts and redeploys
 - Backend speaks **plain HTTP on port 8080** inside the Docker network — no HTTPS, no LettuceEncrypt
 - nginx → backend: `proxy_pass http://backend:8080`
+- **`cap_add: NET_BIND_SERVICE`** required on the frontend service — `nginx-unprivileged` runs as a non-root user and cannot bind to ports < 1024 without this capability
+- **IPv6 listen directives required**: all nginx server blocks must have both `listen <port>` and `listen [::]:<port>` — Alpine's BusyBox wget resolves `localhost` to `::1` (IPv6) first; without the IPv6 directive nginx is unreachable from the healthcheck despite running correctly on IPv4
 
 ### Cross-Origin Cookie Setup (Development)
 
@@ -103,7 +105,7 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 |------|------|--------|
 | Backend | [`backend/CLAUDE.md`](backend/CLAUDE.md) | Structure, patterns, service layer, DTOs, auth, database schema, API endpoints, debugging |
 | Frontend | [`frontend/CLAUDE.md`](frontend/CLAUDE.md) | Structure, Angular patterns, forms, design system, routes, debugging |
-| CI/CD | [`.github/workflows/CLAUDE.md`](.github/workflows/CLAUDE.md) | Docker, pipeline, deployment, health checks, debugging |
+| CI/CD | [`.github/workflows/CLAUDE.md`](.github/workflows/CLAUDE.md) | Docker, pipeline, deployment, health checks, debugging (includes `pr-validation.yml` for PR build checks) |
 | Database Entities | [`backend/Database/ENTITIES_DOCUMENTATION.md`](backend/Database/ENTITIES_DOCUMENTATION.md) | Comprehensive entity documentation |
 | Rules & Conventions | [`.claude/RULES.md`](.claude/RULES.md) | Git workflows, commit standards, branching |
 | Skills & Workflows | [`.claude/SKILLS.md`](.claude/SKILLS.md) | Tool usage, agent strategies, debugging playbooks |
