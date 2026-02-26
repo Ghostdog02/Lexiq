@@ -6,53 +6,63 @@
     <div class="timeframe-selector">
       <button
         class="timeframe-btn"
-        [class.active]="timeFrame === 'weekly'"
-        (click)="setTimeFrame('weekly')">
+        [class.active]="timeFrame === TimeFrame.Weekly"
+        (click)="setTimeFrame(TimeFrame.Weekly)">
         Weekly
       </button>
       <button
         class="timeframe-btn"
-        [class.active]="timeFrame === 'monthly'"
-        (click)="setTimeFrame('monthly')">
+        [class.active]="timeFrame === TimeFrame.Monthly"
+        (click)="setTimeFrame(TimeFrame.Monthly)">
         Monthly
       </button>
       <button
         class="timeframe-btn"
-        [class.active]="timeFrame === 'allTime'"
-        (click)="setTimeFrame('allTime')">
+        [class.active]="timeFrame === TimeFrame.AllTime"
+        (click)="setTimeFrame(TimeFrame.AllTime)">
         All Time
       </button>
     </div>
   </div>
 
+  @if (isLoading) {
+  <div class="loading-state">
+    <div class="loading-spinner"></div>
+    <p>Loading rankings...</p>
+  </div>
+  } @else if (leaderboardEntries.length === 0) {
+  <div class="empty-state">
+    <p>No activity yet for this time period. Start learning to climb the ranks!</p>
+  </div>
+  } @else {
   <div class="leaderboard-list">
-    @for (user of leaderboardUsers; track user.rank) {
+    @for (entry of leaderboardEntries; track entry.userId) {
     <div
       class="leaderboard-card"
-      [class.current-user]="isCurrentUser(user)"
-      [class.top-three]="user.rank <= 3">
+      [class.current-user]="entry.isCurrentUser"
+      [class.top-three]="entry.rank <= 3">
 
       <div class="rank-section">
-        <div class="rank-badge" [class]="getRankBadgeClass(user.rank)">
-          @if (user.rank <= 3) {
-          <span class="rank-icon">{{ getRankIcon(user.rank) }}</span>
+        <div class="rank-badge" [class]="getRankBadgeClass(entry.rank)">
+          @if (entry.rank <= 3) {
+          <span class="rank-icon">{{ getRankIcon(entry.rank) }}</span>
           } @else {
-          <span class="rank-number">#{{ user.rank }}</span>
+          <span class="rank-number">#{{ entry.rank }}</span>
           }
         </div>
-        <div class="rank-change" [class]="getChangeClass(user.change)">
-          <span class="change-icon">{{ getChangeIcon(user.change) }}</span>
-          @if (user.change !== 0) {
-          <span class="change-value">{{ user.change < 0 ? -user.change : user.change }}</span>
+        <div class="rank-change" [class]="getChangeClass(entry.change)">
+          <span class="change-icon">{{ getChangeIcon(entry.change) }}</span>
+          @if (entry.change !== 0) {
+          <span class="change-value">{{ entry.change < 0 ? -entry.change : entry.change }}</span>
           }
         </div>
       </div>
 
       <div class="user-section">
-        <img [src]="user.avatar" [alt]="user.name" class="user-avatar">
+        <img [src]="getAvatarUrl(entry)" [alt]="entry.userName" class="user-avatar">
         <div class="user-info">
-          <h3 class="user-name">{{ user.name }}</h3>
-          <div class="user-level">Level {{ user.level }}</div>
+          <h3 class="user-name">{{ entry.userName }}</h3>
+          <div class="user-level">Level {{ entry.level }}</div>
         </div>
       </div>
 
@@ -60,7 +70,7 @@
         <div class="stat-item">
           <div class="stat-icon">⚡</div>
           <div class="stat-details">
-            <div class="stat-value">{{ user.totalXp.toLocaleString() }}</div>
+            <div class="stat-value">{{ entry.totalXp.toLocaleString() }}</div>
             <div class="stat-label">Total XP</div>
           </div>
         </div>
@@ -68,7 +78,7 @@
         <div class="stat-item">
           <div class="stat-icon">🔥</div>
           <div class="stat-details">
-            <div class="stat-value">{{ user.currentStreak }}</div>
+            <div class="stat-value">{{ entry.currentStreak }}</div>
             <div class="stat-label">Streak</div>
           </div>
         </div>
@@ -76,7 +86,7 @@
         <div class="stat-item">
           <div class="stat-icon">🏆</div>
           <div class="stat-details">
-            <div class="stat-value">{{ user.longestStreak }}</div>
+            <div class="stat-value">{{ entry.longestStreak }}</div>
             <div class="stat-label">Best</div>
           </div>
         </div>
@@ -84,4 +94,5 @@
     </div>
     }
   </div>
+  }
 </div>

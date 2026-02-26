@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { LeaderboardUser } from '../../models/leaderboard.interface';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { LeaderboardEntry, LeaderboardResponse, TimeFrame } from '../../models/leaderboard.interface';
+import { LeaderboardService } from '../../services/leaderboard.service';
 
 @Component({
   selector: 'app-leaderboard',
@@ -8,123 +9,26 @@ import { LeaderboardUser } from '../../models/leaderboard.interface';
   templateUrl: './leaderboard.component.html',
   styleUrls: ['./leaderboard.component.scss']
 })
-export class LeaderboardComponent {
-  currentUser = {
-    name: 'Alex Rodriguez',
-    rank: 4
-  };
+export class LeaderboardComponent implements OnInit {
+  private leaderboardService = inject(LeaderboardService);
 
-  timeFrame: 'weekly' | 'monthly' | 'allTime' = 'allTime';
+  TimeFrame = TimeFrame;
+  timeFrame: TimeFrame = TimeFrame.AllTime;
+  leaderboardEntries: LeaderboardEntry[] = [];
+  currentUserEntry: LeaderboardEntry | null = null;
+  isLoading = false;
 
-  leaderboardUsers: LeaderboardUser[] = [
-    {
-      rank: 1,
-      name: 'Sarah Chen',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah',
-      totalXp: 45800,
-      currentStreak: 127,
-      longestStreak: 145,
-      level: 24,
-      change: 2
-    },
-    {
-      rank: 2,
-      name: 'Marcus Johnson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Marcus',
-      totalXp: 42300,
-      currentStreak: 98,
-      longestStreak: 120,
-      level: 22,
-      change: -1
-    },
-    {
-      rank: 3,
-      name: 'Emma Wilson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Emma',
-      totalXp: 38950,
-      currentStreak: 156,
-      longestStreak: 156,
-      level: 21,
-      change: 1
-    },
-    {
-      rank: 4,
-      name: 'Alex Rodriguez',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Alex',
-      totalXp: 35200,
-      currentStreak: 47,
-      longestStreak: 89,
-      level: 19,
-      change: -2
-    },
-    {
-      rank: 5,
-      name: 'Liam Zhang',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Liam',
-      totalXp: 32800,
-      currentStreak: 73,
-      longestStreak: 95,
-      level: 18,
-      change: 0
-    },
-    {
-      rank: 6,
-      name: 'Olivia Martinez',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Olivia',
-      totalXp: 29400,
-      currentStreak: 61,
-      longestStreak: 88,
-      level: 17,
-      change: 3
-    },
-    {
-      rank: 7,
-      name: 'Noah Kim',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Noah',
-      totalXp: 27100,
-      currentStreak: 42,
-      longestStreak: 76,
-      level: 16,
-      change: -1
-    },
-    {
-      rank: 8,
-      name: 'Sophia Patel',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sophia',
-      totalXp: 24800,
-      currentStreak: 55,
-      longestStreak: 82,
-      level: 15,
-      change: 0
-    },
-    {
-      rank: 9,
-      name: 'James Anderson',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=James',
-      totalXp: 22500,
-      currentStreak: 38,
-      longestStreak: 65,
-      level: 14,
-      change: 1
-    },
-    {
-      rank: 10,
-      name: 'Isabella Garcia',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Isabella',
-      totalXp: 20300,
-      currentStreak: 29,
-      longestStreak: 58,
-      level: 13,
-      change: -3
-    }
-  ];
-
-  setTimeFrame(timeFrame: 'weekly' | 'monthly' | 'allTime'): void {
-    this.timeFrame = timeFrame;
+  ngOnInit(): void {
+    this.loadLeaderboard();
   }
 
-  isCurrentUser(user: LeaderboardUser): boolean {
-    return user.name === this.currentUser.name;
+  async setTimeFrame(timeFrame: TimeFrame): Promise<void> {
+    this.timeFrame = timeFrame;
+    await this.loadLeaderboard();
+  }
+
+  getAvatarUrl(entry: LeaderboardEntry): string {
+    return entry.avatar ?? `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.userId}`;
   }
 
   getRankBadgeClass(rank: number): string {
@@ -151,5 +55,20 @@ export class LeaderboardComponent {
     if (change > 0) return 'up';
     if (change < 0) return 'down';
     return 'neutral';
+  }
+
+  private async loadLeaderboard(): Promise<void> {
+    this.isLoading = true;
+    try {
+      const response = await this.leaderboardService.getLeaderboard(this.timeFrame);
+      this.leaderboardEntries = response.entries;
+      this.currentUserEntry = response.currentUserEntry;
+    } catch (error) {
+      console.error('Failed to load leaderboard:', error);
+      this.leaderboardEntries = [];
+      this.currentUserEntry = null;
+    } finally {
+      this.isLoading = false;
+    }
   }
 }

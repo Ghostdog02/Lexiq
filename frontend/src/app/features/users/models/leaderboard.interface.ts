@@ -1,10 +1,23 @@
-export interface LeaderboardUser {
+export enum TimeFrame {
+  Weekly = 'Weekly',
+  Monthly = 'Monthly',
+  AllTime = 'AllTime'
+}
+
+export interface LeaderboardEntry {
   rank: number;
-  name: string;
-  avatar: string;
+  userId: string;
+  userName: string;
+  avatar: string | null;
   totalXp: number;
   currentStreak: number;
   longestStreak: number;
   level: number;
-  change: number; // Position change (positive = moved up, negative = moved down, 0 = no change)
+  change: number;
+  isCurrentUser: boolean;
+}
+
+export interface LeaderboardResponse {
+  entries: LeaderboardEntry[];
+  currentUserEntry: LeaderboardEntry | null;
 }
