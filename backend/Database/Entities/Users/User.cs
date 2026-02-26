@@ -13,4 +13,6 @@ public class User : IdentityUser
     public List<UserExerciseProgress> ExerciseProgress { get; set; } = [];
 
     public int TotalPointsEarned { get; set; }
+
+    public string? Avatar { get; set; }
 }

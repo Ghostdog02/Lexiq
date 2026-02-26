@@ -15,3 +15,4 @@ public record UserXpDto(
     int CompletedExercises,
     DateTime? LastActivityAt
 );
+

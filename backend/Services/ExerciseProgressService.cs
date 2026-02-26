@@ -51,6 +51,8 @@ public class ExerciseProgressService(
             p.UserId == userId && p.ExerciseId == exerciseId
         );
 
+        var wasAlreadyCompleted = progress?.IsCompleted == true;
+
         if (progress == null)
         {
             progress = new UserExerciseProgress
@@ -69,6 +71,12 @@ public class ExerciseProgressService(
             progress.IsCompleted = isCorrect;
             progress.PointsEarned = pointsEarned;
             progress.CompletedAt = isCorrect ? (progress.CompletedAt ?? DateTime.UtcNow) : null;
+        }
+
+        // Update cached TotalPointsEarned only on first correct submission
+        if (isCorrect && !wasAlreadyCompleted && user != null)
+        {
+            user.TotalPointsEarned += pointsEarned;
         }
 
         await _context.SaveChangesAsync();

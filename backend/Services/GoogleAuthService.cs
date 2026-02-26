@@ -79,6 +79,13 @@ public class GoogleAuthService(
             await _userManager.AddLoginAsync(user, loginInfo);
         }
 
+        // Refresh avatar from Google on every login
+        if (!string.IsNullOrEmpty(payload.Picture) && user.Avatar != payload.Picture)
+        {
+            user.Avatar = payload.Picture;
+            await _userManager.UpdateAsync(user);
+        }
+
         return user;
     }
 }

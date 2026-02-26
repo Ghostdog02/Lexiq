@@ -91,6 +91,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFileUploadsService>(sp => sp.GetRequiredService<FileUploadsService>());
         services.AddScoped<ExerciseProgressService>();
         services.AddScoped<UserXpService>();
+        services.AddScoped<UserService>();
+        services.AddScoped<LeaderboardService>();
 
         return services;
     }
