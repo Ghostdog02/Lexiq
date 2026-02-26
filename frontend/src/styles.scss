@@ -1,3 +1,5 @@
+@use 'app/shared/toastr';
+
 :root {
   --background-color: #192023;
   --primary-color: #dbe5eb;
@@ -60,8 +62,6 @@
     z-index: -1; 
   }
 }
-
-@use 'app/shared/toastr';
 
 @mixin flex-column {
   display: flex;
