@@ -313,6 +313,7 @@ feature/
 
 - **No `!important`** — increase specificity instead (exception: Editor.js overrides via `::ng-deep`)
 - **Use `rem` units** for new styles, not `px` — base is 16px
+- **SCSS selector scope**: Nesting `.child {}` inside `.parent {}` compiles to `.parent .child` — it does NOT apply when `.child` appears under a different parent. Define utility classes (e.g. `.icon`) separately in each context they're used.
 - **Reuse CSS variables** from `src/styles.scss` (colors, radii, shadows, glass effects) — **never hardcode color values** (e.g., use `var(--accent)` not `#7c5cff`)
 - **Use TypeScript enums** for discrete value sets (time frames, statuses, categories) — never pass raw string literals between components
 - **Reuse mixins** from `styles.scss` via `@use`: `@use '../path/styles.scss' as styles;` then `@include styles.animated-background`
