@@ -50,7 +50,8 @@ frontend/src/app/
 │       ├── components/
 │       │   ├── leaderboard/         # User rankings
 │       │   └── profile/             # User profile & achievements
-│       └── models/                  # leaderboard.interface, user.model
+│       ├── models/                  # leaderboard.interface, user.model
+│       └── services/               # leaderboard.service
 ├── help/                            # Help & FAQ (component + service)
 ├── nav-bar/                         # Navigation sidebar
 ├── not-found/                       # 404 page (lazy loaded)
@@ -77,6 +78,7 @@ frontend/src/app/
 - **Subscription cleanup** via `takeUntilDestroyed(DestroyRef)` operator
 - **Component styles**: Always use SCSS (configured in `angular.json`)
 - **Bootstrap 5** is included but should be used minimally (prefer custom design system)
+- **ngx-toastr v20** is installed — providers: `provideAnimationsAsync()` + `provideToastr()` in `app.config.ts`; base CSS imported via `angular.json` styles; custom theme in `src/app/shared/_toastr.scss`
 
 ## Environment Variables
 
@@ -97,6 +99,14 @@ BACKEND_API_URL=/api            # proxied through nginx; not a direct backend UR
 4. JWT is set as an HttpOnly cookie (`AuthToken`) in the response — nothing stored in localStorage
 5. `AuthService` emits `true` via its `BehaviorSubject` auth state
 6. Components subscribe to `getAuthStatusListener()` for reactive updates
+
+### Auth Guards
+
+- Use functional `CanActivateFn` — class-based `CanActivate` is deprecated in Angular 14+
+- Guards are **synchronous** — `APP_INITIALIZER` resolves auth state before routing starts, so `authService.getIsAuth()` is reliable with no async needed
+- `inject()` works inside `CanActivateFn` — Angular establishes an injection context for functional guards (e.g. `inject(ToastrService)`)
+- `returnUrl` pattern: pass `state.url` as query param to `/google-login`; validate with `startsWith('/')` in `loginUserWithGoogle()` to prevent open redirect attacks
+- Guards live in `src/app/auth/guards/`
 
 ### HTTP Requests
 
@@ -296,12 +306,15 @@ feature/
 
 - **No `!important`** — increase specificity instead (exception: Editor.js overrides via `::ng-deep`)
 - **Use `rem` units** for new styles, not `px` — base is 16px
-- **Reuse CSS variables** from `src/styles.scss` (colors, radii, shadows, glass effects)
+- **Reuse CSS variables** from `src/styles.scss` (colors, radii, shadows, glass effects) — **never hardcode color values** (e.g., use `var(--accent)` not `#7c5cff`)
+- **Use TypeScript enums** for discrete value sets (time frames, statuses, categories) — never pass raw string literals between components
 - **Reuse mixins** from `styles.scss` via `@use`: `@use '../path/styles.scss' as styles;` then `@include styles.animated-background`
 - **Never use `@import`** for Sass — always use `@use` with a namespace (Dart Sass 3.0 requirement)
+- **`@use` in `styles.scss` must come before `:root {}` and all other rules** — Dart Sass enforces this; violating it causes build errors in every component that imports `styles.scss`
 - **Component styles**: Always use SCSS, use `@use` for `styles.scss` only when mixins are needed
 - **Shared button mixin**: `@use 'path/to/shared/buttons' as buttons;` then `@include buttons.system;` — provides `.btn` with variants (primary, secondary, small, icon-only, link-btn, success, large, no-exercises-btn)
 - **Shared card mixin**: `@use 'path/to/shared/cards' as cards;` then `@include cards.system;` — provides `.card` glass morphism pattern with inner glow border and responsive breakpoint
+- **Shared toastr theme**: Lives in `src/app/shared/_toastr.scss`, imported at the top of `styles.scss` — scoped to `.toast-auth` class
 - **Editor.js dark theme**: Lives in `shared/components/editor/editor.component.scss` with `::ng-deep` — consuming components should NOT duplicate these overrides
 - **Fixing `!important`**: Nest overrides inside parent class for equal specificity + source-order win; `:has()` pseudo-class provides high specificity naturally
 
@@ -317,6 +330,7 @@ Use CSS variables defined in `src/styles.scss`:
 
 // Accent Colors
 --accent: #7c5cff;       // Primary purple accent
+--accent-rgb: 124, 92, 255; // RGB channels for rgba() usage: rgba(var(--accent-rgb), 0.4)
 --accent-light: #9178ff; // Lighter purple (hover states, links)
 --accent-dark: #5a3ce6;  // Darker purple (gradients, shadows)
 
@@ -580,7 +594,7 @@ When creating new components, ensure:
 
 ## Known Limitations
 
-- Help and Leaderboard services return mock data (not yet integrated with backend)
+- Help service returns mock data (not yet integrated with backend)
 - **Frontend/Backend property name mismatches cause silent failures** in Angular templates
   - `@switch` statements won't match if property name is wrong
   - Template expressions return undefined without error

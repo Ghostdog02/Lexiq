@@ -48,8 +48,17 @@ docker compose logs           # view logs
 ### User Progress & XP
 
 - **XP Calculation**: `SELECT SUM(PointsEarned) FROM UserExerciseProgress WHERE UserId = @id`
+- **XP Caching**: `User.TotalPointsEarned` is incremented on first correct exercise submission (avoids re-aggregation for leaderboard)
 - **Endpoints**: `GET /api/user/xp` (authenticated), `GET /api/user/{id}/xp` (public for leaderboard)
 - **Progress Tracking**: UserExerciseProgress table (composite key: UserId + ExerciseId)
+
+### Leaderboard & Gamification
+
+- **Leaderboard**: `GET /api/leaderboard?timeFrame=Weekly|Monthly|AllTime` — ranks users by XP
+- **Streaks**: Derived from `UserExerciseProgress.CompletedAt` (distinct dates, consecutive days backward from today)
+- **Levels**: Computed on backend via formula: `level = floor((1 + sqrt(1 + totalXp/25)) / 2)`
+- **Rank change**: Stateless comparison — current period vs previous equivalent period (no snapshot tables)
+- **Avatars**: Auto-saved from Google OAuth profile picture on login; manual override via `PUT /api/user/avatar` (IFormFile upload)
 
 ### Content Hierarchy
 

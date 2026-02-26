@@ -33,6 +33,7 @@ dotnet ef migrations remove --project Database/Backend.Database.csproj
 backend/
 ├── Controllers/          # API endpoints
 │   ├── AuthController.cs              # Google OAuth login, logout, auth-status
+│   ├── LeaderboardController.cs       # Leaderboard rankings (GET /api/leaderboard)
 │   ├── CourseController.cs            # Course CRUD
 │   ├── LessonController.cs           # Lesson CRUD
 │   ├── ExerciseController.cs         # Exercise CRUD (polymorphic types)
@@ -40,7 +41,8 @@ backend/
 │   ├── UserLanguageController.cs     # User ↔ Language enrollment
 │   ├── UserManagementController.cs   # User CRUD (admin)
 │   ├── RoleManagementController.cs   # Role management (admin)
-│   └── UploadsController.cs          # File/image uploads
+│   ├── UploadsController.cs          # File/image uploads
+│   └── UserController.cs            # User profile operations (avatar upload)
 ├── Database/
 │   ├── BackendDbContext.cs        # EF Core DbContext
 │   ├── Entities/                  # Database models (Users/, Exercises/ subdirs)
@@ -53,6 +55,8 @@ backend/
 │   ├── LessonService.cs          # Lesson business logic
 │   ├── ExerciseService.cs        # Exercise business logic
 │   ├── ExerciseProgressService.cs # Answer validation, progress tracking, sequential unlocking, unified progress queries
+│   ├── LeaderboardService.cs    # Leaderboard queries, streak/level calculation
+│   ├── UserService.cs           # Avatar upload
 │   ├── LanguageService.cs        # Language business logic
 │   ├── UserLanguageService.cs    # Enrollment logic
 │   ├── FileUploadsService.cs     # File upload handling
@@ -76,7 +80,8 @@ backend/
 ### Enum Serialization
 - Add `[JsonConverter(typeof(JsonStringEnumConverter))]` to enums for string serialization
 - Frontend sends "Beginner", backend receives DifficultyLevel.Beginner (not 0)
-- Required for: DifficultyLevel, ExerciseType, LessonStatus
+- Required for: DifficultyLevel, ExerciseType, LessonStatus, TimeFrame
+- **Always use enums for discrete value sets** — never use raw strings for values like time frames, status codes, or categories
 
 ### IFormFile Model Binding
 - `<Nullable>enable</Nullable>` + `[ApiController]` makes non-nullable `IFormFile` implicitly `[Required]`
@@ -140,7 +145,7 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 ```
 
 **Identity Tables:**
-- `Users` — Extended from `IdentityUser` with RegistrationDate, LastLoginDate
+- `Users` — Extended from `IdentityUser` with RegistrationDate, LastLoginDate, Avatar (nullable, Google profile picture), TotalPointsEarned (materialized XP aggregate)
 - `Roles` — Standard Identity roles (Admin, ContentCreator, User)
 - `UserRoles`, `UserLogins`, `UserClaims`, `RoleClaims`, `UserTokens` — Identity infrastructure
 
@@ -350,6 +355,8 @@ Backend loads secrets from `/run/secrets/backend_env` in production (Docker secr
 | UserLanguageController | `/api/userLanguages` | `GET /user/{userId}`, `POST /enroll`, `DELETE /unenroll` | Yes |
 | UserManagementController | `/api/userManagement` | `GET /users`, `GET /users/{id}`, `POST /roles`, etc. | Admin only |
 | UploadsController | `/api/uploads` | `POST /{fileType}`, `GET /{fileType}/{filename}`, `GET /list/{fileType}` | Yes |
+| LeaderboardController | `/api/leaderboard` | `GET /?timeFrame=Weekly\|Monthly\|AllTime` | No (includes current user if authenticated) |
+| UserController | `/api/user` | `PUT /avatar` | Yes |
 
 ## Known Limitations
 
