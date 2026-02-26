@@ -27,6 +27,7 @@ export class LessonViewerComponent implements OnInit {
   private contentParser = inject(ContentParserService);
 
   lesson: Lesson | null = null;
+  parsedContent: SafeHtml | null = null;
   isLoading = true;
   error: string | null = null;
   currentView: 'content' | 'exercises' = 'content';
@@ -54,16 +55,17 @@ export class LessonViewerComponent implements OnInit {
       }
 
       this.lesson = apiLesson;
+      if (apiLesson.lessonContent) {
+        this.parsedContent = this.sanitizer.bypassSecurityTrustHtml(
+          this.contentParser.parse(apiLesson.lessonContent)
+        );
+      }
     } catch (err) {
       console.error('❌ Error loading lesson:', err);
       this.error = 'Failed to load lesson';
     } finally {
       this.isLoading = false;
     }
-  }
-
-  parseContent(content: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(this.contentParser.parse(content));
   }
 
   startExercises() {

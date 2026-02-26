@@ -27,6 +27,11 @@
   }
 }
 
+.lesson-main {
+  position: relative;
+  z-index: 1;
+}
+
 .lesson-header {
   margin-bottom: 48px;
   position: relative;
@@ -48,7 +53,12 @@
     justify-content: center;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    // Explicit properties only — avoids browser scanning every CSS property on each frame (transition: all)
+    transition:
+      background    0.2s cubic-bezier(0.2, 0.8, 0.2, 1), // glass → glass-hover fill
+      color         0.2s cubic-bezier(0.2, 0.8, 0.2, 1), // text-secondary → white
+      transform     0.2s cubic-bezier(0.2, 0.8, 0.2, 1), // translateX(-4px) slide
+      border-color  0.2s cubic-bezier(0.2, 0.8, 0.2, 1); // border highlight
 
     &:hover {
       background: var(--glass-hover);
@@ -133,6 +143,10 @@
     gap: 10px;
     margin: 0;
     letter-spacing: 0.5px;
+
+    .icon {
+      font-size: 1.25rem;
+    }
   }
 
   #second-section-label {
@@ -147,6 +161,10 @@
   }
 
   .lesson-content {
+    .markdown-content {
+      width: 100%;
+    }
+
     ::ng-deep {
       h1, h2, h3 {
         color: var(--white);
@@ -183,16 +201,16 @@
   }
 
   .action-section {
-    margin-top: 24px;
+    margin-top: 1.5rem;
     text-align: center;
     display: flex;
     flex-direction: column;
     align-items: center;
 
     .no-exercises-btn {
-      width: 28% !important;
+      width: 28%;
       display: flex;
-      gap: 15px;
+      gap: 0.9375rem;
       align-items: center;
       justify-content: center;
     }
@@ -200,13 +218,13 @@
     .btn {
       width: 20%;
       display: flex;
-      gap: 15px
+      gap: 0.9375rem;
     }
 
     .action-hint {
-      margin-top: 12px;
+      margin-top: 0.75rem;
       color: var(--muted);
-      font-size: 14px;
+      font-size: 0.875rem;
     }
   }
 }
