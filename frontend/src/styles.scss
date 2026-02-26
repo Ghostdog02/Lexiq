@@ -5,6 +5,7 @@
 
   --panel: #1e2732;
   --accent: #7c5cff;
+  --accent-rgb: 124, 92, 255;
   --accent-light: #9178ff;
   --accent-dark: #5a3ce6;
   --muted: #8b98a5;
@@ -59,6 +60,8 @@
     z-index: -1; 
   }
 }
+
+@use 'app/shared/toastr';
 
 @mixin flex-column {
   display: flex;
