@@ -83,7 +83,7 @@ export class AuthService {
     this.isLogged = status;
   }
 
-  async loginUserWithGoogle(googleToken: string) {
+  async loginUserWithGoogle(googleToken: string, returnUrl?: string) {
     try {
       await firstValueFrom(
         this.httpClient.post(
@@ -96,7 +96,9 @@ export class AuthService {
       this.changeAuthStatus(true);
       this.isAdmin = await this.checkAdminStatus();
       this.adminStatusListener.next(this.isAdmin);
-      this.router.navigateByUrl('/');
+
+      const safeReturnUrl = returnUrl?.startsWith('/') ? returnUrl : '/';
+      this.router.navigateByUrl(safeReturnUrl);
     } catch {
       this.changeAuthStatus(false);
       this.isAdmin = false;

@@ -1,4 +1,6 @@
 import { AfterViewInit, Component, inject, OnDestroy } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+
 import { AuthService } from '../auth.service';
 
 declare const google: any;
@@ -13,6 +15,7 @@ declare const google: any;
 })
 export class GoogleLoginComponent implements AfterViewInit, OnDestroy {
   private authService = inject(AuthService);
+  private route = inject(ActivatedRoute);
   private checkInterval: any;
 
   ngAfterViewInit(): void {
@@ -91,6 +94,7 @@ export class GoogleLoginComponent implements AfterViewInit, OnDestroy {
   }
 
   handleCredentialResponse(response: any) {
-    this.authService.loginUserWithGoogle(response.credential);
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') ?? '/';
+    this.authService.loginUserWithGoogle(response.credential, returnUrl);
   }
 }
