@@ -147,6 +147,13 @@ type LessonForm = FormGroup<LessonFormControls>;
 - Separate factory methods per form type
 - NonNullableFormBuilder ensures non-null values
 
+### Performance Anti-Patterns
+
+- **Never call methods in template bindings** — Angular re-executes them on every change detection cycle (every click, scroll, timer, XHR). Pre-compute the result as a component property instead:
+  - ❌ `[innerHTML]="parseContent(lesson.content)"`
+  - ✅ Compute `this.parsedContent = ...` once in `ngOnInit`/load method, bind with `[innerHTML]="parsedContent"`
+- **Avoid `transition: all`** — forces the browser to watch every CSS property per animation frame; enumerate only the properties that actually change (e.g. `background, color, transform, border-color`)
+
 ### Subscription Management
 
 Always clean up subscriptions using `takeUntilDestroyed()`:
