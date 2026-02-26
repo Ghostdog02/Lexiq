@@ -93,7 +93,12 @@ public class LeaderboardService(BackendDbContext context)
             var currentRank = i + 1;
             var change = ComputeRankChange(entry.UserId, currentRank, previousRanks);
 
-            var enriched = await EnrichEntryAsync(entry, currentRank, change, entry.UserId == currentUserId);
+            var enriched = await EnrichEntryAsync(
+                entry,
+                currentRank,
+                change,
+                entry.UserId == currentUserId
+            );
             enrichedEntries.Add(enriched);
 
             if (entry.UserId == currentUserId)
@@ -146,22 +151,33 @@ public class LeaderboardService(BackendDbContext context)
         };
     }
 
-    private async Task<List<RawLeaderboardEntry>> GetTimeWindowedLeaderboardAsync(DateOnly from, DateOnly to)
+    private async Task<List<RawLeaderboardEntry>> GetTimeWindowedLeaderboardAsync(
+        DateOnly from,
+        DateOnly to
+    )
     {
         var fromDateTime = from.ToDateTime(TimeOnly.MinValue);
         var toDateTime = to.ToDateTime(TimeOnly.MinValue);
 
         return await _context
             .UserExerciseProgress.Where(p =>
-                p.IsCompleted && p.CompletedAt.HasValue
-                && p.CompletedAt >= fromDateTime && p.CompletedAt < toDateTime
+                p.IsCompleted
+                && p.CompletedAt.HasValue
+                && p.CompletedAt >= fromDateTime
+                && p.CompletedAt < toDateTime
             )
-            .GroupBy(p => p.UserId)
+            .Join(
+                _context.Users,
+                p => p.UserId,
+                u => u.Id,
+                (p, u) => new UserProgressJoin(p.UserId, p.PointsEarned, u.UserName, u.Email, u.Avatar)
+            )
+            .GroupBy(x => new UserGroupKey(x.UserId, x.UserName, x.Email, x.Avatar))
             .Select(g => new RawLeaderboardEntry(
-                g.Key,
-                g.First().User.UserName ?? g.First().User.Email ?? "Unknown",
-                g.First().User.Avatar,
-                g.Sum(p => p.PointsEarned)
+                g.Key.UserId,
+                g.Key.UserName ?? g.Key.Email ?? "Unknown",
+                g.Key.Avatar,
+                g.Sum(x => x.PointsEarned)
             ))
             .OrderByDescending(e => e.TotalXp)
             .Take(MaxLeaderboardEntries)
@@ -190,12 +206,18 @@ public class LeaderboardService(BackendDbContext context)
             .UserExerciseProgress.Where(p =>
                 p.IsCompleted && p.CompletedAt.HasValue && p.CompletedAt >= sinceDateTime
             )
-            .GroupBy(p => p.UserId)
+            .Join(
+                _context.Users,
+                p => p.UserId,
+                u => u.Id,
+                (p, u) => new UserProgressJoin(p.UserId, p.PointsEarned, u.UserName, u.Email, u.Avatar)
+            )
+            .GroupBy(x => new UserGroupKey(x.UserId, x.UserName, x.Email, x.Avatar))
             .Select(g => new RawLeaderboardEntry(
-                g.Key,
-                g.First().User.UserName ?? g.First().User.Email ?? "Unknown",
-                g.First().User.Avatar,
-                g.Sum(p => p.PointsEarned)
+                g.Key.UserId,
+                g.Key.UserName ?? g.Key.Email ?? "Unknown",
+                g.Key.Avatar,
+                g.Sum(x => x.PointsEarned)
             ))
             .OrderByDescending(e => e.TotalXp)
             .Take(MaxLeaderboardEntries)
@@ -206,7 +228,11 @@ public class LeaderboardService(BackendDbContext context)
     /// Computes rank change: positive = moved up, negative = moved down, 0 = no change.
     /// If user wasn't in previous period, change is 0 (new entry).
     /// </summary>
-    private static int ComputeRankChange(string userId, int currentRank, Dictionary<string, int> previousRanks)
+    private static int ComputeRankChange(
+        string userId,
+        int currentRank,
+        Dictionary<string, int> previousRanks
+    )
     {
         if (!previousRanks.TryGetValue(userId, out var previousRank))
             return 0; // New entry, no previous rank to compare
@@ -255,9 +281,10 @@ public class LeaderboardService(BackendDbContext context)
         }
         else
         {
-            var since = timeFrame == TimeFrame.Weekly
-                ? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7)
-                : DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30);
+            var since =
+                timeFrame == TimeFrame.Weekly
+                    ? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7)
+                    : DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30);
             var sinceDateTime = since.ToDateTime(TimeOnly.MinValue);
 
             totalXp = await _context
@@ -281,9 +308,10 @@ public class LeaderboardService(BackendDbContext context)
         }
         else
         {
-            var since = timeFrame == TimeFrame.Weekly
-                ? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7)
-                : DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30);
+            var since =
+                timeFrame == TimeFrame.Weekly
+                    ? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7)
+                    : DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30);
             var sinceDateTime = since.ToDateTime(TimeOnly.MinValue);
 
             rank =
@@ -312,4 +340,21 @@ public class LeaderboardService(BackendDbContext context)
     }
 
     private record RawLeaderboardEntry(string UserId, string UserName, string? Avatar, int TotalXp);
+
+    /// <summary>
+    /// Flat projection of UserExerciseProgress joined with User identity fields.
+    /// Avoids carrying the full entity into the GroupBy pipeline.
+    /// </summary>
+    private record UserProgressJoin(
+        string UserId,
+        int PointsEarned,
+        string? UserName,
+        string? Email,
+        string? Avatar
+    );
+
+    /// <summary>
+    /// Typed GroupBy key for aggregating XP per user.
+    /// </summary>
+    private record UserGroupKey(string UserId, string? UserName, string? Email, string? Avatar);
 }

@@ -11,65 +11,72 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     private readonly BackendDbContext _context = context;
     private readonly ExerciseService _exerciseService = exerciseService;
 
+    /// <summary>
+    /// Lightweight projection used internally for cross-course navigation queries.
+    /// Avoids loading full Course and Language entity graphs when only scalar FK values are needed.
+    /// </summary>
+    private record LessonCourseContext(
+        string CourseId,
+        int LessonOrderIndex,
+        string LanguageId,
+        int CourseOrderIndex
+    );
+
     public async Task<Lesson?> GetNextLessonAsync(string currentLessonId)
     {
-        var currentLesson = await _context
-            .Lessons.Include(l => l.Course)
-            .ThenInclude(c => c.Language)
-            .FirstOrDefaultAsync(l => l.Id == currentLessonId);
+        var ctx = await _context.Lessons
+            .Where(l => l.Id == currentLessonId)
+            .Select(l => new LessonCourseContext(
+                l.CourseId,
+                l.OrderIndex,
+                l.Course.LanguageId,
+                l.Course.OrderIndex
+            ))
+            .FirstOrDefaultAsync();
 
-        if (currentLesson == null)
+        if (ctx == null)
             return null;
 
-        // Try to find the next lesson in the same course
-        var nextLessonInCourse = await _context
-            .Lessons.Where(l =>
-                l.CourseId == currentLesson.CourseId && l.OrderIndex > currentLesson.OrderIndex
-            )
+        var nextLessonInCourse = await _context.Lessons
+            .Where(l => l.CourseId == ctx.CourseId && l.OrderIndex > ctx.LessonOrderIndex)
             .OrderBy(l => l.OrderIndex)
             .FirstOrDefaultAsync();
 
         if (nextLessonInCourse != null)
             return nextLessonInCourse;
 
-        // If no next lesson in current course, find the first lesson of the next course
-        var nextCourse = await _context
-            .Courses.Where(c =>
-                c.LanguageId == currentLesson.Course.LanguageId
-                && c.OrderIndex > currentLesson.Course.OrderIndex
-            )
+        // Project only the ID — no need to materialize the full Course entity
+        var nextCourseId = await _context.Courses
+            .Where(c => c.LanguageId == ctx.LanguageId && c.OrderIndex > ctx.CourseOrderIndex)
             .OrderBy(c => c.OrderIndex)
+            .Select(c => c.Id)
             .FirstOrDefaultAsync();
 
-        if (nextCourse == null)
-            return null; // No next course, this is the last lesson in the language
+        if (nextCourseId == null)
+            return null;
 
-        // Get the first lesson of the next course
-        var firstLessonInNextCourse = await _context
-            .Lessons.Where(l => l.CourseId == nextCourse.Id)
+        return await _context.Lessons
+            .Where(l => l.CourseId == nextCourseId)
             .OrderBy(l => l.OrderIndex)
             .FirstOrDefaultAsync();
-
-        return firstLessonInNextCourse;
     }
 
-    public async Task<bool> UnlockNextLessonAsync(string currentLessonId)
+    public async Task<UnlockStatus> UnlockNextLessonAsync(string currentLessonId)
     {
         var nextLesson = await GetNextLessonAsync(currentLessonId);
 
         if (nextLesson == null)
-            return false; // No next lesson to unlock
+            return UnlockStatus.NoNextLesson;
 
         if (!nextLesson.IsLocked)
-            return false; // Already unlocked
+            return UnlockStatus.AlreadyUnlocked;
 
         nextLesson.IsLocked = false;
         await _context.SaveChangesAsync();
 
-        // Unlock the first exercise in this lesson
         await _exerciseService.UnlockFirstExerciseInLessonAsync(nextLesson.Id);
 
-        return true;
+        return UnlockStatus.Unlocked;
     }
 
     public async Task<bool> IsLastLessonInCourseAsync(string lessonId)

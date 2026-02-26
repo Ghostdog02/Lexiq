@@ -195,7 +195,9 @@ public abstract record ExerciseDto(...);
 
 - **Nullable LessonId in CreateExerciseDto**: Optional when nested inside CreateLessonDto (parent assigns ID), required for standalone creation. Standalone path validates: `if (string.IsNullOrEmpty(dto.LessonId)) throw ArgumentException`
 - **Async all the way**: All service methods must be async
-- **Include chains**: Use `.Include()` and `.ThenInclude()` for eager loading related entities
+- **Include chains**: Use `.Include()` and `.ThenInclude()` for eager loading related entities when full entity data is needed
+- **Prefer LINQ projections over Include for navigation queries**: When a method only needs a few scalar FK values from related entities, project with `.Select()` into a `private record` instead of loading full entity graphs. Example: `LessonCourseContext` in `LessonService.GetNextLessonAsync` projects `CourseId`, `OrderIndex`, `LanguageId`, `CourseOrderIndex` — avoids materialising `Course` and `Language` entirely.
+- **Named records over anonymous types in LINQ**: Replace `new { }` anonymous projections with `private record` types, especially when the same shape is used in multiple methods (e.g. `UserProgressJoin`, `UserGroupKey` in `LeaderboardService`). Anonymous types are fine for truly one-off, local expressions but named records eliminate duplication and make intent explicit.
 - **Eager load child collections for polymorphic types**: Use `.ThenInclude(e => (e as ChildType)!.ChildCollection)`
   - Example: `.Include(l => l.Exercises).ThenInclude(e => (e as MultipleChoiceExercise)!.Options)`
   - EF Core handles cast gracefully for non-matching types (TPH pattern)
@@ -207,6 +209,7 @@ public abstract record ExerciseDto(...);
   - Do NOT use `User.FindFirstValue()` — UserContextMiddleware pre-loads the user entity before controllers execute
 - **Auto-increment OrderIndex**: When `OrderIndex` is null in DTOs, calculate as `MaxAsync(e => (int?)e.OrderIndex) ?? -1 + 1` in parent entity
 - **Idempotent unlocks**: All unlock methods check `IsLocked` before modifying (safe to call multiple times)
+- **Operation result enums over bool**: Service methods that can fail for distinct reasons return an enum rather than `bool` — e.g. `UnlockStatus` (`Unlocked` / `AlreadyUnlocked` / `NoNextLesson`) instead of a bare `bool`. This preserves the failure reason at the call site without relying on comments.
 - **Cascade unlocking**: `LessonService.UnlockNextLessonAsync()` calls `ExerciseService.UnlockFirstExerciseInLessonAsync()`
 - **Service dependency chain**: ExerciseService → LessonService → ExerciseProgressService (avoid circular dependencies)
 - **Admin bypass pattern**: Use `UserExtensions.CanBypassLocksAsync(user, userManager)` to check if user can bypass locks (Admin or ContentCreator role)
@@ -216,14 +219,24 @@ public abstract record ExerciseDto(...);
 - **GroupJoin for left-join queries**: Use EF Core `GroupJoin` to left-join exercises with user progress in a single database round-trip (see `ExerciseProgressService`)
 - **Submission endpoints return all items**: `GetLessonSubmissionsAsync` returns `SubmitAnswerResponse` for EVERY exercise in lesson, not just attempted ones. Frontend must filter appropriately.
 
-Example from `LessonService.cs`:
+Include chain example (`LessonService.GetLessonWithDetailsAsync` — full entity needed):
 ```csharp
 return await _context.Lessons
     .Include(l => l.Course)
         .ThenInclude(c => c.Language)
     .Include(l => l.Exercises)
-    .OrderBy(l => l.OrderIndex)
+        .ThenInclude(e => (e as MultipleChoiceExercise)!.Options)
     .FirstOrDefaultAsync(l => l.Id == lessonId);
+```
+
+Projection record example (`LessonService.GetNextLessonAsync` — only scalar FKs needed):
+```csharp
+private record LessonCourseContext(string CourseId, int LessonOrderIndex, string LanguageId, int CourseOrderIndex);
+
+var ctx = await _context.Lessons
+    .Where(l => l.Id == currentLessonId)
+    .Select(l => new LessonCourseContext(l.CourseId, l.OrderIndex, l.Course.LanguageId, l.Course.OrderIndex))
+    .FirstOrDefaultAsync();
 ```
 
 ## File Upload Handling

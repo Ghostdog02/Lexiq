@@ -35,3 +35,10 @@ public record UpdateLessonDto(
     int? OrderIndex,
     string? LessonContent // Editor.js JSON content
 );
+
+public enum UnlockStatus
+{
+    Unlocked,
+    AlreadyUnlocked,
+    NoNextLesson,
+}

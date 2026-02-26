@@ -110,11 +110,9 @@ public class ExerciseProgressService(
         var fullProgress = await GetFullLessonProgressAsync(userId, lessonId);
         var meetsThreshold = fullProgress.Summary.MeetsCompletionThreshold;
 
-        var wasUnlocked = false;
-        if (meetsThreshold)
-        {
-            wasUnlocked = await _lessonService.UnlockNextLessonAsync(lessonId);
-        }
+        var unlockStatus = meetsThreshold
+            ? await _lessonService.UnlockNextLessonAsync(lessonId)
+            : UnlockStatus.NoNextLesson;
 
         var isLastInCourse = await _lessonService.IsLastLessonInCourseAsync(lessonId);
         var nextLesson = await _lessonService.GetNextLessonAsync(lessonId);
@@ -132,7 +130,7 @@ public class ExerciseProgressService(
                     nextLesson.Id,
                     nextLesson.Title,
                     nextLesson.CourseId,
-                    wasUnlocked,
+                    unlockStatus == UnlockStatus.Unlocked,
                     nextLesson.IsLocked
                 )
                 : null
