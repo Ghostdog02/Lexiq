@@ -109,6 +109,33 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 - **[`.claude/RULES.md`](.claude/RULES.md)** → Git conventions, commit format, branching strategy, PR guidelines
 - **[`.claude/SKILLS.md`](.claude/SKILLS.md)** → MCP tools usage, agent strategies, task workflows, debugging playbooks
 
+### Commit & Documentation Cadence
+
+After every logical group of related changes, follow this sequence:
+
+1. **Commit the code changes** following [`.claude/RULES.md`](.claude/RULES.md):
+   - Group by concern — don't mix feature code with documentation in the same commit
+   - Imperative subject line, max 72 chars, capitalized
+   - Bullet-point body for non-trivial changes (what + why)
+   - No `Co-Authored-By` line
+
+2. **Update the relevant CLAUDE.md** (whichever area changed):
+   - `backend/CLAUDE.md` — new patterns, service rules, API endpoints, debugging tips
+   - `frontend/CLAUDE.md` — Angular patterns, component conventions, debugging
+   - `.github/workflows/CLAUDE.md` — CI/CD changes, pipeline steps
+   - Root `CLAUDE.md` — architecture-level changes only
+
+3. **Commit the documentation update** as a separate commit:
+   ```
+   Document <what changed> in <which file>
+
+   - <bullet explaining what was added/changed and why>
+   ```
+
+4. **For schema changes**, also update [`backend/Database/ENTITIES_DOCUMENTATION.md`](backend/Database/ENTITIES_DOCUMENTATION.md) and commit it alongside or just after the migration commit.
+
+5. **After a chain of multiple commits**, run `/claude-md-improver` to audit all CLAUDE.md files for consistency and gaps (see [`.claude/SKILLS.md`](.claude/SKILLS.md) → Documentation Maintenance).
+
 ## Detailed Documentation
 
 | Area | File | Covers |
