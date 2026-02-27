@@ -595,12 +595,32 @@ When creating new components, ensure:
 - [ ] Follows glassmorphism pattern for cards/panels
 - [ ] Buttons use defined `.btn.primary` or `.btn.oauth` styles
 - [ ] Hover effects include `transform: translateY(-2px)` and purple shadow
-- [ ] Border radius uses `var(--radius)` or `var(--radius-sm)`
+- [ ] Border radius uses `var(--radius)` (16px) or `var(--radius-sm)` (100px) — never hardcode
 - [ ] Typography uses `var(--font-family)` and correct font weights
 - [ ] Links use accent-light color with underline on hover
 - [ ] Responsive breakpoints at 1024px and 480px
 - [ ] Accessibility attributes present (aria-label, role, etc.)
 - [ ] Focus states defined with purple accent outline
+- [ ] **All sizes in `rem`**, not `px` — base is 16px (e.g. `24px` → `1.5rem`)
+- [ ] **No hardcoded hex/rgba colors** — use CSS vars; for rgba tints use `rgba(var(--accent-rgb), 0.15)` pattern
+- [ ] **Extract repeated easing** as a Sass `$_ease` variable at the top of the file
+- [ ] **`transition: all` is banned** — enumerate only the properties that actually animate
+
+### Design Token Reference
+
+Tokens in `src/styles.scss` `:root` — use these instead of raw values:
+
+| Token | Value | Use for |
+|-------|-------|---------|
+| `--color-correct` | `#10b981` | Correct answer states (border, icon, text) |
+| `--color-correct-rgb` | `16, 185, 129` | `rgba(var(--color-correct-rgb), 0.15)` tints |
+| `--color-correct-light` | `#34d399` | Feedback text on correct state |
+| `--color-error-light` | `#f87171` | Feedback text on incorrect state |
+| `--color-xp` | `#fbbf24` | XP/points highlights |
+| `--color-xp-rgb` | `251, 191, 36` | XP rgba tints |
+| `--muted-rgb` | `139, 152, 165` | `rgba(var(--muted-rgb), 0.1)` for muted-tinted backgrounds |
+| `--bg-rgb` | `26, 36, 41` | `rgba(var(--bg-rgb), 0.95)` for overlays on the page background |
+| `--border-highlight` | `rgba(255,255,255,0.2)` | Bright border on hover/active states |
 
 ## Known Limitations
 
