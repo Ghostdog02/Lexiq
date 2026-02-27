@@ -170,30 +170,39 @@ public class LeaderboardService(BackendDbContext context)
                 _context.Users,
                 p => p.UserId,
                 u => u.Id,
-                (p, u) => new UserProgressJoin
-                {
-                    UserId = p.UserId,
-                    PointsEarned = p.PointsEarned,
-                    UserName = u.UserName,
-                    Email = u.Email,
-                    Avatar = u.Avatar,
-                }
+                (p, u) =>
+                    new
+                    {
+                        p.UserId,
+                        p.PointsEarned,
+                        u.UserName,
+                        u.Email,
+                        u.Avatar,
+                    }
             )
-            .GroupBy(x => new UserGroupKey
+            .GroupBy(x => new
             {
-                UserId = x.UserId,
-                UserName = x.UserName,
-                Email = x.Email,
-                Avatar = x.Avatar,
+                x.UserId,
+                x.UserName,
+                x.Email,
+                x.Avatar,
             })
-            .Select(g => new RawLeaderboardEntry(
+            .Select(g => new
+            {
                 g.Key.UserId,
-                g.Key.UserName ?? g.Key.Email ?? "Unknown",
+                g.Key.UserName,
+                g.Key.Email,
                 g.Key.Avatar,
-                g.Sum(x => x.PointsEarned)
-            ))
+                TotalXp = g.Sum(x => x.PointsEarned),
+            })
             .OrderByDescending(e => e.TotalXp)
             .Take(MaxLeaderboardEntries)
+            .Select(e => new RawLeaderboardEntry(
+                e.UserId,
+                e.UserName ?? e.Email ?? "Unknown",
+                e.Avatar,
+                e.TotalXp
+            ))
             .ToListAsync();
     }
 
@@ -223,21 +232,21 @@ public class LeaderboardService(BackendDbContext context)
                 _context.Users,
                 p => p.UserId,
                 u => u.Id,
-                (p, u) => new UserProgressJoin
-                {
-                    UserId = p.UserId,
-                    PointsEarned = p.PointsEarned,
-                    UserName = u.UserName,
-                    Email = u.Email,
-                    Avatar = u.Avatar,
-                }
+                (p, u) => new
+                    {
+                        p.UserId,
+                        p.PointsEarned,
+                        u.UserName,
+                        u.Email,
+                        u.Avatar,
+                    }
             )
-            .GroupBy(x => new UserGroupKey
+            .GroupBy(x => new
             {
-                UserId = x.UserId,
-                UserName = x.UserName,
-                Email = x.Email,
-                Avatar = x.Avatar,
+                x.UserId,
+                x.UserName,
+                x.Email,
+                x.Avatar,
             })
             .Select(g => new RawLeaderboardEntry(
                 g.Key.UserId,
@@ -366,29 +375,4 @@ public class LeaderboardService(BackendDbContext context)
     }
 
     private record RawLeaderboardEntry(string UserId, string UserName, string? Avatar, int TotalXp);
-
-    /// <summary>
-    /// Flat projection of UserExerciseProgress joined with User identity fields.
-    /// Uses init properties (not positional constructor) so EF Core can translate
-    /// MemberInitExpression in intermediate Join/GroupBy pipeline steps.
-    /// </summary>
-    private sealed class UserProgressJoin
-    {
-        public required string UserId { get; init; }
-        public required int PointsEarned { get; init; }
-        public string? UserName { get; init; }
-        public string? Email { get; init; }
-        public string? Avatar { get; init; }
-    }
-
-    /// <summary>
-    /// Typed GroupBy key for aggregating XP per user.
-    /// </summary>
-    private sealed class UserGroupKey
-    {
-        public required string UserId { get; init; }
-        public string? UserName { get; init; }
-        public string? Email { get; init; }
-        public string? Avatar { get; init; }
-    }
 }
