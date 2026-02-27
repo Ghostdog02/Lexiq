@@ -6,9 +6,11 @@ Guidelines for when and how to use specific MCP tools, agents, and workflows in 
 
 ## Skills (Slash Commands)
 
-### `/frontend-dev` — Frontend Design & Angular Work
+### `frontend-dev` — Frontend Design & Angular Work
 
-**Invoke with the Skill tool for ANY of these:**
+> **Plugin status**: `frontend-dev` is a plugin skill — install it via Claude Code settings before use. Once installed it is invoked via the Skill tool (`skill: "frontend-dev"`). Until installed, handle frontend tasks directly with Edit/Write/Bash tools guided by `frontend/CLAUDE.md`.
+
+**Invoke for ANY of these once installed:**
 - Adding or restructuring Angular components, modules, or routes
 - Changing layout, visual design, or SCSS/styling
 - Refactoring component architecture (splitting, merging, lifting state)
@@ -17,7 +19,7 @@ Guidelines for when and how to use specific MCP tools, agents, and workflows in 
 - Debugging Angular-specific issues (change detection, lifecycle hooks, template errors)
 - Updating the Angular design system or shared styles
 
-**Examples that MUST trigger `/frontend-dev`:**
+**Examples that MUST trigger `frontend-dev`:**
 ```
 "Add a progress bar to the lesson viewer"
 "Restructure the home page layout"
@@ -299,8 +301,8 @@ Task: "Find all places where JWT claims are used"
 
 | Task | Use |
 |------|-----|
-| New Angular component / UI feature | `/frontend-dev` skill |
-| Restructure frontend layout or design | `/frontend-dev` skill |
+| New Angular component / UI feature | `frontend-dev` plugin skill (install first) |
+| Restructure frontend layout or design | `frontend-dev` plugin skill (install first) |
 | New backend feature (3+ files) | `/feature-dev:feature-dev` skill |
 | Backend architecture decision | Sequential Thinking MCP + Plan agent |
 | Debugging unclear root cause | Sequential Thinking MCP |
