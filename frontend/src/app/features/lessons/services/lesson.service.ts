@@ -6,6 +6,7 @@ import {
   CreateLessonDto,
   Lesson,
   UpdateLessonApiResponse,
+  ExerciseSubmitResult,
   SubmitAnswerResponse,
   CompleteLessonResponse,
   UserExerciseProgress
@@ -192,9 +193,9 @@ export class LessonService {
    * @param answer The user's answer (option ID for multiple choice, text for others)
    * @returns Server response with correctness, points, and lesson progress
    */
-  async submitExerciseAnswer(exerciseId: string, answer: string): Promise<SubmitAnswerResponse> {
+  async submitExerciseAnswer(exerciseId: string, answer: string): Promise<ExerciseSubmitResult> {
     return await firstValueFrom(
-      this.httpClient.post<SubmitAnswerResponse>(
+      this.httpClient.post<ExerciseSubmitResult>(
         `/api/exercise/${exerciseId}/submit`,
         { answer },
         { withCredentials: true }

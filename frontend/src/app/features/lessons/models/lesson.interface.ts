@@ -32,11 +32,14 @@ export interface LessonProgressSummary {
   meetsCompletionThreshold: boolean;
 }
 
-export interface SubmitAnswerResponse {
+export interface ExerciseSubmitResult {
   isCorrect: boolean;
   pointsEarned: number;
   correctAnswer: string | null;
   explanation: string | null;
+}
+
+export interface SubmitAnswerResponse extends ExerciseSubmitResult {
   lessonProgress: LessonProgressSummary;
 }
 
