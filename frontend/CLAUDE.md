@@ -161,6 +161,8 @@ type LessonForm = FormGroup<LessonFormControls>;
   - ❌ `[innerHTML]="parseContent(lesson.content)"`
   - ✅ Compute `this.parsedContent = ...` once in `ngOnInit`/load method, bind with `[innerHTML]="parsedContent"`
 - **Avoid `transition: all`** — forces the browser to watch every CSS property per animation frame; enumerate only the properties that actually change (e.g. `background, color, transform, border-color`)
+- **`Promise.all` for independent page-load fetches** — when two HTTP calls don't depend on each other, fire them in parallel: `const [a, b] = await Promise.all([service.getX(), service.getY()])` halves perceived load time vs. sequential awaits
+- **Pass pre-fetched data as `@Input` instead of re-fetching in child `ngOnInit`** — if a parent already fetches data at load time, pass it down as an input so the child component is instantaneous; avoids a redundant HTTP round-trip on every mount
 
 ### Subscription Management
 
