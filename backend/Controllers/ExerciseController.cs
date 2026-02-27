@@ -80,7 +80,7 @@ public class ExerciseController(
     }
 
     [HttpPost("{exerciseId}/submit")]
-    public async Task<ActionResult<SubmitAnswerResponse>> SubmitAnswer(
+    public async Task<ActionResult<ExerciseSubmitResult>> SubmitAnswer(
         string exerciseId,
         SubmitAnswerRequest request
     )

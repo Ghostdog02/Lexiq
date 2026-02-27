@@ -23,7 +23,7 @@ public class ExerciseProgressService(
 
     public const double DefaultCompletionThreshold = 0.70;
 
-    public async Task<SubmitAnswerResponse> SubmitAnswerAsync(
+    public async Task<ExerciseSubmitResult> SubmitAnswerAsync(
         string userId,
         string exerciseId,
         string answer
@@ -88,14 +88,11 @@ public class ExerciseProgressService(
             nextExerciseUnlocked = await _exerciseService.UnlockNextExerciseAsync(exerciseId);
         }
 
-        var fullProgress = await GetFullLessonProgressAsync(userId, exercise.LessonId);
-
-        return new SubmitAnswerResponse(
+        return new ExerciseSubmitResult(
             IsCorrect: isCorrect,
             PointsEarned: pointsEarned,
             CorrectAnswer: isCorrect ? null : GetCorrectAnswer(exercise),
-            Explanation: exercise.Explanation,
-            LessonProgress: fullProgress.Summary
+            Explanation: exercise.Explanation
         );
     }
 
@@ -191,20 +188,22 @@ public class ExerciseProgressService(
 
         var fullProgress = await GetFullLessonProgressAsync(userId, lessonId);
 
-        return exercises.Select(exercise =>
-        {
-            var hasProgress = progressByExercise.TryGetValue(exercise.Id, out var progress);
+        return exercises
+            .Select(exercise =>
+            {
+                var hasProgress = progressByExercise.TryGetValue(exercise.Id, out var progress);
 
-            return new SubmitAnswerResponse(
-                IsCorrect: hasProgress && progress!.IsCompleted,
-                PointsEarned: hasProgress ? progress!.PointsEarned : 0,
-                CorrectAnswer: hasProgress && !progress!.IsCompleted
-                    ? GetCorrectAnswer(exercise)
-                    : null,
-                Explanation: exercise.Explanation,
-                LessonProgress: fullProgress.Summary
-            );
-        }).ToList();
+                return new SubmitAnswerResponse(
+                    IsCorrect: hasProgress && progress!.IsCompleted,
+                    PointsEarned: hasProgress ? progress!.PointsEarned : 0,
+                    CorrectAnswer: hasProgress && !progress!.IsCompleted
+                        ? GetCorrectAnswer(exercise)
+                        : null,
+                    Explanation: exercise.Explanation,
+                    LessonProgress: fullProgress.Summary
+                );
+            })
+            .ToList();
     }
 
     private async Task<List<ExerciseProgressRow>> QueryExerciseProgressAsync(

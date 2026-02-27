@@ -2,6 +2,13 @@ namespace Backend.Api.Dtos;
 
 public record SubmitAnswerRequest(string Answer);
 
+public record ExerciseSubmitResult(
+    bool IsCorrect,
+    int PointsEarned,
+    string? CorrectAnswer,
+    string? Explanation
+);
+
 public record SubmitAnswerResponse(
     bool IsCorrect,
     int PointsEarned,
