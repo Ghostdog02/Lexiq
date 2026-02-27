@@ -56,7 +56,8 @@ backend/
 │   ├── ExerciseService.cs        # Exercise business logic
 │   ├── ExerciseProgressService.cs # Answer validation, progress tracking, sequential unlocking, unified progress queries
 │   ├── LeaderboardService.cs    # Leaderboard queries, streak/level calculation
-│   ├── UserService.cs           # Avatar upload
+│   ├── AvatarService.cs        # Avatar download (Google), upsert, retrieval, validation
+│   ├── UserService.cs           # Avatar upload orchestration
 │   ├── LanguageService.cs        # Language business logic
 │   ├── UserLanguageService.cs    # Enrollment logic
 │   ├── FileUploadsService.cs     # File upload handling
@@ -145,7 +146,8 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 ```
 
 **Identity Tables:**
-- `Users` — Extended from `IdentityUser` with RegistrationDate, LastLoginDate, Avatar (nullable, Google profile picture), TotalPointsEarned (materialized XP aggregate)
+- `Users` — Extended from `IdentityUser` with RegistrationDate, LastLoginDate, TotalPointsEarned (materialized XP aggregate)
+- `UserAvatars` — 1:1 with Users (shared PK: UserId). Stores avatar as `varbinary(max)` binary + ContentType. Separate table to avoid loading bytes on every request via UserContextMiddleware.
 - `Roles` — Standard Identity roles (Admin, ContentCreator, User)
 - `UserRoles`, `UserLogins`, `UserClaims`, `RoleClaims`, `UserTokens` — Identity infrastructure
 
@@ -217,6 +219,7 @@ public abstract record ExerciseDto(...);
 - **Batch progress for lists**: Use `GetProgressForLessonsAsync(userId, lessonIds)` when loading progress for multiple lessons — avoids N+1 queries in controller loops
 - **GroupJoin for left-join queries**: Use EF Core `GroupJoin` to left-join exercises with user progress in a single database round-trip (see `ExerciseProgressService`)
 - **Submission endpoints return all items**: `GetLessonSubmissionsAsync` returns `SubmitAnswerResponse` for EVERY exercise in lesson, not just attempted ones. Frontend must filter appropriately.
+- **Avatar binary storage**: Avatars stored as `varbinary(max)` in a separate `UserAvatars` table (not on `User` entity) to avoid loading bytes via `UserContextMiddleware` on every request. `AvatarService` handles download (Google), upsert, and retrieval. Leaderboard queries batch-check `UserAvatars` for existence and construct serving URLs (`/api/user/{id}/avatar`) — never load binary data in list queries.
 
 Include chain example (`LessonService.GetLessonWithDetailsAsync` — full entity needed):
 ```csharp
@@ -368,7 +371,7 @@ Backend loads secrets from `/run/secrets/backend_env` in production (Docker secr
 | UserManagementController | `/api/userManagement` | `GET /users`, `GET /users/{id}`, `POST /roles`, etc. | Admin only |
 | UploadsController | `/api/uploads` | `POST /{fileType}`, `GET /{fileType}/{filename}`, `GET /list/{fileType}` | Yes |
 | LeaderboardController | `/api/leaderboard` | `GET /?timeFrame=Weekly\|Monthly\|AllTime` | No (includes current user if authenticated) |
-| UserController | `/api/user` | `PUT /avatar` | Yes |
+| UserController | `/api/user` | `GET /{userId}/avatar`, `PUT /avatar` | GET public, PUT auth |
 
 ## Known Limitations
 

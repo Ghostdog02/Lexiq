@@ -58,6 +58,7 @@ frontend/src/app/
 ├── shared/
 │   ├── _buttons.scss               # Shared button mixin (@include buttons.system)
 │   ├── _cards.scss                 # Shared card mixin (@include cards.system)
+│   ├── _mixins.scss                # Shared visual mixins: glass-card (import as `@use '...shared/mixins' as mixins;`)
 │   ├── components/
 │   │   └── editor/                  # EditorJS ControlValueAccessor wrapper + dark theme
 │   └── services/
@@ -329,6 +330,8 @@ feature/
 - **Component styles**: Always use SCSS, use `@use` for `styles.scss` only when mixins are needed
 - **Shared button mixin**: `@use 'path/to/shared/buttons' as buttons;` then `@include buttons.system;` — provides `.btn` with variants (primary, secondary, small, icon-only, link-btn, success, large, no-exercises-btn)
 - **Shared card mixin**: `@use 'path/to/shared/cards' as cards;` then `@include cards.system;` — provides `.card` glass morphism pattern with inner glow border and responsive breakpoint
+- **`glass-card` mixin** (glassmorphic base): `@use 'path/to/shared/mixins' as mixins;` then `@include mixins.glass-card;` — applies background gradient, border, shadow, `backdrop-filter: blur(10px)`, and inner glow `::before`; does NOT include `transition` (callers own animation behaviour)
+- **Never put `transition` inside visual/appearance mixins** — mixins set how something looks; the calling rule defines how it animates (avoids accidentally overriding or duplicating transition declarations)
 - **Shared toastr theme**: Lives in `src/app/shared/_toastr.scss`, imported at the top of `styles.scss` — scoped to `.toast-auth` class
 - **Editor.js dark theme**: Lives in `shared/components/editor/editor.component.scss` with `::ng-deep` — consuming components should NOT duplicate these overrides
 - **Fixing `!important`**: Nest overrides inside parent class for equal specificity + source-order win; `:has()` pseudo-class provides high specificity naturally
