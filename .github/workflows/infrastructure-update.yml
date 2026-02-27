@@ -1,10 +1,5 @@
 name: "Infrastructure Update"
 
-# Handles maintenance tasks that are independent of application deployments:
-#   - OS package updates (apt)
-#   - Infrastructure image pulls (db, certbot)
-# Runs weekly so app deploys stay fast and don't touch host packages or
-# stable images that rarely change.
 on:
   schedule:
     - cron: '0 2 * * 0'  # Every Sunday at 02:00 UTC

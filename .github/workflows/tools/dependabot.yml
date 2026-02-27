@@ -8,7 +8,7 @@ updates:
     open-pull-requests-limit: 6
     groups:
       docker-frontend:
-        update-types: ["minor", "patch"]
+        update-types: ["minor", "patch", "major"]
 
   - package-ecosystem: "docker"
     directory: "/backend"
@@ -18,7 +18,7 @@ updates:
     open-pull-requests-limit: 6
     groups:
       docker-backend:
-        update-types: ["minor", "patch"]
+        update-types: ["minor", "patch", "major"]
 
   - package-ecosystem: "npm"
     directory: "/frontend"
@@ -26,9 +26,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 6
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
     groups:
       npm-all:
         update-types: ["minor", "patch"]
@@ -39,9 +36,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 6
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
     groups:
       nuget-all:
         update-types: ["minor", "patch"]
