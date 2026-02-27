@@ -13,7 +13,7 @@ import {
   TranslationExercise,
   ListeningExercise
 } from '../../models/exercise.interface';
-import { ExerciseSubmitResult, SubmitAnswerResponse } from '../../models/lesson.interface';
+import { SubmitAnswerResponse } from '../../models/lesson.interface';
 import { LessonService } from '../../services/lesson.service';
 import { AuthService } from '../../../../auth/auth.service';
 
@@ -52,7 +52,7 @@ export class ExerciseViewerComponent implements OnInit {
 
   exerciseForm!: ExerciseViewerForm;
 
-  submissionResults: Map<number, ExerciseSubmitResult> = new Map();
+  submissionResults: Map<number, SubmitAnswerResponse> = new Map();
 
   currentExerciseIndex = 0;
   isSubmitting = false;
