@@ -8,10 +8,6 @@ import { routes } from './app.routes';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { AuthService } from './auth/auth.service';
 
-/**
- * Initialize authentication state before app starts.
- * Checks backend /auth-status endpoint if auth cookie exists.
- */
 function initializeAuth(authService: AuthService) {
   return () => authService.initializeAuthState();
 }
@@ -24,7 +20,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     provideToastr({
       positionClass: 'toast-bottom-right',
-      timeOut: 4000,
+      timeOut: 2000,
       progressBar: true,
       progressAnimation: 'decreasing',
       closeButton: true,

@@ -40,6 +40,15 @@
   --color-error-rgb: 239, 68, 68;
 }
 
+// Force dark OS palette for native select popups globally
+select {
+  color-scheme: dark;
+  option {
+    background: var(--panel);
+    color: var(--white);
+  }
+}
+
 @mixin animated-background {
   &::before {
     content: '';
