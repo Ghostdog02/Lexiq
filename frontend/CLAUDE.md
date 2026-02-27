@@ -610,6 +610,7 @@ When creating new components, ensure:
   - Template expressions return undefined without error
   - Always verify API response matches TypeScript interface property names
 - `Exercise` interface in `exercise.interface.ts` must include `isLocked: boolean` — backend `ExerciseDto` returns it, exercise-viewer depends on it
+- **`submitExerciseAnswer` returns `SubmitAnswerResponse`, not `ExerciseSubmitResult`** — the backend submit endpoint always includes `lessonProgress` in the response body; type the service call and the `submissionResults` map as `SubmitAnswerResponse` to avoid TS2322 mismatches on `currentSubmission` and `getSubmission()` getters
 
 ## Common Debugging Scenarios
 
