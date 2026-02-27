@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { authGuard } from './auth/guards/auth.guard';
 import { noAuthGuard } from './auth/guards/no-auth.guard';
+import { contentGuard } from './auth/guards/content.guard';
 
 export const routes: Routes = [
     {
@@ -20,7 +21,7 @@ export const routes: Routes = [
         path: "create-lesson",
         loadComponent: () => import('./features/lessons/components/lesson-editor/lesson-editor.component').then(m => m.LessonEditorComponent),
         title: "Create Lesson",
-        canActivate: [authGuard]
+        canActivate: [authGuard, contentGuard]
     },
     {
         path: 'profile',

@@ -21,6 +21,7 @@ export class HomeComponent implements OnInit {
   isLoading: boolean = true;
   error: string | null = null;
   isAdmin: boolean = false;
+  isContentCreator: boolean = false;
 
   // Color palette for courses (cycles if more courses than colors)
   private readonly courseColors = ['#7c5cff', '#9178ff', '#5a3ce6', '#a78bfa', '#8b5cf6', '#7c3aed'];
@@ -34,6 +35,7 @@ export class HomeComponent implements OnInit {
 
   async ngOnInit() {
     this.isAdmin = this.authService.getIsAdmin();
+    this.isContentCreator = this.authService.getIsContentCreator();
     this.loadCoursesFromApi();
     await this.loadUserXp();
   }
