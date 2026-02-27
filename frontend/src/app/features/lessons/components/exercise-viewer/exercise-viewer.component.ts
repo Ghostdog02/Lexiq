@@ -13,7 +13,7 @@ import {
   TranslationExercise,
   ListeningExercise
 } from '../../models/exercise.interface';
-import { SubmitAnswerResponse } from '../../models/lesson.interface';
+import { ExerciseSubmitResult, SubmitAnswerResponse } from '../../models/lesson.interface';
 import { LessonService } from '../../services/lesson.service';
 import { AuthService } from '../../../../auth/auth.service';
 
@@ -44,13 +44,15 @@ export class ExerciseViewerComponent implements OnInit {
 
   @Input({ required: true }) lessonId!: string;
 
+  @Input() initialSubmissions: SubmitAnswerResponse[] = [];
+
   isAdmin!: boolean;
 
   @Output() backToContent = new EventEmitter<void>();
 
   exerciseForm!: ExerciseViewerForm;
 
-  submissionResults: Map<number, SubmitAnswerResponse> = new Map();
+  submissionResults: Map<number, ExerciseSubmitResult> = new Map();
 
   currentExerciseIndex = 0;
   isSubmitting = false;
@@ -60,10 +62,10 @@ export class ExerciseViewerComponent implements OnInit {
 
   ExerciseType = ExerciseType;
 
-  async ngOnInit() {
+  ngOnInit() {
     this.buildForm();
     this.calculateTotalXp();
-    await this.restorePreviousProgress();
+    this.restorePreviousProgress();
     this.authService.getAdminStatusListener()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((isAdmin) => this.isAdmin = isAdmin);
@@ -87,10 +89,8 @@ export class ExerciseViewerComponent implements OnInit {
     this.totalPossibleXp = this.exercises.reduce((sum, ex) => sum + (ex.points || 10), 0);
   }
 
-  private async restorePreviousProgress() {
-    const submissions = await this.lessonService.getLessonSubmissions(this.lessonId);
-
-    submissions.forEach((response, index) => {
+  private restorePreviousProgress() {
+    this.initialSubmissions.forEach((response, index) => {
       // Skip exercises that were never attempted (no correctAnswer means no attempt)
       const wasAttempted = response.isCorrect || response.correctAnswer !== null;
       if (!wasAttempted) return;
@@ -99,10 +99,10 @@ export class ExerciseViewerComponent implements OnInit {
       this.exercisesFormArray.at(index).disable();
     });
 
-    // Update XP from the shared lessonProgress summary
-    const lastSubmission = submissions.find(s => s.lessonProgress);
-    if (lastSubmission) {
-      this.earnedXp = lastSubmission.lessonProgress.earnedXp;
+    // Restore XP total from the lesson progress summary included in submissions
+    const withProgress = this.initialSubmissions.find(s => s.lessonProgress != null);
+    if (withProgress) {
+      this.earnedXp = withProgress.lessonProgress.earnedXp;
     }
 
     // Start at first incomplete unlocked exercise
@@ -240,8 +240,9 @@ export class ExerciseViewerComponent implements OnInit {
       this.submissionResults.set(this.currentExerciseIndex, result);
       this.currentAnswerGroup.disable();
 
-      this.earnedXp = result.lessonProgress.earnedXp;
-      this.totalPossibleXp = result.lessonProgress.totalPossibleXp;
+      if (result.isCorrect) {
+        this.earnedXp += result.pointsEarned;
+      }
 
       // If answered correctly and there's a next exercise, unlock it in the local state
       if (result.isCorrect && this.currentExerciseIndex < this.exercises.length - 1) {

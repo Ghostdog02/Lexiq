@@ -4,7 +4,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { LessonService } from '../../services/lesson.service';
 import { ContentParserService } from '../../../../shared/services/content-parser.service';
-import { Lesson } from '../../models/lesson.interface';
+import { Lesson, SubmitAnswerResponse } from '../../models/lesson.interface';
 import { AnyExercise } from '../../models/exercise.interface';
 import { ExerciseViewerComponent } from '../exercise-viewer/exercise-viewer.component';
 
@@ -28,6 +28,7 @@ export class LessonViewerComponent implements OnInit {
 
   lesson: Lesson | null = null;
   parsedContent: SafeHtml | null = null;
+  initialSubmissions: SubmitAnswerResponse[] = [];
   isLoading = true;
   error: string | null = null;
   currentView: 'content' | 'exercises' = 'content';
@@ -47,7 +48,10 @@ export class LessonViewerComponent implements OnInit {
     this.error = null;
 
     try {
-      const apiLesson = await this.lessonService.getLesson(lessonId);
+      const [apiLesson, submissions] = await Promise.all([
+        this.lessonService.getLesson(lessonId),
+        this.lessonService.getLessonSubmissions(lessonId)
+      ]);
 
       if (!apiLesson) {
         this.error = 'Lesson not found';
@@ -55,6 +59,7 @@ export class LessonViewerComponent implements OnInit {
       }
 
       this.lesson = apiLesson;
+      this.initialSubmissions = submissions;
       if (apiLesson.lessonContent) {
         this.parsedContent = this.sanitizer.bypassSecurityTrustHtml(
           this.contentParser.parse(apiLesson.lessonContent)

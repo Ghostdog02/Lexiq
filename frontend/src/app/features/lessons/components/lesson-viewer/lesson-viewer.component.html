@@ -34,7 +34,7 @@
     </div>
     } @else {
     @if (currentView === 'content') {
-    <div class="content-view fade-in">
+    <div class="content-view">
       <div class="section-wrapper">
         <h3 class="section-label"><span class="icon">📋</span> Instructions</h3>
         <div class="lesson-description card">
@@ -74,7 +74,7 @@
     <!-- Exercises View — delegated to ExerciseViewerComponent -->
     @if (currentView === 'exercises' && lesson.exercises.length > 0) {
     <app-exercise-viewer [exercises]="$any(lesson.exercises)" [lessonId]="lesson.lessonId"
-      (backToContent)="goToContent()" />
+      [initialSubmissions]="initialSubmissions" (backToContent)="goToContent()" />
     }
     }
   </main>
