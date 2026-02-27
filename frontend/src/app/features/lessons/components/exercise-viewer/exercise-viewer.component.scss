@@ -5,6 +5,8 @@
 @include buttons.system;
 @include cards.system;
 
+$_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+
 .exercises-view {
   .exercise-card {
     min-height: 25rem;
@@ -24,7 +26,7 @@
     .locked-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(26, 36, 41, 0.95);
+      background: rgba(var(--bg-rgb), 0.95);
       backdrop-filter: blur(0.625rem);
       border-radius: var(--radius);
       z-index: 10;
@@ -41,7 +43,7 @@
           font-size: 4rem;
           margin-bottom: 1.25rem;
           display: block;
-          filter: drop-shadow(0 0 1.25rem rgba(124, 92, 255, 0.3));
+          filter: drop-shadow(0 0 1.25rem rgba(var(--accent-rgb), 0.3));
         }
 
         h3 {
@@ -63,109 +65,109 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
+      margin-bottom: 1.5rem;
 
       .exercise-type-badge {
-        font-size: 12px;
+        font-size: 0.75rem;
         font-weight: 800;
         text-transform: uppercase;
-        letter-spacing: 1.5px;
+        letter-spacing: 0.09375rem;
         color: var(--accent-light);
-        background: rgba(124, 92, 255, 0.1);
-        padding: 8px 16px;
-        border-radius: 6px;
-        border: 1px solid rgba(124, 92, 255, 0.2);
+        background: rgba(var(--accent-rgb), 0.1);
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        border: 1px solid rgba(var(--accent-rgb), 0.2);
       }
 
       .points-badge {
-        color: #fbbf24;
+        color: var(--color-xp);
         font-weight: 700;
-        font-size: 14px;
+        font-size: 0.875rem;
         display: flex;
         align-items: center;
-        gap: 4px;
-        text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+        gap: 0.25rem;
+        text-shadow: 0 0 0.625rem rgba(var(--color-xp-rgb), 0.3);
       }
 
       .locked-badge {
         color: var(--muted);
         font-weight: 600;
         font-size: 0.8125rem;
-        background: rgba(139, 152, 165, 0.1);
+        background: rgba(var(--muted-rgb), 0.1);
         padding: 0.375rem 0.75rem;
         border-radius: 0.375rem;
-        border: 1px solid rgba(139, 152, 165, 0.2);
+        border: 1px solid rgba(var(--muted-rgb), 0.2);
       }
     }
 
     .exercise-title {
-      font-size: 24px;
+      font-size: 1.5rem;
       font-weight: 700;
-      margin-bottom: 12px;
+      margin-bottom: 0.75rem;
       color: var(--white);
     }
 
     .exercise-instructions {
       color: var(--text-secondary);
-      font-size: 17px;
-      margin-bottom: 32px;
+      font-size: 1.0625rem;
+      margin-bottom: 2rem;
       line-height: 1.5;
     }
 
     .exercise-content {
       flex: 1;
-      margin-bottom: 32px;
+      margin-bottom: 2rem;
 
       .multiple-choice {
         .options-list {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 16px;
+          grid-template-columns: repeat(auto-fit, minmax(17.5rem, 1fr));
+          gap: 1rem;
 
           .option-btn {
-            background: rgba(255, 255, 255, 0.03);
-            border: 2px solid rgba(255, 255, 255, 0.08);
-            border-radius: 16px;
-            padding: 20px 24px;
+            background: var(--glass);
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.5rem;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 1rem;
             width: 100%;
             cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            transition: all $_ease;
             text-align: left;
             position: relative;
 
             .option-letter {
-              width: 32px;
-              height: 32px;
-              border-radius: 8px;
-              background: rgba(255, 255, 255, 0.05);
+              width: 2rem;
+              height: 2rem;
+              border-radius: 0.5rem;
+              background: var(--glass);
               border: 1px solid rgba(255, 255, 255, 0.1);
               display: flex;
               align-items: center;
               justify-content: center;
               font-weight: 700;
               color: var(--text-secondary);
-              font-size: 14px;
+              font-size: 0.875rem;
               flex-shrink: 0;
             }
 
             .option-text {
               color: var(--white);
-              font-size: 17px;
+              font-size: 1.0625rem;
               font-weight: 500;
               line-height: 1.4;
             }
 
             &:hover:not(:disabled) {
               background: rgba(255, 255, 255, 0.06);
-              border-color: rgba(255, 255, 255, 0.2);
+              border-color: var(--border-highlight);
               transform: translateY(-2px);
             }
 
             &[aria-pressed="true"] {
-              background: rgba(124, 92, 255, 0.15);
+              background: rgba(var(--accent-rgb), 0.15);
               border-color: var(--accent);
 
               .option-letter {
@@ -176,36 +178,36 @@
             }
 
             &.correct {
-              background: rgba(16, 185, 129, 0.15);
-              border-color: #10b981;
+              background: rgba(var(--color-correct-rgb), 0.15);
+              border-color: var(--color-correct);
 
               .option-letter {
-                background: #10b981;
-                border-color: #10b981;
+                background: var(--color-correct);
+                border-color: var(--color-correct);
                 color: var(--white);
               }
 
               .result-icon {
                 margin-left: auto;
-                color: #10b981;
+                color: var(--color-correct);
                 font-weight: bold;
               }
             }
 
             &.incorrect {
-              background: rgba(239, 68, 68, 0.15);
-              border-color: #ef4444;
+              background: rgba(var(--color-error-rgb), 0.15);
+              border-color: var(--color-error);
               opacity: 0.8;
 
               .option-letter {
-                background: #ef4444;
-                border-color: #ef4444;
+                background: var(--color-error);
+                border-color: var(--color-error);
                 color: var(--white);
               }
 
               .result-icon {
                 margin-left: auto;
-                color: #ef4444;
+                color: var(--color-error);
                 font-weight: bold;
               }
             }
@@ -220,38 +222,38 @@
           width: 100%;
           background: rgba(0, 0, 0, 0.2);
           border: 2px solid var(--border);
-          border-radius: 16px;
-          padding: 20px;
-          font-size: 20px;
+          border-radius: var(--radius);
+          padding: 1.25rem;
+          font-size: 1.25rem;
           color: var(--white);
           font-family: inherit;
-          transition: all 0.2s;
+          transition: all $_ease;
           resize: none;
 
           &:focus {
             outline: none;
             border-color: var(--accent);
             background: rgba(0, 0, 0, 0.3);
-            box-shadow: 0 0 0 4px rgba(124, 92, 255, 0.1);
+            box-shadow: 0 0 0 0.25rem rgba(var(--accent-rgb), 0.1);
           }
 
           &.correct {
-            border-color: #10b981;
-            background: rgba(16, 185, 129, 0.05);
+            border-color: var(--color-correct);
+            background: rgba(var(--color-correct-rgb), 0.05);
           }
 
           &.incorrect {
-            border-color: #ef4444;
-            background: rgba(239, 68, 68, 0.05);
+            border-color: var(--color-error);
+            background: rgba(var(--color-error-rgb), 0.05);
           }
         }
       }
 
       .fill-in-blank {
         .question-display {
-          font-size: 24px;
+          font-size: 1.5rem;
           line-height: 1.6;
-          margin-bottom: 24px;
+          margin-bottom: 1.5rem;
           font-weight: 500;
         }
       }
@@ -259,7 +261,7 @@
       .translation {
         display: flex;
         flex-direction: column;
-        gap: 20px;
+        gap: 1.25rem;
 
         .source-section, .target-section {
           position: relative;
@@ -267,30 +269,30 @@
 
         .lang-badge {
           position: absolute;
-          top: -10px;
-          left: 16px;
+          top: -0.625rem;
+          left: 1rem;
           background: var(--panel);
           border: 1px solid var(--border);
-          padding: 4px 10px;
-          border-radius: 6px;
-          font-size: 11px;
+          padding: 0.25rem 0.625rem;
+          border-radius: 0.375rem;
+          font-size: 0.6875rem;
           font-weight: 700;
           color: var(--text-secondary);
           z-index: 2;
         }
 
         .source-text {
-          background: rgba(255, 255, 255, 0.05);
-          border-radius: 16px;
-          padding: 24px;
-          font-size: 20px;
+          background: var(--glass);
+          border-radius: var(--radius);
+          padding: 1.5rem;
+          font-size: 1.25rem;
           font-weight: 500;
         }
 
         .arrow-divider {
           text-align: center;
           color: var(--muted);
-          font-size: 20px;
+          font-size: 1.25rem;
           transform: rotate(90deg);
 
           @media (min-width: 768px) {
@@ -302,14 +304,14 @@
       .listening {
         .audio-section {
           background: rgba(0, 0, 0, 0.2);
-          padding: 24px;
-          border-radius: 16px;
-          margin-bottom: 24px;
+          padding: 1.5rem;
+          border-radius: var(--radius);
+          margin-bottom: 1.5rem;
           text-align: center;
 
           .audio-player {
             width: 100%;
-            height: 40px;
+            height: 2.5rem;
           }
 
           .no-audio {
@@ -317,74 +319,74 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            padding: 20px;
+            gap: 0.5rem;
+            padding: 1.25rem;
 
-            .icon { font-size: 24px; }
+            .icon { font-size: 1.5rem; }
           }
         }
       }
 
       .correct-answer-reveal {
-        margin-top: 16px;
-        padding: 16px;
-        background: rgba(16, 185, 129, 0.1);
-        border: 1px solid rgba(16, 185, 129, 0.2);
-        border-radius: 12px;
-        color: #10b981;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: rgba(var(--color-correct-rgb), 0.1);
+        border: 1px solid rgba(var(--color-correct-rgb), 0.2);
+        border-radius: 0.75rem;
+        color: var(--color-correct);
         display: flex;
-        gap: 8px;
+        gap: 0.5rem;
         align-items: center;
         animation: slideUp 0.3s ease-out;
 
         .label {
           font-weight: 600;
           text-transform: uppercase;
-          font-size: 11px;
+          font-size: 0.6875rem;
           opacity: 0.8;
         }
 
         .answer {
           font-weight: 700;
-          font-size: 16px;
+          font-size: 1rem;
         }
       }
     }
 
     .feedback {
-      margin-bottom: 24px;
-      padding: 20px 24px;
-      border-radius: 16px;
+      margin-bottom: 1.5rem;
+      padding: 1.25rem 1.5rem;
+      border-radius: var(--radius);
       display: flex;
       align-items: flex-start;
-      gap: 16px;
+      gap: 1rem;
       animation: slideUp 0.3s ease-out;
 
       &.correct {
-        background: rgba(16, 185, 129, 0.15);
-        border: 1px solid rgba(16, 185, 129, 0.3);
+        background: rgba(var(--color-correct-rgb), 0.15);
+        border: 1px solid rgba(var(--color-correct-rgb), 0.3);
 
-        .feedback-text { color: #34d399; }
-        .feedback-icon { font-size: 24px; }
+        .feedback-text { color: var(--color-correct-light); }
+        .feedback-icon { font-size: 1.5rem; }
       }
 
       &.incorrect {
-        background: rgba(239, 68, 68, 0.15);
-        border: 1px solid rgba(239, 68, 68, 0.3);
+        background: rgba(var(--color-error-rgb), 0.15);
+        border: 1px solid rgba(var(--color-error-rgb), 0.3);
 
-        .feedback-text { color: #f87171; }
-        .feedback-icon { font-size: 24px; }
+        .feedback-text { color: var(--color-error-light); }
+        .feedback-icon { font-size: 1.5rem; }
       }
 
       .feedback-text {
         font-weight: 700;
-        font-size: 18px;
+        font-size: 1.125rem;
         display: block;
-        margin-bottom: 4px;
+        margin-bottom: 0.25rem;
       }
 
       .explanation {
-        font-size: 15px;
+        font-size: 0.9375rem;
         color: var(--text-secondary);
         margin: 0;
         line-height: 1.5;
@@ -394,7 +396,7 @@
     .exercise-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 16px;
+      gap: 1rem;
       margin-top: auto;
     }
   }
@@ -404,17 +406,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-top: 32px;
+  gap: 0.75rem;
+  margin-top: 2rem;
 
   .nav-btn {
     background: none;
     border: none;
     color: var(--text-secondary);
     cursor: pointer;
-    padding: 8px;
+    padding: 0.5rem;
     border-radius: 50%;
-    transition: all 0.2s;
+    transition: all $_ease;
 
     &:hover:not(:disabled) {
       background: rgba(255, 255, 255, 0.1);
@@ -429,11 +431,11 @@
 
   .nav-dots {
     display: flex;
-    gap: 8px;
+    gap: 0.5rem;
 
     .nav-dot {
-      width: 10px;
-      height: 10px;
+      width: 0.625rem;
+      height: 0.625rem;
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.1);
       border: none;
@@ -448,7 +450,7 @@
       &.active {
         background: var(--accent);
         transform: scale(1.3);
-        box-shadow: 0 0 10px rgba(124, 92, 255, 0.5);
+        box-shadow: 0 0 0.625rem rgba(var(--accent-rgb), 0.5);
       }
 
       &.completed {
@@ -456,7 +458,7 @@
       }
 
       &.correct {
-        background: #10b981;
+        background: var(--color-correct);
       }
 
       &.incorrect {
