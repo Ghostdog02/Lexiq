@@ -170,9 +170,22 @@ public class LeaderboardService(BackendDbContext context)
                 _context.Users,
                 p => p.UserId,
                 u => u.Id,
-                (p, u) => new UserProgressJoin(p.UserId, p.PointsEarned, u.UserName, u.Email, u.Avatar)
+                (p, u) => new UserProgressJoin
+                {
+                    UserId = p.UserId,
+                    PointsEarned = p.PointsEarned,
+                    UserName = u.UserName,
+                    Email = u.Email,
+                    Avatar = u.Avatar,
+                }
             )
-            .GroupBy(x => new UserGroupKey(x.UserId, x.UserName, x.Email, x.Avatar))
+            .GroupBy(x => new UserGroupKey
+            {
+                UserId = x.UserId,
+                UserName = x.UserName,
+                Email = x.Email,
+                Avatar = x.Avatar,
+            })
             .Select(g => new RawLeaderboardEntry(
                 g.Key.UserId,
                 g.Key.UserName ?? g.Key.Email ?? "Unknown",
@@ -210,9 +223,22 @@ public class LeaderboardService(BackendDbContext context)
                 _context.Users,
                 p => p.UserId,
                 u => u.Id,
-                (p, u) => new UserProgressJoin(p.UserId, p.PointsEarned, u.UserName, u.Email, u.Avatar)
+                (p, u) => new UserProgressJoin
+                {
+                    UserId = p.UserId,
+                    PointsEarned = p.PointsEarned,
+                    UserName = u.UserName,
+                    Email = u.Email,
+                    Avatar = u.Avatar,
+                }
             )
-            .GroupBy(x => new UserGroupKey(x.UserId, x.UserName, x.Email, x.Avatar))
+            .GroupBy(x => new UserGroupKey
+            {
+                UserId = x.UserId,
+                UserName = x.UserName,
+                Email = x.Email,
+                Avatar = x.Avatar,
+            })
             .Select(g => new RawLeaderboardEntry(
                 g.Key.UserId,
                 g.Key.UserName ?? g.Key.Email ?? "Unknown",
@@ -343,18 +369,26 @@ public class LeaderboardService(BackendDbContext context)
 
     /// <summary>
     /// Flat projection of UserExerciseProgress joined with User identity fields.
-    /// Avoids carrying the full entity into the GroupBy pipeline.
+    /// Uses init properties (not positional constructor) so EF Core can translate
+    /// MemberInitExpression in intermediate Join/GroupBy pipeline steps.
     /// </summary>
-    private record UserProgressJoin(
-        string UserId,
-        int PointsEarned,
-        string? UserName,
-        string? Email,
-        string? Avatar
-    );
+    private sealed class UserProgressJoin
+    {
+        public required string UserId { get; init; }
+        public required int PointsEarned { get; init; }
+        public string? UserName { get; init; }
+        public string? Email { get; init; }
+        public string? Avatar { get; init; }
+    }
 
     /// <summary>
     /// Typed GroupBy key for aggregating XP per user.
     /// </summary>
-    private record UserGroupKey(string UserId, string? UserName, string? Email, string? Avatar);
+    private sealed class UserGroupKey
+    {
+        public required string UserId { get; init; }
+        public string? UserName { get; init; }
+        public string? Email { get; init; }
+        public string? Avatar { get; init; }
+    }
 }
