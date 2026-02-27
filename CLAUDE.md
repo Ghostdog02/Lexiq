@@ -58,7 +58,7 @@ docker compose logs           # view logs
 - **Streaks**: Derived from `UserExerciseProgress.CompletedAt` (distinct dates, consecutive days backward from today)
 - **Levels**: Computed on backend via formula: `level = floor((1 + sqrt(1 + totalXp/25)) / 2)`
 - **Rank change**: Stateless comparison — current period vs previous equivalent period (no snapshot tables)
-- **Avatars**: Auto-saved from Google OAuth profile picture on login; manual override via `PUT /api/user/avatar` (IFormFile upload)
+- **Avatars**: Stored as binary (`varbinary(max)`) in separate `UserAvatars` table (1:1 with Users). Google profile picture downloaded and stored on every login via `AvatarService`. Manual override via `PUT /api/user/avatar` (IFormFile). Served via `GET /api/user/{id}/avatar` (AllowAnonymous, 24h cache). Leaderboard queries batch-check existence without loading bytes.
 
 ### Content Hierarchy
 
