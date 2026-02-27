@@ -106,6 +106,7 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 ## Project Guidelines
 
 **For specific rules and workflows, always consult:**
+- **[`.claude/AGENT_PRINCIPLES.md`](.claude/AGENT_PRINCIPLES.md)** → Core agent behaviour: planning, subagents, verification, elegance, autonomous bug fixing
 - **[`.claude/RULES.md`](.claude/RULES.md)** → Git conventions, commit format, branching strategy, PR guidelines
 - **[`.claude/SKILLS.md`](.claude/SKILLS.md)** → MCP tools usage, agent strategies, task workflows, debugging playbooks
 
