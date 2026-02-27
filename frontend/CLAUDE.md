@@ -149,6 +149,11 @@ type LessonForm = FormGroup<LessonFormControls>;
 - Separate factory methods per form type
 - NonNullableFormBuilder ensures non-null values
 
+### SCSS Linter Auto-Formatting
+
+- A linter auto-formats `.scss` files on write — after using the Write tool on a SCSS file, always re-read before any follow-up Edit or you'll get "file modified since read" errors
+- Safe pattern: Write full file → if follow-up edits needed, Read first → then Edit
+
 ### Performance Anti-Patterns
 
 - **Never call methods in template bindings** — Angular re-executes them on every change detection cycle (every click, scroll, timer, XHR). Pre-compute the result as a component property instead:
