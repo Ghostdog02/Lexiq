@@ -2,36 +2,114 @@
 
 Guidelines for when and how to use specific MCP tools, agents, and workflows in the Lexiq project.
 
-## MCP Tools Usage
+---
 
-### Context7 (Documentation Lookup)
+## Skills (Slash Commands)
+
+### `/frontend-dev` — Frontend Design & Angular Work
+
+**Invoke with the Skill tool for ANY of these:**
+- Adding or restructuring Angular components, modules, or routes
+- Changing layout, visual design, or SCSS/styling
+- Refactoring component architecture (splitting, merging, lifting state)
+- Working with Angular signals, forms, animations, or routing
+- Implementing new UI features end-to-end (component + service + template)
+- Debugging Angular-specific issues (change detection, lifecycle hooks, template errors)
+- Updating the Angular design system or shared styles
+
+**Examples that MUST trigger `/frontend-dev`:**
+```
+"Add a progress bar to the lesson viewer"
+"Restructure the home page layout"
+"Create a modal component for exercise feedback"
+"Fix the SCSS animation on the leaderboard cards"
+"Refactor the exercise-viewer to use signals"
+```
+
+**After completing frontend work:**
+1. Commit the component changes
+2. Update `frontend/CLAUDE.md` with any new patterns or conventions discovered
+3. Commit the doc update separately
+
+---
+
+### `/feature-dev:feature-dev` — New Backend Feature Development
+
+**Invoke with the Skill tool when building anything new on the backend:**
+- New API endpoint (controller + service + DTOs)
+- New entity or schema change (entity + migration + mapping)
+- New service or significant service expansion
+- Backend integration with external systems (OAuth, storage, etc.)
+- Any work touching 3+ backend files or requiring architectural decisions
+
+**Examples that MUST trigger `feature-dev:feature-dev`:**
+```
+"Add a notifications system"
+"Implement course enrollment with access control"
+"Add an achievements/badges entity and endpoint"
+"Create a streak snapshot table for performance"
+"Build an admin analytics endpoint"
+```
+
+**After completing backend feature work:**
+1. Commit the feature code
+2. If schema changed: update `backend/Database/ENTITIES_DOCUMENTATION.md` and commit
+3. Update `backend/CLAUDE.md` with new patterns, endpoints, or conventions
+4. Commit the doc update separately
+
+---
+
+### `/claude-md-improver` — Documentation Audit
+
+**Run after completing a chain of logical changes (multiple commits).** See Documentation Maintenance section below.
+
+---
+
+## MCP Tools
+
+### Context7 — Library Documentation Lookup
 
 **When to use:**
-- Need up-to-date library/framework documentation
-- Checking API changes in ASP.NET Core, Entity Framework, Angular
-- Finding best practices for third-party packages
+- Need up-to-date docs for ASP.NET Core, Entity Framework, Angular, or any third-party package
+- Checking API signatures or behaviour that may have changed across versions
+- Finding best practices before implementing a pattern
 
 **How to use:**
-1. Call `resolve-library-id` with library name first
-2. Then call `query-docs` with the returned library ID
-3. Limit to 3 calls per question maximum
+1. Call `resolve-library-id` with the library name first
+2. Call `query-docs` with the returned library ID
+3. Maximum 3 calls per question
 
 **Example scenarios:**
-- "How to configure JWT in ASP.NET Core 10.0?" → Use Context7
-- "Angular 21 standalone component patterns" → Use Context7
-- "Entity Framework Core eager loading best practices" → Use Context7
+- "How to configure JWT in ASP.NET Core 10?" → Context7
+- "Angular 21 standalone component patterns" → Context7
+- "EF Core eager loading with TPH subtypes" → Context7
 
-### Sequential Thinking
+---
 
-**When to use:**
-- Complex architectural decisions
-- Multi-step problem solving with uncertainties
-- Debugging issues requiring hypothesis testing
-- Planning implementation strategies
+### Sequential Thinking — Complex Problem Solving
+
+**Use this proactively — don't skip it to save time on hard problems.**
+
+**ALWAYS use for:**
+- Debugging non-obvious issues where the root cause is unclear (hypothesis → test → revise cycle)
+- Architectural decisions with trade-offs (e.g. "should this be a new entity or a column?")
+- Planning a feature that touches multiple layers (entity + service + controller + frontend)
+- Any task where the first obvious approach might be wrong
+- EF Core query design — especially GroupJoin, TPH eager loading, or translation constraints
+
+**Use for:**
+- Multi-step problem solving with uncertainties mid-way
+- When you've tried an approach and hit an unexpected blocker
+- Evaluating whether to add a new service vs. extend an existing one
 
 **When NOT to use:**
-- Simple, straightforward tasks
-- Direct code changes with clear requirements
+- Simple, well-understood changes with clear requirements
+- Single-file edits following an already-established pattern
+- Documentation updates
+
+**Rule of thumb**: If the task requires more than 2 decisions, run sequential thinking first before writing code.
+
+---
 
 ## Agent Strategies
 
@@ -53,31 +131,53 @@ Task: "Find all places where JWT claims are used"
 → Use Explore agent with medium thoroughness
 ```
 
+---
+
 ### Plan Agent
 
 **Use for:**
-- Multi-file feature implementation
-- Architectural changes
-- Tasks with multiple valid approaches
-- When EnterPlanMode is appropriate but you need research first
+- Multi-file feature implementation where you need to research before planning
+- Architectural changes spanning backend + frontend
+- Tasks with multiple valid approaches that need comparison
 
 **Don't use for:**
 - Simple bug fixes
 - Single-file changes
 - Research-only tasks (use Explore instead)
 
-### Feature-Dev Agents
+---
 
-**code-explorer**: Trace execution paths, understand architecture
-**code-reviewer**: Review for bugs, security issues, quality
-**code-architect**: Design feature implementations with blueprints
+### Feature-Dev Agents (Subagents)
+
+| Agent | Use for |
+|-------|---------|
+| `feature-dev:code-explorer` | Trace execution paths, map architecture layers before building |
+| `feature-dev:code-reviewer` | Review for bugs, security issues, code quality |
+| `feature-dev:code-architect` | Design feature implementation blueprints with specific files/flows |
 
 **When to use:**
-- Major feature development
-- Security audits
-- Architecture redesign
+- New backend features (see `/feature-dev:feature-dev` skill above — prefer the skill)
+- Security audits before merging sensitive code
+- Architecture redesign spanning many files
+- When you need a blueprint before writing any code
+
+---
 
 ## Task Workflows
+
+### New Backend Feature
+
+1. **Invoke** `/feature-dev:feature-dev` skill for guided implementation
+2. **Schema changes**: create migration, apply, update `ENTITIES_DOCUMENTATION.md`
+3. **Commit code** (feature files only)
+4. **Commit docs** (ENTITIES_DOCUMENTATION.md, CLAUDE.md updates — separate commit)
+
+### New Frontend Feature or UI Change
+
+1. **Invoke** `/frontend-dev` skill
+2. **Commit component/style changes**
+3. **Update** `frontend/CLAUDE.md` if new patterns emerged
+4. **Commit docs** separately
 
 ### Database Migration Workflow
 
@@ -86,74 +186,35 @@ Task: "Find all places where JWT claims are used"
    cd backend
    dotnet ef migrations add <DescriptiveName> --project Database/Backend.Database.csproj
    ```
-
 2. **Review generated files**: Check `Database/Migrations/`
-
 3. **Apply migration**:
    ```bash
    dotnet ef database update --project Database/Backend.Database.csproj
    ```
-
-4. **Update ENTITIES_DOCUMENTATION.md** if schema changed
-
-5. **Commit**:
-   ```
-   Add migration for <feature>
-
-   - Create <TableName> table with <columns>
-   - Add relationship between <Entity1> and <Entity2>
-   ```
-
-### Deployment Workflow
-
-1. **Verify changes locally**: `docker compose up --build`
-
-2. **Run tests**: Backend tests + Frontend tests
-
-3. **Commit changes**: Follow commit message format
-
-4. **Push to branch**: `git push origin <branch-name>`
-
-5. **CI/CD runs automatically**: Monitor GitHub Actions
-
-6. **Create PR if ready**: Target `master` branch
+4. **Update `ENTITIES_DOCUMENTATION.md`** to reflect schema change
+5. **Commit** migration and entity files, then commit docs separately
 
 ### Adding New API Endpoint
 
-1. **Create/update DTO** in `backend/DTOs/`
-
-2. **Update service** in `backend/Services/`
-
-3. **Add controller action** in `backend/Controllers/`
-
-4. **Add authorization** if needed (`[Authorize]`, `[AllowAnonymous]`)
-
-5. **Test endpoint**: Use Swagger at `http://localhost:8080/swagger`
-
-6. **Update `backend/CLAUDE.md`** API endpoints section
-
-7. **Commit**:
-   ```
-   Add endpoint for <feature>
-
-   - POST /api/<resource>/<action> - <description>
-   - Add <DtoName> DTO with validation
-   - Implement <ServiceMethod> in <ServiceName>
-   ```
+1. Create/update DTO in `backend/Dtos/`
+2. Update service in `backend/Services/`
+3. Add controller action in `backend/Controllers/`
+4. Apply `[Authorize(Roles = "...")]` or `[AllowAnonymous]` as needed
+5. Test via Swagger at `http://localhost:8080/swagger`
+6. Update the API endpoints table in `backend/CLAUDE.md`
+7. Commit code, then commit the CLAUDE.md update separately
 
 ### Documentation Maintenance
 
-**After completing a chain of logical changes**, use the claude-md-management skill to update documentation:
-
+**After completing a chain of multiple commits**, run:
 ```bash
 /claude-md-improver
 ```
 
 **This will:**
-- Audit CLAUDE.md and related files for quality
+- Audit all CLAUDE.md files for quality and consistency
 - Update with learnings from the current session
-- Ensure documentation reflects recent changes
-- Maintain consistency across all CLAUDE.md files
+- Catch gaps between code reality and documented conventions
 
 **When to trigger:**
 - After major feature implementation
@@ -162,25 +223,25 @@ Task: "Find all places where JWT claims are used"
 - After adding new patterns or conventions
 - End of development session with multiple commits
 
+### Deployment Workflow
+
+1. Verify changes locally: `docker compose up --build`
+2. Commit changes following [RULES.md](RULES.md)
+3. Push to branch: `git push origin <branch-name>`
+4. CI/CD runs automatically — monitor GitHub Actions
+5. Create PR targeting `master` when ready
+
+---
+
 ## Debugging Playbooks
 
 ### 401 Unauthorized Errors
 
-1. **Check JWT cookie exists**:
-   - Browser DevTools → Application → Cookies
-   - Look for `AuthToken` cookie
-
-2. **Verify JWT claims**:
-   - Backend logs: Search for `[JWT] OnTokenValidated: Claims =`
-   - Check for `nameidentifier` claim (not `sub`)
-
-3. **Check UserContextMiddleware**:
-   - Logs: `🔍 UserContextMiddleware: UserId from JWT =`
-   - Verify user exists in database
-
+1. **Check JWT cookie exists**: Browser DevTools → Application → Cookies → `AuthToken`
+2. **Verify JWT claims**: Backend logs — look for `nameidentifier` claim (not `sub`)
+3. **Check UserContextMiddleware logs**: `🔍 UserContextMiddleware: UserId from JWT =`
 4. **Quick fix**: Clear cookies and re-login
-
-5. **If persists**: Check CORS configuration and `withCredentials: true`
+5. **If persists**: Check CORS config and `withCredentials: true` on frontend
 
 ### Docker Container Failures
 
@@ -189,76 +250,65 @@ Task: "Find all places where JWT claims are used"
    docker compose logs <service-name>
    docker compose logs --tail=50 <service-name>
    ```
-
 2. **Verify health**:
    ```bash
    docker compose ps
-   curl http://localhost:8080/health  # backend
-   curl http://localhost:4200         # frontend
+   curl http://localhost:8080/health
+   curl http://localhost:4200
    ```
-
 3. **Common issues**:
    - Missing secrets: Check `backend/Database/password.txt`, `backend/.env`
    - Port conflicts: `sudo lsof -i :8080` or `sudo lsof -i :4200`
    - Database not ready: Backend retries 10x, check timing
-
 4. **Reset**:
    ```bash
-   docker compose down -v  # removes volumes
+   docker compose down -v
    docker compose up --build
    ```
 
 ### CI/CD Pipeline Failures
 
-1. **Check workflow logs**: Click red X in GitHub
-
+1. **Check workflow logs**: Click red X in GitHub Actions
 2. **Common failures**:
    - Docker build: Check Dockerfile syntax
    - Docker push: Verify GHCR permissions
    - SSH/SCP: Check Hetzner secrets in repo settings
    - Deployment script: Check `scripts/deploy.sh` exit codes
-
-3. **Local reproduction**:
-   ```bash
-   docker compose -f docker-compose.prod.yml build
-   ```
-
-4. **Check deployment logs on server**:
-   ```bash
-   ssh <server>
-   tail -100 /var/log/lexiq/deployment/deploy-*.log
-   ```
+3. **Local reproduction**: `docker compose -f docker-compose.prod.yml build`
+4. **Server logs**: `tail -100 /var/log/lexiq/deployment/deploy-*.log`
 
 ### Migration Errors
 
 1. **Check migration file**: `Database/Migrations/<timestamp>_<Name>.cs`
-
 2. **Common issues**:
    - Conflicting migrations: Delete and recreate
    - Constraint violations: Check existing data
-   - Missing dependencies: Ensure related tables exist
+   - Multiple cascade paths: Use `DeleteBehavior.NoAction` on secondary FK
+3. **Rollback**: `dotnet ef database update <PreviousMigrationName> --project Database/Backend.Database.csproj`
+4. **Remove bad migration**: `dotnet ef migrations remove --project Database/Backend.Database.csproj`
 
-3. **Rollback**:
-   ```bash
-   dotnet ef database update <PreviousMigrationName> --project Database/Backend.Database.csproj
-   ```
+### EF Core LINQ Translation Failures
 
-4. **Remove bad migration**:
-   ```bash
-   dotnet ef migrations remove --project Database/Backend.Database.csproj
-   ```
+- **Anonymous types required** for intermediate `Join`/`GroupBy` steps — EF Core maps `new { }` directly to SQL columns
+- **Named records fail** in `Join`/`GroupBy` intermediate steps — use them only in terminal `.Select()` before `.ToListAsync()`
+- **Rule**: Anonymous `new { }` for joins/groupby → named `private record` for terminal projections only
+
+---
 
 ## Tool Selection Quick Reference
 
-| Task | Preferred Tool/Agent |
-|------|---------------------|
-| Find specific file/class | Glob, Grep directly |
+| Task | Use |
+|------|-----|
+| New Angular component / UI feature | `/frontend-dev` skill |
+| Restructure frontend layout or design | `/frontend-dev` skill |
+| New backend feature (3+ files) | `/feature-dev:feature-dev` skill |
+| Backend architecture decision | Sequential Thinking MCP + Plan agent |
+| Debugging unclear root cause | Sequential Thinking MCP |
+| Find specific file/class/function | Glob, Grep directly |
 | Broad codebase exploration | Explore agent (medium) |
-| Understand execution flow | feature-dev:code-explorer |
-| Security review | feature-dev:code-reviewer |
-| Design new feature | Plan agent or feature-dev:code-architect |
-| Library documentation | Context7 MCP |
-| Complex decision | Sequential-thinking MCP |
-| Simple code change | Direct tool use (Edit, Write) |
-| Multi-step workflow | Task agent with specific type |
-| Update documentation | /claude-md-improver skill |
+| Trace execution flow | `feature-dev:code-explorer` |
+| Security review | `feature-dev:code-reviewer` |
+| Design feature blueprint | `feature-dev:code-architect` |
+| Library / framework docs | Context7 MCP |
+| Simple single-file edit | Edit tool directly |
+| Post-session doc audit | `/claude-md-improver` skill |
