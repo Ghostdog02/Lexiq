@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 6
     groups:
       docker-frontend:
         update-types: ["minor", "patch"]
@@ -15,7 +15,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 6
     groups:
       docker-backend:
         update-types: ["minor", "patch"]
@@ -25,7 +25,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 6
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
@@ -38,7 +38,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 6
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
@@ -51,7 +51,7 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 6
     groups:
       actions-all:
         update-types: ["minor", "patch"]
