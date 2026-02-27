@@ -107,6 +107,8 @@ BACKEND_API_URL=/api            # proxied through nginx; not a direct backend UR
 - `inject()` works inside `CanActivateFn` — Angular establishes an injection context for functional guards (e.g. `inject(ToastrService)`)
 - `returnUrl` pattern: pass `state.url` as query param to `/google-login`; validate with `startsWith('/')` in `loginUserWithGoogle()` to prevent open redirect attacks
 - Guards live in `src/app/auth/guards/`
+- **Role-based guards**: `authGuard` checks authentication only; `contentGuard` checks `Admin || ContentCreator` for content creation routes — stack them: `canActivate: [authGuard, contentGuard]`
+- **`isAdmin` is strictly Admin role only** — `isContentCreator` is a separate field; both set from `roles: string[]` in the `/api/auth/is-admin` response (the `isAdmin` boolean in that DTO is ignored in favour of the array)
 
 ### HTTP Requests
 
