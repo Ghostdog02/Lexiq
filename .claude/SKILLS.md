@@ -67,6 +67,41 @@ Guidelines for when and how to use specific MCP tools, agents, and workflows in 
 
 ---
 
+### Playwright — Browser Automation & Live Verification
+
+> **Plugin status**: Playwright is a plugin — install via `/plugin` in Claude Code. Once installed it gives Claude direct browser control (navigate, click, fill, screenshot) during the session.
+
+**Invoke for ANY of these:**
+- Verifying a UI feature works end-to-end after implementation (navigate → interact → assert)
+- Debugging visual or layout issues by taking screenshots of the live app
+- Testing authentication flows (Google OAuth redirect, JWT cookie set, protected route access)
+- Reproducing a reported UI bug to confirm root cause before fixing
+- Checking that an Angular route guard redirects unauthenticated users correctly
+- Validating exercise submission flow (answer → feedback → unlock next exercise)
+- Cross-checking API responses against what the UI actually renders
+
+**Examples that SHOULD use Playwright:**
+```
+"Check that the leaderboard shows the correct user rank after completing an exercise"
+"Verify the login redirect works after the auth-guard changes"
+"Screenshot the lesson page — the layout looks broken on mobile"
+"Confirm the avatar shows up correctly after the binary storage migration"
+"Make sure the fill-in-blank exercise unlocks the next one on correct answer"
+```
+
+**When NOT to use Playwright:**
+- Writing Playwright `.spec.ts` test files (use Edit/Write tools directly)
+- Backend-only changes with no UI surface to verify
+- Tasks fully verifiable via Swagger or API logs alone
+
+**Typical verification workflow:**
+1. Start the app: `docker compose up` or `npm start` + `dotnet run`
+2. Use Playwright to navigate to the relevant page
+3. Interact and screenshot to confirm behaviour
+4. If broken, fix and re-verify in the same session
+
+---
+
 ## MCP Tools
 
 ### Context7 — Library Documentation Lookup
@@ -312,5 +347,8 @@ Task: "Find all places where JWT claims are used"
 | Security review | `feature-dev:code-reviewer` |
 | Design feature blueprint | `feature-dev:code-architect` |
 | Library / framework docs | Context7 MCP |
+| Verify UI works end-to-end after implementation | Playwright plugin |
+| Debug visual/layout issues (screenshot live app) | Playwright plugin |
+| Reproduce a reported UI bug before fixing | Playwright plugin |
 | Simple single-file edit | Edit tool directly |
 | Post-session doc audit | `/claude-md-improver` skill |
