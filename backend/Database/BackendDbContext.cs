@@ -22,6 +22,8 @@ public class BackendDbContext(DbContextOptions options)
 
     public DbSet<UserExerciseProgress> UserExerciseProgress { get; set; }
 
+    public DbSet<UserAvatar> UserAvatars { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -83,6 +85,20 @@ public class BackendDbContext(DbContextOptions options)
         modelBuilder.Entity<TranslationExercise>();
 
         modelBuilder.Entity<UserLanguage>().HasKey(ul => new { ul.UserId, ul.LanguageId });
+
+        modelBuilder.Entity<UserAvatar>(entity =>
+        {
+            entity.HasKey(a => a.UserId);
+
+            entity.Property(a => a.Data).HasColumnType("varbinary(max)");
+            entity.Property(a => a.ContentType).HasMaxLength(50);
+
+            entity
+                .HasOne(a => a.User)
+                .WithOne(u => u.Avatar)
+                .HasForeignKey<UserAvatar>(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         modelBuilder.Entity<UserExerciseProgress>(entity =>
         {

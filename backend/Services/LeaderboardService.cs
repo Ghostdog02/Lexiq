@@ -4,9 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class LeaderboardService(BackendDbContext context)
+public class LeaderboardService(BackendDbContext context, AvatarService avatarService)
 {
     private readonly BackendDbContext _context = context;
+    private readonly AvatarService _avatarService = avatarService;
     private const int MaxLeaderboardEntries = 50;
 
     /// <summary>
@@ -78,6 +79,10 @@ public class LeaderboardService(BackendDbContext context)
         var currentEntries = await GetRankedEntriesAsync(timeFrame);
         var previousEntries = await GetPreviousPeriodEntriesAsync(timeFrame);
 
+        // Batch-check which users have avatars (single query, no binary data loaded)
+        var userIds = currentEntries.Select(e => e.UserId).ToList();
+        var usersWithAvatars = await _avatarService.GetUsersWithAvatarsAsync(userIds);
+
         // Build a lookup of previous ranks by userId
         var previousRanks = new Dictionary<string, int>();
         for (var i = 0; i < previousEntries.Count; i++)
@@ -92,13 +97,11 @@ public class LeaderboardService(BackendDbContext context)
             var entry = currentEntries[i];
             var currentRank = i + 1;
             var change = ComputeRankChange(entry.UserId, currentRank, previousRanks);
+            var avatarUrl = usersWithAvatars.Contains(entry.UserId)
+                ? $"/api/user/{entry.UserId}/avatar"
+                : null;
 
-            var enriched = await EnrichEntryAsync(
-                entry,
-                currentRank,
-                change,
-                entry.UserId == currentUserId
-            );
+            var enriched = await EnrichEntryAsync(entry, currentRank, change, entry.UserId == currentUserId, avatarUrl);
             enrichedEntries.Add(enriched);
 
             if (entry.UserId == currentUserId)
@@ -166,43 +169,14 @@ public class LeaderboardService(BackendDbContext context)
                 && p.CompletedAt >= fromDateTime
                 && p.CompletedAt < toDateTime
             )
-            .Join(
-                _context.Users,
-                p => p.UserId,
-                u => u.Id,
-                (p, u) =>
-                    new
-                    {
-                        p.UserId,
-                        p.PointsEarned,
-                        u.UserName,
-                        u.Email,
-                        u.Avatar,
-                    }
-            )
-            .GroupBy(x => new
-            {
-                x.UserId,
-                x.UserName,
-                x.Email,
-                x.Avatar,
-            })
-            .Select(g => new
-            {
+            .GroupBy(p => new { p.UserId, p.User.UserName, p.User.Email })
+            .Select(g => new RawLeaderboardEntry(
                 g.Key.UserId,
-                g.Key.UserName,
-                g.Key.Email,
-                g.Key.Avatar,
-                TotalXp = g.Sum(x => x.PointsEarned),
-            })
+                g.Key.UserName ?? g.Key.Email ?? "Unknown",
+                g.Sum(x => x.PointsEarned)
+            ))
             .OrderByDescending(e => e.TotalXp)
             .Take(MaxLeaderboardEntries)
-            .Select(e => new RawLeaderboardEntry(
-                e.UserId,
-                e.UserName ?? e.Email ?? "Unknown",
-                e.Avatar,
-                e.TotalXp
-            ))
             .ToListAsync();
     }
 
@@ -214,7 +188,6 @@ public class LeaderboardService(BackendDbContext context)
             .Select(u => new RawLeaderboardEntry(
                 u.Id,
                 u.UserName ?? u.Email ?? "Unknown",
-                u.Avatar,
                 u.TotalPointsEarned
             ))
             .ToListAsync();
@@ -228,30 +201,10 @@ public class LeaderboardService(BackendDbContext context)
             .UserExerciseProgress.Where(p =>
                 p.IsCompleted && p.CompletedAt.HasValue && p.CompletedAt >= sinceDateTime
             )
-            .Join(
-                _context.Users,
-                p => p.UserId,
-                u => u.Id,
-                (p, u) => new
-                    {
-                        p.UserId,
-                        p.PointsEarned,
-                        u.UserName,
-                        u.Email,
-                        u.Avatar,
-                    }
-            )
-            .GroupBy(x => new
-            {
-                x.UserId,
-                x.UserName,
-                x.Email,
-                x.Avatar,
-            })
+            .GroupBy(p => new { p.UserId, p.User.UserName, p.User.Email })
             .Select(g => new RawLeaderboardEntry(
                 g.Key.UserId,
                 g.Key.UserName ?? g.Key.Email ?? "Unknown",
-                g.Key.Avatar,
                 g.Sum(x => x.PointsEarned)
             ))
             .OrderByDescending(e => e.TotalXp)
@@ -279,7 +232,8 @@ public class LeaderboardService(BackendDbContext context)
         RawLeaderboardEntry entry,
         int rank,
         int change,
-        bool isCurrentUser
+        bool isCurrentUser,
+        string? avatarUrl
     )
     {
         var (currentStreak, longestStreak) = await GetStreakAsync(entry.UserId);
@@ -289,7 +243,7 @@ public class LeaderboardService(BackendDbContext context)
             Rank: rank,
             UserId: entry.UserId,
             UserName: entry.UserName,
-            Avatar: entry.Avatar,
+            Avatar: avatarUrl,
             TotalXp: entry.TotalXp,
             CurrentStreak: currentStreak,
             LongestStreak: longestStreak,
@@ -305,7 +259,11 @@ public class LeaderboardService(BackendDbContext context)
         Dictionary<string, int> previousRanks
     )
     {
-        var user = await _context.Users.FindAsync(userId);
+        var user = await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.UserName, u.Email, u.TotalPointsEarned })
+            .FirstOrDefaultAsync();
+
         if (user == null)
             return null;
 
@@ -334,6 +292,8 @@ public class LeaderboardService(BackendDbContext context)
 
         var (currentStreak, longestStreak) = await GetStreakAsync(userId);
         var level = CalculateLevel(totalXp);
+        var hasAvatar = await _avatarService.HasAvatarAsync(userId);
+        var avatarUrl = hasAvatar ? $"/api/user/{userId}/avatar" : null;
 
         // Calculate rank: count users with more XP + 1
         int rank;
@@ -364,7 +324,7 @@ public class LeaderboardService(BackendDbContext context)
             Rank: rank,
             UserId: userId,
             UserName: user.UserName ?? user.Email ?? "Unknown",
-            Avatar: user.Avatar,
+            Avatar: avatarUrl,
             TotalXp: totalXp,
             CurrentStreak: currentStreak,
             LongestStreak: longestStreak,
@@ -374,5 +334,5 @@ public class LeaderboardService(BackendDbContext context)
         );
     }
 
-    private record RawLeaderboardEntry(string UserId, string UserName, string? Avatar, int TotalXp);
+    private record RawLeaderboardEntry(string UserId, string UserName, int TotalXp);
 }

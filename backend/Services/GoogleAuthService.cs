@@ -13,11 +13,13 @@ public interface IGoogleAuthService
 
 public class GoogleAuthService(
     UserManager<User> userManager,
-    ILogger<GoogleAuthService> logger
+    ILogger<GoogleAuthService> logger,
+    AvatarService avatarService
 ) : IGoogleAuthService
 {
     private readonly UserManager<User> _userManager = userManager;
     private readonly ILogger<GoogleAuthService> _logger = logger;
+    private readonly AvatarService _avatarService = avatarService;
 
     public async Task<GoogleJsonWebSignature.Payload?> ValidateGoogleTokenAsync(string idToken)
     {
@@ -79,11 +81,14 @@ public class GoogleAuthService(
             await _userManager.AddLoginAsync(user, loginInfo);
         }
 
-        // Refresh avatar from Google on every login
-        if (!string.IsNullOrEmpty(payload.Picture) && user.Avatar != payload.Picture)
+        // Download and store avatar binary from Google on every login
+        if (!string.IsNullOrEmpty(payload.Picture))
         {
-            user.Avatar = payload.Picture;
-            await _userManager.UpdateAsync(user);
+            var (data, contentType) = await _avatarService.DownloadAvatarAsync(payload.Picture);
+            if (data != null)
+            {
+                await _avatarService.UpsertAvatarAsync(user.Id, data, contentType!);
+            }
         }
 
         return user;

@@ -14,5 +14,5 @@ public class User : IdentityUser
 
     public int TotalPointsEarned { get; set; }
 
-    public string? Avatar { get; set; }
+    public UserAvatar? Avatar { get; set; }
 }

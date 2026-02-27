@@ -1,11 +1,11 @@
 using System.Reflection;
 using System.Text;
 using Backend.Api.Services;
-using Microsoft.AspNetCore.DataProtection;
 using Backend.Database;
 using Backend.Database.Entities.Users;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -20,11 +20,11 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddDataProtectionKeys(this IServiceCollection services)
     {
-        var keyPath = Environment.GetEnvironmentVariable("DATA_PROTECTION_KEYS_PATH") ?? "/app/dataprotection-keys";
+        var keyPath =
+            Environment.GetEnvironmentVariable("DATA_PROTECTION_KEYS_PATH")
+            ?? "/app/dataprotection-keys";
 
-        services
-            .AddDataProtection()
-            .PersistKeysToFileSystem(new DirectoryInfo(keyPath));
+        services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keyPath));
 
         return services;
     }
@@ -70,9 +70,10 @@ public static class ServiceCollectionExtensions
         var connectionString = BuildConnectionString();
 
         services.AddDbContext<BackendDbContext>(
-            options => options
-                .UseSqlServer(connectionString)
-                .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)),
+            options =>
+                options
+                    .UseSqlServer(connectionString)
+                    .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)),
             ServiceLifetime.Scoped
         );
 
@@ -93,6 +94,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<UserXpService>();
         services.AddScoped<UserService>();
         services.AddScoped<LeaderboardService>();
+        services.AddScoped<AvatarService>();
+        services.AddHttpClient(
+            "GoogleAvatar",
+            client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+            }
+        );
 
         return services;
     }
@@ -142,8 +151,7 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddControllersWithOptions(this IServiceCollection services)
     {
-        services
-            .AddControllers();
+        services.AddControllers();
 
         return services;
     }

@@ -34,7 +34,6 @@ public static class UserMapping
             NormalizedEmail = userManager.NormalizeEmail(validPayload.Email),
             NormalizedUserName = userManager.NormalizeEmail(validPayload.Name),
             RegistrationDate = DateTime.UtcNow,
-            Avatar = validPayload.Picture,
         };
     }
 

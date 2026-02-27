@@ -3,31 +3,30 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class UserService(BackendDbContext context, IFileUploadsService fileUploadsService)
+public class UserService(BackendDbContext context, AvatarService avatarService)
 {
     private readonly BackendDbContext _context = context;
-    private readonly IFileUploadsService _fileUploadsService = fileUploadsService;
+    private readonly AvatarService _avatarService = avatarService;
 
-    public async Task<string?> UploadAvatarAsync(string userId, IFormFile file, string baseUrl)
+    public async Task<bool> UploadAvatarAsync(string userId, IFormFile file)
     {
-        var user = await _context.Users.FindAsync(userId);
-        if (user == null)
-            return null;
+        var (isValid, error) = AvatarService.ValidateAvatarFile(file);
+        if (!isValid)
+            return false;
 
-        var result = await _fileUploadsService.UploadFileAsync(file, "image", baseUrl);
-        if (!result.IsSuccess)
-            return null;
+        var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+        if (!userExists)
+            return false;
 
-        user.Avatar = result.Url;
-        await _context.SaveChangesAsync();
-        return result.Url;
-    }
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
 
-    public async Task<string?> GetAvatarAsync(string userId)
-    {
-        return await _context.Users
-            .Where(u => u.Id == userId)
-            .Select(u => u.Avatar)
-            .FirstOrDefaultAsync();
+        await _avatarService.UpsertAvatarAsync(
+            userId,
+            memoryStream.ToArray(),
+            AvatarService.GetContentType(file)
+        );
+
+        return true;
     }
 }
