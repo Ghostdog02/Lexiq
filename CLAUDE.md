@@ -109,6 +109,7 @@ Language (1) → Course (M) → Lesson (M) → Exercise (M)
 - **[`.claude/AGENT_PRINCIPLES.md`](.claude/AGENT_PRINCIPLES.md)** → Core agent behaviour: planning, subagents, verification, elegance, autonomous bug fixing
 - **[`.claude/RULES.md`](.claude/RULES.md)** → Git conventions, commit format, branching strategy, PR guidelines
 - **[`.claude/SKILLS.md`](.claude/SKILLS.md)** → MCP tools usage, agent strategies, task workflows, debugging playbooks
+- **[`.claude/agents/test-generator.md`](.claude/agents/test-generator.md)** → Test generation standards: xUnit + Testcontainers (.NET), Jest + TestBed (Angular), Playwright E2E, AAA pattern, mocking strategy
 
 ### Commit & Documentation Cadence
 
@@ -147,3 +148,4 @@ After every logical group of related changes, follow this sequence:
 | Database Entities | [`backend/Database/ENTITIES_DOCUMENTATION.md`](backend/Database/ENTITIES_DOCUMENTATION.md) | Comprehensive entity documentation |
 | Rules & Conventions | [`.claude/RULES.md`](.claude/RULES.md) | Git workflows, commit standards, branching |
 | Skills & Workflows | [`.claude/SKILLS.md`](.claude/SKILLS.md) | Tool usage, agent strategies, debugging playbooks |
+| Test Generation | [`.claude/agents/test-generator.md`](.claude/agents/test-generator.md) | xUnit, Testcontainers, Jest, Playwright E2E standards |
