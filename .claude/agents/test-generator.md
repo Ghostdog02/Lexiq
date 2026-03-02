@@ -116,7 +116,7 @@ client.DefaultRequestHeaders.Add("Cookie", $"AuthToken={GenerateTestJwt(userId)}
 
 ## Angular Testing (Jest)
 
-> **Note:** The frontend currently runs tests with Karma (`npm test`). Jest is the target standard for all new tests — configure Jest if it hasn't been added yet before writing new test files.
+> **Note:** The frontend still uses Karma (`npm test` — confirmed in `package.json`). Jest is the target standard for all new tests — Jest is **not yet configured**; set it up before writing new Jest-style test files.
 
 ### When to Use TestBed
 - Use `TestBed` **only when necessary**: templates, `@Input`/`@Output` bindings, or DI with `inject()`
