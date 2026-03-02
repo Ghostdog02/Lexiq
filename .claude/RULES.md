@@ -84,10 +84,31 @@ Add IP address redaction to deployment logs
 
 When multiple changes exist:
 1. **Group logically** by concern/feature
-2. **Commit separately** - don't mix unrelated changes
-3. **Order matters** - dependencies first
+2. **Commit separately** — don't mix unrelated changes
+3. **Order matters** — dependencies first (infrastructure before tests, bug fix before tests that exercise the fix)
 
-Example grouping:
-- Group 1: Documentation updates → Commit
-- Group 2: Security fix → Commit
-- Group 3: Refactoring → Commit
+Example grouping for a general feature:
+- Group 1: Bug fix or core change → Commit
+- Group 2: Documentation updates → Commit
+- Group 3: Tests → Commit (or split further by category)
+
+#### Test Suite Grouping
+
+When adding a new test suite, split into these commits:
+
+| Commit | Contents |
+|--------|----------|
+| `Add <Name> test infrastructure` | `.csproj`, `.sln` update, `DatabaseFixture`, builders, seeders, project exclusions in parent `.csproj` |
+| `Add <Class> unit tests` | Pure unit test classes (no DB, no fixture) — one commit per class if substantial |
+| `Add <Class> integration tests` | DB-backed integration test classes — one commit per test class |
+| `Document <bug/pattern> in CLAUDE.md` | Any CLAUDE.md or RULES.md additions — separate from code changes |
+
+**Rationale:** Reviewers can validate infrastructure, unit tests, and integration tests independently. Infrastructure commits are the dependency — they must go first.
+
+Example for LeaderboardService tests:
+```
+Add Backend.Tests project and test infrastructure     ← csproj, sln, DatabaseFixture, UserBuilder, DbSeeder
+Add CalculateLevel unit tests                          ← pure unit, no DB
+Add GetStreak integration tests                        ← Testcontainers integration
+Add GetLeaderboard integration tests                   ← Testcontainers integration
+```
