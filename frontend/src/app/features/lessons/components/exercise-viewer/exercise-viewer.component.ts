@@ -108,13 +108,11 @@ export class ExerciseViewerComponent implements OnInit {
       this.earnedXp = withProgress.lessonProgress.earnedXp;
     }
 
-    // Start at the first exercise that hasn't been correctly solved yet and is unlocked
-    const firstIncomplete = this.exercises.findIndex(
-      (ex, i) => this.submissionResults.get(i)?.isCorrect !== true && !ex.isLocked
-    );
-    if (firstIncomplete >= 0) {
-      this.currentExerciseIndex = firstIncomplete;
-    }
+    // Always start at the first unlocked exercise so the user reviews from the beginning.
+    // Jumping to the first incomplete exercise was skipping already-solved exercises,
+    // which made the lesson feel like it started mid-way on subsequent visits.
+    const firstUnlocked = this.exercises.findIndex(ex => !ex.isLocked);
+    this.currentExerciseIndex = firstUnlocked >= 0 ? firstUnlocked : 0;
   }
 
   get exercisesFormArray(): FormArray<ExerciseAnswerForm> {
@@ -141,6 +139,16 @@ export class ExerciseViewerComponent implements OnInit {
   /** True only when the current exercise was answered correctly. Wrong attempts keep the form enabled for retry. */
   get isCurrentSubmitted(): boolean {
     return this.submissionResults.get(this.currentExerciseIndex)?.isCorrect === true;
+  }
+
+  /**
+   * True when the backend has confirmed the lesson threshold is met (e.g. 70% correct).
+   * Derived from the meetsCompletionThreshold flag the backend sends with every submission —
+   * no extra API call needed.
+   */
+  get canCompleteLesson(): boolean {
+    return [...this.submissionResults.values()]
+      .some(r => r.lessonProgress?.meetsCompletionThreshold === true);
   }
 
   get isCurrentLocked(): boolean {

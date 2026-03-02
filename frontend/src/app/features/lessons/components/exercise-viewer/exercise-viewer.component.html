@@ -76,7 +76,7 @@
             [class.incorrect]="currentSubmission !== null && !currentSubmission!.isCorrect" placeholder="Type your answer..."
             [formControl]="currentAnswerGroup.controls.answer" [disabled]="isCurrentLocked" aria-label="Your answer" />
         </div>
-        @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
+        @if (currentSubmission !== null && !currentSubmission!.isCorrect) {
         <div class="correct-answer-reveal">
           <span class="label">Correct answer:</span>
           <span class="answer">{{ currentFillInBlank?.correctAnswer }}</span>
@@ -102,7 +102,7 @@
             placeholder="Write your translation..." [formControl]="currentAnswerGroup.controls.answer"
             [disabled]="isCurrentLocked" rows="3" aria-label="Your translation"></textarea>
         </div>
-        @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
+        @if (currentSubmission !== null && !currentSubmission!.isCorrect) {
         <div class="correct-answer-reveal">
           <span class="label">Expected translation:</span>
           <span class="answer">{{ currentTranslation?.targetText }}</span>
@@ -135,7 +135,7 @@
             [class.incorrect]="currentSubmission !== null && !currentSubmission!.isCorrect" placeholder="Type what you hear..."
             [formControl]="currentAnswerGroup.controls.answer" [disabled]="isCurrentLocked" aria-label="Your answer" />
         </div>
-        @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
+        @if (currentSubmission !== null && !currentSubmission!.isCorrect) {
         <div class="correct-answer-reveal">
           <span class="label">Correct answer:</span>
           <span class="answer">{{ currentListening?.correctAnswer }}</span>
@@ -169,22 +169,21 @@
       <button class="btn primary" [disabled]="!currentAnswerValue" (click)="submitAnswer()" aria-label="Submit answer">
         Check Answer
       </button>
-      } @else if (isCurrentSubmitted) {
-      @if (currentExerciseIndex < exercises.length - 1) { <button class="btn primary" (click)="nextExercise()"
-        aria-label="Next exercise">
+      } @else if (isCurrentSubmitted && currentExerciseIndex < exercises.length - 1) {
+      <button class="btn primary" (click)="nextExercise()" aria-label="Next exercise">
         Continue
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
           <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round" />
         </svg>
-        </button>
-        } @else {
-        <button class="btn success" (click)="finishLesson()" aria-label="Finish lesson">
-          <span class="icon">&#x1F3C6;</span>
-          Complete Lesson
-        </button>
-        }
-        }
+      </button>
+      }
+      @if (canCompleteLesson) {
+      <button class="btn success" (click)="finishLesson()" aria-label="Finish lesson">
+        <span class="icon">&#x1F3C6;</span>
+        Complete Lesson
+      </button>
+      }
     </div>
   </div>
 
