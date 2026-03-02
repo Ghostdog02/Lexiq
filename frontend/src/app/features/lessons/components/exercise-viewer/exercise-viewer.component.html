@@ -52,7 +52,7 @@
             [attr.aria-pressed]="isOptionSelected(option.id)">
             <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E', 'F'][i] }}</span>
             <span class="option-text">{{ option.optionText }}</span>
-            @if (isCurrentSubmitted) {
+            @if (currentSubmission) {
             @if (option.isCorrect) {
             <span class="result-icon correct">&#x2713;</span>
             } @else if (isOptionSelected(option.id)) {
@@ -72,8 +72,8 @@
           <p class="question-text">{{ currentFillInBlank?.text }}</p>
         </div>
         <div class="answer-input-wrapper">
-          <input type="text" class="answer-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
-            [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect" placeholder="Type your answer..."
+          <input type="text" class="answer-input" [class.correct]="currentSubmission !== null && currentSubmission!.isCorrect"
+            [class.incorrect]="currentSubmission !== null && !currentSubmission!.isCorrect" placeholder="Type your answer..."
             [formControl]="currentAnswerGroup.controls.answer" [disabled]="isCurrentLocked" aria-label="Your answer" />
         </div>
         @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
@@ -97,8 +97,8 @@
         </div>
         <div class="target-section">
           <div class="lang-badge">{{ currentTranslation?.targetLanguageCode | uppercase }}</div>
-          <textarea class="translation-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
-            [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
+          <textarea class="translation-input" [class.correct]="currentSubmission !== null && currentSubmission!.isCorrect"
+            [class.incorrect]="currentSubmission !== null && !currentSubmission!.isCorrect"
             placeholder="Write your translation..." [formControl]="currentAnswerGroup.controls.answer"
             [disabled]="isCurrentLocked" rows="3" aria-label="Your translation"></textarea>
         </div>
@@ -131,8 +131,8 @@
           }
         </div>
         <div class="answer-input-wrapper">
-          <input type="text" class="answer-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
-            [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect" placeholder="Type what you hear..."
+          <input type="text" class="answer-input" [class.correct]="currentSubmission !== null && currentSubmission!.isCorrect"
+            [class.incorrect]="currentSubmission !== null && !currentSubmission!.isCorrect" placeholder="Type what you hear..."
             [formControl]="currentAnswerGroup.controls.answer" [disabled]="isCurrentLocked" aria-label="Your answer" />
         </div>
         @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
@@ -147,7 +147,7 @@
     </div>
 
     <!-- Feedback after submission -->
-    @if (isCurrentSubmitted && currentSubmission) {
+    @if (currentSubmission) {
     <div class="feedback" [class.correct]="currentSubmission.isCorrect"
       [class.incorrect]="!currentSubmission.isCorrect">
       @if (currentSubmission.isCorrect) {
@@ -208,7 +208,7 @@
       }
     </div>
 
-    <button class="nav-btn" [disabled]="currentExerciseIndex === exercises.length - 1" (click)="nextExercise()"
+    <button class="nav-btn" [disabled]="!canGoNext" (click)="nextExercise()"
       aria-label="Next exercise">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
         <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"

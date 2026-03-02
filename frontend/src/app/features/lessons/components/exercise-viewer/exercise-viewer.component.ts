@@ -96,7 +96,10 @@ export class ExerciseViewerComponent implements OnInit {
       if (!wasAttempted) return;
 
       this.submissionResults.set(index, response);
-      this.exercisesFormArray.at(index).disable();
+      // Only lock the form for correct answers — wrong answers remain editable for retry
+      if (response.isCorrect) {
+        this.exercisesFormArray.at(index).disable();
+      }
     });
 
     // Restore XP total from the lesson progress summary included in submissions
@@ -105,9 +108,9 @@ export class ExerciseViewerComponent implements OnInit {
       this.earnedXp = withProgress.lessonProgress.earnedXp;
     }
 
-    // Start at first incomplete unlocked exercise
+    // Start at the first exercise that hasn't been correctly solved yet and is unlocked
     const firstIncomplete = this.exercises.findIndex(
-      (ex, i) => !this.submissionResults.has(i) && !ex.isLocked
+      (ex, i) => this.submissionResults.get(i)?.isCorrect !== true && !ex.isLocked
     );
     if (firstIncomplete >= 0) {
       this.currentExerciseIndex = firstIncomplete;
@@ -135,17 +138,19 @@ export class ExerciseViewerComponent implements OnInit {
     return this.submissionResults.get(this.currentExerciseIndex) ?? null;
   }
 
+  /** True only when the current exercise was answered correctly. Wrong attempts keep the form enabled for retry. */
   get isCurrentSubmitted(): boolean {
-    return this.submissionResults.has(this.currentExerciseIndex);
+    return this.submissionResults.get(this.currentExerciseIndex)?.isCorrect === true;
   }
 
   get isCurrentLocked(): boolean {
     return !!this.currentExercise?.isLocked && !this.isAdmin;
   }
 
-  get exerciseProgress(): number {
-    if (this.exercises.length === 0) return 0;
-    return (this.submissionResults.size / this.exercises.length) * 100;
+  /** False when the next exercise is still locked — prevents the nav arrow jumping past a lock. */
+  get canGoNext(): boolean {
+    if (this.currentExerciseIndex >= this.exercises.length - 1) return false;
+    return !this.exercises[this.currentExerciseIndex + 1].isLocked || this.isAdmin;
   }
 
   /**
@@ -206,9 +211,8 @@ export class ExerciseViewerComponent implements OnInit {
 
   goToExercise(index: number) {
     if (index >= 0 && index < this.exercises.length) {
-      // Only allow navigation to unlocked exercises or already attempted ones
       const targetExercise = this.exercises[index];
-      if (!targetExercise.isLocked || this.submissionResults.has(index)) {
+      if (!targetExercise.isLocked || this.submissionResults.has(index) || this.isAdmin) {
         this.currentExerciseIndex = index;
       }
     }
@@ -216,7 +220,7 @@ export class ExerciseViewerComponent implements OnInit {
 
   isExerciseAccessible(index: number): boolean {
     const exercise = this.exercises[index];
-    return !exercise.isLocked || this.submissionResults.has(index);
+    return !exercise.isLocked || this.submissionResults.has(index) || this.isAdmin;
   }
 
   selectMultipleChoiceOption(optionId: string) {
@@ -237,16 +241,15 @@ export class ExerciseViewerComponent implements OnInit {
     try {
       const result = await this.lessonService.submitExerciseAnswer(exercise.id, answerValue);
 
+      // Always store the result so feedback is visible, but only lock the form on correct
       this.submissionResults.set(this.currentExerciseIndex, result);
-      this.currentAnswerGroup.disable();
 
       if (result.isCorrect) {
         this.earnedXp += result.pointsEarned;
-      }
-
-      // If answered correctly and there's a next exercise, unlock it in the local state
-      if (result.isCorrect && this.currentExerciseIndex < this.exercises.length - 1) {
-        this.exercises[this.currentExerciseIndex + 1].isLocked = false;
+        this.currentAnswerGroup.disable();
+        if (this.currentExerciseIndex < this.exercises.length - 1) {
+          this.exercises[this.currentExerciseIndex + 1].isLocked = false;
+        }
       }
     } catch (err) {
       console.error('❌ Failed to submit answer:', err);
@@ -281,7 +284,7 @@ export class ExerciseViewerComponent implements OnInit {
   }
 
   getOptionClass(optionId: string, isCorrect: boolean): string {
-    if (!this.isCurrentSubmitted) {
+    if (!this.currentSubmission) {
       return this.isOptionSelected(optionId) ? 'selected' : '';
     }
 
