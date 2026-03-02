@@ -11,8 +11,8 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
     private const int MaxLeaderboardEntries = 50;
 
     /// <summary>
-    /// XP thresholds follow: threshold(n) = 50 * n * (n - 1)
-    /// Level 1 = 0 XP, Level 2 = 100, Level 3 = 300, Level 4 = 600, Level 5 = 1000...
+    /// XP thresholds follow: threshold(n) = 100 * n * (n - 1)
+    /// Level 1 = 0 XP, Level 2 = 200, Level 3 = 600, Level 4 = 1200, Level 5 = 2000...
     /// </summary>
     public static int CalculateLevel(int totalXp)
     {
@@ -108,6 +108,7 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
                 entry.UserId == currentUserId,
                 avatarUrl
             );
+
             enrichedEntries.Add(enriched);
 
             if (entry.UserId == currentUserId)

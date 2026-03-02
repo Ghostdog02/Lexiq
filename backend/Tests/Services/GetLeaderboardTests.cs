@@ -151,8 +151,8 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
     [Fact]
     public async Task GetLeaderboard_AllTime_LevelCalculatedFromTotalXp()
     {
-        // 300 XP = Level 3 threshold (50 * 3 * 2)
-        var user = Build("leveluser", "level@t.com", 300);
+        // 600 XP = Level 3 threshold (100 * 3 * 2)
+        var user = Build("leveluser", "level@t.com", 600);
         await DbSeeder.AddUserAsync(_ctx, user);
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.AllTime, null);
