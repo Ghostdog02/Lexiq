@@ -290,8 +290,29 @@ public async Task<IActionResult> CreateCourse(CreateCourseDto dto) { }
 - **Never access navigation properties inside a `GroupBy` key** (e.g. `p.User.UserName`)
 - EF Core emits an implicit JOIN wrapping rows in `TransparentIdentifier<TOuter, TInner>` — the subsequent `Sum`/aggregation fails to translate to SQL
 - **Fix**: Use explicit `.Join()` to flatten into an anonymous type first, then `GroupBy` over scalar columns
-- Pattern: `.Where(...)` → `.Join(users, ...)` → `.GroupBy(p => new { p.Id, p.UserName, p.Email })` → `.Select(g => new RawLeaderboardEntry(...))`
+- Pattern: `.Where(...)` → `.Join(users, ...)` → `.GroupBy(p => new { p.Id, p.UserName, p.Email })` → `.Select(g => new { ..., TotalXp = g.Sum(...) })`
 - See `LeaderboardService.GetTimeWindowedLeaderboardAsync` and `GetTimeFilteredLeaderboardAsync`
+
+## EF Core OrderBy After GroupBy Projection Into Named Record Type Gotcha
+
+- **Never apply `OrderBy`/`OrderByDescending` directly on a named record/class type** produced by a `GroupBy.Select()`
+- EF Core tracks anonymous type properties through the query pipeline, but treats named types (C# `record`, `class`) as **terminal projections** — it loses the mapping between the property (e.g. `e.TotalXp`) and the underlying SQL expression (e.g. `SUM(PointsEarned)`)
+- Symptom: EF Core inserts `g.AsQueryable().Sum(e => e.Outer.PointsEarned)` in the expression tree → `InvalidOperationException: The LINQ expression could not be translated`
+- **Fix**: Use an intermediate anonymous type for the `Select` so `OrderBy` can resolve expressions, then do the terminal projection into the named type after `Take`:
+
+```csharp
+// WRONG — OrderBy on named record type loses SUM mapping
+.Select(g => new RawLeaderboardEntry(g.Key.Id, g.Key.UserName ?? ..., g.Sum(x => x.PointsEarned)))
+.OrderByDescending(e => e.TotalXp)  // ← fails: can't translate e.TotalXp
+
+// CORRECT — OrderBy on anonymous type, terminal record projection after Take
+.Select(g => new { Id = g.Key.Id, UserName = g.Key.UserName, Email = g.Key.Email, TotalXp = g.Sum(x => x.PointsEarned) })
+.OrderByDescending(e => e.TotalXp)   // ← works: anonymous type preserves SUM mapping
+.Take(MaxLeaderboardEntries)
+.Select(e => new RawLeaderboardEntry(e.Id, e.UserName ?? e.Email ?? "Unknown", e.TotalXp))
+```
+
+- See `LeaderboardService.GetTimeFilteredLeaderboardAsync` and `GetTimeWindowedLeaderboardAsync`
 
 ## EF Core 10 PendingModelChangesWarning
 
