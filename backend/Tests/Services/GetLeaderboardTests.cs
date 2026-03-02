@@ -18,13 +18,13 @@ namespace Backend.Tests.Services;
 /// by looking up entries by specific user IDs rather than by position.
 /// Weekly/Monthly tests are unaffected since the system user has no progress rows.
 /// </summary>
-public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class GetLeaderboardTests(DatabaseFixture fixture)
+    : IClassFixture<DatabaseFixture>,
+        IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture _fixture = fixture;
     private Backend.Database.BackendDbContext _ctx = null!;
     private LeaderboardService _service = null!;
-
-    public GetLeaderboardTests(DatabaseFixture fixture) => _fixture = fixture;
 
     public async ValueTask InitializeAsync()
     {
@@ -40,15 +40,15 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
     [Fact]
     public async Task GetLeaderboard_AllTime_OrdersByTotalPointsEarnedDescending()
     {
-        var alice   = Build("alice",   "alice@t.com",   1000);
-        var bob     = Build("bob",     "bob@t.com",     500);
+        var alice = Build("alice", "alice@t.com", 1000);
+        var bob = Build("bob", "bob@t.com", 500);
         var charlie = Build("charlie", "charlie@t.com", 100);
         await DbSeeder.AddUsersAsync(_ctx, [alice, bob, charlie]);
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.AllTime, null);
 
-        var aliceRank   = response.Entries.First(e => e.UserId == alice.Id).Rank;
-        var bobRank     = response.Entries.First(e => e.UserId == bob.Id).Rank;
+        var aliceRank = response.Entries.First(e => e.UserId == alice.Id).Rank;
+        var bobRank = response.Entries.First(e => e.UserId == bob.Id).Rank;
         var charlieRank = response.Entries.First(e => e.UserId == charlie.Id).Rank;
 
         aliceRank.Should().BeLessThan(bobRank);
@@ -63,8 +63,14 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         // override the materialised aggregate (1000 pts) stored on the User entity.
         var user = Build("cached", "cached@t.com", totalPoints: 1000);
         await DbSeeder.AddUserAsync(_ctx, user);
-        await DbSeeder.AddProgressAsync(_ctx, user.Id, _fixture.ExerciseIds[0],
-            isCompleted: true, pointsEarned: 200, completedAt: DateTime.UtcNow.AddDays(-400));
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            user.Id,
+            _fixture.ExerciseIds[0],
+            isCompleted: true,
+            pointsEarned: 200,
+            completedAt: DateTime.UtcNow.AddDays(-400)
+        );
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.AllTime, null);
 
@@ -111,7 +117,8 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
     public async Task GetLeaderboard_AllTime_EntriesLimitedTo50()
     {
         // Insert 55 users with positive XP — top 50 capped; system user (0 XP) is excluded
-        var users = Enumerable.Range(1, 55)
+        var users = Enumerable
+            .Range(1, 55)
             .Select(i => Build($"user{i}", $"u{i}@t.com", i * 10))
             .ToList();
         await DbSeeder.AddUsersAsync(_ctx, users);
@@ -125,7 +132,8 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
     public async Task GetLeaderboard_AllTime_CurrentUserOutsideTop50_FetchedSeparatelyWithCorrectRank()
     {
         // 50 users with XP 100–5000, plus a currentUser with XP 50 (rank 51)
-        var topUsers = Enumerable.Range(1, 50)
+        var topUsers = Enumerable
+            .Range(1, 50)
             .Select(i => Build($"topuser{i}", $"top{i}@t.com", i * 100))
             .ToList();
         await DbSeeder.AddUsersAsync(_ctx, topUsers);
@@ -206,14 +214,24 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         await DbSeeder.AddUserAsync(_ctx, user);
 
         // Old progress (10 days ago) — outside window
-        await DbSeeder.AddProgressAsync(_ctx, user.Id, _fixture.ExerciseIds[0],
-            isCompleted: true, pointsEarned: 500,
-            completedAt: DateTime.UtcNow.AddDays(-10));
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            user.Id,
+            _fixture.ExerciseIds[0],
+            isCompleted: true,
+            pointsEarned: 500,
+            completedAt: DateTime.UtcNow.AddDays(-10)
+        );
 
         // Recent progress (3 days ago) — inside window
-        await DbSeeder.AddProgressAsync(_ctx, user.Id, _fixture.ExerciseIds[1],
-            isCompleted: true, pointsEarned: 100,
-            completedAt: DateTime.UtcNow.AddDays(-3));
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            user.Id,
+            _fixture.ExerciseIds[1],
+            isCompleted: true,
+            pointsEarned: 100,
+            completedAt: DateTime.UtcNow.AddDays(-3)
+        );
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.Weekly, null);
 
@@ -240,12 +258,30 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         var user = Build("sumuser", "sum@t.com", 0);
         await DbSeeder.AddUserAsync(_ctx, user);
 
-        await DbSeeder.AddProgressAsync(_ctx, user.Id, _fixture.ExerciseIds[0],
-            isCompleted: true, pointsEarned: 100, completedAt: DateTime.UtcNow.AddDays(-1));
-        await DbSeeder.AddProgressAsync(_ctx, user.Id, _fixture.ExerciseIds[1],
-            isCompleted: true, pointsEarned: 200, completedAt: DateTime.UtcNow.AddDays(-2));
-        await DbSeeder.AddProgressAsync(_ctx, user.Id, _fixture.ExerciseIds[2],
-            isCompleted: true, pointsEarned: 50,  completedAt: DateTime.UtcNow.AddDays(-3));
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            user.Id,
+            _fixture.ExerciseIds[0],
+            isCompleted: true,
+            pointsEarned: 100,
+            completedAt: DateTime.UtcNow.AddDays(-1)
+        );
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            user.Id,
+            _fixture.ExerciseIds[1],
+            isCompleted: true,
+            pointsEarned: 200,
+            completedAt: DateTime.UtcNow.AddDays(-2)
+        );
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            user.Id,
+            _fixture.ExerciseIds[2],
+            isCompleted: true,
+            pointsEarned: 50,
+            completedAt: DateTime.UtcNow.AddDays(-3)
+        );
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.Weekly, null);
 
@@ -257,18 +293,30 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
     public async Task GetLeaderboard_Weekly_OrdersByWindowXpDescending()
     {
         var alice = Build("alice_w", "alicew@t.com", 0);
-        var bob   = Build("bob_w",   "bobw@t.com",   0);
+        var bob = Build("bob_w", "bobw@t.com", 0);
         await DbSeeder.AddUsersAsync(_ctx, [alice, bob]);
 
-        await DbSeeder.AddProgressAsync(_ctx, alice.Id, _fixture.ExerciseIds[0],
-            isCompleted: true, pointsEarned: 300, completedAt: DateTime.UtcNow.AddDays(-1));
-        await DbSeeder.AddProgressAsync(_ctx, bob.Id, _fixture.ExerciseIds[0],
-            isCompleted: true, pointsEarned: 100, completedAt: DateTime.UtcNow.AddDays(-1));
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            alice.Id,
+            _fixture.ExerciseIds[0],
+            isCompleted: true,
+            pointsEarned: 300,
+            completedAt: DateTime.UtcNow.AddDays(-1)
+        );
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            bob.Id,
+            _fixture.ExerciseIds[0],
+            isCompleted: true,
+            pointsEarned: 100,
+            completedAt: DateTime.UtcNow.AddDays(-1)
+        );
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.Weekly, null);
 
         var aliceRank = response.Entries.First(e => e.UserId == alice.Id).Rank;
-        var bobRank   = response.Entries.First(e => e.UserId == bob.Id).Rank;
+        var bobRank = response.Entries.First(e => e.UserId == bob.Id).Rank;
 
         aliceRank.Should().BeLessThan(bobRank);
     }
@@ -277,21 +325,32 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
     public async Task GetLeaderboard_Weekly_CurrentUserOutsideTop50_CorrectRankCalculated()
     {
         // 50 users with XP 100–5000 in window; currentUser has 50 XP (rank 51)
-        var topUsers = Enumerable.Range(1, 50)
+        var topUsers = Enumerable
+            .Range(1, 50)
             .Select(i => Build($"tw{i}", $"tw{i}@t.com", 0))
             .ToList();
         await DbSeeder.AddUsersAsync(_ctx, topUsers);
 
         for (var i = 0; i < topUsers.Count; i++)
-            await DbSeeder.AddProgressAsync(_ctx, topUsers[i].Id, _fixture.ExerciseIds[0],
-                isCompleted: true, pointsEarned: (i + 1) * 100,
-                completedAt: DateTime.UtcNow.AddDays(-1));
+            await DbSeeder.AddProgressAsync(
+                _ctx,
+                topUsers[i].Id,
+                _fixture.ExerciseIds[0],
+                isCompleted: true,
+                pointsEarned: (i + 1) * 100,
+                completedAt: DateTime.UtcNow.AddDays(-1)
+            );
 
         var currentUser = Build("woutside", "woutside@t.com", 0);
         await DbSeeder.AddUserAsync(_ctx, currentUser);
-        await DbSeeder.AddProgressAsync(_ctx, currentUser.Id, _fixture.ExerciseIds[1],
-            isCompleted: true, pointsEarned: 50,
-            completedAt: DateTime.UtcNow.AddDays(-1));
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            currentUser.Id,
+            _fixture.ExerciseIds[1],
+            isCompleted: true,
+            pointsEarned: 50,
+            completedAt: DateTime.UtcNow.AddDays(-1)
+        );
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.Weekly, currentUser.Id);
 
@@ -308,13 +367,23 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         var user = Build("monthlyuser", "monthly@t.com", 0);
         await DbSeeder.AddUserAsync(_ctx, user);
 
-        await DbSeeder.AddProgressAsync(_ctx, user.Id, _fixture.ExerciseIds[0],
-            isCompleted: true, pointsEarned: 999,
-            completedAt: DateTime.UtcNow.AddDays(-31));  // outside window
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            user.Id,
+            _fixture.ExerciseIds[0],
+            isCompleted: true,
+            pointsEarned: 999,
+            completedAt: DateTime.UtcNow.AddDays(-31)
+        ); // outside window
 
-        await DbSeeder.AddProgressAsync(_ctx, user.Id, _fixture.ExerciseIds[1],
-            isCompleted: true, pointsEarned: 200,
-            completedAt: DateTime.UtcNow.AddDays(-15));  // inside window
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            user.Id,
+            _fixture.ExerciseIds[1],
+            isCompleted: true,
+            pointsEarned: 200,
+            completedAt: DateTime.UtcNow.AddDays(-15)
+        ); // inside window
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.Monthly, null);
 
@@ -327,9 +396,14 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
     {
         var user = Build("olduser", "old@t.com", 5000);
         await DbSeeder.AddUserAsync(_ctx, user);
-        await DbSeeder.AddProgressAsync(_ctx, user.Id, _fixture.ExerciseIds[0],
-            isCompleted: true, pointsEarned: 5000,
-            completedAt: DateTime.UtcNow.AddDays(-35));  // outside 30-day window
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            user.Id,
+            _fixture.ExerciseIds[0],
+            isCompleted: true,
+            pointsEarned: 5000,
+            completedAt: DateTime.UtcNow.AddDays(-35)
+        ); // outside 30-day window
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.Monthly, null);
 
@@ -344,9 +418,14 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         // User only has current-week progress — not in previous period (days 8-14)
         var user = Build("newbie", "newbie@t.com", 0);
         await DbSeeder.AddUserAsync(_ctx, user);
-        await DbSeeder.AddProgressAsync(_ctx, user.Id, _fixture.ExerciseIds[0],
-            isCompleted: true, pointsEarned: 100,
-            completedAt: DateTime.UtcNow.AddDays(-3));
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            user.Id,
+            _fixture.ExerciseIds[0],
+            isCompleted: true,
+            pointsEarned: 100,
+            completedAt: DateTime.UtcNow.AddDays(-3)
+        );
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.Weekly, user.Id);
 
@@ -359,26 +438,62 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
     {
         // Previous week (days 8-14): alice=100, bob=200, charlie=300 → ranks 3, 2, 1
         // Current week (days 1-7):   alice=300, bob=200, charlie=100 → ranks 1, 2, 3
-        var alice   = Build("alice_rc",   "alicerc@t.com",   0);
-        var bob     = Build("bob_rc",     "bobrc@t.com",     0);
+        var alice = Build("alice_rc", "alicerc@t.com", 0);
+        var bob = Build("bob_rc", "bobrc@t.com", 0);
         var charlie = Build("charlie_rc", "charlierc@t.com", 0);
         await DbSeeder.AddUsersAsync(_ctx, [alice, bob, charlie]);
 
         // Previous period
-        await DbSeeder.AddProgressAsync(_ctx, alice.Id,   _fixture.ExerciseIds[0],
-            true, 100, DateTime.UtcNow.AddDays(-10));
-        await DbSeeder.AddProgressAsync(_ctx, bob.Id,     _fixture.ExerciseIds[0],
-            true, 200, DateTime.UtcNow.AddDays(-10));
-        await DbSeeder.AddProgressAsync(_ctx, charlie.Id, _fixture.ExerciseIds[0],
-            true, 300, DateTime.UtcNow.AddDays(-10));
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            alice.Id,
+            _fixture.ExerciseIds[0],
+            true,
+            100,
+            DateTime.UtcNow.AddDays(-10)
+        );
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            bob.Id,
+            _fixture.ExerciseIds[0],
+            true,
+            200,
+            DateTime.UtcNow.AddDays(-10)
+        );
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            charlie.Id,
+            _fixture.ExerciseIds[0],
+            true,
+            300,
+            DateTime.UtcNow.AddDays(-10)
+        );
 
         // Current period
-        await DbSeeder.AddProgressAsync(_ctx, alice.Id,   _fixture.ExerciseIds[1],
-            true, 300, DateTime.UtcNow.AddDays(-3));
-        await DbSeeder.AddProgressAsync(_ctx, bob.Id,     _fixture.ExerciseIds[1],
-            true, 200, DateTime.UtcNow.AddDays(-3));
-        await DbSeeder.AddProgressAsync(_ctx, charlie.Id, _fixture.ExerciseIds[1],
-            true, 100, DateTime.UtcNow.AddDays(-3));
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            alice.Id,
+            _fixture.ExerciseIds[1],
+            true,
+            300,
+            DateTime.UtcNow.AddDays(-3)
+        );
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            bob.Id,
+            _fixture.ExerciseIds[1],
+            true,
+            200,
+            DateTime.UtcNow.AddDays(-3)
+        );
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            charlie.Id,
+            _fixture.ExerciseIds[1],
+            true,
+            100,
+            DateTime.UtcNow.AddDays(-3)
+        );
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.Weekly, null);
 
@@ -391,26 +506,62 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
     public async Task GetLeaderboard_Weekly_UserMovedDownFromRank1ToRank3_HasRankChangeMinus2()
     {
         // Same setup as above — charlie dropped from rank 1 to rank 3
-        var alice   = Build("alice_rd",   "alicerd@t.com",   0);
-        var bob     = Build("bob_rd",     "bobrd@t.com",     0);
+        var alice = Build("alice_rd", "alicerd@t.com", 0);
+        var bob = Build("bob_rd", "bobrd@t.com", 0);
         var charlie = Build("charlie_rd", "charlierd@t.com", 0);
         await DbSeeder.AddUsersAsync(_ctx, [alice, bob, charlie]);
 
         // Previous period — charlie was rank 1
-        await DbSeeder.AddProgressAsync(_ctx, alice.Id,   _fixture.ExerciseIds[0],
-            true, 100, DateTime.UtcNow.AddDays(-10));
-        await DbSeeder.AddProgressAsync(_ctx, bob.Id,     _fixture.ExerciseIds[0],
-            true, 200, DateTime.UtcNow.AddDays(-10));
-        await DbSeeder.AddProgressAsync(_ctx, charlie.Id, _fixture.ExerciseIds[0],
-            true, 300, DateTime.UtcNow.AddDays(-10));
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            alice.Id,
+            _fixture.ExerciseIds[0],
+            true,
+            100,
+            DateTime.UtcNow.AddDays(-10)
+        );
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            bob.Id,
+            _fixture.ExerciseIds[0],
+            true,
+            200,
+            DateTime.UtcNow.AddDays(-10)
+        );
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            charlie.Id,
+            _fixture.ExerciseIds[0],
+            true,
+            300,
+            DateTime.UtcNow.AddDays(-10)
+        );
 
         // Current period — charlie is now rank 3
-        await DbSeeder.AddProgressAsync(_ctx, alice.Id,   _fixture.ExerciseIds[1],
-            true, 300, DateTime.UtcNow.AddDays(-3));
-        await DbSeeder.AddProgressAsync(_ctx, bob.Id,     _fixture.ExerciseIds[1],
-            true, 200, DateTime.UtcNow.AddDays(-3));
-        await DbSeeder.AddProgressAsync(_ctx, charlie.Id, _fixture.ExerciseIds[1],
-            true, 100, DateTime.UtcNow.AddDays(-3));
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            alice.Id,
+            _fixture.ExerciseIds[1],
+            true,
+            300,
+            DateTime.UtcNow.AddDays(-3)
+        );
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            bob.Id,
+            _fixture.ExerciseIds[1],
+            true,
+            200,
+            DateTime.UtcNow.AddDays(-3)
+        );
+        await DbSeeder.AddProgressAsync(
+            _ctx,
+            charlie.Id,
+            _fixture.ExerciseIds[1],
+            true,
+            100,
+            DateTime.UtcNow.AddDays(-3)
+        );
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.Weekly, null);
 
@@ -456,8 +607,14 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         await DbSeeder.AddUserAsync(_ctx, user);
 
         // 3-day consecutive streak ending today
-        await DbSeeder.AddConsecutiveDaysActivityAsync(_ctx, user.Id, _fixture.ExerciseIds,
-            days: 3, startDaysAgo: 0, pointsPerDay: 50);
+        await DbSeeder.AddConsecutiveDaysActivityAsync(
+            _ctx,
+            user.Id,
+            _fixture.ExerciseIds,
+            days: 3,
+            startDaysAgo: 0,
+            pointsPerDay: 50
+        );
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.AllTime, null);
 
@@ -469,7 +626,10 @@ public class GetLeaderboardTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static Backend.Database.Entities.Users.User Build(
-        string userName, string email, int totalPoints) =>
+        string userName,
+        string email,
+        int totalPoints
+    ) =>
         new UserBuilder()
             .WithUserName(userName)
             .WithEmail(email)

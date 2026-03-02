@@ -17,14 +17,14 @@ namespace Backend.Tests.Services;
 /// - Grace period: if no activity today, yesterday still counts as the current streak.
 /// - "Current streak" resets to 0 if the most recent activity is 2+ days ago.
 /// </summary>
-public class GetStreakTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class GetStreakTests(DatabaseFixture fixture)
+    : IClassFixture<DatabaseFixture>,
+        IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture _fixture = fixture;
     private Database.BackendDbContext _ctx = null!;
     private LeaderboardService _service = null!;
     private string _userId = null!;
-
-    public GetStreakTests(DatabaseFixture fixture) => _fixture = fixture;
 
     // xUnit creates a new instance per test, so InitializeAsync/DisposeAsync run per test.
     public async ValueTask InitializeAsync()
