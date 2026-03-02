@@ -23,6 +23,7 @@ Language
 Additionally:
 - **Many-to-many** between Users and Languages through the `UserLanguage` junction table.
 - **One-to-many** from User and Exercise to `UserExerciseProgress` for progress tracking.
+- **One-to-one** between User and `UserAvatar` (shared PK: `UserId`); avatar binary stored in a separate table to avoid loading bytes via `UserContextMiddleware` on every request.
 
 ---
 
@@ -43,7 +44,7 @@ Additionally:
 | Id | string | Primary key (inherited from IdentityUser) |
 | RegistrationDate | DateTime | Timestamp when user created their account |
 | LastLoginDate | DateTime | Timestamp of user's most recent login |
-| Avatar | string? | Profile picture URL; auto-populated from Google OAuth, overridable via `PUT /api/user/avatar` |
+| Avatar | UserAvatar? | Navigation property to `UserAvatars` table (1:1, shared PK). Binary avatar data stored separately to avoid loading bytes on every request. Served via `GET /api/user/{id}/avatar`. Auto-populated from Google on login; overridable via `PUT /api/user/avatar`. |
 | TotalPointsEarned | int | Materialized XP aggregate; incremented on first correct exercise submission to avoid full re-aggregation for leaderboard queries |
 | UserLanguages | List\<UserLanguage\> | Navigation property: Languages this user is learning |
 | ExerciseProgress | List\<UserExerciseProgress\> | Navigation property: Exercise progress records for this user |
@@ -52,6 +53,36 @@ Additionally:
 
 - **One-to-Many** with UserLanguage: A user can learn multiple languages
 - **One-to-Many** with UserExerciseProgress: A user has progress records per exercise
+- **One-to-One** with UserAvatar: A user optionally has a stored avatar (shared PK: `UserId`)
+
+---
+
+### UserAvatar
+
+**Purpose**: Stores a user's avatar image as binary data in a dedicated table. Kept separate from `User` to prevent loading the `varbinary(max)` payload on every request through `UserContextMiddleware`.
+
+**File**: [Entities/Users/UserAvatar.cs](backend/Database/Entities/Users/UserAvatar.cs)
+
+#### Properties
+
+| Property | Type | Constraints | Description |
+|----------|------|-------------|-------------|
+| UserId | string | Primary Key, Foreign Key → User | Shared PK with `User`; identifies the owning user |
+| User | User | Navigation | Parent user entity |
+| Data | byte[] | Required, `varbinary(max)` | Raw avatar image bytes |
+| ContentType | string | Required, MaxLength(50), Default: "image/jpeg" | MIME type of the stored image (e.g. `image/jpeg`, `image/png`) |
+
+#### Relationships
+
+- **One-to-One** with User: Shares the `UserId` primary key; a user may have zero or one avatar
+
+#### Business Rules
+
+- Downloaded from Google profile picture URL on every login via `AvatarService.DownloadAvatarAsync` (upsert — overwrites previous)
+- Manually overridable via `PUT /api/user/avatar` (`IFormFile`); replaces existing bytes on upsert
+- Served via `GET /api/user/{id}/avatar` (`[AllowAnonymous]`, `Cache-Control: public, max-age=86400`)
+- Leaderboard queries batch-check existence via `AvatarService.GetUsersWithAvatarsAsync` (returns a `HashSet<string>`) without loading `Data` bytes — only IDs are fetched
+- If avatar download or upsert fails, login still succeeds (avatar is non-critical)
 
 ---
 
@@ -376,6 +407,8 @@ Uses a composite primary key consisting of `(UserId, ExerciseId)` — ensures on
 
 ```
 User (1) ──────────────────< (M) UserLanguage (M) >──────────── (1) Language
+  │  │                                                                    │
+  │  └── (1:1) UserAvatar  [shared PK: UserId]                           │
   │                                                                       │
   │ CreatedBy                                                             │
   └──────< (M) Course (M) >───────────────────────────────────────────────┘
@@ -522,6 +555,6 @@ The current schema supports future enhancements:
 
 ---
 
-**Last Updated**: 2026-02-26
+**Last Updated**: 2026-03-02
 **Database Version**: 2.0
 **EF Core Version**: Compatible with EF Core 9.0+
