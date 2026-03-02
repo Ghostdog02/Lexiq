@@ -133,7 +133,12 @@ backend/
 
 ## Database Schema
 
-Built with ASP.NET Core Identity. See `Database/ENTITIES_DOCUMENTATION.md` for comprehensive entity documentation.
+> **⚠️ Do not search for entity files manually.**
+> All entities, properties, relationships, constraints, and business rules are documented in
+> [`Database/ENTITIES_DOCUMENTATION.md`](Database/ENTITIES_DOCUMENTATION.md).
+> Read that file before touching any entity, migration, or DbContext configuration.
+
+Built with ASP.NET Core Identity.
 
 **Content Hierarchy:**
 ```

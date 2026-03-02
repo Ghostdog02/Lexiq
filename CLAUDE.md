@@ -62,6 +62,11 @@ docker compose logs           # view logs
 
 ### Content Hierarchy
 
+> **⚠️ Do not search entity source files manually.**
+> [`backend/Database/ENTITIES_DOCUMENTATION.md`](backend/Database/ENTITIES_DOCUMENTATION.md)
+> documents every entity, property, relationship, constraint, and business rule.
+> Read it first whenever you need to understand or modify the data model.
+
 ```
 Language (1) → Course (M) → Lesson (M) → Exercise (M)
                                              ↓ (Abstract base, TPH)
