@@ -115,14 +115,17 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     public async Task UnlockLessonAsync(string lessonId)
     {
         var lesson = await _context.Lessons.FindAsync(lessonId);
-        if (lesson != null && lesson.IsLocked)
+        if (lesson == null) return;
+
+        if (lesson.IsLocked)
         {
             lesson.IsLocked = false;
             await _context.SaveChangesAsync();
-
-            // Also unlock the first exercise
-            await _exerciseService.UnlockFirstExerciseInLessonAsync(lessonId);
         }
+
+        // Always ensure the first exercise is unlocked — idempotent, safe to call
+        // even when the lesson was already unlocked (repairs corrupt lock states).
+        await _exerciseService.UnlockFirstExerciseInLessonAsync(lessonId);
     }
 
     public async Task<Lesson> CreateLessonAsync(CreateLessonDto dto)
