@@ -8,6 +8,9 @@
     <Compile Remove="Database/**/*.cs" />
     <EmbeddedResource Remove="Database/**/*" />
     <None Remove="Database/**/*" />
+    <Compile Remove="Tests/**/*.cs" />
+    <EmbeddedResource Remove="Tests/**/*" />
+    <None Remove="Tests/**/*" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="DotNetEnv" Version="3.1.1" />
