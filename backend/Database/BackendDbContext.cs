@@ -24,6 +24,10 @@ public class BackendDbContext(DbContextOptions options)
 
     public DbSet<UserAvatar> UserAvatars { get; set; }
 
+    public DbSet<Achievement> Achievements { get; set; }
+
+    public DbSet<UserAchievement> UserAchievements { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -115,6 +119,30 @@ public class BackendDbContext(DbContextOptions options)
                 .WithMany(e => e.ExerciseProgress)
                 .HasForeignKey(uep => uep.ExerciseId)
                 .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<Achievement>(entity =>
+        {
+            entity.Property(a => a.Name).HasMaxLength(100).IsRequired();
+            entity.Property(a => a.Description).HasMaxLength(500).IsRequired();
+            entity.Property(a => a.Icon).HasMaxLength(10).IsRequired();
+        });
+
+        modelBuilder.Entity<UserAchievement>(entity =>
+        {
+            entity.HasKey(ua => new { ua.UserId, ua.AchievementId });
+
+            entity
+                .HasOne(ua => ua.User)
+                .WithMany()
+                .HasForeignKey(ua => ua.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity
+                .HasOne(ua => ua.Achievement)
+                .WithMany(a => a.UserAchievements)
+                .HasForeignKey(ua => ua.AchievementId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 
