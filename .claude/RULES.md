@@ -112,3 +112,28 @@ Add CalculateLevel unit tests                          ← pure unit, no DB
 Add GetStreak integration tests                        ← Testcontainers integration
 Add GetLeaderboard integration tests                   ← Testcontainers integration
 ```
+
+## Testing
+
+See [`backend/Tests/CLAUDE.md`](../backend/Tests/CLAUDE.md) for full test project documentation.
+
+### Quick Commands
+
+```bash
+# All tests (requires Docker)
+cd backend && dotnet test Tests/Backend.Tests.csproj --logger "console;verbosity=normal"
+
+# Single class
+dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~GetLeaderboardTests"
+
+# Unit tests only (no Docker)
+dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLevelTests"
+```
+
+### Test Conventions
+
+- **Never `UseInMemoryDatabase`** — always Testcontainers (real SQL Server behaviour)
+- **xUnit v3**: `IAsyncLifetime` methods return `ValueTask`, not `Task`
+- **`IClassFixture<DatabaseFixture>`**: shares the container; `IAsyncLifetime` on the test class reseeds per test
+- **`fixture.ExerciseIds`**: always use these for `UserExerciseProgress` rows — FK is enforced on INSERT
+- **`UserBuilder`**: always use for creating test users — sets Identity's required normalized fields
