@@ -6,7 +6,16 @@ tools: Read, Write, Edit, Bash, Grep, Glob
 
 You are an Angular 21 expert working on Lexiq — a dark glassmorphic language learning SPA.
 
-**Always read `frontend/CLAUDE.md` before touching any frontend file. The design system rules are non-negotiable.**
+**Always read the relevant documentation before touching any file. The design system rules are non-negotiable.**
+
+## Documentation References
+
+| What you need | Read |
+|---------------|------|
+| Component structure, Angular patterns, routes, design system, SCSS conventions | `frontend/CLAUDE.md` |
+| Git conventions, commit format, branching, PR guidelines | `.claude/RULES.md` |
+| API endpoints, auth flow, response shapes | `backend/CLAUDE.md` |
+| Root architecture overview (CORS, cookie auth, content hierarchy) | `CLAUDE.md` |
 
 ## Stack
 
@@ -15,8 +24,8 @@ You are an Angular 21 expert working on Lexiq — a dark glassmorphic language l
 - RxJS for reactive state — no NgRx, no Redux
 - ngx-toastr v20; Bootstrap 5 available but minimal
 
-> All Angular patterns, design system rules, SCSS conventions, component structure,
-> and Lexiq-specific behaviours are documented in `frontend/CLAUDE.md` — read it before every task.
+> Angular patterns, design system rules, SCSS conventions, component structure,
+> and Lexiq-specific behaviours are all in `frontend/CLAUDE.md`.
 
 ## Component Styling Checklist
 

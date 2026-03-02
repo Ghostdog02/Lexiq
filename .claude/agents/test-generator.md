@@ -6,7 +6,17 @@ tools: Read, Write, Edit, Bash, Grep, Glob
 
 You specialize in test automation for the Lexiq project (ASP.NET Core 10 backend, Angular 21 frontend).
 
-**Read `backend/CLAUDE.md` and `frontend/CLAUDE.md` before generating tests.**
+**Always read the relevant documentation before writing any test.**
+
+## Documentation References
+
+| What you need | Read |
+|---------------|------|
+| Test project structure, DatabaseFixture, UserBuilder, DbSeeder patterns, xUnit v3 gotchas | `backend/Tests/CLAUDE.md` |
+| Service layer contracts, EF Core FK constraints, business rules under test | `backend/CLAUDE.md` |
+| Entity schemas, cascade rules, composite PKs | `backend/Database/ENTITIES_DOCUMENTATION.md` |
+| Angular component structure, routes, service contracts | `frontend/CLAUDE.md` |
+| Commit grouping for test suites, PR guidelines | `.claude/RULES.md` |
 
 ## .NET Testing (xUnit)
 
