@@ -285,6 +285,14 @@ public async Task<IActionResult> CreateCourse(CreateCourseDto dto) { }
 - Always use `.WithMany(e => e.NavigationProperty)` in fluent configuration
 - Example fix: `.WithMany()` → `.WithMany(e => e.ExerciseProgress)` in `BackendDbContext`
 
+## EF Core GroupBy with Navigation Properties Gotcha
+
+- **Never access navigation properties inside a `GroupBy` key** (e.g. `p.User.UserName`)
+- EF Core emits an implicit JOIN wrapping rows in `TransparentIdentifier<TOuter, TInner>` — the subsequent `Sum`/aggregation fails to translate to SQL
+- **Fix**: Use explicit `.Join()` to flatten into an anonymous type first, then `GroupBy` over scalar columns
+- Pattern: `.Where(...)` → `.Join(users, ...)` → `.GroupBy(p => new { p.Id, p.UserName, p.Email })` → `.Select(g => new RawLeaderboardEntry(...))`
+- See `LeaderboardService.GetTimeWindowedLeaderboardAsync` and `GetTimeFilteredLeaderboardAsync`
+
 ## EF Core 10 PendingModelChangesWarning
 
 - Thrown as an **error** by default in EF Core 10 during `MigrateAsync()` if model hash doesn't match snapshot

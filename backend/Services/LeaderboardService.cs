@@ -101,7 +101,13 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
                 ? $"/api/user/{entry.UserId}/avatar"
                 : null;
 
-            var enriched = await EnrichEntryAsync(entry, currentRank, change, entry.UserId == currentUserId, avatarUrl);
+            var enriched = await EnrichEntryAsync(
+                entry,
+                currentRank,
+                change,
+                entry.UserId == currentUserId,
+                avatarUrl
+            );
             enrichedEntries.Add(enriched);
 
             if (entry.UserId == currentUserId)
@@ -162,6 +168,8 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         var fromDateTime = from.ToDateTime(TimeOnly.MinValue);
         var toDateTime = to.ToDateTime(TimeOnly.MinValue);
 
+        var users = _context.Users;
+
         return await _context
             .UserExerciseProgress.Where(p =>
                 p.IsCompleted
@@ -169,9 +177,27 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
                 && p.CompletedAt >= fromDateTime
                 && p.CompletedAt < toDateTime
             )
-            .GroupBy(p => new { p.UserId, p.User.UserName, p.User.Email })
+            .Join(
+                users,
+                up => up.UserId,
+                u => u.Id,
+                (up, u) =>
+                    new
+                    {
+                        u.Id,
+                        u.UserName,
+                        u.Email,
+                        up.PointsEarned,
+                    }
+            )
+            .GroupBy(p => new
+            {
+                p.Id,
+                p.UserName,
+                p.Email,
+            })
             .Select(g => new RawLeaderboardEntry(
-                g.Key.UserId,
+                g.Key.Id,
                 g.Key.UserName ?? g.Key.Email ?? "Unknown",
                 g.Sum(x => x.PointsEarned)
             ))
@@ -197,13 +223,33 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
     {
         var sinceDateTime = since.ToDateTime(TimeOnly.MinValue);
 
+        var users = _context.Users;
+
         return await _context
             .UserExerciseProgress.Where(p =>
                 p.IsCompleted && p.CompletedAt.HasValue && p.CompletedAt >= sinceDateTime
             )
-            .GroupBy(p => new { p.UserId, p.User.UserName, p.User.Email })
+            .Join(
+                users,
+                up => up.UserId,
+                u => u.Id,
+                (up, u) =>
+                    new
+                    {
+                        u.Id,
+                        u.UserName,
+                        u.Email,
+                        up.PointsEarned,
+                    }
+            )
+            .GroupBy(p => new
+            {
+                p.Id,
+                p.UserName,
+                p.Email,
+            })
             .Select(g => new RawLeaderboardEntry(
-                g.Key.UserId,
+                g.Key.Id,
                 g.Key.UserName ?? g.Key.Email ?? "Unknown",
                 g.Sum(x => x.PointsEarned)
             ))
@@ -259,9 +305,14 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         Dictionary<string, int> previousRanks
     )
     {
-        var user = await _context.Users
-            .Where(u => u.Id == userId)
-            .Select(u => new { u.UserName, u.Email, u.TotalPointsEarned })
+        var user = await _context
+            .Users.Where(u => u.Id == userId)
+            .Select(u => new
+            {
+                u.UserName,
+                u.Email,
+                u.TotalPointsEarned,
+            })
             .FirstOrDefaultAsync();
 
         if (user == null)
