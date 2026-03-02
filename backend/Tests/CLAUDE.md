@@ -30,8 +30,12 @@ Tests/
 │   └── UserBuilder.cs         ← Fluent builder for Identity-compliant User rows
 ├── Helpers/
 │   └── DbSeeder.cs            ← Insert helpers and ClearLeaderboardDataAsync
+├── Controllers/
+│   └── AuthControllerTests.cs ← WebApplicationFactory HTTP-level tests
 └── Services/
     ├── CalculateLevelTests.cs  ← Pure unit tests (no DB)
+    ├── JwtServiceTests.cs      ← Pure unit tests (no DB)
+    ├── LoginUserTests.cs       ← Testcontainers integration tests
     ├── GetStreakTests.cs        ← Testcontainers integration tests
     └── GetLeaderboardTests.cs  ← Testcontainers integration tests
 ```
@@ -44,6 +48,8 @@ Tests/
 | `Testcontainers.MsSql` | 4.10.0 | Real SQL Server 2022 in Docker |
 | `FluentAssertions` | 8.8.0 | `.Should()` assertions |
 | `Microsoft.NET.Test.Sdk` | 17.12.0 | Test host discovery |
+| `Moq` | 4.20.72 | Mock external services (`IGoogleAuthService`, etc.) |
+| `Microsoft.AspNetCore.Mvc.Testing` | 10.0.0 | `WebApplicationFactory` for controller/HTTP tests |
 
 ## DatabaseFixture
 
@@ -159,6 +165,60 @@ private static AvatarService CreateAvatarService(BackendDbContext ctx)
 }
 ```
 
+## UserManager and RoleManager in Tests
+
+`GoogleAuthService` requires a real `UserManager<User>`. Wire it to the Testcontainers DB via a
+dedicated `ServiceCollection` — do NOT use the fixture's `_ctx` directly:
+
+```csharp
+private static (UserManager<User>, RoleManager<IdentityRole>) BuildManagers(BackendDbContext ctx)
+{
+    var services = new ServiceCollection();
+    services.AddLogging();
+    services.AddSingleton(ctx); // test-scoped DbContext as singleton
+    services.AddIdentityCore<User>()
+        .AddRoles<IdentityRole>()
+        .AddEntityFrameworkStores<BackendDbContext>();
+    var sp = services.BuildServiceProvider();
+    return (sp.GetRequiredService<UserManager<User>>(), sp.GetRequiredService<RoleManager<IdentityRole>>());
+}
+```
+
+**Role seeding**: `ClearLeaderboardDataAsync` does not delete Roles. Seed idempotently:
+```csharp
+if (!await roleManager.RoleExistsAsync("Student"))
+    await roleManager.CreateAsync(new IdentityRole("Student"));
+```
+
+## WebApplicationFactory Pattern
+
+Use for HTTP-level controller tests (cookie headers, status codes, response shape). Overrides run
+after main `ConfigureServices`, so last registration wins — no need to remove before adding unless
+you want to be explicit.
+
+```csharp
+_factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+    builder.ConfigureServices(services =>
+    {
+        // Replace DbContext with Testcontainers instance
+        var dbDescriptor = services.Single(d => d.ServiceType == typeof(DbContextOptions<BackendDbContext>));
+        services.Remove(dbDescriptor);
+        services.AddDbContext<BackendDbContext>(opts =>
+            opts.UseSqlServer(_fixture.ConnectionString)
+                .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
+
+        // Replace service with Moq
+        services.RemoveAll<IGoogleAuthService>();
+        services.AddSingleton(googleAuthMock.Object);
+    })
+);
+_client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+```
+
+**Required env vars before factory creation** (read at service construction time, not request time):
+- `JWT_SECRET` — `JwtService` constructor throws if missing
+- `DATA_PROTECTION_KEYS_PATH` — set to `Path.GetTempPath()` to avoid `/app/dataprotection-keys` write failure
+
 ## Gotchas
 
 ### ExerciseId FK on INSERT
@@ -169,3 +229,17 @@ If running VS Code / VS Codium inside a Flatpak container, the IDE cannot see Nu
 
 ### xUnit v3 IAsyncLifetime
 Return type is `ValueTask`, not `Task`. Using `Task` compiles but fails at runtime or produces a linter error about interface mismatch.
+
+### xUnit1051 — CancellationToken on HTTP client calls
+`PostAsJsonAsync` and `PostAsync` accept a `CancellationToken`. Pass
+`TestContext.Current.CancellationToken` or the xUnit analyzer raises xUnit1051 warnings.
+
+### dotnet clean reveals incremental build gaps
+`dotnet clean` removes cached assemblies and forces a full rebuild, which can expose
+pre-existing type-not-found errors hidden by incremental builds (e.g. a missing entity
+referenced in a nav property). Run `dotnet clean && dotnet build` periodically to catch these.
+
+### WebApplicationFactory — `InitializeDatabaseAsync` is called
+`Program.Main`'s `InitializeDatabaseAsync` (migrations + seed) **does** run when
+`WebApplicationFactory` starts. With the DbContext overridden to the Testcontainers DB,
+migrations are a no-op (already applied) and seeding is idempotent — safe.
