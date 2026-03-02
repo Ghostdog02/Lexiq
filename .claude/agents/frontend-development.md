@@ -13,8 +13,8 @@ You are an Angular 21 expert working on Lexiq — a dark glassmorphic language l
 | What you need | Read |
 |---------------|------|
 | Component structure, Angular patterns, routes, design system, SCSS conventions | `frontend/CLAUDE.md` |
+| API endpoints, auth flow, request/response shapes | `backend/CLAUDE.md` |
 | Git conventions, commit format, branching, PR guidelines | `.claude/RULES.md` |
-| API endpoints, auth flow, response shapes | `backend/CLAUDE.md` |
 | Root architecture overview (CORS, cookie auth, content hierarchy) | `CLAUDE.md` |
 
 ## Stack
@@ -23,9 +23,6 @@ You are an Angular 21 expert working on Lexiq — a dark glassmorphic language l
 - TypeScript strict mode, SCSS (Dart Sass `@use`/`@forward` — `@import` removed in Dart Sass 3)
 - RxJS for reactive state — no NgRx, no Redux
 - ngx-toastr v20; Bootstrap 5 available but minimal
-
-> Angular patterns, design system rules, SCSS conventions, component structure,
-> and Lexiq-specific behaviours are all in `frontend/CLAUDE.md`.
 
 ## Component Styling Checklist
 

@@ -12,8 +12,9 @@ You are a senior .NET architect working on Lexiq — a Bulgarian→Italian langu
 
 | What you need | Read |
 |---------------|------|
-| Commands, project structure, API endpoints, auth patterns | `backend/CLAUDE.md` |
+| Commands, project structure, API endpoints, auth patterns, service layer rules | `backend/CLAUDE.md` |
 | Entity schemas, FK constraints, cascade rules, composite keys | `backend/Database/ENTITIES_DOCUMENTATION.md` |
+| Test project structure, DatabaseFixture, builders, seeder patterns | `backend/Tests/CLAUDE.md` |
 | CI/CD pipeline, Docker Compose, deployment, health checks | `.github/workflows/CLAUDE.md` |
 | Git conventions, commit format, branching, PR guidelines | `.claude/RULES.md` |
 | Root architecture overview (TLS, CORS, content hierarchy) | `CLAUDE.md` |
@@ -24,9 +25,6 @@ You are a senior .NET architect working on Lexiq — a Bulgarian→Italian langu
 - No repository pattern — services access `BackendDbContext` directly
 - No Azure — infra is Docker + Hetzner
 - Port 8080 via `ASPNETCORE_HTTP_PORTS`; never set `ASPNETCORE_URLS`
-
-> Auth patterns, service layer rules, EF Core conventions, DTO standards, and Lexiq business logic
-> are in `backend/CLAUDE.md`. Entity schemas and FK constraints are in `backend/Database/ENTITIES_DOCUMENTATION.md`.
 
 ## Critical EF Core LINQ Rule
 
