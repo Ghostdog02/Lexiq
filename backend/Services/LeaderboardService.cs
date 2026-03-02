@@ -168,8 +168,6 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         var fromDateTime = from.ToDateTime(TimeOnly.MinValue);
         var toDateTime = to.ToDateTime(TimeOnly.MinValue);
 
-        var users = _context.Users;
-
         return await _context
             .UserExerciseProgress.Where(p =>
                 p.IsCompleted
@@ -178,16 +176,16 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
                 && p.CompletedAt < toDateTime
             )
             .Join(
-                users,
-                up => up.UserId,
+                _context.Users,
+                p => p.UserId,
                 u => u.Id,
-                (up, u) =>
+                (p, u) =>
                     new
                     {
                         u.Id,
                         u.UserName,
                         u.Email,
-                        up.PointsEarned,
+                        p.PointsEarned,
                     }
             )
             .GroupBy(p => new
@@ -196,13 +194,20 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
                 p.UserName,
                 p.Email,
             })
-            .Select(g => new RawLeaderboardEntry(
-                g.Key.Id,
-                g.Key.UserName ?? g.Key.Email ?? "Unknown",
-                g.Sum(x => x.PointsEarned)
-            ))
+            .Select(g => new
+            {
+                Id = g.Key.Id,
+                UserName = g.Key.UserName,
+                Email = g.Key.Email,
+                TotalXp = g.Sum(x => x.PointsEarned),
+            })
             .OrderByDescending(e => e.TotalXp)
             .Take(MaxLeaderboardEntries)
+            .Select(e => new RawLeaderboardEntry(
+                e.Id,
+                e.UserName ?? e.Email ?? "Unknown",
+                e.TotalXp
+            ))
             .ToListAsync();
     }
 
@@ -222,7 +227,6 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
     private async Task<List<RawLeaderboardEntry>> GetTimeFilteredLeaderboardAsync(DateOnly since)
     {
         var sinceDateTime = since.ToDateTime(TimeOnly.MinValue);
-
         var users = _context.Users;
 
         return await _context
@@ -248,13 +252,20 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
                 p.UserName,
                 p.Email,
             })
-            .Select(g => new RawLeaderboardEntry(
-                g.Key.Id,
-                g.Key.UserName ?? g.Key.Email ?? "Unknown",
-                g.Sum(x => x.PointsEarned)
-            ))
+            .Select(g => new
+            {
+                Id = g.Key.Id,
+                UserName = g.Key.UserName,
+                Email = g.Key.Email,
+                TotalXp = g.Sum(x => x.PointsEarned),
+            })
             .OrderByDescending(e => e.TotalXp)
             .Take(MaxLeaderboardEntries)
+            .Select(e => new RawLeaderboardEntry(
+                e.Id,
+                e.UserName ?? e.Email ?? "Unknown",
+                e.TotalXp
+            ))
             .ToListAsync();
     }
 
