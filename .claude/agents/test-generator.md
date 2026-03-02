@@ -29,8 +29,8 @@ public class ApiIntegrationTests : IAsyncLifetime
 {
     private readonly MsSqlContainer _db = new MsSqlBuilder().Build();
 
-    public async Task InitializeAsync() => await _db.StartAsync();
-    public async Task DisposeAsync() => await _db.DisposeAsync();
+    public async ValueTask InitializeAsync() => await _db.StartAsync();
+    public async ValueTask DisposeAsync() => await _db.DisposeAsync();
 
     [Fact]
     public async Task PostGoogleLogin_ValidToken_SetsAuthTokenCookie()
