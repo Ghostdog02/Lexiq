@@ -132,7 +132,12 @@
   </div>
 </div>
 } @else if (isLoading) {
-<div class="loading">Loading...</div>
+<div class="loading-state">
+  <div class="loading-spinner"></div>
+  <p>Loading profile...</p>
+</div>
 } @else if (error) {
-<div class="loading">{{ error }}</div>
+<div class="error-state">
+  <p>{{ error }}</p>
+</div>
 }

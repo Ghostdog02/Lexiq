@@ -25,7 +25,12 @@
   </header>
 
   <main class="lesson-main" role="main">
-    @if (!lesson) {
+    @if (isLoading) {
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading lesson...</p>
+    </div>
+    } @else if (!lesson) {
     <div class="empty-state">
       <span class="empty-icon">&#x1F4DA;</span>
       <h2>Lesson not found</h2>

@@ -1,5 +1,8 @@
 @use '../../../../../styles.scss' as styles;
 @use '../../../../shared/mixins' as mixins;
+@use '../../../../shared/loading' as loading;
+
+@include loading.system;
 
 @mixin hover-lift {
   transition: all 200ms ease-in-out;

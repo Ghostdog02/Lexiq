@@ -1,9 +1,11 @@
 @use '../../../../../styles.scss' as styles;
 @use '../../../../shared/buttons' as buttons;
 @use '../../../../shared/cards' as cards;
+@use '../../../../shared/loading' as loading;
 
 @include buttons.system;
 @include cards.system;
+@include loading.system;
 
 $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
