@@ -165,6 +165,26 @@ private static AvatarService CreateAvatarService(BackendDbContext ctx)
 }
 ```
 
+## IGoogleAuthService in Tests
+
+`GoogleAuthService` makes real HTTP calls to Google's token validation endpoint — **never instantiate it directly in tests that don't test it**. Always mock `IGoogleAuthService` with Moq when the SUT depends on it:
+
+```csharp
+var googleAuthMock = new Mock<IGoogleAuthService>();
+googleAuthMock
+    .Setup(s => s.ValidateGoogleTokenAsync(It.IsAny<string>()))
+    .ReturnsAsync(fakePayload);
+googleAuthMock
+    .Setup(s => s.LoginUser(It.IsAny<GoogleJsonWebSignature.Payload>()))
+    .ReturnsAsync(fakeUser);
+
+// In WebApplicationFactory:
+services.RemoveAll<IGoogleAuthService>();
+services.AddSingleton(googleAuthMock.Object);
+```
+
+`LoginUserTests.cs` is the exception — it tests `GoogleAuthService` itself, so it constructs a real instance backed by Testcontainers.
+
 ## UserManager and RoleManager in Tests
 
 `GoogleAuthService` requires a real `UserManager<User>`. Wire it to the Testcontainers DB via a
