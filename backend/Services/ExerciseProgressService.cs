@@ -13,13 +13,15 @@ public class ExerciseProgressService(
     BackendDbContext context,
     LessonService lessonService,
     ExerciseService exerciseService,
-    UserManager<User> userManager
+    UserManager<User> userManager,
+    AchievementService achievementService
 )
 {
     private readonly BackendDbContext _context = context;
     private readonly LessonService _lessonService = lessonService;
     private readonly ExerciseService _exerciseService = exerciseService;
     private readonly UserManager<User> _userManager = userManager;
+    private readonly AchievementService _achievementService = achievementService;
 
     public const double DefaultCompletionThreshold = 0.70;
 
@@ -80,6 +82,12 @@ public class ExerciseProgressService(
         }
 
         await _context.SaveChangesAsync();
+
+        // Unlock any newly earned achievements after XP is persisted
+        if (isCorrect && !wasAlreadyCompleted && user != null)
+        {
+            await _achievementService.CheckAndUnlockAchievementsAsync(user.Id, user.TotalPointsEarned);
+        }
 
         // Unlock the next exercise if this one was completed successfully
         var nextExerciseUnlocked = false;
