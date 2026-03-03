@@ -213,9 +213,7 @@ public class LoginUserTests(DatabaseFixture fixture)
 
         var payload = MakePayload("fail-role-sub", "failrole@example.com", "Fail Role");
 
-        Assert.Throws<InvalidOperationException>(async () => await _sut.LoginUser(payload));
-
-        result.Should().BeNull();
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.LoginUser(payload));
 
         // Restore for any subsequent tests in the same run
         await EnsureStudentRoleAsync(_roleManager);

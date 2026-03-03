@@ -69,7 +69,7 @@ public class AuthControllerTests(DatabaseFixture fixture)
         );
 
         response.Headers.TryGetValues("Set-Cookie", out var cookies).Should().BeTrue();
-        cookies!.Should().Contain(c => c.StartsWith("AuthToken="));
+        cookies.Should().Contain(c => c.StartsWith("AuthToken="));
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public class AuthControllerTests(DatabaseFixture fixture)
             TestContext.Current.CancellationToken
         );
 
-        GetAuthCookieHeader(response).Should().Contain("HttpOnly");
+        GetAuthCookieHeader(response).Should().Contain("httponly");
     }
 
     [Fact]

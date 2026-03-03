@@ -91,8 +91,6 @@ public class GoogleAuthService(
             }
         }
 
-        Console.WriteLine(user);
-
         return user;
     }
 }
