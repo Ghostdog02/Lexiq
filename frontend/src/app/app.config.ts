@@ -5,8 +5,9 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 import { provideToastr } from 'ngx-toastr';
 
 import { routes } from './app.routes';
-import { provideHttpClient, withFetch } from '@angular/common/http';
+import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { AuthService } from './auth/auth.service';
+import { authInterceptor } from './auth/auth.interceptor';
 
 function initializeAuth(authService: AuthService) {
   return () => authService.initializeAuthState();
@@ -16,7 +17,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(withFetch()),
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideAnimationsAsync(),
     provideToastr({
       positionClass: 'toast-bottom-right',

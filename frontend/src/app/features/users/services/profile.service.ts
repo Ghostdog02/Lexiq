@@ -9,7 +9,7 @@ export class ProfileService {
 
   async getMyProfile(): Promise<UserProfile> {
     return firstValueFrom(
-      this.httpClient.get<UserProfile>('/api/user/profile', { withCredentials: true })
+      this.httpClient.get<UserProfile>('/api/user/profile')
     );
   }
 }

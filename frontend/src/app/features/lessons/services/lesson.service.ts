@@ -37,7 +37,7 @@ export class LessonService {
 
   async getCourses(): Promise<Course[]> {
     const result = await firstValueFrom(
-      this.httpClient.get<Course[]>('/api/course', { withCredentials: true })
+      this.httpClient.get<Course[]>('/api/course')
     );
 
     if (!result) {
@@ -50,7 +50,7 @@ export class LessonService {
 
   async getLessonsByCourse(courseId: string): Promise<Lesson[]> {
     const result = await firstValueFrom(
-      this.httpClient.get<Lesson[]>(`/api/lesson/course/${courseId}`, { withCredentials: true })
+      this.httpClient.get<Lesson[]>(`/api/lesson/course/${courseId}`)
     );
 
     if (!result) {
@@ -64,7 +64,7 @@ export class LessonService {
   async getLesson(lessonId: string): Promise<Lesson | null> {
     try {
       const result = await firstValueFrom(
-        this.httpClient.get<Lesson>(`/api/lesson/${lessonId}`, { withCredentials: true })
+        this.httpClient.get<Lesson>(`/api/lesson/${lessonId}`)
       );
       return result;
     } catch (error) {
@@ -85,7 +85,7 @@ export class LessonService {
     };
 
     const result = await firstValueFrom(
-      this.httpClient.post<CreateLessonApiResponse>('/api/lesson', payload, { withCredentials: true })
+      this.httpClient.post<CreateLessonApiResponse>('/api/lesson', payload)
     );
 
     console.log('✅ Lesson created:', result);
@@ -160,7 +160,7 @@ export class LessonService {
       };
 
       const result = await firstValueFrom(
-        this.httpClient.put<UpdateLessonApiResponse>(`/api/lesson/${lessonId}`, updateDto, { withCredentials: true })
+        this.httpClient.put<UpdateLessonApiResponse>(`/api/lesson/${lessonId}`, updateDto)
       );
 
       console.log('✅ Lesson updated:', result);
@@ -174,9 +174,7 @@ export class LessonService {
   async deleteLesson(lessonId: string): Promise<boolean> {
     try {
       const response = await firstValueFrom(
-        this.httpClient.delete<{isSuccessful: boolean, message: string}>(`/api/lesson/${lessonId}`,
-          { withCredentials: true }
-        )
+        this.httpClient.delete<{isSuccessful: boolean, message: string}>(`/api/lesson/${lessonId}`)
       );
       console.log('✅ Lesson deleted:', response);
       return true;
@@ -196,8 +194,7 @@ export class LessonService {
     return await firstValueFrom(
       this.httpClient.post<SubmitAnswerResponse>(
         `/api/exercise/${exerciseId}/submit`,
-        { answer },
-        { withCredentials: true }
+        { answer }
       )
     );
   }
@@ -211,8 +208,7 @@ export class LessonService {
     return await firstValueFrom(
       this.httpClient.post<CompleteLessonResponse>(
         `/api/lesson/${lessonId}/complete`,
-        {},
-        { withCredentials: true }
+        {}
       )
     );
   }
@@ -227,8 +223,7 @@ export class LessonService {
     try {
       return await firstValueFrom(
         this.httpClient.get<UserExerciseProgress[]>(
-          `/api/exercise/lesson/${lessonId}/progress`,
-          { withCredentials: true }
+          `/api/exercise/lesson/${lessonId}/progress`
         )
       );
     } catch (error) {
@@ -247,8 +242,7 @@ export class LessonService {
     try {
       return await firstValueFrom(
         this.httpClient.get<SubmitAnswerResponse[]>(
-          `/api/exercise/lesson/${lessonId}/submissions`,
-          { withCredentials: true }
+          `/api/exercise/lesson/${lessonId}/submissions`
         )
       );
     } catch (error) {
@@ -265,8 +259,7 @@ export class LessonService {
     try {
       return await firstValueFrom(
         this.httpClient.get<UserXp>(
-          `/api/user/xp`,
-          { withCredentials: true }
+          `/api/user/xp`
         )
       );
     } catch (error) {

@@ -10,8 +10,7 @@ export class LeaderboardService {
   async getLeaderboard(timeFrame: TimeFrame): Promise<LeaderboardResponse> {
     const result = await firstValueFrom(
       this.httpClient.get<LeaderboardResponse>(
-        `/api/leaderboard?timeFrame=${timeFrame}`,
-        { withCredentials: true }
+        `/api/leaderboard?timeFrame=${timeFrame}`
       )
     );
 

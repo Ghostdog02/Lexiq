@@ -61,8 +61,7 @@ export class AuthService {
     try {
       const response = await firstValueFrom(
         this.httpClient.get<{ message: string; isLogged: boolean }>(
-          AUTH_API_URL + '/auth-status',
-          { withCredentials: true }
+          AUTH_API_URL + '/auth-status'
         )
       );
 
@@ -76,8 +75,7 @@ export class AuthService {
     try {
       const response = await firstValueFrom(
         this.httpClient.get<{ isAdmin: boolean; roles: string[] }>(
-          AUTH_API_URL + '/is-admin',
-          { withCredentials: true }
+          AUTH_API_URL + '/is-admin'
         )
       );
 
@@ -98,13 +96,20 @@ export class AuthService {
     this.isLogged = status;
   }
 
+  clearAuthState(): void {
+    this.changeAuthStatus(false);
+    this.isAdmin = false;
+    this.isContentCreator = false;
+    this.adminStatusListener.next(false);
+    this.contentCreatorStatusListener.next(false);
+  }
+
   async loginUserWithGoogle(googleToken: string, returnUrl?: string) {
     try {
       await firstValueFrom(
         this.httpClient.post(
           AUTH_API_URL + '/google-login',
-          { idToken: googleToken },
-          { withCredentials: true }
+          { idToken: googleToken }
         )
       );
 
@@ -114,27 +119,17 @@ export class AuthService {
       const safeReturnUrl = returnUrl?.startsWith('/') ? returnUrl : '/';
       this.router.navigateByUrl(safeReturnUrl);
     } catch {
-      this.changeAuthStatus(false);
-      this.isAdmin = false;
-      this.isContentCreator = false;
-      this.adminStatusListener.next(false);
-      this.contentCreatorStatusListener.next(false);
+      this.clearAuthState();
     }
   }
 
   async logoutUser() {
     try {
       await firstValueFrom(
-        this.httpClient.post(AUTH_API_URL + '/logout', null, {
-          withCredentials: true,
-        })
+        this.httpClient.post(AUTH_API_URL + '/logout', null)
       );
 
-      this.changeAuthStatus(false);
-      this.isAdmin = false;
-      this.isContentCreator = false;
-      this.adminStatusListener.next(false);
-      this.contentCreatorStatusListener.next(false);
+      this.clearAuthState();
       this.router.navigate(['/']);
     } catch (error: any) {
       throw new Error(`An error occurred during logout: ${error.message}`);
