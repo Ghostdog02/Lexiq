@@ -243,7 +243,52 @@ _client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAu
 
 **Required env vars before factory creation** (read at service construction time, not request time):
 - `JWT_SECRET` — `JwtService` constructor throws if missing
+- `JWT_EXPIRATION_HOURS` — set to `"24"` (defaults in production but not in test env)
 - `DATA_PROTECTION_KEYS_PATH` — set to `Path.GetTempPath()` to avoid `/app/dataprotection-keys` write failure
+- `GOOGLE_CLIENT_ID` — required by `AddGoogleAuthentication()` at DI registration time
+- `GOOGLE_CLIENT_SECRET` — required by `AddGoogleAuthentication()` at DI registration time
+
+**All five must be set in `InitializeAsync` before `WebApplicationFactory` is instantiated**, and cleared to `null` in `DisposeAsync`. `AddGoogleAuthentication` reads both Google vars during `ConfigureServices` — not at request time — so missing either one throws `InvalidOperationException: GOOGLE_CLIENT_SECRET not found in environment variables` and collapses into an `AggregateException` wrapping a DI validation error.
+
+## Assert Helper Pattern
+
+Use a private `Assert*` method when a test class needs to verify the same set of properties across multiple tests. The method is `void`, uses FluentAssertions internally, and the test fails with a readable message at the assertion line if any property is wrong.
+
+```csharp
+private static void AssertValidUser(User? user, GoogleJsonWebSignature.Payload payload)
+{
+    user.Should().NotBeNull();
+    user!.Email.Should().Be(payload.Email);
+    user.UserName.Should().Be(CleanUsername(payload.Name));
+    user.EmailConfirmed.Should().BeTrue();
+}
+```
+
+Call site:
+
+```csharp
+var resultUser = await _sut.LoginUser(payload);
+AssertValidUser(resultUser, payload);           // fails here with clear message if invalid
+
+var roles = await _userManager.GetRolesAsync(resultUser!);  // ! is safe post-assertion
+```
+
+### Duplicating `private static` helpers from production code
+
+If a production mapping/utility method is `private static`, it cannot be accessed from the test project. Duplicate it locally and add a comment explaining the source so it stays in sync:
+
+```csharp
+/// <summary>
+/// Mirrors UserMapping.CleanUsername (private static there, so duplicated here).
+/// </summary>
+private static string CleanUsername(string name)
+{
+    char[] charsToRemove = ['-', ' ', '_', '*', '&'];
+    return new string(name.Where(c => !charsToRemove.Contains(c)).ToArray());
+}
+```
+
+If the production implementation changes, the duplicate will cause test failures — this acts as a useful tripwire.
 
 ## Gotchas
 
@@ -269,3 +314,56 @@ referenced in a nav property). Run `dotnet clean && dotnet build` periodically t
 `Program.Main`'s `InitializeDatabaseAsync` (migrations + seed) **does** run when
 `WebApplicationFactory` starts. With the DbContext overridden to the Testcontainers DB,
 migrations are a no-op (already applied) and seeding is idempotent — safe.
+
+### Null-Forgiving Operator (`!`) is Forbidden in Production Code
+Never use `!` to suppress nullable warnings in service or controller code — always check explicitly and throw:
+
+```csharp
+// WRONG — suppresses compiler warning, crashes with NullReferenceException at runtime
+var user = await _context.Users.FindAsync(id);
+return user!.UserName;
+
+// CORRECT — explicit null check with a meaningful exception
+var user = await _context.Users.FindAsync(id)
+    ?? throw new InvalidOperationException($"User {id} not found.");
+return user.UserName;
+```
+
+Use:
+- `ArgumentNullException.ThrowIfNull(arg)` for method/constructor parameters
+- `?? throw new InvalidOperationException(...)` for async lookups that must return a value
+- `?? throw new KeyNotFoundException(...)` for dictionary/lookup misses
+
+**Two accepted exceptions** where `!` is a compiler hint rather than a null suppression:
+
+1. **Deferred-init fields** assigned in `InitializeAsync` — xUnit guarantees `InitializeAsync` runs before any test method:
+```csharp
+private BackendDbContext _ctx = null!;
+
+public async ValueTask InitializeAsync()
+{
+    _ctx = _fixture.CreateDbContext(); // guaranteed to run first
+}
+```
+
+2. **After a FluentAssertions `NotBeNull()` assertion** — the assertion has already verified the value; `!` is purely a compiler hint at that point, not suppressing an unchecked null. Typically appears when passing a nullable result to a method that requires a non-nullable parameter:
+```csharp
+var resultUser = await _sut.LoginUser(payload);
+AssertValidUser(resultUser, payload); // test fails here if null
+
+var roles = await _userManager.GetRolesAsync(resultUser!); // ! is safe — assertion already passed
+```
+
+### WebApplicationFactory — Unregistered Service Surfaces as AggregateException
+If a service class exists but was never added to `AddApplicationServices`, the DI container
+validates the full graph at startup (`ValidateOnBuild = true` by default in .NET 8+) and throws:
+
+```
+AggregateException: Some services are not able to be constructed
+  InvalidOperationException: Unable to resolve service for type 'Foo'
+    while attempting to activate 'Bar'
+```
+
+This is caught immediately by `WebApplicationFactory` — the test never reaches its first HTTP call.
+Fix: add `services.AddScoped<MissingService>()` to `AddApplicationServices` in
+`ServiceCollectionExtensions.cs`.
