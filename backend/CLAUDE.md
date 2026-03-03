@@ -95,6 +95,28 @@ backend/
 - Each feature has its own extension method (AddCorsPolicy, AddDatabaseContext, AddApplicationServices, etc.)
 - Services are registered as Scoped for per-request lifecycle
 - No repository pattern — services directly access DbContext
+- **Always register new services in `AddApplicationServices`** — forgetting to register a service will not cause a compile error, but causes the app (and `WebApplicationFactory` tests) to throw `InvalidOperationException` at startup due to DI graph validation (`ValidateOnBuild` is on by default in .NET 8+)
+
+### Primary Constructor Convention
+All service and middleware classes **must** use C# 12 primary constructor syntax — no separate constructor body:
+
+```csharp
+// CORRECT — primary constructor
+public class MyService(BackendDbContext context, OtherService other)
+{
+    private readonly BackendDbContext _context = context;
+    private readonly OtherService _other = other;
+}
+
+// WRONG — separate constructor
+public class MyService
+{
+    private readonly BackendDbContext _context;
+    public MyService(BackendDbContext context) { _context = context; }
+}
+```
+
+This applies to services, controllers, and middleware. DTOs and entities use `record` positional parameters instead.
 
 ### Middleware Configuration
 - Configured in `Extensions/WebApplicationExtensions.cs`
@@ -209,6 +231,21 @@ public abstract record ExerciseDto(...);
   - EF Core handles cast gracefully for non-matching types (TPH pattern)
 - **OrderBy**: Always order collections by `OrderIndex` for consistent sequencing
 - **Null handling**: Use null-coalescing operators for optional relationships
+- **Never use the null-forgiving operator (`!`)** — always perform an explicit null check and throw the appropriate exception instead:
+  - `ArgumentNullException.ThrowIfNull(arg)` — for method/constructor parameters
+  - `InvalidOperationException` — for unexpected missing state (e.g. entity not found when it must exist)
+  - `KeyNotFoundException` — for missing dictionary/lookup entries by key
+  - Null-forgiving silences the compiler warning without actually handling the failure; a `NullReferenceException` at runtime is far harder to diagnose than an explicit throw with a clear message
+  ```csharp
+  // WRONG
+  var lesson = await _context.Lessons.FindAsync(id);
+  return lesson!.Title;
+
+  // CORRECT
+  var lesson = await _context.Lessons.FindAsync(id)
+      ?? throw new InvalidOperationException($"Lesson {id} not found.");
+  return lesson.Title;
+  ```
 - **No repository pattern**: Services directly access DbContext
 - **Upsert pattern**: `FirstOrDefaultAsync` → create if null, update if exists (see `ExerciseProgressService.SubmitAnswerAsync`)
 - **User from JWT**: All controllers use `HttpContext.GetCurrentUser()` exclusively (returns full User entity, not just ID)
