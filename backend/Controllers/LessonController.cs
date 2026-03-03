@@ -97,10 +97,18 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
         }
 
         var currentUser = HttpContext.GetCurrentUser();
+        
+        if (currentUser != null)
+        {
+            var progress = await _progressService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
 
-        var progress = await _progressService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
+            return Ok(lesson.ToDto(progress.Summary, progress.ExerciseProgress));
+        }
 
-        return Ok(lesson.ToDto(progress.Summary, progress.ExerciseProgress));
+        else
+        {
+            return Unauthorized("User was not logged in");
+        }
     }
 
     /// <summary>
