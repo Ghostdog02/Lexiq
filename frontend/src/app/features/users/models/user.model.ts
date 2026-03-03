@@ -14,6 +14,18 @@ export interface Achievement {
   description: string;
   xpRequired: number;
   icon: string;
-  unlocked: boolean;
-  unlockedDate?: Date;
+  isUnlocked: boolean;
+  unlockedAt?: string;
+}
+
+export interface UserProfile {
+  userId: string;
+  userName: string;
+  joinDate: string;
+  totalXp: number;
+  level: number;
+  currentStreak: number;
+  longestStreak: number;
+  avatarUrl: string | null;
+  achievements: Achievement[];
 }
