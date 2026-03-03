@@ -28,9 +28,11 @@ namespace Backend.Tests.Controllers;
 ///   - The cookie value is a structurally valid JWT (3 base64url segments)
 ///   - POST /api/auth/logout sets an expired AuthToken cookie (clear pattern)
 /// </summary>
-public class AuthControllerTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class AuthControllerTests(DatabaseFixture fixture)
+    : IClassFixture<DatabaseFixture>,
+        IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture _fixture = fixture;
     private WebApplicationFactory<Program> _factory = null!;
     private HttpClient _client = null!;
 
@@ -41,15 +43,12 @@ public class AuthControllerTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         .WithEmail("cookietest@example.com")
         .Build();
 
-    private static readonly GoogleJsonWebSignature.Payload FakePayload =
-        new()
-        {
-            Subject = FakeUser.Id,
-            Email = FakeUser.Email,
-            Name = FakeUser.UserName,
-        };
-
-    public AuthControllerTests(DatabaseFixture fixture) => _fixture = fixture;
+    private static readonly GoogleJsonWebSignature.Payload FakePayload = new()
+    {
+        Subject = FakeUser.Id,
+        Email = FakeUser.Email,
+        Name = FakeUser.UserName,
+    };
 
     public async ValueTask InitializeAsync()
     {
@@ -61,6 +60,8 @@ public class AuthControllerTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         );
         Environment.SetEnvironmentVariable("JWT_EXPIRATION_HOURS", "24");
         Environment.SetEnvironmentVariable("DATA_PROTECTION_KEYS_PATH", Path.GetTempPath());
+        Environment.SetEnvironmentVariable("GOOGLE_CLIENT_ID", "test-client-id");
+        Environment.SetEnvironmentVariable("GOOGLE_CLIENT_SECRET", "test-client-secret");
 
         var googleAuthMock = new Mock<IGoogleAuthService>();
         googleAuthMock
@@ -74,8 +75,8 @@ public class AuthControllerTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
             builder.ConfigureServices(services =>
             {
                 // Replace real DbContext with Testcontainers instance (already migrated)
-                var dbDescriptor = services.Single(
-                    d => d.ServiceType == typeof(DbContextOptions<BackendDbContext>)
+                var dbDescriptor = services.Single(d =>
+                    d.ServiceType == typeof(DbContextOptions<BackendDbContext>)
                 );
                 services.Remove(dbDescriptor);
                 services.AddDbContext<BackendDbContext>(opts =>
@@ -106,9 +107,10 @@ public class AuthControllerTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         Environment.SetEnvironmentVariable("JWT_SECRET", null);
         Environment.SetEnvironmentVariable("JWT_EXPIRATION_HOURS", null);
         Environment.SetEnvironmentVariable("DATA_PROTECTION_KEYS_PATH", null);
+        Environment.SetEnvironmentVariable("GOOGLE_CLIENT_ID", null);
+        Environment.SetEnvironmentVariable("GOOGLE_CLIENT_SECRET", null);
+        GC.SuppressFinalize(this);
     }
-
-    // ── Cookie presence ──────────────────────────────────────────────────────
 
     [Fact]
     public async Task GoogleLogin_SetsAuthTokenCookie()
@@ -135,12 +137,9 @@ public class AuthControllerTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         GetAuthCookieHeader(response).Should().Contain("HttpOnly");
     }
 
-    // ── Cookie expiry ─────────────────────────────────────────────────────────
-
     [Fact]
     public async Task GoogleLogin_CookieExpiresInConfiguredHours()
     {
-        // Cookie Expires is set to DateTime.UtcNow.AddHours(JwtService.ExpirationHours)
         var before = DateTime.UtcNow;
 
         var response = await _client.PostAsJsonAsync(
@@ -153,8 +152,6 @@ public class AuthControllerTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         expires.Should().BeCloseTo(before.AddHours(24), precision: TimeSpan.FromMinutes(1));
     }
 
-    // ── Cookie value is a valid JWT ───────────────────────────────────────────
-
     [Fact]
     public async Task GoogleLogin_CookieValueIsValidJwt()
     {
@@ -165,16 +162,12 @@ public class AuthControllerTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         );
 
         var cookieValue = ParseCookieValue(GetAuthCookieHeader(response));
-        // A JWT has exactly three base64url segments separated by dots
         cookieValue.Split('.').Should().HaveCount(3);
     }
-
-    // ── Logout clears the cookie ──────────────────────────────────────────────
 
     [Fact]
     public async Task Logout_SetsExpiredAuthTokenCookie()
     {
-        // AuthController.Logout calls SetAuthCookie("", DateTime.UtcNow.AddDays(-1))
         var response = await _client.PostAsync(
             "/api/auth/logout",
             null,
@@ -184,8 +177,6 @@ public class AuthControllerTests : IClassFixture<DatabaseFixture>, IAsyncLifetim
         var expires = ParseCookieExpires(GetAuthCookieHeader(response));
         expires.Should().BeBefore(DateTime.UtcNow);
     }
-
-    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static string GetAuthCookieHeader(HttpResponseMessage response)
     {

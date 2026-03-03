@@ -37,6 +37,7 @@ public class JwtServiceTests : IDisposable
         Environment.SetEnvironmentVariable("JWT_ISSUER", null);
         Environment.SetEnvironmentVariable("JWT_AUDIENCE", null);
         Environment.SetEnvironmentVariable("JWT_EXPIRATION_HOURS", null);
+        GC.SuppressFinalize(this);
     }
 
     private static User MakeUser() =>
@@ -50,7 +51,7 @@ public class JwtServiceTests : IDisposable
         };
 
     /// <summary>Validates the JWT and returns the parsed token — throws on any validation failure.</summary>
-    private JwtSecurityToken ValidateAndParse(string jwt)
+    private static JwtSecurityToken ValidateAndParse(string jwt)
     {
         var handler = new JwtSecurityTokenHandler();
         handler.ValidateToken(
@@ -67,10 +68,9 @@ public class JwtServiceTests : IDisposable
             },
             out var validatedToken
         );
+        
         return (JwtSecurityToken)validatedToken;
     }
-
-    // ── Claim content ────────────────────────────────────────────────────────
 
     [Fact]
     public void GenerateToken_ContainsSubClaim()
@@ -85,8 +85,10 @@ public class JwtServiceTests : IDisposable
     {
         var user = MakeUser();
         var token = ValidateAndParse(_sut.GenerateToken(user, []));
-        token.Claims.First(c => c.Type == JwtRegisteredClaimNames.Email)
-            .Value.Should().Be(user.Email);
+        token
+            .Claims.First(c => c.Type == JwtRegisteredClaimNames.Email)
+            .Value.Should()
+            .Be(user.Email);
     }
 
     [Fact]
@@ -94,8 +96,10 @@ public class JwtServiceTests : IDisposable
     {
         var user = MakeUser();
         var token = ValidateAndParse(_sut.GenerateToken(user, []));
-        token.Claims.First(c => c.Type == JwtRegisteredClaimNames.Name)
-            .Value.Should().Be(user.UserName);
+        token
+            .Claims.First(c => c.Type == JwtRegisteredClaimNames.Name)
+            .Value.Should()
+            .Be(user.UserName);
     }
 
     [Fact]
@@ -103,9 +107,10 @@ public class JwtServiceTests : IDisposable
     {
         var user = MakeUser();
         var token = ValidateAndParse(_sut.GenerateToken(user, []));
-        token.Claims
-            .FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)
-            ?.Value.Should().NotBeNullOrEmpty();
+        token
+            .Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Jti)
+            ?.Value.Should()
+            .NotBeNullOrEmpty();
     }
 
     [Fact]
@@ -114,10 +119,9 @@ public class JwtServiceTests : IDisposable
         var user = MakeUser();
         var token = ValidateAndParse(_sut.GenerateToken(user, ["Admin", "ContentCreator"]));
         // ASP.NET Core maps ClaimTypes.Role to the full URI
-        var roles = token.Claims
-            .Where(c =>
-                c.Type
-                == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+        var roles = token
+            .Claims.Where(c =>
+                c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
             )
             .Select(c => c.Value);
         roles.Should().BeEquivalentTo(["Admin", "ContentCreator"]);
@@ -128,16 +132,13 @@ public class JwtServiceTests : IDisposable
     {
         var user = MakeUser();
         var token = ValidateAndParse(_sut.GenerateToken(user, []));
-        token.Claims
-            .Where(c =>
-                c.Type
-                == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+        token
+            .Claims.Where(c =>
+                c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
             )
             .Should()
             .BeEmpty();
     }
-
-    // ── Expiry ───────────────────────────────────────────────────────────────
 
     [Fact]
     public void GenerateToken_ExpiresInConfiguredHours()
@@ -148,8 +149,6 @@ public class JwtServiceTests : IDisposable
         var token = ValidateAndParse(_sut.GenerateToken(MakeUser(), []));
         token.ValidTo.Should().BeCloseTo(before.AddHours(24), precision: TimeSpan.FromMinutes(1));
     }
-
-    // ── Signature validation ─────────────────────────────────────────────────
 
     [Fact]
     public void GenerateToken_CanBeValidatedWithCorrectKey()
@@ -180,8 +179,6 @@ public class JwtServiceTests : IDisposable
             );
         act.Should().Throw<SecurityTokenSignatureKeyNotFoundException>();
     }
-
-    // ── Configuration ────────────────────────────────────────────────────────
 
     [Fact]
     public void ExpirationHours_DefaultsTo24WhenEnvVarNotSet()

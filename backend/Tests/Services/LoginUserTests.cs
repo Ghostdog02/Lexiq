@@ -21,15 +21,13 @@ namespace Backend.Tests.Services;
 ///   2. Email-match user       — Email matches but no Google login → adds login, skips role assignment
 ///   3. New user               — No match at all → creates user, assigns "Student" role, adds login
 /// </summary>
-public class LoginUserTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LoginUserTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture _fixture = fixture;
     private BackendDbContext _ctx = null!;
     private UserManager<User> _userManager = null!;
     private RoleManager<IdentityRole> _roleManager = null!;
     private GoogleAuthService _sut = null!;
-
-    public LoginUserTests(DatabaseFixture fixture) => _fixture = fixture;
 
     public async ValueTask InitializeAsync()
     {
@@ -52,9 +50,8 @@ public class LoginUserTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _roleManager.Dispose();
         _userManager.Dispose();
         await _ctx.DisposeAsync();
+        GC.SuppressFinalize(this);
     }
-
-    // ── New user path ────────────────────────────────────────────────────────
 
     [Fact]
     public async Task NewUser_ReturnsNonNullUser()
@@ -102,8 +99,6 @@ public class LoginUserTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
             .Contain(l => l.LoginProvider == "Google" && l.ProviderKey == "new-google-4");
     }
 
-    // ── Returning Google user path ────────────────────────────────────────────
-
     [Fact]
     public async Task ReturningGoogleUser_ReturnsExistingUser()
     {
@@ -144,8 +139,6 @@ public class LoginUserTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         _userManager.Users.Count(u => u.Email == "no-duplicate@example.com").Should().Be(1);
     }
-
-    // ── Email-match path ─────────────────────────────────────────────────────
 
     [Fact]
     public async Task EmailMatchUser_ReturnsExistingUser()
@@ -206,8 +199,6 @@ public class LoginUserTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         roles.Should().BeEmpty();
     }
 
-    // ── Failure / edge-case paths ─────────────────────────────────────────────
-
     [Fact]
     public async Task RoleAssignmentFails_ReturnsNull()
     {
@@ -251,8 +242,6 @@ public class LoginUserTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         result.Should().NotBeNull();
     }
-
-    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private static GoogleJsonWebSignature.Payload MakePayload(
         string subject,

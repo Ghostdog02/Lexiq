@@ -49,7 +49,11 @@ public class DatabaseFixture : IAsyncLifetime
         await SeedContentHierarchyAsync(ctx);
     }
 
-    public async ValueTask DisposeAsync() => await _container.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await _container.DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
 
     public BackendDbContext CreateDbContext() =>
         new(
@@ -75,6 +79,7 @@ public class DatabaseFixture : IAsyncLifetime
             LastLoginDate = DateTime.UtcNow,
             TotalPointsEarned = 0,
         };
+
         ctx.Users.Add(systemUser);
         await ctx.SaveChangesAsync();
 
@@ -93,6 +98,7 @@ public class DatabaseFixture : IAsyncLifetime
                 OrderIndex = 0,
             }
         );
+
         await ctx.SaveChangesAsync();
 
         var lessonId = Guid.NewGuid().ToString();
@@ -124,6 +130,7 @@ public class DatabaseFixture : IAsyncLifetime
                     OrderIndex = i,
                 }
         );
+        
         ctx.Exercises.AddRange(exercises);
         await ctx.SaveChangesAsync();
     }

@@ -42,9 +42,11 @@ public class GetStreakTests(DatabaseFixture fixture)
         _service = new LeaderboardService(_ctx, CreateAvatarService(_ctx));
     }
 
-    public async ValueTask DisposeAsync() => await _ctx.DisposeAsync();
-
-    // ── No activity ──────────────────────────────────────────────────────────
+    public async ValueTask DisposeAsync()
+    {
+        await _ctx.DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
 
     [Fact]
     public async Task GetStreak_NoProgress_ReturnsBothZero()
@@ -73,8 +75,6 @@ public class GetStreakTests(DatabaseFixture fixture)
         current.Should().Be(0);
         longest.Should().Be(0);
     }
-
-    // ── Single day ───────────────────────────────────────────────────────────
 
     [Fact]
     public async Task GetStreak_SingleCompletionToday_ReturnsBothOne()
@@ -132,8 +132,6 @@ public class GetStreakTests(DatabaseFixture fixture)
         longest.Should().Be(1);
     }
 
-    // ── Consecutive days ─────────────────────────────────────────────────────
-
     [Fact]
     public async Task GetStreak_3ConsecutiveDaysEndingToday_ReturnsBothThree()
     {
@@ -168,8 +166,6 @@ public class GetStreakTests(DatabaseFixture fixture)
         current.Should().Be(3);
         longest.Should().Be(3);
     }
-
-    // ── Gaps and broken streaks ───────────────────────────────────────────────
 
     [Fact]
     public async Task GetStreak_GapInMiddle_ReturnsCorrectCurrentAndLongest()
@@ -261,8 +257,6 @@ public class GetStreakTests(DatabaseFixture fixture)
         longest.Should().Be(4);
     }
 
-    // ── Isolation ────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task GetStreak_ForDifferentUsers_DoesNotCrossContaminate()
     {
@@ -287,14 +281,12 @@ public class GetStreakTests(DatabaseFixture fixture)
         longest.Should().Be(0);
     }
 
-    // ── Helper ───────────────────────────────────────────────────────────────
-
-    private static AvatarService CreateAvatarService(Backend.Database.BackendDbContext ctx)
+    private static AvatarService CreateAvatarService(Database.BackendDbContext ctx)
     {
         var factory = new ServiceCollection()
             .AddHttpClient()
             .BuildServiceProvider()
-            .GetRequiredService<System.Net.Http.IHttpClientFactory>();
+            .GetRequiredService<IHttpClientFactory>();
 
         return new AvatarService(ctx, factory, NullLogger<AvatarService>.Instance);
     }

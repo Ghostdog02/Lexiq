@@ -23,7 +23,7 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
         IAsyncLifetime
 {
     private readonly DatabaseFixture _fixture = fixture;
-    private Backend.Database.BackendDbContext _ctx = null!;
+    private Database.BackendDbContext _ctx = null!;
     private LeaderboardService _service = null!;
 
     public async ValueTask InitializeAsync()
@@ -33,9 +33,11 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
         _service = new LeaderboardService(_ctx, CreateAvatarService(_ctx));
     }
 
-    public async ValueTask DisposeAsync() => await _ctx.DisposeAsync();
-
-    // ── AllTime: ordering and basic behaviour ────────────────────────────────
+    public async ValueTask DisposeAsync()
+    {
+        await _ctx.DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
 
     [Fact]
     public async Task GetLeaderboard_AllTime_OrdersByTotalPointsEarnedDescending()
@@ -161,8 +163,6 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
         entry.Level.Should().Be(3);
     }
 
-    // ── AllTime: username fallback ────────────────────────────────────────────
-
     [Fact]
     public async Task GetLeaderboard_AllTime_UserWithNullUserName_FallsBackToEmail()
     {
@@ -194,8 +194,6 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
         var entry = response.Entries.First(e => e.UserId == user.Id);
         entry.UserName.Should().Be("Unknown");
     }
-
-    // ── Weekly ───────────────────────────────────────────────────────────────
 
     [Fact]
     public async Task GetLeaderboard_Weekly_WithNoProgress_ReturnsEmptyEntries_NullCurrentUser()
@@ -359,8 +357,6 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
         response.CurrentUserEntry!.Rank.Should().Be(51);
     }
 
-    // ── Monthly ──────────────────────────────────────────────────────────────
-
     [Fact]
     public async Task GetLeaderboard_Monthly_OnlyIncludesLast30DaysProgress()
     {
@@ -374,7 +370,7 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
             isCompleted: true,
             pointsEarned: 999,
             completedAt: DateTime.UtcNow.AddDays(-31)
-        ); // outside window
+        );
 
         await DbSeeder.AddProgressAsync(
             _ctx,
@@ -383,7 +379,7 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
             isCompleted: true,
             pointsEarned: 200,
             completedAt: DateTime.UtcNow.AddDays(-15)
-        ); // inside window
+        );
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.Monthly, null);
 
@@ -403,14 +399,12 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
             isCompleted: true,
             pointsEarned: 5000,
             completedAt: DateTime.UtcNow.AddDays(-35)
-        ); // outside 30-day window
+        );
 
         var response = await _service.GetLeaderboardAsync(TimeFrame.Monthly, null);
 
         response.Entries.Should().NotContain(e => e.UserId == user.Id);
     }
-
-    // ── Rank change ──────────────────────────────────────────────────────────
 
     [Fact]
     public async Task GetLeaderboard_Weekly_NewEntryNotInPreviousPeriod_HasRankChangeZero()
@@ -570,8 +564,6 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
         charlieEntry.Change.Should().Be(-2);
     }
 
-    // ── Avatar URL ───────────────────────────────────────────────────────────
-
     [Fact]
     public async Task GetLeaderboard_UserWithAvatar_HasCorrectAvatarUrl()
     {
@@ -598,8 +590,6 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
         entry.Avatar.Should().BeNull();
     }
 
-    // ── Streak in entries ────────────────────────────────────────────────────
-
     [Fact]
     public async Task GetLeaderboard_StreakIsIncludedInEachEntry()
     {
@@ -623,9 +613,7 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
         entry.LongestStreak.Should().Be(3);
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-
-    private static Backend.Database.Entities.Users.User Build(
+    private static Database.Entities.Users.User Build(
         string userName,
         string email,
         int totalPoints
@@ -636,12 +624,12 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
             .WithTotalPoints(totalPoints)
             .Build();
 
-    private static AvatarService CreateAvatarService(Backend.Database.BackendDbContext ctx)
+    private static AvatarService CreateAvatarService(Database.BackendDbContext ctx)
     {
         var factory = new ServiceCollection()
             .AddHttpClient()
             .BuildServiceProvider()
-            .GetRequiredService<System.Net.Http.IHttpClientFactory>();
+            .GetRequiredService<IHttpClientFactory>();
 
         return new AvatarService(ctx, factory, NullLogger<AvatarService>.Instance);
     }
