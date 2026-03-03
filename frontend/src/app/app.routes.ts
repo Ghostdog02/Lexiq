@@ -47,8 +47,13 @@ export const routes: Routes = [
         canActivate: [authGuard]
     },
     {
+        path: 'error',
+        loadComponent: () => import('./error-page/error-page.component').then(m => m.ErrorPageComponent),
+        title: "Error"
+    },
+    {
         path: '**',
-        loadComponent: () => import('./not-found/not-found.component').then(m => m.NotFoundComponent),
+        loadComponent: () => import('./error-page/error-page.component').then(m => m.ErrorPageComponent),
         title: "Not Found"
     }
 ];
