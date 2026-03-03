@@ -16,13 +16,14 @@ namespace Backend.Tests.Controllers;
 /// <summary>
 /// HTTP-level integration tests for authorization policy enforcement across all controllers.
 ///
-/// Six test categories:
+/// Seven test categories:
 ///   1. Unauthenticated → 401 on every [Authorize]-guarded endpoint
 ///   2. Student role → 403 on Admin-only and Admin/ContentCreator endpoints
 ///   3. ContentCreator role → 403 on Admin-only endpoints
 ///   4. Admin role → not rejected (not 401/403) on all role-restricted endpoints
 ///   5. Public endpoints → not blocked (not 401/403) without credentials
 ///   6. Missing auth on UserManagementController and RoleManagementController (security documentation)
+///   7. Expired JWT → 401 on every [Authorize]-guarded endpoint
 /// </summary>
 public class AuthorizationTests(DatabaseFixture fixture)
     : ControllerTestBase(fixture),
@@ -42,7 +43,7 @@ public class AuthorizationTests(DatabaseFixture fixture)
             .WithUserName("adminuser")
             .WithEmail("admin@authtest.com")
             .Build();
-            
+
         await DbSeeder.AddUserAsync(_ctx, _adminUser);
     }
 
@@ -64,7 +65,6 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("POST", "/api/exercise/test-id/submit")]
     [InlineData("GET", "/api/userlanguage")]
     [InlineData("GET", "/api/user/xp")]
-    [InlineData("PUT", "/api/user/avatar")]
     [InlineData("GET", "/api/auth/is-admin")]
     public async Task Unauthenticated_ProtectedEndpoint_Returns401(string method, string path)
     {
@@ -73,6 +73,29 @@ public class AuthorizationTests(DatabaseFixture fixture)
         response
             .StatusCode.Should()
             .Be(HttpStatusCode.Unauthorized, because: $"{method} {path} requires authentication");
+    }
+
+    /// <summary>
+    /// PUT /api/user/avatar uses [Consumes("multipart/form-data")], which is a resource
+    /// filter that runs before authorization. Sending any other content type returns 415
+    /// before [Authorize] is evaluated — so this endpoint requires its own test with the
+    /// correct content type to reach the auth check.
+    /// </summary>
+    [Fact]
+    public async Task Unauthenticated_AvatarUpload_Returns401()
+    {
+        using var client = CreateClient();
+        var request = new HttpRequestMessage(HttpMethod.Put, "/api/user/avatar")
+        {
+            Content = new MultipartFormDataContent(),
+        };
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
+        response
+            .StatusCode.Should()
+            .Be(
+                HttpStatusCode.Unauthorized,
+                because: "PUT /api/user/avatar requires authentication"
+            );
     }
 
     // ── 2. Student → 403 on role-restricted endpoints ───────────────────────
@@ -226,6 +249,29 @@ public class AuthorizationTests(DatabaseFixture fixture)
         response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden);
     }
 
+    // ── 7. Expired JWT → 401 ────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("GET", "/api/course")]
+    [InlineData("GET", "/api/course/test-id")]
+    [InlineData("GET", "/api/lesson/test-id")]
+    [InlineData("GET", "/api/exercise/lesson/test-id")]
+    [InlineData("POST", "/api/exercise/test-id/submit")]
+    [InlineData("GET", "/api/user/xp")]
+    [InlineData("GET", "/api/auth/is-admin")]
+    public async Task ExpiredJwt_ProtectedEndpoint_Returns401(string method, string path)
+    {
+        var token = MintExpiredToken("some-user-id", "user@test.com", "Student");
+        using var client = CreateClient(token);
+        var response = await SendAsync(client, method, path);
+        response
+            .StatusCode.Should()
+            .Be(
+                HttpStatusCode.Unauthorized,
+                because: $"An expired JWT must not grant access to {method} {path}"
+            );
+    }
+
     // ── Helpers ─────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -249,6 +295,33 @@ public class AuthorizationTests(DatabaseFixture fixture)
             audience: "lexiq-frontend",
             claims: claims,
             expires: DateTime.UtcNow.AddHours(1),
+            signingCredentials: creds
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    /// <summary>
+    /// Mints a JWT that expired one hour ago — safely outside ASP.NET Core's
+    /// default 5-minute clock skew, so the middleware will always reject it.
+    /// </summary>
+    private static string MintExpiredToken(string userId, string email, params string[] roles)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtSecret));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, userId),
+            new(JwtRegisteredClaimNames.Email, email),
+        };
+        claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
+
+        var token = new JwtSecurityToken(
+            issuer: "lexiq-api",
+            audience: "lexiq-frontend",
+            claims: claims,
+            expires: DateTime.UtcNow.AddHours(-1),
             signingCredentials: creds
         );
 
