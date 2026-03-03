@@ -3,7 +3,6 @@ using System.Text;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities.Users;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
