@@ -73,23 +73,25 @@ public class GoogleAuthService(
                         "Role assignment failed: {Errors}",
                         string.Join(", ", roleResult.Errors.Select(e => e.Description))
                     );
+
                     return null;
                 }
             }
 
             var loginInfo = new UserLoginInfo("Google", payload.Subject, "Google");
             await _userManager.AddLoginAsync(user, loginInfo);
-        }
 
-        // Download and store avatar binary from Google on every login
-        if (!string.IsNullOrEmpty(payload.Picture))
-        {
-            var (data, contentType) = await _avatarService.DownloadAvatarAsync(payload.Picture);
-            if (data != null)
+            if (!string.IsNullOrEmpty(payload.Picture))
             {
-                await _avatarService.UpsertAvatarAsync(user.Id, data, contentType!);
+                var (data, contentType) = await _avatarService.DownloadAvatarAsync(payload.Picture);
+                if (data != null)
+                {
+                    await _avatarService.UpsertAvatarAsync(user.Id, data, contentType!);
+                }
             }
         }
+
+        Console.WriteLine(user);
 
         return user;
     }
