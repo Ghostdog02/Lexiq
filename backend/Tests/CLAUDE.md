@@ -105,11 +105,17 @@ public class MyTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // ... seed test-specific data
     }
 
-    public async ValueTask DisposeAsync() => await _ctx.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await _ctx.DisposeAsync();
+        GC.SuppressFinalize(this);
+    }
 }
 ```
 
 **`IAsyncLifetime` uses `ValueTask`** (not `Task`) in xUnit v3 — the compiler will error if you use `Task`.
+
+**Always call `GC.SuppressFinalize(this)` as the last statement in every `Dispose` and `DisposeAsync` method.** This prevents the GC from enqueuing the object for finalization when managed cleanup is already complete.
 
 ## UserBuilder
 
