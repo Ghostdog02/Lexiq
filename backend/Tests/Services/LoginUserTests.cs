@@ -21,7 +21,9 @@ namespace Backend.Tests.Services;
 ///   2. Email-match user       — Email matches but no Google login → adds login, skips role assignment
 ///   3. New user               — No match at all → creates user, assigns "Student" role, adds login
 /// </summary>
-public class LoginUserTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LoginUserTests(DatabaseFixture fixture)
+    : IClassFixture<DatabaseFixture>,
+        IAsyncLifetime
 {
     private readonly DatabaseFixture _fixture = fixture;
     private BackendDbContext _ctx = null!;
@@ -58,9 +60,9 @@ public class LoginUserTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
     {
         var payload = MakePayload("new-google-1", "newuser@example.com", "New User");
 
-        var result = await _sut.LoginUser(payload);
+        var resultUser = await _sut.LoginUser(payload);
 
-        result.Should().NotBeNull();
+        AssertValidUser(resultUser, payload);
     }
 
     [Fact]
@@ -68,11 +70,12 @@ public class LoginUserTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
     {
         var payload = MakePayload("new-google-2", "created@example.com", "Created User");
 
-        var result = await _sut.LoginUser(payload);
+        var resultUser = await _sut.LoginUser(payload);
+        AssertValidUser(resultUser, payload);
 
-        var dbUser = await _userManager.FindByIdAsync(result!.Id);
-        dbUser.Should().NotBeNull();
-        dbUser!.Email.Should().Be("created@example.com");
+        var dbUser = await _userManager.FindByIdAsync(resultUser!.Id);
+
+        AssertValidUser(dbUser, payload);
     }
 
     [Fact]
@@ -80,9 +83,10 @@ public class LoginUserTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
     {
         var payload = MakePayload("new-google-3", "student@example.com", "Student User");
 
-        var result = await _sut.LoginUser(payload);
+        var resultUser = await _sut.LoginUser(payload);
+        AssertValidUser(resultUser, payload);
 
-        var roles = await _userManager.GetRolesAsync(result!);
+        var roles = await _userManager.GetRolesAsync(resultUser!);
         roles.Should().Contain("Student");
     }
 
@@ -91,9 +95,10 @@ public class LoginUserTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
     {
         var payload = MakePayload("new-google-4", "login@example.com", "Login User");
 
-        var result = await _sut.LoginUser(payload);
+        var resultUser = await _sut.LoginUser(payload);
+        AssertValidUser(resultUser, payload);
 
-        var logins = await _userManager.GetLoginsAsync(result!);
+        var logins = await _userManager.GetLoginsAsync(resultUser!);
         logins
             .Should()
             .Contain(l => l.LoginProvider == "Google" && l.ProviderKey == "new-google-4");
@@ -117,7 +122,7 @@ public class LoginUserTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
         var result = await _sut.LoginUser(payload);
 
         result.Should().NotBeNull();
-        result!.Id.Should().Be(existing.Id);
+        result.Id.Should().Be(existing.Id);
     }
 
     [Fact]
@@ -202,14 +207,13 @@ public class LoginUserTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
     [Fact]
     public async Task RoleAssignmentFails_ReturnsNull()
     {
-        // Delete the Student role so AddToRoleAsync fails for the new-user path
         var role = await _roleManager.FindByNameAsync("Student");
         if (role != null)
             await _roleManager.DeleteAsync(role);
 
         var payload = MakePayload("fail-role-sub", "failrole@example.com", "Fail Role");
 
-        var result = await _sut.LoginUser(payload);
+        Assert.Throws<InvalidOperationException>(async () => await _sut.LoginUser(payload));
 
         result.Should().BeNull();
 
@@ -291,5 +295,23 @@ public class LoginUserTests(DatabaseFixture fixture) : IClassFixture<DatabaseFix
             .GetRequiredService<IHttpClientFactory>();
 
         return new AvatarService(ctx, factory, NullLogger<AvatarService>.Instance);
+    }
+
+    private static void AssertValidUser(User? user, GoogleJsonWebSignature.Payload payload)
+    {
+        user.Should().NotBeNull();
+        user.Email.Should().Be(payload.Email);
+        user.UserName.Should().Be(CleanUsername(payload.Name));
+        user.EmailConfirmed.Should().BeTrue();
+    }
+
+    /// <summary>
+    /// Mirrors UserMapping.CleanUsername (private static there, so duplicated here).
+    /// Strips characters that the mapping layer removes when building a username from a Google display name.
+    /// </summary>
+    private static string CleanUsername(string name)
+    {
+        char[] charsToRemove = ['-', ' ', '_', '*', '&'];
+        return new string(name.Where(c => !charsToRemove.Contains(c)).ToArray());
     }
 }
