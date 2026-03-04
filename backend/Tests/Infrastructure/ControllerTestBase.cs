@@ -2,6 +2,7 @@ using Backend.Api;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Tests.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -75,6 +76,9 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
                 services.RemoveAll<IGoogleAuthService>();
                 services.AddSingleton(GoogleAuthMock.Object);
 
+                // Register JwtService for token generation in tests
+                services.AddSingleton<IJwtService, JwtService>();
+
                 ConfigureTestServices(services);
             })
         );
@@ -116,5 +120,73 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
         if (authToken != null)
             client.DefaultRequestHeaders.Add("Cookie", $"AuthToken={authToken}");
         return client;
+    }
+
+    /// <summary>
+    /// Clears all test user data (users, progress, avatars) except the system user.
+    /// Call this at the start of InitializeAsync in E2E tests to ensure clean state.
+    /// </summary>
+    protected async Task ClearTestDataAsync()
+    {
+        using var scope = Factory.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
+        await Helpers.DbSeeder.ClearLeaderboardDataAsync(ctx, Fixture.SystemUserId);
+    }
+
+    /// <summary>
+    /// Creates a user via GoogleAuthService mock and returns user ID and JWT token.
+    /// The token can be used with CreateClient() to authenticate requests.
+    /// </summary>
+    protected async Task<(string UserId, string Token)> CreateAuthenticatedUserAsync(
+        string userName,
+        string email,
+        params string[] roles
+    )
+    {
+        var userId = Guid.NewGuid().ToString();
+        var user = new Backend.Database.Entities.Users.User
+        {
+            Id = userId,
+            UserName = userName,
+            NormalizedUserName = userName.ToUpperInvariant(),
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            EmailConfirmed = true,
+            SecurityStamp = Guid.NewGuid().ToString(),
+            ConcurrencyStamp = Guid.NewGuid().ToString(),
+            RegistrationDate = DateTime.UtcNow,
+            LastLoginDate = DateTime.UtcNow,
+            TotalPointsEarned = 0,
+        };
+
+        // Insert user into database using the fixture's context
+        using var scope = Factory.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
+        ctx.Users.Add(user);
+        await ctx.SaveChangesAsync();
+
+        // Add roles if specified
+        if (roles.Length > 0)
+        {
+            var userManager = scope.ServiceProvider.GetRequiredService<
+                UserManager<Backend.Database.Entities.Users.User>
+            >();
+            foreach (var role in roles)
+            {
+                var roleManager = scope.ServiceProvider.GetRequiredService<
+                    RoleManager<IdentityRole>
+                >();
+                if (!await roleManager.RoleExistsAsync(role))
+                    await roleManager.CreateAsync(new IdentityRole(role));
+
+                await userManager.AddToRoleAsync(user, role);
+            }
+        }
+
+        // Generate JWT token
+        var jwtService = scope.ServiceProvider.GetRequiredService<IJwtService>();
+        var token = jwtService.GenerateToken(user, roles);
+
+        return (userId, token);
     }
 }

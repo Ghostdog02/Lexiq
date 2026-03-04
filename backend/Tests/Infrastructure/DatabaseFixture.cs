@@ -110,6 +110,7 @@ public class DatabaseFixture : IAsyncLifetime
                 Title = "Test Lesson",
                 LessonContent = "{}",
                 OrderIndex = 0,
+                IsLocked = false, // First lesson unlocked for E2E tests
             }
         );
         await ctx.SaveChangesAsync();
@@ -128,9 +129,10 @@ public class DatabaseFixture : IAsyncLifetime
                     DifficultyLevel = DifficultyLevel.Beginner,
                     Points = 10,
                     OrderIndex = i,
+                    IsLocked = i != 0, // Only first exercise unlocked
                 }
         );
-        
+
         ctx.Exercises.AddRange(exercises);
         await ctx.SaveChangesAsync();
     }
