@@ -1,0 +1,342 @@
+# Backend Test Coverage Documentation
+
+**Last Updated**: 2026-03-03
+**Framework**: xUnit v3 + Testcontainers.MsSql
+**Test Project**: `backend/Tests/Backend.Tests.csproj`
+
+## Overview
+
+The Lexiq backend has **7 test classes** covering authentication, authorization, leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
+
+---
+
+## Test Inventory
+
+### 1. **AuthControllerTests.cs** (6 tests) — HTTP-level cookie behavior
+
+**Type**: Integration (WebApplicationFactory + Testcontainers)
+**Coverage**: POST /api/auth/google-login and POST /api/auth/logout cookie mechanics
+
+| Test | Purpose |
+|------|---------|
+| `GoogleLogin_SetsAuthTokenCookie` | Verifies `Set-Cookie: AuthToken=...` header exists |
+| `GoogleLogin_CookieIsHttpOnly` | Verifies `httponly` flag is present |
+| `GoogleLogin_CookieExpiresInConfiguredHours` | Verifies cookie expires in 24h (JWT_EXPIRATION_HOURS) |
+| `GoogleLogin_CookieValueIsValidJwt` | Verifies JWT structure (3 base64url segments) |
+| `Logout_SetsExpiredAuthTokenCookie` | Verifies logout sets past expiry date |
+
+**Mocking**: `IGoogleAuthService` mocked with Moq (avoids real Google API calls)
+
+---
+
+### 2. **AuthorizationTests.cs** (48 tests across 7 categories) — Role-based access control
+
+**Type**: Integration (WebApplicationFactory + Testcontainers)
+**Coverage**: Every protected endpoint in the system
+
+#### Categories
+
+1. **Unauthenticated → 401** (10 tests)
+   - Verifies all `[Authorize]`-guarded endpoints reject requests with no JWT
+   - Includes special case for `PUT /api/user/avatar` with multipart form data
+   - Tests: GET /api/course, /api/lesson, /api/exercise, /api/user/xp, etc.
+
+2. **Student → 403 on role-restricted** (13 tests)
+   - Students cannot create/update/delete content
+   - Tests: POST/PUT/DELETE on /api/language, /api/course, /api/lesson, /api/exercise
+   - Unlock endpoint: POST /api/lesson/{id}/unlock
+
+3. **ContentCreator → 403 on Admin-only** (5 tests)
+   - ContentCreators can create content but cannot manage languages or manually unlock
+   - Tests: POST/PUT/DELETE /api/language, DELETE /api/course, POST /api/lesson/{id}/unlock
+
+4. **Admin → not rejected** (13 tests)
+   - Admins can access all role-restricted endpoints
+   - Tests verify status is NOT 401 or 403 (may be 404/400 if resource doesn't exist)
+
+5. **Public endpoints are not blocked** (9 tests)
+   - Unauthenticated users can access public endpoints
+   - Tests: GET /api/language, /api/leaderboard, /api/user/{id}/xp, /api/user/{id}/avatar, /api/auth/auth-status, POST /api/auth/logout
+
+6. **Missing auth on management controllers** (2 tests — security documentation)
+   - `UserManagementController` has no `[Authorize]` — accessible without token
+   - `RoleManagementController` has no `[Authorize]` — accessible without token
+   - **These tests document a security gap that should be fixed before production**
+
+7. **Expired JWT → 401** (7 tests)
+   - Expired tokens (minted 1 hour ago) are rejected
+   - Tests: GET /api/course, /api/lesson, /api/exercise, /api/user/xp, /api/auth/is-admin
+
+**JWT Minting**: Tests mint their own JWTs with correct issuer/audience/signing key to test policy enforcement
+
+---
+
+### 3. **LoginUserTests.cs** (10 tests) — GoogleAuthService integration
+
+**Type**: Integration (Testcontainers + real UserManager/RoleManager)
+**Coverage**: `GoogleAuthService.LoginUser` — three code paths
+
+#### Code Paths Tested
+
+1. **New user** (4 tests)
+   - Creates user in database
+   - Assigns "Student" role
+   - Adds Google login (UserLoginInfo)
+   - Returns non-null User with correct email/username
+
+2. **Returning Google user** (2 tests)
+   - Finds existing user by Google `sub` (UserLoginInfo)
+   - Does not create duplicate
+   - Returns existing User entity
+
+3. **Email-match user** (3 tests)
+   - Finds existing user by email (no Google login yet)
+   - Adds Google login
+   - **Does not assign role** (preserves existing roles)
+
+4. **Edge cases** (3 tests)
+   - Role assignment failure throws `InvalidOperationException`
+   - Missing picture URL → login succeeds (avatar download skipped)
+   - Avatar download failure → login succeeds (exception caught)
+
+**Real Dependencies**: Uses real `UserManager`, `RoleManager`, `AvatarService` backed by Testcontainers DB
+
+---
+
+### 4. **GetLeaderboardTests.cs** (22 tests) — Leaderboard queries
+
+**Type**: Integration (Testcontainers)
+**Coverage**: `LeaderboardService.GetLeaderboardAsync` — three time frames
+
+#### AllTime Tests (10 tests)
+
+- Orders by `User.TotalPointsEarned` descending (cached XP aggregate)
+- Does NOT sum `UserExerciseProgress` rows (validates caching contract)
+- Limits to top 50 entries
+- Current user outside top 50 → fetched separately with correct rank
+- Current user in top 50 → marked `IsCurrentUser: true`
+- Level calculated from total XP (formula: `floor((1 + sqrt(1 + xp/25)) / 2)`)
+- Username fallback chain: `UserName ?? Email ?? "Unknown"`
+
+#### Weekly Tests (7 tests)
+
+- Only includes progress from last 7 days (`CompletedAt >= UtcNow.AddDays(-7)`)
+- Excludes users with no progress in window (even if high cached XP)
+- Sums multiple progress rows in window
+- Orders by window XP descending
+- Current user outside top 50 → correct rank
+
+#### Monthly Tests (2 tests)
+
+- Only includes progress from last 30 days
+- Excludes progress older than 30 days
+
+#### Rank Change Tests (3 tests)
+
+- New entry (not in previous period) → `Change: 0`
+- User moved up (rank 3 → rank 1) → `Change: +2`
+- User moved down (rank 1 → rank 3) → `Change: -2`
+
+#### Avatar Tests (2 tests)
+
+- User with avatar → `Avatar: "/api/user/{id}/avatar"`
+- User without avatar → `Avatar: null`
+
+#### Streak Tests (1 test)
+
+- Leaderboard entries include `CurrentStreak` and `LongestStreak` fields
+
+---
+
+### 5. **GetStreakTests.cs** (9 tests) — Streak calculation
+
+**Type**: Integration (Testcontainers)
+**Coverage**: `LeaderboardService.GetStreakAsync` — consecutive day counting
+
+#### Rules
+
+- Counts consecutive UTC calendar days with **at least one completed exercise**
+- **Grace period**: if no activity today, yesterday still counts as current streak
+- Current streak resets to 0 if most recent activity is 2+ days ago
+
+#### Test Scenarios
+
+- No progress → `(current: 0, longest: 0)`
+- Only uncompleted progress → `(0, 0)` (IsCompleted=false rows ignored)
+- Single completion today → `(1, 1)`
+- Single completion yesterday → `(1, 1)` (grace period)
+- Single completion 2 days ago → `(0, 1)` (streak broken)
+- 3 consecutive days ending today → `(3, 3)`
+- 3 consecutive days ending yesterday → `(3, 3)` (grace extends to whole run)
+- Gap in middle → correct current and longest (e.g. yesterday + [gap] + 5-6 days ago)
+
+---
+
+### 6. **CalculateLevelTests.cs** (10 tests) — Level formula
+
+**Type**: Pure unit (no DB, no fixture)
+**Coverage**: `LeaderboardService.CalculateLevel` — static formula validation
+
+#### Formula
+
+```
+level = floor((1 + sqrt(1 + totalXp / 25)) / 2)
+threshold(n) = 100 * n * (n - 1)
+```
+
+#### Thresholds
+
+| XP | Level |
+|----|-------|
+| 0 | 1 |
+| 200 | 2 |
+| 600 | 3 |
+| 1200 | 4 |
+| 2000 | 5 |
+| 3000 | 6 |
+| 4200 | 7 |
+
+#### Test Coverage
+
+- Zero or negative XP → Level 1
+- Boundary values (199 → 1, 200 → 2, 599 → 2, 600 → 3)
+- Large XP (1,000,000) → does not overflow
+
+---
+
+### 7. **JwtServiceTests.cs** (13 tests) — JWT generation
+
+**Type**: Pure unit (sets env vars, no DB)
+**Coverage**: `JwtService.GenerateToken` — JWT structure and validation
+
+#### Claims Tested
+
+- `sub` claim contains User.Id
+- `email` claim contains User.Email
+- `name` claim contains User.UserName
+- `jti` claim is present (unique token ID)
+- `ClaimTypes.Role` claims for each role (Admin, ContentCreator, etc.)
+- Empty roles → no role claims
+
+#### Validation Tests
+
+- Token expires in configured hours (JWT_EXPIRATION_HOURS, default 24)
+- Token can be validated with correct signing key
+- Token validation **fails** with wrong signing key
+- Constructor throws `InvalidOperationException` if JWT_SECRET not set
+- ExpirationHours defaults to 24 if env var not set
+
+---
+
+## Test Infrastructure
+
+### DatabaseFixture
+
+- Shared across test classes via `IClassFixture<DatabaseFixture>`
+- Starts SQL Server 2022 container once per test run
+- Runs EF Core migrations
+- Seeds permanent content hierarchy:
+  - System User (satisfies `Course.CreatedById` FK)
+  - Language: "Italian"
+  - Course (1)
+  - Lesson (1)
+  - **20 × FillInBlankExercise** (`fixture.ExerciseIds[0..19]`)
+- **Why 20 exercises?** `UserExerciseProgress` PK is `(UserId, ExerciseId)` — streak tests need one distinct ExerciseId per calendar day
+
+### UserBuilder
+
+- Fluent builder for creating Identity-compliant User entities
+- Sets `NormalizedUserName`, `NormalizedEmail`, `SecurityStamp`, `ConcurrencyStamp`
+- Methods: `WithUserName`, `WithEmail`, `WithTotalPoints`, `WithNullUserName`, `WithNullEmail`
+
+### DbSeeder
+
+- `AddUserAsync`, `AddUsersAsync` — insert users
+- `AddProgressAsync` — insert UserExerciseProgress row
+- `AddConsecutiveDaysActivityAsync` — batch insert N consecutive days of progress
+- `AddAvatarAsync` — insert UserAvatar binary row
+- `ClearLeaderboardDataAsync` — deletes Users, UserExerciseProgress, UserAvatars (excludes system user)
+
+### ControllerTestBase
+
+- Base class for `WebApplicationFactory` tests
+- Provides `GoogleAuthMock` (Moq) to avoid real Google API calls
+- Sets required env vars: JWT_SECRET, JWT_EXPIRATION_HOURS, DATA_PROTECTION_KEYS_PATH, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+- Clears env vars in `DisposeAsync`
+
+---
+
+## Coverage Gaps
+
+### Missing E2E User Journey Tests
+
+No tests currently exercise **complete user workflows** across multiple endpoints. Examples of missing scenarios:
+
+1. **Login → View Courses → Start Lesson → Submit Exercises → Unlock Next Lesson**
+2. **Create Lesson → Add Exercises → Solve Exercises → Check Progress**
+3. **View Leaderboard → See Own Rank → Check Streak**
+4. **Upload Avatar → See Avatar on Leaderboard**
+5. **Submit Wrong Answer → Retry → Submit Correct Answer → See XP Update**
+
+### Untested Endpoints
+
+| Endpoint | Method | Coverage |
+|----------|--------|----------|
+| POST /api/course | POST | Authorization only (no DTO validation, business logic) |
+| PUT /api/course/{id} | PUT | Authorization only |
+| POST /api/lesson | POST | Authorization only |
+| PUT /api/lesson/{id} | PUT | Authorization only |
+| POST /api/lesson/{id}/complete | POST | **None** |
+| POST /api/exercise/{id}/submit | POST | **None** (critical path!) |
+| GET /api/exercise/lesson/{id}/progress | GET | **None** |
+| GET /api/exercise/lesson/{id}/submissions | GET | **None** |
+| PUT /api/user/avatar | PUT | Authorization only (multipart form data check) |
+| GET /api/user/profile | GET | **None** |
+
+### Untested Business Logic
+
+- **Exercise unlocking**: sequential unlock on submission
+- **Lesson completion**: 70% XP threshold triggers next lesson unlock
+- **XP idempotency**: re-submitting correct answer doesn't double-count XP
+- **Answer validation**: MultipleChoice option validation, FillInBlank case sensitivity, Translation fuzzy matching
+- **Progress restoration**: frontend loading previous submissions on lesson revisit
+- **Admin bypass**: Admins can access locked lessons/exercises
+
+---
+
+## Recommendations
+
+1. **Add E2E user journey tests** — test complete workflows, not just isolated endpoints
+2. **Test exercise submission flow** — the core mechanic of the app (submit answer → validate → award XP → unlock next → update progress)
+3. **Test lesson completion** — verify 70% threshold, next lesson unlock, cascade exercise unlock
+4. **Test progress restoration** — verify frontend receives correct data structure
+5. **Test answer validation** — verify correct/incorrect answers are graded properly for each exercise type
+6. **Add admin bypass tests** — verify Admins can access locked content
+7. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement (currently open!)
+
+---
+
+## Running Tests
+
+```bash
+# All tests (requires Docker)
+cd backend
+dotnet test Tests/Backend.Tests.csproj --logger "console;verbosity=normal"
+
+# Specific test class
+dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~GetLeaderboardTests"
+
+# Unit tests only (no Docker)
+dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLevelTests|JwtServiceTests"
+```
+
+---
+
+## Test Statistics
+
+- **Total test classes**: 7
+- **Total test methods**: ~118 (exact count depends on Theory inline data rows)
+- **Integration tests**: 5 classes (use Testcontainers)
+- **Unit tests**: 2 classes (pure, no DB)
+- **Coverage**: Auth flow, Authorization policies, Leaderboard queries, Streak calculation, Level calculation, JWT generation
+- **Not covered**: Exercise submission, Lesson completion, Progress tracking, Answer validation, Content CRUD business logic

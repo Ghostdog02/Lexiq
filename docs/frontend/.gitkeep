@@ -1,0 +1,13 @@
+# Frontend Documentation
+
+This directory is reserved for future frontend-specific documentation such as:
+
+- Angular component patterns
+- State management strategies
+- Styling conventions
+- Performance optimization guides
+- Frontend debugging guides
+
+For now, frontend documentation can be found in:
+- [Frontend CLAUDE.md](../../frontend/CLAUDE.md) - Angular patterns, component structure, debugging
+- [E2E Testing](../e2e/README.md) - Playwright tests (includes frontend page objects and data-testid guide)
