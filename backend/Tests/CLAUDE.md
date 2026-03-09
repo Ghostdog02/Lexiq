@@ -32,10 +32,11 @@ Tests/
 ├── Helpers/
 │   └── DbSeeder.cs            ← Insert helpers and ClearLeaderboardDataAsync
 ├── End-to-End/                ← Full user journey HTTP tests
-│   ├── StudentExerciseProgressJourneyTests.cs  ← Exercise completion, XP, unlocking
-│   ├── StudentSessionPersistenceTests.cs       ← Session persistence, progress restoration
-│   ├── LeaderboardAndStreaksTests.cs           ← Leaderboard rankings, streak tracking
-│   └── AdminContentManagementJourneyTests.cs   ← Admin/creator CRUD workflows
+│   ├── StudentExerciseProgressJourneyTests.cs     ← Exercise completion, XP, unlocking (7 tests)
+│   ├── StudentSessionPersistenceTests.cs          ← Session persistence, progress restoration (6 tests)
+│   ├── ExerciseSubmissionSecurityTests.cs         ← Security, edge cases, MultipleChoice (9 tests)
+│   ├── LeaderboardAndStreaksTests.cs              ← Leaderboard rankings, streak tracking (5 tests)
+│   └── AdminContentManagementJourneyTests.cs      ← Admin/creator CRUD workflows (6 tests)
 ├── Controllers/
 │   └── AuthControllerTests.cs ← WebApplicationFactory HTTP-level tests
 └── Services/
@@ -74,11 +75,18 @@ System User (satisfies Course.CreatedById FK)
   └─ Language: "Italian"
        └─ Course
             └─ Lesson
-                 └─ 20 × FillInBlankExercise  (ExerciseIds[0..19])
+                 └─ 40 × Exercise (4 types)  (ExerciseIds[0..39])
+                      ├─ [0-9]:   FillInBlank (10 exercises)
+                      ├─ [10-19]: MultipleChoice (10 exercises, 3 options each)
+                      ├─ [20-29]: Listening (10 exercises)
+                      └─ [30-39]: Translation (10 exercises)
 ```
 
-**Why 20 exercises?**
-`UserExerciseProgress` PK is `(UserId, ExerciseId)`. Streak tests seed one row per calendar day per user. If all rows share the same `ExerciseId`, the second insert for the same user fails on the composite PK. Using a different `ExerciseId` per day avoids this.
+**Why 40 exercises across 4 types?**
+- `UserExerciseProgress` PK is `(UserId, ExerciseId)` — streak tests need one distinct `ExerciseId` per calendar day
+- 10 iterations per type enables comprehensive testing of type-specific validation logic
+- MultipleChoice tests require option IDs (GUIDs) instead of text answers
+- Listening/Translation tests verify fuzzy matching and accepted answers
 
 **Why a system user?**
 `Course.CreatedById` is a FK to `Users`. The system user is created first and excluded from `ClearLeaderboardDataAsync` so the content hierarchy survives between tests.
@@ -275,12 +283,14 @@ Base class for E2E tests providing:
 
 ### Test Organization
 
-| File | Verifies |
-|------|----------|
-| `StudentExerciseProgressJourneyTests.cs` | Exercise completion, XP calculation, sequential unlocking, retry behavior |
-| `StudentSessionPersistenceTests.cs` | Progress restoration across sessions, state consistency, XP idempotency |
-| `LeaderboardAndStreaksTests.cs` | Leaderboard rankings, streak tracking, avatar integration, multi-user competition |
-| `AdminContentManagementJourneyTests.cs` | Admin/ContentCreator CRUD operations, role-based authorization, content lifecycle |
+| File | Verifies | Tests |
+|------|----------|-------|
+| `StudentExerciseProgressJourneyTests.cs` | Exercise completion, XP calculation, sequential unlocking, retry behavior | 7 |
+| `StudentSessionPersistenceTests.cs` | Progress restoration across sessions, state consistency, XP idempotency | 6 |
+| `ExerciseSubmissionSecurityTests.cs` | Lock enforcement, role-based bypass, MultipleChoice validation, endpoint shapes | 9 |
+| `LeaderboardAndStreaksTests.cs` | Leaderboard rankings, streak tracking, avatar integration, multi-user competition | 5 |
+| `AdminContentManagementJourneyTests.cs` | Admin/ContentCreator CRUD operations, role-based authorization, content lifecycle | 6 |
+| **Total E2E Tests** | | **33** |
 
 ### E2E Test Pattern
 

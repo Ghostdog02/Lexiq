@@ -1,12 +1,12 @@
 # Backend Test Coverage Documentation
 
-**Last Updated**: 2026-03-03
+**Last Updated**: 2026-03-09
 **Framework**: xUnit v3 + Testcontainers.MsSql
 **Test Project**: `backend/Tests/Backend.Tests.csproj`
 
 ## Overview
 
-The Lexiq backend has **7 test classes** covering authentication, authorization, leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
+The Lexiq backend has **12 test classes** covering authentication, authorization, exercise submission, leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
 
 ---
 
@@ -240,8 +240,14 @@ threshold(n) = 100 * n * (n - 1)
   - Language: "Italian"
   - Course (1)
   - Lesson (1)
-  - **20 × FillInBlankExercise** (`fixture.ExerciseIds[0..19]`)
-- **Why 20 exercises?** `UserExerciseProgress` PK is `(UserId, ExerciseId)` — streak tests need one distinct ExerciseId per calendar day
+  - **40 × Exercise** (`fixture.ExerciseIds[0..39]`) — 4 types:
+    - [0-9]: FillInBlank (10 exercises)
+    - [10-19]: MultipleChoice (10 exercises, 3 options each)
+    - [20-29]: Listening (10 exercises)
+    - [30-39]: Translation (10 exercises)
+- **Why 40 exercises across 4 types?**
+  - `UserExerciseProgress` PK is `(UserId, ExerciseId)` — streak tests need one distinct ExerciseId per calendar day
+  - 10 iterations per type enables comprehensive testing of type-specific validation logic
 
 ### UserBuilder
 
@@ -266,41 +272,124 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
-## Coverage Gaps
+## E2E User Journey Tests
 
-### Missing E2E User Journey Tests
+### 8. **StudentExerciseProgressJourneyTests.cs** (7 tests) — Exercise completion workflows
 
-No tests currently exercise **complete user workflows** across multiple endpoints. Examples of missing scenarios:
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: Core student learning workflows
 
-1. **Login → View Courses → Start Lesson → Submit Exercises → Unlock Next Lesson**
-2. **Create Lesson → Add Exercises → Solve Exercises → Check Progress**
-3. **View Leaderboard → See Own Rank → Check Streak**
-4. **Upload Avatar → See Avatar on Leaderboard**
-5. **Submit Wrong Answer → Retry → Submit Correct Answer → See XP Update**
+| Test | Purpose |
+|------|---------|
+| `Student_CompletesFirstExercise_UnlocksNextExercise` | Sequential unlock after correct answer |
+| `Student_SubmitsWrongAnswer_CanRetryInfinitely` | Infinite retries allowed without penalty |
+| `Student_ResubmitsCorrectAnswer_DoesNotDoubleXp` | XP idempotency (no double-counting) |
+| `Student_CompletesLesson_UnlocksNextLesson` | 70% completion threshold triggers unlock |
+| `Student_CompletesPartialLesson_ProgressRestoresCorrectly` | Progress tracking persists |
+| `Student_SubmitsWrongAnswer_ProgressShowsIncorrect` | Wrong submissions create records |
+| `Student_Below70Percent_LessonNotCompleted` | Below-threshold completion rejected |
 
-### Untested Endpoints
+---
 
+### 9. **StudentSessionPersistenceTests.cs** (6 tests) — Progress restoration
+
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: Session state persistence
+
+| Test | Purpose |
+|------|---------|
+| `Student_CompletesPartial_ReturnsLater_ProgressRestored` | 3/5 exercises persist across sessions |
+| `Student_CompletesLesson_ReturnsLater_AllExercisesStillComplete` | Full completion persists |
+| `Student_SubmitsWrongAnswer_ReturnsLater_StillShowsWrong` | Wrong answer state persists |
+| `Student_PartialProgress_ThirdExerciseStillLocked` | Lock state persists |
+| `MultipleSessionsConsistentState_XpDoesNotDuplicate` | XP consistent across sessions |
+
+---
+
+### 10. **ExerciseSubmissionSecurityTests.cs** (9 tests) — Security and edge cases
+
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: Lock enforcement, role-based access, MultipleChoice validation, endpoint shapes
+
+| Test | Purpose |
+|------|---------|
+| `Student_SubmitsWrongAnswer_DoesNotUnlockNextExercise` | Wrong answers keep next exercise locked |
+| `Student_SubmitsToLockedExercise_Returns403` | Lock enforcement for students |
+| `Admin_SubmitsToLockedExercise_Success` | Admin bypass works |
+| `ContentCreator_SubmitsToLockedExercise_Success` | ContentCreator bypass works |
+| `Student_SubmitsToNonexistentExercise_Returns404` | Invalid exercise IDs handled |
+| `Student_SubmitsToExerciseInLockedLesson_Returns403` | Lesson-level locks propagate |
+| `Student_SubmitsCorrectMultipleChoiceAnswer_Success` | Option ID validation (vs text) |
+| `GetLessonProgress_ReturnsCorrectStructure` | Progress endpoint shape validated |
+| `GetLessonSubmissions_ReturnsAllExercisesWithSubmissionState` | Submissions endpoint validated |
+
+---
+
+### 11. **LeaderboardAndStreaksTests.cs** (5 tests) — Gamification features
+
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: Leaderboard ranking, streak tracking, avatar integration
+
+| Test | Purpose |
+|------|---------|
+| `Student_EarnsXp_AppearsOnLeaderboard` | XP triggers leaderboard appearance |
+| `Student_Builds3DayStreak_StreakDisplayedCorrectly` | Streak calculation works |
+| `Student_Inactive2Days_StreakResets` | Streak reset after gap |
+| `Student_UploadsAvatar_ShowsOnLeaderboard` | Avatar integration |
+| `TwoStudents_CompeteForRank_OrderedByXp` | Multi-user ranking |
+
+---
+
+### 12. **AdminContentManagementJourneyTests.cs** (6 tests) — Content CRUD workflows
+
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: Admin/ContentCreator content management
+
+| Test | Purpose |
+|------|---------|
+| `Admin_CreatesLesson_StudentCanAccessAndSolve` | Full create → unlock → solve flow |
+| `Admin_UpdatesLesson_StudentSeesChanges` | Update propagation |
+| `Admin_DeletesLesson_StudentCannotAccess` | Delete cascade behavior |
+| `ContentCreator_CreatesLesson_LockedByDefault` | Default lock state |
+| `Admin_AddsExerciseToExistingLesson_StudentSeesNewExercise` | Dynamic exercise addition |
+| `Student_CannotCreateCourse_Returns403` | Role restriction enforcement |
+
+---
+
+## Coverage Gaps (Updated 2026-03-09)
+
+### ✅ Now Covered (Previously Missing)
+
+- ✅ **Exercise submission flow** — StudentExerciseProgressJourneyTests + ExerciseSubmissionSecurityTests (16 tests)
+- ✅ **Sequential unlocking** — Correct answer unlocks next, wrong does not
+- ✅ **XP idempotency** — Re-submission doesn't double-count
+- ✅ **Admin bypass** — Admins/ContentCreators can access locked exercises
+- ✅ **Progress restoration** — StudentSessionPersistenceTests (6 tests)
+- ✅ **Lesson completion** — 70% threshold validated
+- ✅ **MultipleChoice validation** — Option ID vs text answer
+- ✅ **Progress/Submissions endpoints** — Explicit shape validation
+
+### Still Missing
+
+**Untested Exercise Types:**
+- Listening exercise validation (audio URL required, max replays)
+- Translation exercise fuzzy matching (MatchingThreshold)
+
+**Untested Endpoints:**
 | Endpoint | Method | Coverage |
 |----------|--------|----------|
 | POST /api/course | POST | Authorization only (no DTO validation, business logic) |
 | PUT /api/course/{id} | PUT | Authorization only |
 | POST /api/lesson | POST | Authorization only |
 | PUT /api/lesson/{id} | PUT | Authorization only |
-| POST /api/lesson/{id}/complete | POST | **None** |
-| POST /api/exercise/{id}/submit | POST | **None** (critical path!) |
-| GET /api/exercise/lesson/{id}/progress | GET | **None** |
-| GET /api/exercise/lesson/{id}/submissions | GET | **None** |
+| POST /api/lesson/{id}/complete | POST | Covered in StudentExerciseProgressJourneyTests |
 | PUT /api/user/avatar | PUT | Authorization only (multipart form data check) |
 | GET /api/user/profile | GET | **None** |
 
-### Untested Business Logic
-
-- **Exercise unlocking**: sequential unlock on submission
-- **Lesson completion**: 70% XP threshold triggers next lesson unlock
-- **XP idempotency**: re-submitting correct answer doesn't double-count XP
-- **Answer validation**: MultipleChoice option validation, FillInBlank case sensitivity, Translation fuzzy matching
-- **Progress restoration**: frontend loading previous submissions on lesson revisit
-- **Admin bypass**: Admins can access locked lessons/exercises
+**Business Logic:**
+- FillInBlank case sensitivity and whitespace trimming edge cases
+- AcceptedAnswers comma-separated validation
+- Lesson unlock cascade to first exercise (covered indirectly)
 
 ---
 
@@ -334,9 +423,10 @@ dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLev
 
 ## Test Statistics
 
-- **Total test classes**: 7
-- **Total test methods**: ~118 (exact count depends on Theory inline data rows)
+- **Total test classes**: 12
+- **Total test methods**: ~151 (exact count depends on Theory inline data rows)
+- **E2E tests**: 5 classes, 33 tests (full user journeys)
 - **Integration tests**: 5 classes (use Testcontainers)
 - **Unit tests**: 2 classes (pure, no DB)
-- **Coverage**: Auth flow, Authorization policies, Leaderboard queries, Streak calculation, Level calculation, JWT generation
-- **Not covered**: Exercise submission, Lesson completion, Progress tracking, Answer validation, Content CRUD business logic
+- **Coverage**: Auth flow, Authorization policies, Exercise submission (FillInBlank + MultipleChoice), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
+- **Not covered**: Listening/Translation exercise types, FillInBlank edge cases, Course/Lesson CRUD business logic
