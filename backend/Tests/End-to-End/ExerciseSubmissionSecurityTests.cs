@@ -198,7 +198,9 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
 
         // Create a locked lesson with an unlocked exercise inside it
         var lockedLessonId = Guid.NewGuid().ToString();
-        var courseId = await ctx.Courses.Select(c => c.Id).FirstOrDefaultAsync()
+        var courseId = await ctx.Courses
+            .Select(c => c.Id)
+            .FirstOrDefaultAsync(TestContext.Current.CancellationToken)
             ?? throw new InvalidOperationException("No course found in fixture");
 
         ctx.Lessons.Add(
@@ -212,7 +214,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
                 IsLocked = true, // Lesson is locked
             }
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var exerciseInLockedLessonId = Guid.NewGuid().ToString();
         ctx.Exercises.Add(
@@ -231,7 +233,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
                 IsLocked = false, // Exercise itself is unlocked
             }
         );
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
         var response = await _studentClient.PostAsJsonAsync(
@@ -258,16 +260,22 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         var mcExerciseId = Fixture.ExerciseIds[10];
 
         // Unlock it manually for test (bypass admin-only unlock endpoint)
-        var mcExercise = await ctx.Exercises.FindAsync(mcExerciseId);
+        var mcExercise = await ctx.Exercises.FindAsync(
+            [mcExerciseId],
+            TestContext.Current.CancellationToken
+        );
         if (mcExercise == null)
             throw new InvalidOperationException($"MC exercise {mcExerciseId} not found");
         mcExercise.IsLocked = false;
-        await ctx.SaveChangesAsync();
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Get the correct option ID
         var mcExerciseWithOptions = await ctx.Exercises
             .Include(e => (e as MultipleChoiceExercise)!.Options)
-            .FirstOrDefaultAsync(e => e.Id == mcExerciseId);
+            .FirstOrDefaultAsync(
+                e => e.Id == mcExerciseId,
+                TestContext.Current.CancellationToken
+            );
 
         var mcCast = mcExerciseWithOptions as MultipleChoiceExercise;
         if (mcCast == null || mcCast.Options.Count == 0)
