@@ -513,9 +513,35 @@ If running VS Code / VS Codium inside a Flatpak container, the IDE cannot see Nu
 ### xUnit v3 IAsyncLifetime
 Return type is `ValueTask`, not `Task`. Using `Task` compiles but fails at runtime or produces a linter error about interface mismatch.
 
-### xUnit1051 — CancellationToken on HTTP client calls
-`PostAsJsonAsync` and `PostAsync` accept a `CancellationToken`. Pass
-`TestContext.Current.CancellationToken` or the xUnit analyzer raises xUnit1051 warnings.
+### xUnit1051 — CancellationToken on async calls
+xUnit v3 analyzer raises xUnit1051 warnings when async methods that accept `CancellationToken` are called without it. Always pass `TestContext.Current.CancellationToken` for responsive test cancellation.
+
+**HTTP client calls:**
+```csharp
+// HTTP operations
+await client.PostAsJsonAsync("/api/endpoint", dto, TestContext.Current.CancellationToken);
+await response.Content.ReadFromJsonAsync<Dto>(TestContext.Current.CancellationToken);
+```
+
+**EF Core operations:**
+```csharp
+// DbContext operations
+await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+// FindAsync requires object array syntax
+await _ctx.Lessons.FindAsync(
+    new object[] { lessonId },
+    TestContext.Current.CancellationToken
+);
+
+// LINQ query operators take token as last parameter
+await _ctx.Lessons.FirstAsync(TestContext.Current.CancellationToken);
+await _ctx.Lessons.FirstOrDefaultAsync(l => l.Id == id, TestContext.Current.CancellationToken);
+await _ctx.Lessons.Where(l => l.CourseId == courseId).ToListAsync(TestContext.Current.CancellationToken);
+```
+
+**Service layer integration tests:**
+Service methods themselves don't accept `CancellationToken` — only test setup/teardown and direct EF Core calls in Arrange/Assert sections need it.
 
 ### dotnet clean reveals incremental build gaps
 `dotnet clean` removes cached assemblies and forces a full rebuild, which can expose
