@@ -25,11 +25,17 @@ dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLev
 Tests/
 ├── Backend.Tests.csproj
 ├── Infrastructure/
-│   └── DatabaseFixture.cs     ← Testcontainers container, migrations, shared content hierarchy
+│   ├── DatabaseFixture.cs     ← Testcontainers container, migrations, shared content hierarchy
+│   └── ControllerTestBase.cs ← Base class for E2E tests with auth helpers
 ├── Builders/
 │   └── UserBuilder.cs         ← Fluent builder for Identity-compliant User rows
 ├── Helpers/
 │   └── DbSeeder.cs            ← Insert helpers and ClearLeaderboardDataAsync
+├── End-to-End/                ← Full user journey HTTP tests
+│   ├── StudentExerciseProgressJourneyTests.cs  ← Exercise completion, XP, unlocking
+│   ├── StudentSessionPersistenceTests.cs       ← Session persistence, progress restoration
+│   ├── LeaderboardAndStreaksTests.cs           ← Leaderboard rankings, streak tracking
+│   └── AdminContentManagementJourneyTests.cs   ← Admin/creator CRUD workflows
 ├── Controllers/
 │   └── AuthControllerTests.cs ← WebApplicationFactory HTTP-level tests
 └── Services/
@@ -84,6 +90,105 @@ var ctx = _fixture.CreateDbContext();
 ```
 
 `PendingModelChangesWarning` is suppressed via `ConfigureWarnings(w => w.Ignore(...))` — this warning is benign in tests where the model and DB are migrated in sync.
+
+## Test Naming Convention
+
+All test methods follow the pattern: `MethodName_StateUnderTest_ExpectedBehavior`
+
+Examples:
+- `Student_CompletesFirstExercise_UnlocksNextExercise`
+- `Admin_DeletesLesson_StudentCannotAccess`
+- `Student_SubmitsWrongAnswer_CanRetryInfinitely`
+- `TwoStudents_CompeteForRank_OrderedByXp`
+
+**Not**:
+- ~~`ShouldUnlockNextExerciseWhenCompleted`~~ (avoid "should" in test names)
+- ~~`TestExerciseCompletion`~~ (too vague)
+- ~~`CompletesFirstExercise`~~ (missing context about who/what)
+
+## AAA Pattern (Arrange/Act/Assert)
+
+All tests follow **strict AAA structure** as defined in `.claude/agents/test-generator.md`:
+
+### Rules
+
+1. **Arrange**: Setup only — no `.Should()` assertions
+   - Use guard clauses (`if (x == null) throw new InvalidOperationException(...)`) for fixture validation
+   - Distinguish fixture problems from test failures with descriptive error messages
+
+2. **Act**: Execute operations only — no verification
+   - Call methods under test
+   - Fetch result data
+   - No `.Should()` calls
+
+3. **Assert**: All verification with FluentAssertions
+   - Every `.Should()` assertion belongs here
+   - Verify outcomes, state changes, response codes
+
+### Example
+
+```csharp
+[Fact]
+public async Task Student_CompletesExercise_UnlocksNextExercise()
+{
+    // Arrange
+    var exercises = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
+    if (exercises == null || exercises.Count < 2)
+        throw new InvalidOperationException("Fixture should seed at least 2 exercises");
+
+    var firstEx = exercises.First(e => e.OrderIndex == 0);
+    var secondEx = exercises.First(e => e.OrderIndex == 1);
+
+    // Act
+    var submitResult = await SubmitAnswerAsync(firstEx.Id, "answer");
+    var exercisesAfter = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
+
+    // Assert
+    firstEx.IsLocked.Should().BeFalse("first exercise should be unlocked");
+    secondEx.IsLocked.Should().BeTrue("second exercise should be locked initially");
+    submitResult.Should().NotBeNull();
+    submitResult!.IsCorrect.Should().BeTrue();
+    submitResult.PointsEarned.Should().Be(10);
+    exercisesAfter!.First(e => e.OrderIndex == 1).IsLocked.Should().BeFalse();
+}
+```
+
+### Helper Method Pattern
+
+Helper methods (private methods that fetch data or perform HTTP calls) should throw on failure, not assert:
+
+```csharp
+// CORRECT — throws descriptive exception
+private async Task<LeaderboardResponse> GetLeaderboardAsync(HttpClient client, TimeFrame timeFrame)
+{
+    var response = await client.GetAsync($"/api/leaderboard?timeFrame={timeFrame}");
+
+    if (response.StatusCode != HttpStatusCode.OK)
+        throw new InvalidOperationException($"Failed to fetch leaderboard: {response.StatusCode}");
+
+    var leaderboard = await response.Content.ReadFromJsonAsync<LeaderboardResponse>();
+
+    if (leaderboard == null)
+        throw new InvalidOperationException("Leaderboard response was null");
+
+    return leaderboard;
+}
+
+// WRONG — assertions in helper
+private async Task<LeaderboardResponse> GetLeaderboardAsync(HttpClient client, TimeFrame timeFrame)
+{
+    var response = await client.GetAsync($"/api/leaderboard?timeFrame={timeFrame}");
+    response.StatusCode.Should().Be(HttpStatusCode.OK); // ← WRONG
+    var leaderboard = await response.Content.ReadFromJsonAsync<LeaderboardResponse>();
+    leaderboard.Should().NotBeNull(); // ← WRONG
+    return leaderboard!;
+}
+```
+
+**Why throw instead of assert in helpers?**
+- Helper failures indicate fixture/setup problems, not test failures
+- Stack traces point directly to the broken setup step
+- Test failures only occur in the Assert section where actual verification happens
 
 ## Test Class Pattern
 
@@ -152,6 +257,103 @@ await DbSeeder.AddConsecutiveDaysActivityAsync(ctx, userId, fixture.ExerciseIds,
 2. `UserAvatars`
 3. Identity junction tables: `UserClaims`, `UserLogins`, `UserRoles`, `UserTokens`
 4. `Users` (excluding system user)
+
+Language / Course / Lesson / Exercise rows are **never deleted**.
+
+## End-to-End Tests
+
+E2E tests verify complete user workflows via HTTP endpoints using `WebApplicationFactory` and `ControllerTestBase`.
+
+### ControllerTestBase
+
+Base class for E2E tests providing:
+- `DatabaseFixture` integration
+- `WebApplicationFactory<Program>` wired to Testcontainers DB
+- `CreateAuthenticatedUserAsync(username, email, role)` — creates user + JWT token
+- `CreateClient(token)` — returns HttpClient with auth cookie
+- `ClearTestDataAsync()` — DB cleanup between tests
+
+### Test Organization
+
+| File | Verifies |
+|------|----------|
+| `StudentExerciseProgressJourneyTests.cs` | Exercise completion, XP calculation, sequential unlocking, retry behavior |
+| `StudentSessionPersistenceTests.cs` | Progress restoration across sessions, state consistency, XP idempotency |
+| `LeaderboardAndStreaksTests.cs` | Leaderboard rankings, streak tracking, avatar integration, multi-user competition |
+| `AdminContentManagementJourneyTests.cs` | Admin/ContentCreator CRUD operations, role-based authorization, content lifecycle |
+
+### E2E Test Pattern
+
+```csharp
+public class MyJourneyTests(DatabaseFixture fixture)
+    : ControllerTestBase(fixture), IClassFixture<DatabaseFixture>
+{
+    private HttpClient _client = null!;
+    private string _authToken = null!;
+
+    public override async ValueTask InitializeAsync()
+    {
+        await base.InitializeAsync();
+        await ClearTestDataAsync();
+
+        var (_, token) = await CreateAuthenticatedUserAsync("student", "student@test.com", "Student");
+        _authToken = token;
+        _client = CreateClient(_authToken);
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        _client.Dispose();
+        await base.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Student_Action_ExpectedOutcome()
+    {
+        // Arrange
+        // ... setup test data
+
+        // Act
+        // ... make HTTP calls
+
+        // Assert
+        // ... verify responses with .Should()
+    }
+}
+```
+
+### Key Patterns
+
+**Multiple authenticated users**:
+```csharp
+var (student1Id, student1Token) = await CreateAuthenticatedUserAsync("student1", "s1@test.com", "Student");
+var (adminId, adminToken) = await CreateAuthenticatedUserAsync("admin", "admin@test.com", "Admin");
+
+var studentClient = CreateClient(student1Token);
+var adminClient = CreateClient(adminToken);
+```
+
+**Simulating session restart** (for progress restoration tests):
+```csharp
+// Complete exercises
+await SubmitAnswerAsync(exercises[0].Id, "answer");
+
+// "Leave" and return
+_client.Dispose();
+_client = CreateClient(_authToken);
+
+// Verify progress restored
+var progress = await GetLessonProgressAsync(lessonId);
+```
+
+**Direct DB seeding** (for streaks, avatars):
+```csharp
+using var scope = Factory.Services.CreateScope();
+var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
+
+await DbSeeder.AddConsecutiveDaysActivityAsync(ctx, userId, Fixture.ExerciseIds, days: 3);
+await DbSeeder.AddAvatarAsync(ctx, userId);
+```
 
 Language / Course / Lesson / Exercise rows are **never deleted**.
 

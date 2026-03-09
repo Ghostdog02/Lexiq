@@ -12,15 +12,16 @@ using Xunit;
 namespace Backend.Tests.EndToEnd;
 
 /// <summary>
-/// HTTP-level E2E tests for gamification features.
+/// HTTP-level E2E tests for leaderboard rankings and streak tracking.
 ///
 /// Verifies:
-///   - Student solves exercises → leaderboard rank increases
-///   - 3-day streak → streak displayed correctly
-///   - Inactive 2 days → streak resets to 0
-///   - Student uploads avatar → avatar shows on leaderboard
+///   - Student earns XP → appears on leaderboard with correct rank
+///   - 3-day consecutive activity → streak displayed correctly
+///   - Inactive 2+ days → current streak resets to 0 (longest streak preserved)
+///   - Multiple students compete → ranked by total XP
+///   - Avatar uploaded → shows on leaderboard entries
 /// </summary>
-public class LeaderboardGamificationTests(DatabaseFixture fixture)
+public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
     : ControllerTestBase(fixture),
         IClassFixture<DatabaseFixture>
 {
@@ -67,27 +68,24 @@ public class LeaderboardGamificationTests(DatabaseFixture fixture)
     [Fact]
     public async Task Student_EarnsXp_AppearsOnLeaderboard()
     {
-        // Arrange: Student1 has no XP initially
+        // Arrange
         var initialLeaderboard = await GetLeaderboardAsync(_client1, TimeFrame.AllTime);
         var student1Initial = initialLeaderboard.Entries.FirstOrDefault(e =>
             e.UserId == _student1Id
         );
 
-        // Student1 not on leaderboard yet (or has 0 XP)
-        if (student1Initial != null)
-            student1Initial.TotalXp.Should().Be(0);
-
-        // Act: Student1 completes 3 exercises (30 XP)
+        // Act
         for (var i = 0; i < 3; i++)
         {
             var exerciseId = Fixture.ExerciseIds[i];
             await SubmitAnswerAsync(_client1, exerciseId, "answer");
         }
 
-        // Assert: Student1 appears on leaderboard with 30 XP
         var updatedLeaderboard = await GetLeaderboardAsync(_client1, TimeFrame.AllTime);
         var student1Entry = updatedLeaderboard.Entries.FirstOrDefault(e => e.UserId == _student1Id);
 
+        // Assert
+        student1Initial?.TotalXp.Should().Be(0, "student1 starts with no XP");
         student1Entry.Should().NotBeNull("student1 should be on leaderboard");
         student1Entry!.TotalXp.Should().Be(30);
         student1Entry.Level.Should().BeGreaterThan(0, "level calculated from XP");
@@ -96,7 +94,7 @@ public class LeaderboardGamificationTests(DatabaseFixture fixture)
     [Fact]
     public async Task Student_Builds3DayStreak_StreakDisplayedCorrectly()
     {
-        // Arrange: Seed 3 consecutive days of activity for student1
+        // Arrange
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
@@ -109,11 +107,11 @@ public class LeaderboardGamificationTests(DatabaseFixture fixture)
             pointsPerDay: 10
         );
 
-        // Act: Fetch leaderboard
+        // Act
         var leaderboard = await GetLeaderboardAsync(_client1, TimeFrame.AllTime);
         var student1Entry = leaderboard.Entries.FirstOrDefault(e => e.UserId == _student1Id);
 
-        // Assert: Current streak is 3
+        // Assert
         student1Entry.Should().NotBeNull();
         student1Entry!.CurrentStreak.Should().Be(3);
         student1Entry.TotalXp.Should().Be(30, "3 days × 10 points");
@@ -122,11 +120,10 @@ public class LeaderboardGamificationTests(DatabaseFixture fixture)
     [Fact]
     public async Task Student_Inactive2Days_StreakResets()
     {
-        // Arrange: Student1 had a 3-day streak, but it ended 2 days ago
+        // Arrange
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-        // Seed streak that ended 3 days ago (gap of 2 days from today)
         await DbSeeder.AddConsecutiveDaysActivityAsync(
             ctx,
             _student1Id,
@@ -136,11 +133,11 @@ public class LeaderboardGamificationTests(DatabaseFixture fixture)
             pointsPerDay: 10
         );
 
-        // Act: Fetch leaderboard
+        // Act
         var leaderboard = await GetLeaderboardAsync(_client1, TimeFrame.AllTime);
         var student1Entry = leaderboard.Entries.FirstOrDefault(e => e.UserId == _student1Id);
 
-        // Assert: Current streak is 0 due to 2-day gap
+        // Assert
         student1Entry.Should().NotBeNull();
         student1Entry!.CurrentStreak.Should().Be(0, "streak resets after missing a day");
         student1Entry.LongestStreak.Should().Be(3, "longest streak preserved");
@@ -149,13 +146,11 @@ public class LeaderboardGamificationTests(DatabaseFixture fixture)
     [Fact]
     public async Task Student_UploadsAvatar_ShowsOnLeaderboard()
     {
-        // Arrange: Student1 uploads an avatar
+        // Arrange
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
         await DbSeeder.AddAvatarAsync(ctx, _student1Id);
-
-        // Also give student1 some XP so they appear on leaderboard
         await DbSeeder.AddProgressAsync(
             ctx,
             _student1Id,
@@ -165,11 +160,11 @@ public class LeaderboardGamificationTests(DatabaseFixture fixture)
             completedAt: DateTime.UtcNow
         );
 
-        // Act: Fetch leaderboard
+        // Act
         var leaderboard = await GetLeaderboardAsync(_client1, TimeFrame.AllTime);
         var student1Entry = leaderboard.Entries.FirstOrDefault(e => e.UserId == _student1Id);
 
-        // Assert: Avatar URL is present
+        // Assert
         student1Entry.Should().NotBeNull();
         student1Entry!.Avatar.Should().NotBeNullOrEmpty("avatar should be present");
         student1Entry.Avatar.Should().Contain("/api/user/");
@@ -179,26 +174,23 @@ public class LeaderboardGamificationTests(DatabaseFixture fixture)
     [Fact]
     public async Task TwoStudents_CompeteForRank_OrderedByXp()
     {
-        // Arrange: Student1 earns 50 XP, Student2 earns 30 XP
+        // Arrange
         for (var i = 0; i < 5; i++)
             await SubmitAnswerAsync(_client1, Fixture.ExerciseIds[i], "answer");
 
         for (var i = 0; i < 3; i++)
             await SubmitAnswerAsync(_client2, Fixture.ExerciseIds[i + 5], "answer");
 
-        // Act: Fetch leaderboard
+        // Act
         var leaderboard = await GetLeaderboardAsync(_client1, TimeFrame.AllTime);
-
         var student1Entry = leaderboard.Entries.FirstOrDefault(e => e.UserId == _student1Id);
         var student2Entry = leaderboard.Entries.FirstOrDefault(e => e.UserId == _student2Id);
 
-        // Assert: Student1 ranks higher than Student2
+        // Assert
         student1Entry.Should().NotBeNull();
         student2Entry.Should().NotBeNull();
-
         student1Entry!.TotalXp.Should().Be(50);
         student2Entry!.TotalXp.Should().Be(30);
-
         student1Entry
             .Rank.Should()
             .BeLessThan(student2Entry.Rank, "higher XP means lower rank number");
@@ -216,13 +208,19 @@ public class LeaderboardGamificationTests(DatabaseFixture fixture)
             TestContext.Current.CancellationToken
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        if (response.StatusCode != HttpStatusCode.OK)
+            throw new InvalidOperationException(
+                $"Failed to fetch leaderboard: {response.StatusCode}"
+            );
+
         var leaderboard = await response.Content.ReadFromJsonAsync<LeaderboardResponse>(
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        leaderboard.Should().NotBeNull();
-        return leaderboard!;
+        if (leaderboard == null)
+            throw new InvalidOperationException("Leaderboard response was null");
+
+        return leaderboard;
     }
 
     private async Task SubmitAnswerAsync(HttpClient client, string exerciseId, string answer)

@@ -9,16 +9,18 @@ using Xunit;
 namespace Backend.Tests.EndToEnd;
 
 /// <summary>
-/// HTTP-level E2E tests for content creator and admin workflows.
+/// HTTP-level E2E tests for admin and content creator CRUD workflows.
 ///
 /// Verifies:
-///   - Admin creates course → lesson → exercises → student can access
-///   - ContentCreator creates content → student interacts
-///   - Admin manual unlock → student sees unlock
-///   - Admin updates lesson → student sees changes
-///   - Admin deletes lesson → student loses access
+///   - Admin creates course/lesson/exercises → students can access after unlock
+///   - ContentCreator creates content → locked by default → students blocked
+///   - Admin manually unlocks lesson → students gain immediate access
+///   - Admin updates lesson → students see changes
+///   - Admin deletes lesson → students lose access (404)
+///   - Admin adds exercises to existing lesson → students see new exercises
+///   - Student role cannot create courses (403)
 /// </summary>
-public class ContentCreatorJourneyTests(DatabaseFixture fixture)
+public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
     : ControllerTestBase(fixture),
         IClassFixture<DatabaseFixture>
 {
@@ -61,7 +63,7 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
     [Fact]
     public async Task Admin_CreatesLesson_StudentCanAccessAndSolve()
     {
-        // Arrange: Admin creates a new lesson with exercises in the existing course
+        // Arrange
         var courseId = await GetExistingCourseIdAsync();
 
         var createLessonDto = new CreateLessonDto(
@@ -91,58 +93,57 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
             ]
         );
 
-        // Act: Admin creates lesson
+        // Act
         var createResponse = await _adminClient.PostAsJsonAsync(
             "/api/lessons",
             createLessonDto,
             TestContext.Current.CancellationToken
         );
 
-        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        createdLesson.Should().NotBeNull();
-        createdLesson!.Title.Should().Be("Admin Test Lesson");
-        createdLesson.IsLocked.Should().BeTrue("new lessons are locked by default");
-
-        // Admin manually unlocks the lesson
         var unlockResponse = await _adminClient.PostAsync(
-            $"/api/lessons/{createdLesson.LessonId}/unlock",
+            $"/api/lessons/{createdLesson!.LessonId}/unlock",
             null,
             TestContext.Current.CancellationToken
         );
-        unlockResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        // Student fetches the lesson
         var studentFetchResponse = await _studentClient.GetAsync(
             $"/api/lessons/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
         );
 
-        studentFetchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var studentLesson = await studentFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        studentLesson.Should().NotBeNull();
-        studentLesson!.IsLocked.Should().BeFalse("admin unlocked it");
-        studentLesson.Exercises.Should().HaveCount(1);
-
-        // Student completes the exercise
-        var exerciseId = studentLesson.Exercises[0].Id;
+        var exerciseId = studentLesson!.Exercises[0].Id;
         var submitResponse = await _studentClient.PostAsJsonAsync(
             $"/api/exercises/{exerciseId}/submit",
             new SubmitAnswerRequest("answer"),
             TestContext.Current.CancellationToken
         );
 
-        submitResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var submitResult = await submitResponse.Content.ReadFromJsonAsync<ExerciseSubmitResult>(
             cancellationToken: TestContext.Current.CancellationToken
         );
 
+        // Assert
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        createdLesson.Should().NotBeNull();
+        createdLesson!.Title.Should().Be("Admin Test Lesson");
+        createdLesson.IsLocked.Should().BeTrue("new lessons are locked by default");
+
+        unlockResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        studentFetchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        studentLesson.Should().NotBeNull();
+        studentLesson!.IsLocked.Should().BeFalse("admin unlocked it");
+        studentLesson.Exercises.Should().HaveCount(1);
+
+        submitResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         submitResult.Should().NotBeNull();
         submitResult!.IsCorrect.Should().BeTrue();
         submitResult.PointsEarned.Should().Be(10);
@@ -151,7 +152,7 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
     [Fact]
     public async Task Admin_UpdatesLesson_StudentSeesChanges()
     {
-        // Arrange: Admin creates a lesson
+        // Arrange
         var courseId = await GetExistingCourseIdAsync();
         var createLessonDto = new CreateLessonDto(
             CourseId: courseId,
@@ -172,14 +173,13 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        // Unlock so student can see it
         await _adminClient.PostAsync(
             $"/api/lessons/{createdLesson!.LessonId}/unlock",
             null,
             TestContext.Current.CancellationToken
         );
 
-        // Act: Admin updates the lesson
+        // Act
         var updateDto = new UpdateLessonDto(
             CourseId: null,
             Title: "Updated Title",
@@ -195,9 +195,6 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
             TestContext.Current.CancellationToken
         );
 
-        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        // Assert: Student sees updated content
         var studentFetchResponse = await _studentClient.GetAsync(
             $"/api/lessons/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
@@ -207,6 +204,8 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
 
+        // Assert
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         updatedLesson.Should().NotBeNull();
         updatedLesson!.Title.Should().Be("Updated Title");
         updatedLesson.Description.Should().Be("Updated description");
@@ -216,7 +215,7 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
     [Fact]
     public async Task Admin_DeletesLesson_StudentCannotAccess()
     {
-        // Arrange: Admin creates and unlocks a lesson
+        // Arrange
         var courseId = await GetExistingCourseIdAsync();
         var createLessonDto = new CreateLessonDto(
             CourseId: courseId,
@@ -243,34 +242,32 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
             TestContext.Current.CancellationToken
         );
 
-        // Student can initially access
         var initialFetch = await _studentClient.GetAsync(
             $"/api/lessons/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
         );
-        initialFetch.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        // Act: Admin deletes the lesson
+        // Act
         var deleteResponse = await _adminClient.DeleteAsync(
             $"/api/lessons/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
         );
 
-        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        // Assert: Student cannot access deleted lesson
         var studentFetchAfterDelete = await _studentClient.GetAsync(
             $"/api/lessons/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
         );
 
+        // Assert
+        initialFetch.StatusCode.Should().Be(HttpStatusCode.OK);
+        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
         studentFetchAfterDelete.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
     [Fact]
     public async Task ContentCreator_CreatesLesson_LockedByDefault()
     {
-        // Arrange: Create a ContentCreator user
+        // Arrange
         var (_, creatorToken) = await CreateAuthenticatedUserAsync(
             "creator",
             "creator@test.com",
@@ -280,7 +277,6 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
 
         var courseId = await GetExistingCourseIdAsync();
 
-        // Act: ContentCreator creates a lesson
         var createLessonDto = new CreateLessonDto(
             CourseId: courseId,
             Title: "Creator Lesson",
@@ -291,28 +287,27 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
             Exercises: null
         );
 
+        // Act
         var createResponse = await creatorClient.PostAsJsonAsync(
             "/api/lessons",
             createLessonDto,
             TestContext.Current.CancellationToken
         );
 
-        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
             cancellationToken: TestContext.Current.CancellationToken
         );
 
-        // Assert: Lesson is locked, student cannot access exercises
-        createdLesson.Should().NotBeNull();
-        createdLesson!.IsLocked.Should().BeTrue("new lessons are locked by default");
-
-        // Student tries to access - should see 403 or empty exercises
         var studentFetchResponse = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
+            $"/api/lessons/{createdLesson!.LessonId}",
             TestContext.Current.CancellationToken
         );
 
-        // Locked lessons might return 403 or 200 with locked=true depending on policy
+        // Assert
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        createdLesson.Should().NotBeNull();
+        createdLesson!.IsLocked.Should().BeTrue("new lessons are locked by default");
+
         if (studentFetchResponse.StatusCode == HttpStatusCode.OK)
         {
             var studentLesson = await studentFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
@@ -333,7 +328,7 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
     [Fact]
     public async Task Admin_AddsExerciseToExistingLesson_StudentSeesNewExercise()
     {
-        // Arrange: Admin creates a lesson with one exercise
+        // Arrange
         var courseId = await GetExistingCourseIdAsync();
         var createLessonDto = new CreateLessonDto(
             CourseId: courseId,
@@ -377,7 +372,7 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
             TestContext.Current.CancellationToken
         );
 
-        // Act: Admin adds a second exercise to the lesson
+        // Act
         var addExerciseDto = new CreateFillInBlankExerciseDto(
             LessonId: createdLesson.LessonId,
             Title: "Exercise 2",
@@ -400,9 +395,6 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
             TestContext.Current.CancellationToken
         );
 
-        addExerciseResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        // Assert: Student sees both exercises
         var studentFetchResponse = await _studentClient.GetAsync(
             $"/api/lessons/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
@@ -412,6 +404,8 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
 
+        // Assert
+        addExerciseResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         lessonWithExercises.Should().NotBeNull();
         lessonWithExercises!.Exercises.Should().HaveCount(2);
         lessonWithExercises.Exercises.Should().Contain(e => e.Title == "Exercise 1");
@@ -421,7 +415,7 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
     [Fact]
     public async Task Student_CannotCreateCourse_Returns403()
     {
-        // Arrange: Student tries to create a course
+        // Arrange
         var createCourseDto = new CreateCourseDto(
             LanguageName: "Italian",
             Title: "Student Course",
@@ -430,14 +424,14 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
             OrderIndex: 0
         );
 
-        // Act: Student POSTs to /api/courses
+        // Act
         var response = await _studentClient.PostAsJsonAsync(
             "/api/courses",
             createCourseDto,
             TestContext.Current.CancellationToken
         );
 
-        // Assert: 403 Forbidden (role-based authorization)
+        // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
@@ -445,19 +439,22 @@ public class ContentCreatorJourneyTests(DatabaseFixture fixture)
 
     private async Task<string> GetExistingCourseIdAsync()
     {
-        // Fetch courses to get the seeded course ID
         var response = await _adminClient.GetAsync(
             "/api/courses",
             TestContext.Current.CancellationToken
         );
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        if (response.StatusCode != HttpStatusCode.OK)
+            throw new InvalidOperationException("Failed to fetch courses from fixture");
 
         var courses =
             await response.Content.ReadFromJsonAsync<List<CourseDto>>(
                 cancellationToken: TestContext.Current.CancellationToken
             ) ?? [];
 
-        courses.Should().NotBeEmpty("fixture seeds at least one course");
+        if (courses.Count == 0)
+            throw new InvalidOperationException("Fixture should seed at least one course");
+
         return courses.First().CourseId;
     }
 }
