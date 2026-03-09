@@ -222,14 +222,26 @@ public abstract record ExerciseDto(...);
 
 ## Service Layer Guidelines
 
-- **Nullable LessonId in CreateExerciseDto**: Optional when nested inside CreateLessonDto (parent assigns ID), required for standalone creation. Standalone path validates: `if (string.IsNullOrEmpty(dto.LessonId)) throw ArgumentException`
+### Core Patterns
+
 - **Async all the way**: All service methods must be async
+- **No repository pattern**: Services directly access DbContext
+- **Service dependency chain**: ExerciseService → LessonService → ExerciseProgressService (avoid circular dependencies)
+- **Operation result enums over bool**: Service methods that can fail for distinct reasons return an enum rather than `bool` — e.g. `UnlockStatus` (`Unlocked` / `AlreadyUnlocked` / `NoNextLesson`) instead of a bare `bool`. This preserves the failure reason at the call site without relying on comments.
+- **Nullable LessonId in CreateExerciseDto**: Optional when nested inside CreateLessonDto (parent assigns ID), required for standalone creation. Standalone path validates: `if (string.IsNullOrEmpty(dto.LessonId)) throw ArgumentException`
+
+### EF Core Query Patterns
+
 - **Include chains**: Use `.Include()` and `.ThenInclude()` for eager loading related entities when full entity data is needed
 - **Prefer LINQ projections over Include for navigation queries**: When a method only needs a few scalar FK values from related entities, project with `.Select()` into a `private record` instead of loading full entity graphs. Example: `LessonCourseContext` in `LessonService.GetNextLessonAsync` projects `CourseId`, `OrderIndex`, `LanguageId`, `CourseOrderIndex` — avoids materialising `Course` and `Language` entirely.
 - **Eager load child collections for polymorphic types**: Use `.ThenInclude(e => (e as ChildType)!.ChildCollection)`
   - Example: `.Include(l => l.Exercises).ThenInclude(e => (e as MultipleChoiceExercise)!.Options)`
   - EF Core handles cast gracefully for non-matching types (TPH pattern)
 - **OrderBy**: Always order collections by `OrderIndex` for consistent sequencing
+- **GroupJoin for left-join queries**: Use EF Core `GroupJoin` to left-join exercises with user progress in a single database round-trip (see `ExerciseProgressService`)
+
+### Null Handling & Error Handling
+
 - **Null handling**: Use null-coalescing operators for optional relationships
 - **Never use the null-forgiving operator (`!`)** — always perform an explicit null check and throw the appropriate exception instead:
   - `ArgumentNullException.ThrowIfNull(arg)` — for method/constructor parameters
@@ -246,24 +258,32 @@ public abstract record ExerciseDto(...);
       ?? throw new InvalidOperationException($"Lesson {id} not found.");
   return lesson.Title;
   ```
-- **No repository pattern**: Services directly access DbContext
+
+### Progress & Unlocking
+
 - **Upsert pattern**: `FirstOrDefaultAsync` → create if null, update if exists (see `ExerciseProgressService.SubmitAnswerAsync`)
-- **User from JWT**: All controllers use `HttpContext.GetCurrentUser()` exclusively (returns full User entity, not just ID)
-  - Do NOT use `User.FindFirstValue()` — UserContextMiddleware pre-loads the user entity before controllers execute
 - **Auto-increment OrderIndex**: When `OrderIndex` is null in DTOs, calculate as `MaxAsync(e => (int?)e.OrderIndex) ?? -1 + 1` in parent entity
 - **Idempotent unlocks**: All unlock methods check `IsLocked` before modifying (safe to call multiple times)
-- **Operation result enums over bool**: Service methods that can fail for distinct reasons return an enum rather than `bool` — e.g. `UnlockStatus` (`Unlocked` / `AlreadyUnlocked` / `NoNextLesson`) instead of a bare `bool`. This preserves the failure reason at the call site without relying on comments.
 - **Cascade unlocking**: `LessonService.UnlockNextLessonAsync()` calls `ExerciseService.UnlockFirstExerciseInLessonAsync()`
-- **Service dependency chain**: ExerciseService → LessonService → ExerciseProgressService (avoid circular dependencies)
+
+### Authorization & Security
+
 - **Admin bypass pattern**: Use `UserExtensions.CanBypassLocksAsync(user, userManager)` to check if user can bypass locks (Admin or ContentCreator role)
 - **Lock validation layers**: Check locks in both service layer (ExerciseProgressService.SubmitAnswerAsync) AND controller layer (ExerciseController.GetExercise)
+
+### Performance & Optimization
+
 - **Unified progress fetching**: `GetFullLessonProgressAsync` returns both `LessonProgressSummary` and per-exercise progress dict in one query via `LessonProgressResult`. Avoid calling separate methods for summary vs. exercise-level progress.
 - **Batch progress for lists**: Use `GetProgressForLessonsAsync(userId, lessonIds)` when loading progress for multiple lessons — avoids N+1 queries in controller loops
-- **GroupJoin for left-join queries**: Use EF Core `GroupJoin` to left-join exercises with user progress in a single database round-trip (see `ExerciseProgressService`)
 - **`GetFullLessonProgressAsync` is expensive — avoid in hot paths**: Issues a GroupJoin across all exercises in the lesson (~6 DB operations). Call it at lesson load, lesson-complete, and dedicated progress endpoints only — **never inside `SubmitAnswerAsync`**
 - **DTO-per-context pattern**: Create separate DTOs when endpoints return different data shapes — e.g. `ExerciseSubmitResult` (submit endpoint — no lesson-wide aggregates) vs. `SubmitAnswerResponse` (submissions-restore endpoint — includes `LessonProgressSummary`). Keeps payloads minimal and types honest.
 - **Submission endpoints return all items**: `GetLessonSubmissionsAsync` returns `SubmitAnswerResponse` for EVERY exercise in lesson, not just attempted ones. Frontend must filter appropriately.
 - **Avatar binary storage**: Avatars stored as `varbinary(max)` in a separate `UserAvatars` table (not on `User` entity) to avoid loading bytes via `UserContextMiddleware` on every request. `AvatarService` handles download (Google), upsert, and retrieval. Leaderboard queries batch-check `UserAvatars` for existence and construct serving URLs (`/api/user/{id}/avatar`) — never load binary data in list queries.
+
+### User Context & Authentication
+
+- **User from JWT**: All controllers use `HttpContext.GetCurrentUser()` exclusively (returns full User entity, not just ID)
+  - Do NOT use `User.FindFirstValue()` — UserContextMiddleware pre-loads the user entity before controllers execute
 
 Include chain example (`LessonService.GetLessonWithDetailsAsync` — full entity needed):
 ```csharp
