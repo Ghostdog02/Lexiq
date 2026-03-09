@@ -87,7 +87,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
         // Assert
         student1Initial?.TotalXp.Should().Be(0, "student1 starts with no XP");
         student1Entry.Should().NotBeNull("student1 should be on leaderboard");
-        student1Entry!.TotalXp.Should().Be(30);
+        student1Entry.TotalXp.Should().Be(30);
         student1Entry.Level.Should().BeGreaterThan(0, "level calculated from XP");
     }
 
@@ -113,7 +113,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
 
         // Assert
         student1Entry.Should().NotBeNull();
-        student1Entry!.CurrentStreak.Should().Be(3);
+        student1Entry.CurrentStreak.Should().Be(3);
         student1Entry.TotalXp.Should().Be(30, "3 days × 10 points");
     }
 
@@ -139,7 +139,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
 
         // Assert
         student1Entry.Should().NotBeNull();
-        student1Entry!.CurrentStreak.Should().Be(0, "streak resets after missing a day");
+        student1Entry.CurrentStreak.Should().Be(0, "streak resets after missing a day");
         student1Entry.LongestStreak.Should().Be(3, "longest streak preserved");
     }
 
@@ -166,7 +166,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
 
         // Assert
         student1Entry.Should().NotBeNull();
-        student1Entry!.Avatar.Should().NotBeNullOrEmpty("avatar should be present");
+        student1Entry.Avatar.Should().NotBeNullOrEmpty("avatar should be present");
         student1Entry.Avatar.Should().Contain("/api/user/");
         student1Entry.Avatar.Should().Contain("/avatar");
     }
@@ -189,8 +189,8 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
         // Assert
         student1Entry.Should().NotBeNull();
         student2Entry.Should().NotBeNull();
-        student1Entry!.TotalXp.Should().Be(50);
-        student2Entry!.TotalXp.Should().Be(30);
+        student1Entry.TotalXp.Should().Be(50);
+        student2Entry.TotalXp.Should().Be(30);
         student1Entry
             .Rank.Should()
             .BeLessThan(student2Entry.Rank, "higher XP means lower rank number");

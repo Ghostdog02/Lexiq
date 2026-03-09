@@ -65,11 +65,11 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         secondEx.IsLocked.Should().BeTrue("second exercise should be locked initially");
 
         submitResult.Should().NotBeNull("submission should succeed");
-        submitResult!.IsCorrect.Should().BeTrue();
+        submitResult.IsCorrect.Should().BeTrue();
         submitResult.PointsEarned.Should().Be(10);
 
         exercisesAfter.Should().NotBeNull();
-        var secondExAfter = exercisesAfter!.First(e => e.OrderIndex == 1);
+        var secondExAfter = exercisesAfter.First(e => e.OrderIndex == 1);
         secondExAfter
             .IsLocked.Should()
             .BeFalse("second exercise should unlock after first completed");
@@ -93,18 +93,18 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
 
         // Assert
         attempt1.Should().NotBeNull();
-        attempt1!.IsCorrect.Should().BeFalse();
+        attempt1.IsCorrect.Should().BeFalse();
         attempt1.PointsEarned.Should().Be(0);
         attempt1.CorrectAnswer.Should().Be("answer");
 
         attempt2.Should().NotBeNull();
-        attempt2!.IsCorrect.Should().BeFalse();
+        attempt2.IsCorrect.Should().BeFalse();
 
         attempt3.Should().NotBeNull();
-        attempt3!.IsCorrect.Should().BeFalse();
+        attempt3.IsCorrect.Should().BeFalse();
 
         correct.Should().NotBeNull();
-        correct!.IsCorrect.Should().BeTrue();
+        correct.IsCorrect.Should().BeTrue();
         correct.PointsEarned.Should().Be(10);
     }
 
@@ -125,15 +125,15 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
 
         // Assert
         firstSubmit.Should().NotBeNull();
-        firstSubmit!.IsCorrect.Should().BeTrue();
+        firstSubmit.IsCorrect.Should().BeTrue();
         firstSubmit.PointsEarned.Should().Be(10);
 
         secondSubmit.Should().NotBeNull();
-        secondSubmit!.IsCorrect.Should().BeTrue();
+        secondSubmit.IsCorrect.Should().BeTrue();
         secondSubmit.PointsEarned.Should().Be(10, "points earned field shows exercise value");
 
         progress.Should().NotBeNull();
-        var exProgress = progress!.First(p => p.ExerciseId == firstEx.Id);
+        var exProgress = progress.First(p => p.ExerciseId == firstEx.Id);
         exProgress.PointsEarned.Should().Be(10, "only first submission counts for XP");
     }
 
@@ -167,7 +167,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         result.Should().NotBeNull();
-        result!.IsCompleted.Should().BeTrue();
+        result.IsCompleted.Should().BeTrue();
         result.EarnedXp.Should().Be(140, "14 exercises × 10 points");
         result.TotalPossibleXp.Should().Be(200, "20 exercises × 10 points");
         result.CompletionPercentage.Should().Be(70.0);
@@ -194,7 +194,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
 
         // Assert
         progress.Should().NotBeNull();
-        var completed = progress!.Where(p => p.IsCompleted).ToList();
+        var completed = progress.Where(p => p.IsCompleted).ToList();
         completed.Should().HaveCount(3);
         completed.Should().Contain(p => p.ExerciseId == ex1.Id && p.PointsEarned == 10);
         completed.Should().Contain(p => p.ExerciseId == ex2.Id && p.PointsEarned == 10);
@@ -217,7 +217,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
 
         // Assert
         submissions.Should().NotBeNull();
-        var wrongSubmission = submissions![0]; // Submissions ordered by OrderIndex
+        var wrongSubmission = submissions[0]; // Submissions ordered by OrderIndex
         wrongSubmission.Should().NotBeNull("wrong answer creates a submission record");
         wrongSubmission.IsCorrect.Should().BeFalse();
         wrongSubmission.PointsEarned.Should().Be(0);
@@ -254,7 +254,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         result.Should().NotBeNull();
-        result!.IsCompleted.Should().BeFalse("65% is below 70% threshold");
+        result.IsCompleted.Should().BeFalse("65% is below 70% threshold");
         result.CompletionPercentage.Should().Be(65.0);
     }
 

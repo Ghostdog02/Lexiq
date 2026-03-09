@@ -1,4 +1,4 @@
-# E2E Testing Documentation
+ # E2E Testing Documentation
 
 **Last Updated**: 2026-03-03
 **Framework**: Playwright

@@ -160,7 +160,7 @@ public class LoginUserTests(DatabaseFixture fixture)
         var result = await _sut.LoginUser(payload);
 
         result.Should().NotBeNull();
-        result!.Id.Should().Be(existing.Id);
+        result.Id.Should().Be(existing.Id);
     }
 
     [Fact]

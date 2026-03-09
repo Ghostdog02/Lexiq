@@ -96,12 +96,14 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         // Assert
         secondExBefore.IsLocked.Should().BeTrue("second exercise starts locked");
         wrongSubmit.Should().NotBeNull();
-        wrongSubmit!.IsCorrect.Should().BeFalse("wrong answer is incorrect");
+        wrongSubmit.IsCorrect.Should().BeFalse("wrong answer is incorrect");
         wrongSubmit.PointsEarned.Should().Be(0, "no points for wrong answer");
-        wrongSubmit.CorrectAnswer.Should().Be("answer", "correct answer revealed after wrong submission");
+        wrongSubmit
+            .CorrectAnswer.Should()
+            .Be("answer", "correct answer revealed after wrong submission");
 
         exercisesAfter.Should().NotBeNull();
-        var secondExAfter = exercisesAfter!.First(e => e.Id == secondExId);
+        var secondExAfter = exercisesAfter.First(e => e.Id == secondExId);
         secondExAfter
             .IsLocked.Should()
             .BeTrue("second exercise should remain locked after wrong answer");
@@ -121,7 +123,9 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden, "students cannot submit to locked exercises");
+        response
+            .StatusCode.Should()
+            .Be(HttpStatusCode.Forbidden, "students cannot submit to locked exercises");
     }
 
     [Fact]
@@ -144,7 +148,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK, "admins can bypass exercise locks");
         result.Should().NotBeNull();
-        result!.IsCorrect.Should().BeTrue();
+        result.IsCorrect.Should().BeTrue();
         result.PointsEarned.Should().Be(10);
     }
 
@@ -166,9 +170,11 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK, "content creators can bypass exercise locks");
+        response
+            .StatusCode.Should()
+            .Be(HttpStatusCode.OK, "content creators can bypass exercise locks");
         result.Should().NotBeNull();
-        result!.IsCorrect.Should().BeTrue();
+        result.IsCorrect.Should().BeTrue();
         result.PointsEarned.Should().Be(10);
     }
 
@@ -186,7 +192,9 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound, "nonexistent exercise returns 404");
+        response
+            .StatusCode.Should()
+            .Be(HttpStatusCode.NotFound, "nonexistent exercise returns 404");
     }
 
     [Fact]
@@ -198,9 +206,10 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
 
         // Create a locked lesson with an unlocked exercise inside it
         var lockedLessonId = Guid.NewGuid().ToString();
-        var courseId = await ctx.Courses
-            .Select(c => c.Id)
-            .FirstOrDefaultAsync(TestContext.Current.CancellationToken)
+        var courseId =
+            await ctx
+                .Courses.Select(c => c.Id)
+                .FirstOrDefaultAsync(TestContext.Current.CancellationToken)
             ?? throw new InvalidOperationException("No course found in fixture");
 
         ctx.Lessons.Add(
@@ -243,10 +252,12 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode.Should().Be(
-            HttpStatusCode.Forbidden,
-            "students cannot submit to exercises in locked lessons, even if exercise itself is unlocked"
-        );
+        response
+            .StatusCode.Should()
+            .Be(
+                HttpStatusCode.Forbidden,
+                "students cannot submit to exercises in locked lessons, even if exercise itself is unlocked"
+            );
     }
 
     [Fact]
@@ -270,12 +281,9 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Get the correct option ID
-        var mcExerciseWithOptions = await ctx.Exercises
-            .Include(e => (e as MultipleChoiceExercise)!.Options)
-            .FirstOrDefaultAsync(
-                e => e.Id == mcExerciseId,
-                TestContext.Current.CancellationToken
-            );
+        var mcExerciseWithOptions = await ctx
+            .Exercises.Include(e => (e as MultipleChoiceExercise)!.Options)
+            .FirstOrDefaultAsync(e => e.Id == mcExerciseId, TestContext.Current.CancellationToken);
 
         var mcCast = mcExerciseWithOptions as MultipleChoiceExercise;
         if (mcCast == null || mcCast.Options.Count == 0)
@@ -397,7 +405,9 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         secondExSubmission.Should().NotBeNull("second exercise was attempted");
         secondExSubmission.IsCorrect.Should().BeFalse();
         secondExSubmission.PointsEarned.Should().Be(0);
-        secondExSubmission.CorrectAnswer.Should().Be("answer", "wrong submissions reveal correct answer");
+        secondExSubmission
+            .CorrectAnswer.Should()
+            .Be("answer", "wrong submissions reveal correct answer");
     }
 
     // Helper methods

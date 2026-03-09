@@ -112,7 +112,7 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
 
         response.Entries.Should().Contain(e => e.UserId == user.Id);
         response.CurrentUserEntry.Should().NotBeNull();
-        response.CurrentUserEntry!.UserId.Should().Be(user.Id);
+        response.CurrentUserEntry.UserId.Should().Be(user.Id);
     }
 
     [Fact]
@@ -147,7 +147,7 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
 
         response.Entries.Should().NotContain(e => e.UserId == currentUser.Id);
         response.CurrentUserEntry.Should().NotBeNull();
-        response.CurrentUserEntry!.Rank.Should().Be(51);
+        response.CurrentUserEntry.Rank.Should().Be(51);
     }
 
     [Fact]
@@ -354,7 +354,7 @@ public class GetLeaderboardTests(DatabaseFixture fixture)
 
         response.Entries.Should().NotContain(e => e.UserId == currentUser.Id);
         response.CurrentUserEntry.Should().NotBeNull();
-        response.CurrentUserEntry!.Rank.Should().Be(51);
+        response.CurrentUserEntry.Rank.Should().Be(51);
     }
 
     [Fact]

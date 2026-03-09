@@ -24,8 +24,8 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
 
     public async Task<Lesson?> GetNextLessonAsync(string currentLessonId)
     {
-        var ctx = await _context.Lessons
-            .Where(l => l.Id == currentLessonId)
+        var ctx = await _context
+            .Lessons.Where(l => l.Id == currentLessonId)
             .Select(l => new LessonCourseContext(
                 l.CourseId,
                 l.OrderIndex,
@@ -37,8 +37,8 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         if (ctx == null)
             return null;
 
-        var nextLessonInCourse = await _context.Lessons
-            .Where(l => l.CourseId == ctx.CourseId && l.OrderIndex > ctx.LessonOrderIndex)
+        var nextLessonInCourse = await _context
+            .Lessons.Where(l => l.CourseId == ctx.CourseId && l.OrderIndex > ctx.LessonOrderIndex)
             .OrderBy(l => l.OrderIndex)
             .FirstOrDefaultAsync();
 
@@ -46,8 +46,10 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             return nextLessonInCourse;
 
         // Project only the ID — no need to materialize the full Course entity
-        var nextCourseId = await _context.Courses
-            .Where(c => c.LanguageId == ctx.LanguageId && c.OrderIndex > ctx.CourseOrderIndex)
+        var nextCourseId = await _context
+            .Courses.Where(c =>
+                c.LanguageId == ctx.LanguageId && c.OrderIndex > ctx.CourseOrderIndex
+            )
             .OrderBy(c => c.OrderIndex)
             .Select(c => c.Id)
             .FirstOrDefaultAsync();
@@ -55,8 +57,8 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         if (nextCourseId == null)
             return null;
 
-        return await _context.Lessons
-            .Where(l => l.CourseId == nextCourseId)
+        return await _context
+            .Lessons.Where(l => l.CourseId == nextCourseId)
             .OrderBy(l => l.OrderIndex)
             .FirstOrDefaultAsync();
     }
@@ -115,7 +117,8 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     public async Task UnlockLessonAsync(string lessonId)
     {
         var lesson = await _context.Lessons.FindAsync(lessonId);
-        if (lesson == null) return;
+        if (lesson == null)
+            return;
 
         if (lesson.IsLocked)
         {
@@ -156,7 +159,11 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             for (var i = 0; i < dto.Exercises.Count; i++)
             {
                 var exerciseDto = dto.Exercises[i];
-                var exercise = _exerciseService.MapToEntity(exerciseDto, lesson.Id, exerciseDto.OrderIndex ?? i);
+                var exercise = _exerciseService.MapToEntity(
+                    exerciseDto,
+                    lesson.Id,
+                    exerciseDto.OrderIndex ?? i
+                );
                 exercise.IsLocked = i != 0; // First exercise unlocked, rest locked
                 _context.Exercises.Add(exercise);
             }
@@ -174,9 +181,9 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
 
         if (dto.CourseId != null)
         {
-            var course = await _context.Courses.FindAsync(dto.CourseId);
-            if (course == null)
-                throw new ArgumentException($"Course with ID '{dto.CourseId}' not found.");
+            var course =
+                await _context.Courses.FindAsync(dto.CourseId)
+                ?? throw new ArgumentException($"Course with ID '{dto.CourseId}' not found.");
             lesson.CourseId = dto.CourseId;
         }
         if (dto.Title != null)
