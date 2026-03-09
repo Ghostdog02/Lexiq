@@ -177,7 +177,30 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
 ## Known Limitations
 
 - The `pull-and-test` CI job does not actually run tests — it only authenticates to GHCR
-- `continuous-delivery` job in `development.yml` references `@fix/refactor` — update the `uses:` pin when the main branch changes
+
+## Maintenance Tasks
+
+**Workflow branch pin updates**: When merging feature branches to the main branch, update workflow `uses:` references to ensure they point to the correct branch:
+
+1. **Check `development.yml`**:
+   ```yaml
+   continuous-delivery:
+     needs: [build-frontend, build-backend, pull-and-test]
+     uses: ./.github/workflows/continuous-delivery.yml@<BRANCH>
+   ```
+
+2. **Check `infrastructure-update.yml`**:
+   ```yaml
+   rebuild-app-images:
+     uses: ./.github/workflows/build-and-push-docker.yml@<BRANCH>
+
+   deploy-fresh-images:
+     uses: ./.github/workflows/continuous-delivery.yml@<BRANCH>
+   ```
+
+3. **After merging to `master`**: Change all `@fix/refactor` → `@master`
+
+**Why**: Workflow file references (`uses: ./.github/workflows/...@branch`) pin to specific branches. Stale references can cause CI failures or deploy outdated code.
 
 ## Common Debugging Scenarios
 
