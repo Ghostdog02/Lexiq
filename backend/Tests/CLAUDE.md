@@ -39,7 +39,7 @@ Tests/
 │   └── AdminContentManagementJourneyTests.cs      ← Admin/creator CRUD workflows (6 tests)
 ├── Controllers/
 │   ├── AuthControllerTests.cs        ← WebApplicationFactory HTTP-level tests (6 tests)
-│   └── AuthorizationTests.cs         ← Complete authorization matrix (82 tests across 8 categories)
+│   └── AuthorizationTests.cs         ← Complete authorization matrix (92 tests across 7 categories)
 └── Services/
     ├── CalculateLevelTests.cs  ← Pure unit tests (no DB)
     ├── JwtServiceTests.cs      ← Pure unit tests (no DB)
@@ -161,6 +161,128 @@ public async Task Student_CompletesExercise_UnlocksNextExercise()
     exercisesAfter!.First(e => e.OrderIndex == 1).IsLocked.Should().BeFalse();
 }
 ```
+
+### FluentAssertions "because" Clauses
+
+Use `because` clauses to **explain business rules and edge cases** — not to repeat what the assertion already says. The `because` message should add context that isn't obvious from the test name or assertion itself.
+
+#### When "because" Adds Value
+
+✅ **Explains WHY a rule exists** (business context):
+```csharp
+// BAD — just restates the assertion
+response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+    because: "response should be forbidden");
+
+// GOOD — explains the business rule behind the status
+response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+    because: "locked exercises prevent students from skipping ahead to later content");
+```
+
+✅ **Clarifies edge case behavior**:
+```csharp
+// BAD — obvious from the assertion
+streak.Current.Should().Be(3);
+
+// GOOD — explains the grace period edge case
+streak.Current.Should().Be(3,
+    because: "streak grace period extends to the entire consecutive run when last activity was yesterday");
+```
+
+✅ **Documents complex business logic**:
+```csharp
+// BAD — restates the comparison
+completedExercises.Should().BeGreaterThanOrEqualTo(7);
+
+// GOOD — explains the 70% threshold rule
+completedExercises.Should().BeGreaterThanOrEqualTo(7,
+    because: "70% completion threshold (7/10) ensures students engage with most lesson content before unlocking next lesson");
+```
+
+✅ **Provides context for "magic numbers"**:
+```csharp
+// BAD — doesn't explain why 10
+result.PointsEarned.Should().Be(10);
+
+// GOOD — explains where the value comes from
+result.PointsEarned.Should().Be(10,
+    because: "FillInBlank exercises award 10 XP per correct answer (from fixture seed data)");
+```
+
+#### When "because" is Redundant
+
+❌ **Don't repeat the test method name**:
+```csharp
+// Test: Student_RoleRestrictedEndpoint_Returns403
+response.StatusCode.Should().Be(HttpStatusCode.Forbidden,
+    because: "Student role is not authorized");  // ← already in test name
+```
+
+❌ **Don't restate the assertion**:
+```csharp
+user.Should().NotBeNull(because: "user should not be null");  // ← useless
+```
+
+❌ **Don't explain obvious SDK behavior**:
+```csharp
+token.Should().Contain(".",
+    because: "JWT tokens contain dots");  // ← common knowledge
+```
+
+#### Pattern for Authorization Tests
+
+For parameterized authorization tests, include the endpoint in the `because` to identify which case failed:
+
+```csharp
+// GOOD — identifies the failing endpoint in parameterized tests
+response.StatusCode.Should().Be(
+    HttpStatusCode.Unauthorized,
+    because: $"{method} {path} requires authentication"
+);
+
+// Even better — explains WHY auth is required for this specific endpoint
+response.StatusCode.Should().Be(
+    HttpStatusCode.Forbidden,
+    because: $"Admin-only endpoint {method} {path} prevents students from modifying course content"
+);
+```
+
+#### Pattern for Security/Edge Cases
+
+Security and edge case tests benefit most from `because` clauses:
+
+```csharp
+// Explains security rationale
+submitResult.StatusCode.Should().Be(HttpStatusCode.Unauthorized,
+    because: "expired JWT must not grant access to prevent session replay attacks after timeout");
+
+// Explains idempotency guarantee
+totalXp.Should().Be(10,
+    because: "resubmitting correct answer must not award XP twice — prevents XP farming");
+
+// Explains grace period logic
+streak.Current.Should().Be(1,
+    because: "yesterday's activity counts toward current streak (1-day grace period for timezone flexibility)");
+
+// Explains bypass mechanism
+response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden,
+    because: "Admin bypass allows content creators to test locked exercises without unlocking");
+```
+
+#### Failure Message Impact
+
+**Without meaningful `because`:**
+```
+Expected exercises.Count to be 3, but found 2.
+```
+
+**With meaningful `because`:**
+```
+Expected exercises.Count to be 3 because fixture seeds 3 FillInBlank exercises per lesson
+(indices 0-2), but found 2.
+```
+
+The second message tells you the fixture seeding failed, not the business logic.
 
 ### Helper Method Pattern
 
