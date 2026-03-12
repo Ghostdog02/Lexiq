@@ -40,14 +40,7 @@ E2E tests use **seeded data from backend DatabaseFixture** for courses, lessons,
 
 ## Discovering Seed Data IDs
 
-### Option 1: Hardcode Known IDs (Not Recommended)
-
-```typescript
-// ❌ Brittle - IDs change if seed data is regenerated
-const KNOWN_COURSE_ID = '11111111-1111-1111-1111-111111111111';
-```
-
-### Option 2: Fetch IDs at Runtime (Recommended)
+### Option 1: Fetch IDs at Runtime (Recommended)
 
 **File**: `e2e/helpers/test-data.helper.ts`
 

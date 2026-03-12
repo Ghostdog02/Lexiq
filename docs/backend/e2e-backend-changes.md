@@ -182,7 +182,7 @@ public class ExerciseControllerTests : ControllerTestBase
 
 ---
 
-## 2. Mock Google OAuth Support (Optional)
+## 2. Mock Google OAuth Support
 
 ### Current Behavior
 

@@ -411,7 +411,7 @@ test('should submit different exercise types', async ({ page, request }) => {
 
 ## 3. Future Test Suites
 
-### 3.1 Leaderboard Tests (Optional)
+### 3.1 Leaderboard Tests
 
 **File**: `e2e/tests/leaderboard.spec.ts`
 
@@ -421,7 +421,7 @@ Test cases:
 - Highlight current user
 - Show rank changes
 
-### 3.2 Profile Tests (Optional)
+### 3.2 Profile Tests
 
 **File**: `e2e/tests/profile.spec.ts`
 
