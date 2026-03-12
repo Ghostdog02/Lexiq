@@ -16,15 +16,14 @@ namespace Backend.Tests.Controllers;
 /// <summary>
 /// HTTP-level integration tests for authorization policy enforcement across all controllers.
 ///
-/// Eight test categories:
+/// Seven test categories:
 ///   1. Unauthenticated → 401 on every [Authorize]-guarded endpoint
 ///   2. Student role → 403 on Admin-only and Admin/ContentCreator endpoints
 ///   3. ContentCreator role → 403 on Admin-only endpoints
 ///   4. ContentCreator role → not rejected on [Authorize(Roles = "Admin,ContentCreator")] endpoints
 ///   5. Admin role → not rejected (not 401/403) on all role-restricted endpoints
 ///   6. Public endpoints → not blocked (not 401/403) without credentials
-///   7. Missing auth on UserManagementController and RoleManagementController (security documentation)
-///   8. Expired JWT → 401 on every [Authorize]-guarded endpoint
+///   7. Expired JWT → 401 on every [Authorize]-guarded endpoint
 /// </summary>
 public class AuthorizationTests(DatabaseFixture fixture)
     : ControllerTestBase(fixture),
@@ -77,6 +76,10 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("GET", "/api/userlanguage")]
     [InlineData("GET", "/api/user/xp")]
     [InlineData("GET", "/api/auth/is-admin")]
+    [InlineData("GET", "/api/usermanagement")]
+    [InlineData("GET", "/api/rolemanagement/test@example.com")]
+    [InlineData("POST", "/api/auth/logout")]
+    [InlineData("GET", "/api/user/test-id/avatar")]
     public async Task Unauthenticated_ProtectedEndpoint_Returns401(string method, string path)
     {
         using var client = CreateClient();
@@ -125,6 +128,8 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("POST", "/api/exercises")]
     [InlineData("PUT", "/api/exercises/test-id")]
     [InlineData("DELETE", "/api/exercises/test-id")]
+    [InlineData("GET", "/api/usermanagement")]
+    [InlineData("GET", "/api/rolemanagement/test@example.com")]
     public async Task Student_RoleRestrictedEndpoint_Returns403(string method, string path)
     {
         var token = MintToken("student-id", "student@test.com", "Student");
@@ -146,6 +151,8 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("DELETE", "/api/language/test-id")]
     [InlineData("DELETE", "/api/course/test-id")]
     [InlineData("POST", "/api/lesson/test-id/unlock")]
+    [InlineData("GET", "/api/usermanagement")]
+    [InlineData("GET", "/api/rolemanagement/test@example.com")]
     public async Task ContentCreator_AdminOnlyEndpoint_Returns403(string method, string path)
     {
         var token = MintToken("cc-id", "cc@test.com", "ContentCreator");
@@ -208,6 +215,8 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("POST", "/api/exercises")]
     [InlineData("PUT", "/api/exercises/test-id")]
     [InlineData("DELETE", "/api/exercises/test-id")]
+    [InlineData("GET", "/api/usermanagement")]
+    [InlineData("GET", "/api/rolemanagement/test@example.com")]
     public async Task Admin_RoleRestrictedEndpoint_IsNotRejectedByAuthPolicy(
         string method,
         string path
@@ -237,9 +246,7 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("GET", "/api/language/test-id")]
     [InlineData("GET", "/api/leaderboard")]
     [InlineData("GET", "/api/user/test-id/xp")]
-    [InlineData("GET", "/api/user/test-id/avatar")]
     [InlineData("GET", "/api/auth/auth-status")]
-    [InlineData("POST", "/api/auth/logout")]
     public async Task Unauthenticated_PublicEndpoint_IsNotBlocked(string method, string path)
     {
         using var client = CreateClient();
@@ -258,42 +265,7 @@ public class AuthorizationTests(DatabaseFixture fixture)
             );
     }
 
-    // ── 7. Missing auth on management controllers (security documentation) ──
-
-    /// <summary>
-    /// UserManagementController carries no [Authorize] attribute — all user CRUD
-    /// operations are reachable by anonymous callers. These endpoints should be
-    /// secured with [Authorize(Roles = "Admin")] before production.
-    /// </summary>
-    [Fact]
-    public async Task UserManagementController_HasNoAuthAttribute_AccessibleWithoutToken()
-    {
-        using var client = CreateClient();
-        var response = await client.GetAsync(
-            "/api/usermanagement",
-            TestContext.Current.CancellationToken
-        );
-        response.StatusCode.Should().NotBe(HttpStatusCode.Unauthorized);
-        response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden);
-    }
-
-    /// <summary>
-    /// RoleManagementController carries no [Authorize] attribute — role lookup by
-    /// email is reachable by anonymous callers. Should be secured before production.
-    /// </summary>
-    [Fact]
-    public async Task RoleManagementController_HasNoAuthAttribute_AccessibleWithoutToken()
-    {
-        using var client = CreateClient();
-        var response = await client.GetAsync(
-            "/api/rolemanagement/nonexistent@example.com",
-            TestContext.Current.CancellationToken
-        );
-        response.StatusCode.Should().NotBe(HttpStatusCode.Unauthorized);
-        response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden);
-    }
-
-    // ── 8. Expired JWT → 401 ────────────────────────────────────────────────
+    // ── 7. Expired JWT → 401 ────────────────────────────────────────────────
 
     [Theory]
     [InlineData("GET", "/api/course")]
@@ -309,6 +281,10 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("POST", "/api/exercises/test-id/submit")]
     [InlineData("GET", "/api/user/xp")]
     [InlineData("GET", "/api/auth/is-admin")]
+    [InlineData("GET", "/api/usermanagement")]
+    [InlineData("GET", "/api/rolemanagement/test@example.com")]
+    [InlineData("POST", "/api/auth/logout")]
+    [InlineData("GET", "/api/user/test-id/avatar")]
     public async Task ExpiredJwt_ProtectedEndpoint_Returns401(string method, string path)
     {
         var token = MintExpiredToken("some-user-id", "user@test.com", "Student");
