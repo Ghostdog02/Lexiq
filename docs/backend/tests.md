@@ -29,17 +29,18 @@ The Lexiq backend has **12 test classes** covering authentication, authorization
 
 ---
 
-### 2. **AuthorizationTests.cs** (48 tests across 7 categories) — Role-based access control
+### 2. **AuthorizationTests.cs** (82 tests across 8 categories) — Role-based access control
 
 **Type**: Integration (WebApplicationFactory + Testcontainers)
 **Coverage**: Every protected endpoint in the system
 
 #### Categories
 
-1. **Unauthenticated → 401** (10 tests)
+1. **Unauthenticated → 401** (20 tests)
    - Verifies all `[Authorize]`-guarded endpoints reject requests with no JWT
    - Includes special case for `PUT /api/user/avatar` with multipart form data
-   - Tests: GET /api/course, /api/lesson, /api/exercise, /api/user/xp, etc.
+   - Tests: GET/POST/PUT/DELETE on /api/course, /api/lesson, /api/exercise
+   - Additional: GET /api/user/xp, /api/auth/is-admin, POST /api/lesson/{id}/complete, POST /api/lesson/{id}/unlock
 
 2. **Student → 403 on role-restricted** (13 tests)
    - Students cannot create/update/delete content
@@ -50,22 +51,30 @@ The Lexiq backend has **12 test classes** covering authentication, authorization
    - ContentCreators can create content but cannot manage languages or manually unlock
    - Tests: POST/PUT/DELETE /api/language, DELETE /api/course, POST /api/lesson/{id}/unlock
 
-4. **Admin → not rejected** (13 tests)
+4. **ContentCreator → not rejected on Admin/ContentCreator endpoints** (8 tests)
+   - ContentCreators can access `[Authorize(Roles = "Admin,ContentCreator")]` endpoints
+   - Tests: POST/PUT /api/course, POST/PUT/DELETE /api/lesson, POST/PUT/DELETE /api/exercise
+   - Verifies ContentCreator role satisfies dual-role authorization
+
+5. **Admin → not rejected** (13 tests)
    - Admins can access all role-restricted endpoints
    - Tests verify status is NOT 401 or 403 (may be 404/400 if resource doesn't exist)
+   - Full coverage of language, course, lesson, exercise CRUD operations
 
-5. **Public endpoints are not blocked** (9 tests)
+6. **Public endpoints are not blocked** (7 tests)
    - Unauthenticated users can access public endpoints
-   - Tests: GET /api/language, /api/leaderboard, /api/user/{id}/xp, /api/user/{id}/avatar, /api/auth/auth-status, POST /api/auth/logout
+   - Tests: GET /api/language, /api/leaderboard, /api/user/{id}/xp, /api/auth/auth-status
+   - **Note**: Some endpoints marked as public in old docs are actually `[Authorize]` in code (e.g., GET /api/user/{id}/avatar)
 
-6. **Missing auth on management controllers** (2 tests — security documentation)
+7. **Missing auth on management controllers** (2 tests — security documentation)
    - `UserManagementController` has no `[Authorize]` — accessible without token
    - `RoleManagementController` has no `[Authorize]` — accessible without token
    - **These tests document a security gap that should be fixed before production**
 
-7. **Expired JWT → 401** (7 tests)
+8. **Expired JWT → 401** (13 tests)
    - Expired tokens (minted 1 hour ago) are rejected
-   - Tests: GET /api/course, /api/lesson, /api/exercise, /api/user/xp, /api/auth/is-admin
+   - Tests: GET/POST/PUT on /api/course, /api/lesson, /api/exercise
+   - Additional: GET /api/user/xp, /api/auth/is-admin
 
 **JWT Minting**: Tests mint their own JWTs with correct issuer/audience/signing key to test policy enforcement
 
@@ -356,18 +365,7 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
-## Coverage Gaps (Updated 2026-03-09)
-
-### ✅ Now Covered (Previously Missing)
-
-- ✅ **Exercise submission flow** — StudentExerciseProgressJourneyTests + ExerciseSubmissionSecurityTests (16 tests)
-- ✅ **Sequential unlocking** — Correct answer unlocks next, wrong does not
-- ✅ **XP idempotency** — Re-submission doesn't double-count
-- ✅ **Admin bypass** — Admins/ContentCreators can access locked exercises
-- ✅ **Progress restoration** — StudentSessionPersistenceTests (6 tests)
-- ✅ **Lesson completion** — 70% threshold validated
-- ✅ **MultipleChoice validation** — Option ID vs text answer
-- ✅ **Progress/Submissions endpoints** — Explicit shape validation
+## Coverage Gaps (Updated 2026-03-12)
 
 ### Still Missing
 
@@ -378,15 +376,17 @@ threshold(n) = 100 * n * (n - 1)
 **Untested Endpoints:**
 | Endpoint | Method | Coverage |
 |----------|--------|----------|
-| POST /api/course | POST | Authorization only (no DTO validation, business logic) |
-| PUT /api/course/{id} | PUT | Authorization only |
-| POST /api/lesson | POST | Authorization only |
-| PUT /api/lesson/{id} | PUT | Authorization only |
-| POST /api/lesson/{id}/complete | POST | Covered in StudentExerciseProgressJourneyTests |
-| PUT /api/user/avatar | PUT | Authorization only (multipart form data check) |
-| GET /api/user/profile | GET | **None** |
+| POST /api/course | POST | **Authorization complete** (DTO validation, business logic still missing) |
+| PUT /api/course/{id} | PUT | **Authorization complete** (DTO validation, business logic still missing) |
+| POST /api/lesson | POST | **Authorization complete** (DTO validation, business logic still missing) |
+| PUT /api/lesson/{id} | PUT | **Authorization complete** (DTO validation, business logic still missing) |
+| POST /api/lesson/{id}/complete | POST | **Fully covered** in StudentExerciseProgressJourneyTests |
+| PUT /api/user/avatar | PUT | **Authorization complete** (file validation, upsert logic still missing) |
+| GET /api/user/profile | GET | **Does not exist** (documentation error - endpoint not implemented) |
 
 **Business Logic:**
+- Course/Lesson CRUD: DTO validation, OrderIndex auto-calculation, FK validation, update partial fields
+- Avatar upload: File size/type validation, upsert behavior, existing avatar replacement
 - FillInBlank case sensitivity and whitespace trimming edge cases
 - AcceptedAnswers comma-separated validation
 - Lesson unlock cascade to first exercise (covered indirectly)
@@ -424,9 +424,10 @@ dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLev
 ## Test Statistics
 
 - **Total test classes**: 12
-- **Total test methods**: ~151 (exact count depends on Theory inline data rows)
+- **Total test methods**: ~185 (exact count depends on Theory inline data rows)
 - **E2E tests**: 5 classes, 33 tests (full user journeys)
 - **Integration tests**: 5 classes (use Testcontainers)
 - **Unit tests**: 2 classes (pure, no DB)
-- **Coverage**: Auth flow, Authorization policies, Exercise submission (FillInBlank + MultipleChoice), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
-- **Not covered**: Listening/Translation exercise types, FillInBlank edge cases, Course/Lesson CRUD business logic
+- **Authorization tests**: 82 tests across 8 categories (complete endpoint coverage for all roles)
+- **Coverage**: Auth flow, **Complete authorization matrix**, Exercise submission (FillInBlank + MultipleChoice), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
+- **Not covered**: Listening/Translation exercise types, FillInBlank edge cases, Course/Lesson CRUD business logic (DTO validation, OrderIndex auto-calc), Avatar upload validation

@@ -38,7 +38,8 @@ Tests/
 │   ├── LeaderboardAndStreaksTests.cs              ← Leaderboard rankings, streak tracking (5 tests)
 │   └── AdminContentManagementJourneyTests.cs      ← Admin/creator CRUD workflows (6 tests)
 ├── Controllers/
-│   └── AuthControllerTests.cs ← WebApplicationFactory HTTP-level tests
+│   ├── AuthControllerTests.cs        ← WebApplicationFactory HTTP-level tests (6 tests)
+│   └── AuthorizationTests.cs         ← Complete authorization matrix (82 tests across 8 categories)
 └── Services/
     ├── CalculateLevelTests.cs  ← Pure unit tests (no DB)
     ├── JwtServiceTests.cs      ← Pure unit tests (no DB)
