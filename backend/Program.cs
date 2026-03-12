@@ -41,7 +41,7 @@ public class Program
         services.AddApplicationServices();
         services.AddControllersWithOptions();
         services.AddIdentityConfiguration();
-        services.AddGoogleAuthentication();
+        // services.AddGoogleAuthentication();  // Removed: Using Google.Apis.Auth token validation instead of OAuth redirect flow
         services.AddJwtAuthentication();
         services.AddSwaggerDocumentation();
         services.LimitFileUploads();
