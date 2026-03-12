@@ -41,6 +41,32 @@ Five workflows in `.github/workflows/`:
 4. **codeql.yml** — Security scanning with GitHub Advanced Security (runs on push/PR/schedule)
 5. **infrastructure-update.yml** — Weekly OS + infrastructure image updates (Sundays 02:00 UTC)
 
+### Manually Triggering Workflows
+
+**Via GitHub UI:**
+1. Navigate to **Actions** tab in repository
+2. Select workflow from left sidebar (e.g., "Infrastructure Update")
+3. Click **Run workflow** button
+4. Select branch and fill in any required inputs
+5. Click **Run workflow** to trigger
+
+**Via GitHub CLI (`gh`):**
+```bash
+# Trigger infrastructure update workflow
+gh workflow run infrastructure-update.yml
+
+# Trigger with specific branch
+gh workflow run infrastructure-update.yml --ref master
+
+# View workflow runs
+gh run list --workflow=infrastructure-update.yml
+
+# Watch a running workflow
+gh run watch
+```
+
+**Note:** Only workflows with `workflow_dispatch:` trigger can be manually run. All Lexiq workflows support manual triggering.
+
 ### Deployment Flow
 
 - Triggered on push to `master` or `fix/refactor`
