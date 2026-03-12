@@ -140,7 +140,9 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
             new SubmitAnswerRequest("answer"),
             TestContext.Current.CancellationToken
         );
-
+        
+        System.Console.WriteLine(response);
+        System.Console.WriteLine(response.Content);
         var result = await response.Content.ReadFromJsonAsync<ExerciseSubmitResult>(
             cancellationToken: TestContext.Current.CancellationToken
         );

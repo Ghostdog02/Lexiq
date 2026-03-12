@@ -69,7 +69,7 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("DELETE", "/api/lesson/test-id")]
     [InlineData("POST", "/api/lesson/test-id/complete")]
     [InlineData("POST", "/api/lesson/test-id/unlock")]
-    [InlineData("GET", "/api/exercise/lesson/test-id")]
+    [InlineData("GET", "/api/exercises/lesson/test-id")]
     [InlineData("POST", "/api/exercises")]
     [InlineData("PUT", "/api/exercises/test-id")]
     [InlineData("DELETE", "/api/exercises/test-id")]
@@ -122,9 +122,9 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("POST", "/api/lesson")]
     [InlineData("PUT", "/api/lesson/test-id")]
     [InlineData("DELETE", "/api/lesson/test-id")]
-    [InlineData("POST", "/api/exercise")]
-    [InlineData("PUT", "/api/exercise/test-id")]
-    [InlineData("DELETE", "/api/exercise/test-id")]
+    [InlineData("POST", "/api/exercises")]
+    [InlineData("PUT", "/api/exercises/test-id")]
+    [InlineData("DELETE", "/api/exercises/test-id")]
     public async Task Student_RoleRestrictedEndpoint_Returns403(string method, string path)
     {
         var token = MintToken("student-id", "student@test.com", "Student");
@@ -167,9 +167,9 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("POST", "/api/lesson")]
     [InlineData("PUT", "/api/lesson/test-id")]
     [InlineData("DELETE", "/api/lesson/test-id")]
-    [InlineData("POST", "/api/exercise")]
-    [InlineData("PUT", "/api/exercise/test-id")]
-    [InlineData("DELETE", "/api/exercise/test-id")]
+    [InlineData("POST", "/api/exercises")]
+    [InlineData("PUT", "/api/exercises/test-id")]
+    [InlineData("DELETE", "/api/exercises/test-id")]
     public async Task ContentCreator_AdminContentCreatorEndpoint_IsNotRejectedByAuthPolicy(
         string method,
         string path
@@ -205,9 +205,9 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("POST", "/api/lesson")]
     [InlineData("PUT", "/api/lesson/test-id")]
     [InlineData("DELETE", "/api/lesson/test-id")]
-    [InlineData("POST", "/api/exercise")]
-    [InlineData("PUT", "/api/exercise/test-id")]
-    [InlineData("DELETE", "/api/exercise/test-id")]
+    [InlineData("POST", "/api/exercises")]
+    [InlineData("PUT", "/api/exercises/test-id")]
+    [InlineData("DELETE", "/api/exercises/test-id")]
     public async Task Admin_RoleRestrictedEndpoint_IsNotRejectedByAuthPolicy(
         string method,
         string path
@@ -303,10 +303,10 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("GET", "/api/lesson/test-id")]
     [InlineData("POST", "/api/lesson")]
     [InlineData("PUT", "/api/lesson/test-id")]
-    [InlineData("GET", "/api/exercise/lesson/test-id")]
-    [InlineData("POST", "/api/exercise")]
-    [InlineData("PUT", "/api/exercise/test-id")]
-    [InlineData("POST", "/api/exercise/test-id/submit")]
+    [InlineData("GET", "/api/exercises/lesson/test-id")]
+    [InlineData("POST", "/api/exercises")]
+    [InlineData("PUT", "/api/exercises/test-id")]
+    [InlineData("POST", "/api/exercises/test-id/submit")]
     [InlineData("GET", "/api/user/xp")]
     [InlineData("GET", "/api/auth/is-admin")]
     public async Task ExpiredJwt_ProtectedEndpoint_Returns401(string method, string path)

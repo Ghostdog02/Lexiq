@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/[controller]s")]
 [ApiController]
 [Authorize]
 public class ExerciseController(
@@ -94,7 +94,7 @@ public class ExerciseController(
 
         try
         {
-            var result = await _progressService.SubmitAnswerAsync(
+            ExerciseSubmitResult result = await _progressService.SubmitAnswerAsync(
                 user.Id,
                 exerciseId,
                 request.Answer
@@ -102,15 +102,19 @@ public class ExerciseController(
 
             return Ok(result);
         }
+
         catch (ArgumentException ex)
         {
             return NotFound(new { message = ex.Message });
         }
+        
         catch (InvalidOperationException ex)
         {
             return StatusCode(403, new { message = ex.Message });
         }
     }
+
+    //To do: move these endpoints to LessonController
 
     [HttpGet("lesson/{lessonId}/progress")]
     public async Task<ActionResult<List<UserExerciseProgressDto>>> GetLessonProgress(
