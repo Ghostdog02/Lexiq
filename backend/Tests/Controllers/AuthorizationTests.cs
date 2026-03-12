@@ -16,14 +16,15 @@ namespace Backend.Tests.Controllers;
 /// <summary>
 /// HTTP-level integration tests for authorization policy enforcement across all controllers.
 ///
-/// Seven test categories:
+/// Eight test categories:
 ///   1. Unauthenticated → 401 on every [Authorize]-guarded endpoint
 ///   2. Student role → 403 on Admin-only and Admin/ContentCreator endpoints
 ///   3. ContentCreator role → 403 on Admin-only endpoints
-///   4. Admin role → not rejected (not 401/403) on all role-restricted endpoints
-///   5. Public endpoints → not blocked (not 401/403) without credentials
-///   6. Missing auth on UserManagementController and RoleManagementController (security documentation)
-///   7. Expired JWT → 401 on every [Authorize]-guarded endpoint
+///   4. ContentCreator role → not rejected on [Authorize(Roles = "Admin,ContentCreator")] endpoints
+///   5. Admin role → not rejected (not 401/403) on all role-restricted endpoints
+///   6. Public endpoints → not blocked (not 401/403) without credentials
+///   7. Missing auth on UserManagementController and RoleManagementController (security documentation)
+///   8. Expired JWT → 401 on every [Authorize]-guarded endpoint
 /// </summary>
 public class AuthorizationTests(DatabaseFixture fixture)
     : ControllerTestBase(fixture),
@@ -58,11 +59,21 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [Theory]
     [InlineData("GET", "/api/course")]
     [InlineData("GET", "/api/course/test-id")]
+    [InlineData("POST", "/api/course")]
+    [InlineData("PUT", "/api/course/test-id")]
+    [InlineData("DELETE", "/api/course/test-id")]
     [InlineData("GET", "/api/lesson/course/test-id")]
     [InlineData("GET", "/api/lesson/test-id")]
+    [InlineData("POST", "/api/lesson")]
+    [InlineData("PUT", "/api/lesson/test-id")]
+    [InlineData("DELETE", "/api/lesson/test-id")]
     [InlineData("POST", "/api/lesson/test-id/complete")]
+    [InlineData("POST", "/api/lesson/test-id/unlock")]
     [InlineData("GET", "/api/exercise/lesson/test-id")]
-    [InlineData("POST", "/api/exercise/test-id/submit")]
+    [InlineData("POST", "/api/exercises")]
+    [InlineData("PUT", "/api/exercises/test-id")]
+    [InlineData("DELETE", "/api/exercises/test-id")]
+    [InlineData("POST", "/api/exercises/test-id/submit")]
     [InlineData("GET", "/api/userlanguage")]
     [InlineData("GET", "/api/user/xp")]
     [InlineData("GET", "/api/auth/is-admin")]
@@ -148,7 +159,40 @@ public class AuthorizationTests(DatabaseFixture fixture)
             );
     }
 
-    // ── 4. Admin → not rejected by auth policy ──────────────────────────────
+    // ── 4. ContentCreator → not rejected on Admin,ContentCreator endpoints ───
+
+    [Theory]
+    [InlineData("POST", "/api/course")]
+    [InlineData("PUT", "/api/course/test-id")]
+    [InlineData("POST", "/api/lesson")]
+    [InlineData("PUT", "/api/lesson/test-id")]
+    [InlineData("DELETE", "/api/lesson/test-id")]
+    [InlineData("POST", "/api/exercise")]
+    [InlineData("PUT", "/api/exercise/test-id")]
+    [InlineData("DELETE", "/api/exercise/test-id")]
+    public async Task ContentCreator_AdminContentCreatorEndpoint_IsNotRejectedByAuthPolicy(
+        string method,
+        string path
+    )
+    {
+        var token = MintToken("cc-id", "cc@test.com", "ContentCreator");
+        using var client = CreateClient(token);
+        var response = await SendAsync(client, method, path);
+        response
+            .StatusCode.Should()
+            .NotBe(
+                HttpStatusCode.Unauthorized,
+                because: $"ContentCreator token should pass [Authorize] for {method} {path}"
+            );
+        response
+            .StatusCode.Should()
+            .NotBe(
+                HttpStatusCode.Forbidden,
+                because: $"ContentCreator role satisfies [Authorize(Roles = \"Admin,ContentCreator\")] for {method} {path}"
+            );
+    }
+
+    // ── 5. Admin → not rejected by auth policy ──────────────────────────────
 
     [Theory]
     [InlineData("POST", "/api/language")]
@@ -186,7 +230,7 @@ public class AuthorizationTests(DatabaseFixture fixture)
             );
     }
 
-    // ── 5. Public endpoints are not blocked ─────────────────────────────────
+    // ── 6. Public endpoints are not blocked ─────────────────────────────────
 
     [Theory]
     [InlineData("GET", "/api/language")]
@@ -214,7 +258,7 @@ public class AuthorizationTests(DatabaseFixture fixture)
             );
     }
 
-    // ── 6. Missing auth on management controllers (security documentation) ──
+    // ── 7. Missing auth on management controllers (security documentation) ──
 
     /// <summary>
     /// UserManagementController carries no [Authorize] attribute — all user CRUD
@@ -249,13 +293,19 @@ public class AuthorizationTests(DatabaseFixture fixture)
         response.StatusCode.Should().NotBe(HttpStatusCode.Forbidden);
     }
 
-    // ── 7. Expired JWT → 401 ────────────────────────────────────────────────
+    // ── 8. Expired JWT → 401 ────────────────────────────────────────────────
 
     [Theory]
     [InlineData("GET", "/api/course")]
     [InlineData("GET", "/api/course/test-id")]
+    [InlineData("POST", "/api/course")]
+    [InlineData("PUT", "/api/course/test-id")]
     [InlineData("GET", "/api/lesson/test-id")]
+    [InlineData("POST", "/api/lesson")]
+    [InlineData("PUT", "/api/lesson/test-id")]
     [InlineData("GET", "/api/exercise/lesson/test-id")]
+    [InlineData("POST", "/api/exercise")]
+    [InlineData("PUT", "/api/exercise/test-id")]
     [InlineData("POST", "/api/exercise/test-id/submit")]
     [InlineData("GET", "/api/user/xp")]
     [InlineData("GET", "/api/auth/is-admin")]
