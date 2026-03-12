@@ -55,7 +55,7 @@ public class UserController(
     /// Get a user's avatar image
     /// </summary>
     [HttpGet("{userId}/avatar")]
-    [AllowAnonymous]
+    [Authorize]
     public async Task<IActionResult> GetAvatar(string userId)
     {
         var (data, contentType) = await _avatarService.GetAvatarAsync(userId);

@@ -3,6 +3,7 @@ using Backend.Api.Mapping;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ namespace Backend.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Admin")]
 public class UserManagementController(BackendDbContext context, UserManager<User> userManager)
     : ControllerBase
 {
