@@ -170,39 +170,6 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    // REMOVED: Google OAuth redirect flow middleware (unused)
-    // The application uses Google.Apis.Auth for direct token validation instead of OAuth redirects.
-    // Auth flow: Frontend → Google sign-in → ID token → Backend validates via GoogleJsonWebSignature.ValidateAsync
-    // If OAuth redirect flow is needed in the future, restore this method and add back the package:
-    // dotnet add package Microsoft.AspNetCore.Authentication.Google
-    /*
-    public static IServiceCollection AddGoogleAuthentication(this IServiceCollection services)
-    {
-        var googleClientId =
-            Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID")
-            ?? throw new InvalidOperationException(
-                "GOOGLE_CLIENT_ID not found in environment variables"
-            );
-
-        var googleClientSecret =
-            Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET")
-            ?? throw new InvalidOperationException(
-                "GOOGLE_CLIENT_SECRET not found in environment variables"
-            );
-
-        services
-            .AddAuthentication()
-            .AddGoogle(options =>
-            {
-                options.ClientId = googleClientId;
-                options.ClientSecret = googleClientSecret;
-                options.CallbackPath = "/signin-google";
-            });
-
-        return services;
-    }
-    */
-
     public static IServiceCollection AddSwaggerDocumentation(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
