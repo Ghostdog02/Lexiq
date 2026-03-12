@@ -170,6 +170,12 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
+    // REMOVED: Google OAuth redirect flow middleware (unused)
+    // The application uses Google.Apis.Auth for direct token validation instead of OAuth redirects.
+    // Auth flow: Frontend → Google sign-in → ID token → Backend validates via GoogleJsonWebSignature.ValidateAsync
+    // If OAuth redirect flow is needed in the future, restore this method and add back the package:
+    // dotnet add package Microsoft.AspNetCore.Authentication.Google
+    /*
     public static IServiceCollection AddGoogleAuthentication(this IServiceCollection services)
     {
         var googleClientId =
@@ -195,6 +201,7 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+    */
 
     public static IServiceCollection AddSwaggerDocumentation(this IServiceCollection services)
     {
