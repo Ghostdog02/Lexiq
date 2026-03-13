@@ -119,6 +119,7 @@ public class DatabaseFixture : IAsyncLifetime
                 IsLocked = false, // First lesson unlocked for E2E tests
             }
         );
+        
         await ctx.SaveChangesAsync();
 
         // Seed 10 iterations of each exercise type (40 total)

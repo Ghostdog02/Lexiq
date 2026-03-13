@@ -86,7 +86,10 @@ public class ExerciseProgressService(
         // Unlock any newly earned achievements after XP is persisted
         if (isCorrect && !wasAlreadyCompleted && user != null)
         {
-            await _achievementService.CheckAndUnlockAchievementsAsync(user.Id, user.TotalPointsEarned);
+            await _achievementService.CheckAndUnlockAchievementsAsync(
+                user.Id,
+                user.TotalPointsEarned
+            );
         }
 
         // Unlock the next exercise if this one was completed successfully
