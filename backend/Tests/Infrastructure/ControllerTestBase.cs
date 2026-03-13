@@ -99,11 +99,13 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
     public virtual async ValueTask DisposeAsync()
     {
         await Factory.DisposeAsync();
-        Environment.SetEnvironmentVariable("JWT_SECRET", null);
-        Environment.SetEnvironmentVariable("JWT_EXPIRATION_HOURS", null);
-        Environment.SetEnvironmentVariable("DATA_PROTECTION_KEYS_PATH", null);
-        Environment.SetEnvironmentVariable("GOOGLE_CLIENT_ID", null);
-        Environment.SetEnvironmentVariable("GOOGLE_CLIENT_SECRET", null);
+        // NOTE: We intentionally do NOT clear environment variables here.
+        // Clearing them causes race conditions when xUnit runs test classes in parallel:
+        //   - Test class A sets JWT_SECRET
+        //   - Test class B sets JWT_SECRET (parallel execution)
+        //   - Test class A finishes and clears JWT_SECRET
+        //   - Test class B tries to create factory → JWT_SECRET missing!
+        // The test values are harmless to leave set for the entire test process lifetime.
         GC.SuppressFinalize(this);
     }
 
