@@ -45,6 +45,9 @@ public class ExerciseProgressService(
         if (exercise.Lesson?.IsLocked == true && !canBypassLocks)
             throw new InvalidOperationException("Cannot submit answers for a locked lesson");
 
+        if (exercise.IsLocked && !canBypassLocks)
+            throw new InvalidOperationException("Cannot submit answers for a locked exercise");
+
         var isCorrect = ValidateAnswer(exercise, answer);
         var pointsEarned = isCorrect ? exercise.Points : 0;
 
