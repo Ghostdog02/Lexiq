@@ -27,7 +27,7 @@ public class ExerciseController(
     {
         var exercises = await _exerciseService.GetExercisesByLessonIdAsync(lessonId);
 
-        return Ok(exercises.Select(e => e.ToDto()));
+        return OkPolymorphic<List<ExerciseDto>>(exercises.Select(e => e.ToDto()).ToList());
     }
 
     [HttpGet("{id}")]
@@ -46,7 +46,7 @@ public class ExerciseController(
                 new { message = "Exercise is locked. Complete previous exercises to unlock." }
             );
 
-        return Ok(exercise.ToDto());
+        return OkPolymorphic<ExerciseDto>(exercise.ToDto());
     }
 
     [HttpPost]
@@ -54,7 +54,9 @@ public class ExerciseController(
     public async Task<ActionResult<ExerciseDto>> CreateExercise(CreateExerciseDto dto)
     {
         var exercise = await _exerciseService.CreateExerciseAsync(dto);
-        return CreatedAtAction(nameof(GetExercise), new { id = exercise.Id }, exercise.ToDto());
+        var result = CreatedAtAction(nameof(GetExercise), new { id = exercise.Id }, exercise.ToDto());
+        result.DeclaredType = typeof(ExerciseDto);
+        return result;
     }
 
     [HttpPut("{id}")]
@@ -65,8 +67,15 @@ public class ExerciseController(
         if (exercise == null)
             return NotFound();
 
-        return Ok(exercise.ToDto());
+        return OkPolymorphic<ExerciseDto>(exercise.ToDto());
     }
+
+    /// <summary>
+    /// Returns 200 OK with DeclaredType set to T, ensuring System.Text.Json serializes
+    /// through the base type and includes [JsonPolymorphic] type discriminators.
+    /// </summary>
+    private static OkObjectResult OkPolymorphic<T>(T value) =>
+        new(value) { DeclaredType = typeof(T) };
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin,ContentCreator")]
