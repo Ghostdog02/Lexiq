@@ -269,7 +269,11 @@ public abstract record ExerciseDto(...);
 ### Authorization & Security
 
 - **Admin bypass pattern**: Use `UserExtensions.CanBypassLocksAsync(user, userManager)` to check if user can bypass locks (Admin or ContentCreator role)
-- **Lock validation layers**: Check locks in both service layer (ExerciseProgressService.SubmitAnswerAsync) AND controller layer (ExerciseController.GetExercise)
+- **Dual lock validation**: `ExerciseProgressService.SubmitAnswerAsync` checks BOTH `lesson.IsLocked` and `exercise.IsLocked` before allowing submission:
+  - Lesson lock = entire lesson is blocked (not started yet)
+  - Exercise lock = sequential progression enforcement (must complete previous exercises first)
+  - Both throw `InvalidOperationException` → controller returns 403 Forbidden
+  - Admin and ContentCreator roles bypass both checks via `CanBypassLocksAsync`
 
 ### Performance & Optimization
 

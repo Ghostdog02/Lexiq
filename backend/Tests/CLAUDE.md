@@ -404,6 +404,13 @@ Base class for E2E tests providing:
 - `CreateClient(token)` — returns HttpClient with auth cookie
 - `ClearTestDataAsync()` — DB cleanup between tests
 
+**wwwroot/uploads directory creation:**
+`ControllerTestBase.InitializeAsync()` calls `EnsureUploadDirectoriesExist()` to create the `wwwroot/uploads` directory structure before `WebApplicationFactory` starts. This is required because:
+- ASP.NET Core's static file middleware expects `wwwroot` to exist
+- `wwwroot/` is gitignored (uploaded files not tracked)
+- Dockerfile.dev creates these at build time, but local tests run outside Docker
+- Directories are created relative to backend project root (`../../..` from Tests/)
+
 ### Test Organization
 
 | File | Verifies | Tests |
