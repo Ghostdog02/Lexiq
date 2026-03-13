@@ -590,7 +590,9 @@ _client = _factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAu
 - `GOOGLE_CLIENT_ID` — required by `AddGoogleAuthentication()` at DI registration time
 - `GOOGLE_CLIENT_SECRET` — required by `AddGoogleAuthentication()` at DI registration time
 
-**All five must be set in `InitializeAsync` before `WebApplicationFactory` is instantiated**, and cleared to `null` in `DisposeAsync`. `AddGoogleAuthentication` reads both Google vars during `ConfigureServices` — not at request time — so missing either one throws `InvalidOperationException: GOOGLE_CLIENT_SECRET not found in environment variables` and collapses into an `AggregateException` wrapping a DI validation error.
+**All five are set in `ControllerTestBase.InitializeAsync` before `WebApplicationFactory` is instantiated**. They are **NOT cleared** in `DisposeAsync` — clearing them causes race conditions when xUnit runs test classes in parallel (Test A clears while Test B is still using them). The test values are harmless to leave set for the entire test process lifetime.
+
+`AddGoogleAuthentication` reads both Google vars during `ConfigureServices` — not at request time — so missing either one throws `InvalidOperationException: GOOGLE_CLIENT_SECRET not found in environment variables` and collapses into an `AggregateException` wrapping a DI validation error.
 
 ## Assert Helper Pattern
 
