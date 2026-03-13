@@ -264,34 +264,36 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     {
         // Get the lesson ID from the first exercise
         var exResponse = await _client.GetAsync(
-            $"/api/exercise/{firstExerciseId}",
+            $"/api/exercises/{firstExerciseId}",
             TestContext.Current.CancellationToken
         );
         if (!exResponse.IsSuccessStatusCode)
             return null;
 
         var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            cancellationToken: TestContext.Current.CancellationToken
+            JsonOptions,
+            TestContext.Current.CancellationToken
         );
         if (exDto == null)
             return null;
 
         var response = await _client.GetAsync(
-            $"/api/exercise/lesson/{exDto.LessonId}",
+            $"/api/exercises/lesson/{exDto.LessonId}",
             TestContext.Current.CancellationToken
         );
         if (!response.IsSuccessStatusCode)
             return null;
 
         return await response.Content.ReadFromJsonAsync<List<ExerciseDto>>(
-            cancellationToken: TestContext.Current.CancellationToken
+            JsonOptions,
+            TestContext.Current.CancellationToken
         );
     }
 
     private async Task<ExerciseSubmitResult?> SubmitAnswerAsync(string exerciseId, string answer)
     {
         var response = await _client.PostAsJsonAsync(
-            $"/api/exercise/{exerciseId}/submit",
+            $"/api/exercises/{exerciseId}/submit",
             new SubmitAnswerRequest(answer),
             TestContext.Current.CancellationToken
         );
@@ -310,20 +312,21 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     {
         // Get lesson ID first
         var exResponse = await _client.GetAsync(
-            $"/api/exercise/{firstExerciseId}",
+            $"/api/exercises/{firstExerciseId}",
             TestContext.Current.CancellationToken
         );
         if (!exResponse.IsSuccessStatusCode)
             return null;
 
         var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            cancellationToken: TestContext.Current.CancellationToken
+            JsonOptions,
+            TestContext.Current.CancellationToken
         );
         if (exDto == null)
             return null;
 
         var response = await _client.GetAsync(
-            $"/api/exercise/lesson/{exDto.LessonId}/progress",
+            $"/api/exercises/lesson/{exDto.LessonId}/progress",
             TestContext.Current.CancellationToken
         );
         if (!response.IsSuccessStatusCode)
@@ -347,7 +350,8 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
             return null;
 
         var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            cancellationToken: TestContext.Current.CancellationToken
+            JsonOptions,
+            TestContext.Current.CancellationToken
         );
         if (exDto == null)
             return null;

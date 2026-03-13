@@ -195,7 +195,8 @@ public class StudentSessionPersistenceTests(DatabaseFixture fixture)
             );
 
         var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            cancellationToken: TestContext.Current.CancellationToken
+            JsonOptions,
+            TestContext.Current.CancellationToken
         );
 
         if (exDto == null)
@@ -215,7 +216,8 @@ public class StudentSessionPersistenceTests(DatabaseFixture fixture)
 
         var exercises =
             await response.Content.ReadFromJsonAsync<List<ExerciseDto>>(
-                cancellationToken: TestContext.Current.CancellationToken
+                JsonOptions,
+                TestContext.Current.CancellationToken
             ) ?? [];
 
         return exercises;
@@ -257,7 +259,8 @@ public class StudentSessionPersistenceTests(DatabaseFixture fixture)
             );
 
         var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            cancellationToken: TestContext.Current.CancellationToken
+            JsonOptions,
+            TestContext.Current.CancellationToken
         );
 
         if (exDto == null)
@@ -293,7 +296,8 @@ public class StudentSessionPersistenceTests(DatabaseFixture fixture)
             );
 
         var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            cancellationToken: TestContext.Current.CancellationToken
+            JsonOptions,
+            TestContext.Current.CancellationToken
         );
 
         if (exDto == null)

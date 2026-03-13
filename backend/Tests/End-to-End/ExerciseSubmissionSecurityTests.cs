@@ -1,13 +1,16 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Backend.Api.Dtos;
 using Backend.Database;
 using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Backend.Tests.EndToEnd;
@@ -326,7 +329,8 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
             TestContext.Current.CancellationToken
         );
         var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            cancellationToken: TestContext.Current.CancellationToken
+            JsonOptions,
+            TestContext.Current.CancellationToken
         );
         var lessonId = exDto!.LessonId;
 
@@ -376,9 +380,17 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
             $"/api/exercises/{firstExId}",
             TestContext.Current.CancellationToken
         );
+
         var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            cancellationToken: TestContext.Current.CancellationToken
+            new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                AllowOutOfOrderMetadataProperties = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            },
+            TestContext.Current.CancellationToken
         );
+
         var lessonId = exDto!.LessonId;
 
         // Act
@@ -427,7 +439,8 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
             );
 
         var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            cancellationToken: TestContext.Current.CancellationToken
+            JsonOptions,
+            TestContext.Current.CancellationToken
         );
 
         if (exDto == null)
@@ -446,7 +459,8 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
             );
 
         return await listResponse.Content.ReadFromJsonAsync<List<ExerciseDto>>(
-            cancellationToken: TestContext.Current.CancellationToken
+            JsonOptions,
+            TestContext.Current.CancellationToken
         );
     }
 

@@ -1,13 +1,16 @@
+using System.Text.Json;
 using Backend.Api;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Tests.Infrastructure;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 
@@ -128,6 +131,15 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
         return client;
     }
 
+    /// <summary>
+    /// Returns the application's configured JsonSerializerOptions so that test-side
+    /// deserialization (ReadFromJsonAsync) matches the API's serialization — including
+    /// polymorphic type discriminators, camelCase naming, and enum converters.
+    /// </summary>
+    protected JsonSerializerOptions JsonOptions =>
+        Factory.Services
+            .GetRequiredService<IOptions<JsonOptions>>()
+            .Value.JsonSerializerOptions;
     /// <summary>
     /// Clears all test user data (users, progress, avatars) except the system user.
     /// Call this at the start of InitializeAsync in E2E tests to ensure clean state.
