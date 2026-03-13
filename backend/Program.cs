@@ -42,7 +42,7 @@ public class Program
         services.AddControllersWithOptions();
         services.AddIdentityConfiguration();
         services.AddJwtAuthentication();
-        services.AddSwaggerDocumentation();
+        services.AddOpenApiDocumentation();
         services.LimitFileUploads();
         services.AddHealthChecks();
     }
@@ -52,7 +52,7 @@ public class Program
         app.UseRouting();
         app.UseCors("AllowAngular");
         app.UseStaticFiles();
-        app.UseSwaggerWithUI();
+        app.UseOpenApiEndpoint();
         app.UseAuthentication();
         app.UseUserContext(); // Extract user entity from JWT
         app.UseAuthorization();

@@ -1,21 +1,20 @@
 using Backend.Api.Middleware;
+using DotNetEnv;
+using Microsoft.OpenApi;
 
 namespace Backend.Api.Extensions;
 
 public static class WebApplicationExtensions
 {
-    public static WebApplication UseSwaggerWithUI(this WebApplication app)
+    public static WebApplication UseOpenApiEndpoint(this WebApplication app)
     {
-        app.UseSwagger();
+        app.UseOutputCache();
 
-        app.UseSwaggerUI(c =>
+        if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
         {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Lexiq API V1");
-            c.RoutePrefix = string.Empty;
-            c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
-            c.EnableDeepLinking();
-            c.DisplayRequestDuration();
-        });
+            // Maps the OpenAPI JSON endpoint at /openapi/v1.json
+            app.MapOpenApi();
+        }
 
         return app;
     }

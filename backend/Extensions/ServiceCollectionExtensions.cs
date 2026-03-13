@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text;
 using Backend.Api.Services;
 using Backend.Database;
@@ -11,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
-using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Backend.Api.Extensions;
 
@@ -103,6 +101,19 @@ public static class ServiceCollectionExtensions
             }
         );
 
+        services.AddOutputCache(options =>
+        {
+            options.AddPolicy(
+                "OpenApiDocument",
+                builder =>
+                    builder
+                        .Expire(TimeSpan.FromHours(1))
+                        .SetVaryByHeader("Accept")
+                        .SetVaryByQuery("version")
+            );
+            options.AddPolicy("Query", builder => builder.SetVaryByQuery("culture"));
+        });
+
         return services;
     }
 
@@ -170,29 +181,49 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddSwaggerDocumentation(this IServiceCollection services)
+    public static IServiceCollection AddOpenApiDocumentation(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
 
-        services.AddSwaggerGen(c =>
+        services.AddOpenApi(options =>
         {
-            c.SwaggerDoc(
-                "v1",
-                new OpenApiInfo
+            options.AddDocumentTransformer(
+                (document, context, cancellationToken) =>
                 {
-                    Title = "Lexiq API",
-                    Version = "v1",
-                    Description = "Interactive API documentation for Lexiq",
-                    Contact = new OpenApiContact
+                    document.Info = new OpenApiInfo()
                     {
-                        Name = "Lexiq Team",
-                        Email = "support@lexiq.com",
-                    },
+                        Title = "Lexiq API",
+                        Version = "v1",
+                        Description =
+                            "Language learning platform API for Bulgarian speakers learning Italian",
+                        Contact = new OpenApiContact()
+                        {
+                            Name = "Lexiq Team",
+                            Email = "support@lexiq.com",
+                        },
+                    };
+
+                    // Add Bearer authentication scheme
+                    document.Components ??= new();
+
+                    if (document.Components.SecuritySchemes == null)
+                    {
+                        document.Components.SecuritySchemes =
+                            new Dictionary<string, IOpenApiSecurityScheme>();
+                    }
+
+                    document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+                    {
+                        Type = SecuritySchemeType.Http,
+                        Scheme = "bearer",
+                        BearerFormat = "JWT",
+                        Description =
+                            "JWT Authorization header using the Bearer scheme. Enter your token in the text input below.",
+                    };
+
+                    return Task.CompletedTask;
                 }
             );
-
-            AddXmlDocumentation(c);
-            AddBearerAuthentication(c);
         });
 
         return services;
@@ -219,33 +250,5 @@ public static class ServiceCollectionExtensions
             _ => $"Server={dbServer};Database={dbName};User Id={dbUser};Password={dbPassword};"
                 + $"Encrypt=False;TrustServerCertificate=True;Connection Timeout=30",
         };
-    }
-
-    private static void AddXmlDocumentation(SwaggerGenOptions options)
-    {
-        var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-
-        if (File.Exists(xmlPath))
-        {
-            options.IncludeXmlComments(xmlPath);
-        }
-    }
-
-    private static void AddBearerAuthentication(SwaggerGenOptions options)
-    {
-        options.AddSecurityDefinition(
-            "Bearer",
-            new OpenApiSecurityScheme
-            {
-                Description =
-                    "JWT Authorization header using the Bearer scheme. "
-                    + "Enter 'Bearer' [space] and then your token",
-                Name = "Authorization",
-                In = ParameterLocation.Header,
-                Type = SecuritySchemeType.ApiKey,
-                Scheme = "Bearer",
-            }
-        );
     }
 }
