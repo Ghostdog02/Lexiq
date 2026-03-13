@@ -59,6 +59,10 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
         Environment.SetEnvironmentVariable("GOOGLE_CLIENT_ID", "test-client-id");
         Environment.SetEnvironmentVariable("GOOGLE_CLIENT_SECRET", "test-client-secret");
 
+        // Ensure wwwroot/uploads structure exists for static file middleware
+        // (only created during test runs, never committed to git)
+        EnsureUploadDirectoriesExist();
+
         Factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
             builder.ConfigureServices(services =>
             {
@@ -188,5 +192,28 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
         var token = jwtService.GenerateToken(user, roles);
 
         return (userId, token);
+    }
+
+    /// <summary>
+    /// Creates the wwwroot/uploads directory structure required by static file middleware.
+    /// Path is relative to the backend project root (where Program.cs lives).
+    /// Only runs during tests — directories are gitignored and not committed.
+    /// </summary>
+    private static void EnsureUploadDirectoriesExist()
+    {
+        // Navigate from Tests/ to backend/ (parent directory)
+        var backendRoot = Path.Combine(
+            Directory.GetCurrentDirectory(),
+            "..",
+            "..",
+            ".."
+        );
+
+        var uploadPaths = new[] { "audio", "documents", "images", "videos", "files" };
+        foreach (var subdir in uploadPaths)
+        {
+            var fullPath = Path.Combine(backendRoot, "wwwroot", "uploads", subdir);
+            Directory.CreateDirectory(fullPath);
+        }
     }
 }
