@@ -2,6 +2,13 @@
 
 ASP.NET Core 10.0 Web API with Entity Framework Core and SQL Server 2022.
 
+## API Documentation
+
+Comprehensive API reference documentation available in [`/docs/backend/api/`](../docs/backend/api/):
+- **[Error Handling](../docs/backend/api/error-handling.md)** — Error response format, HTTP status codes, exception mapping
+- **[Authentication & Authorization](../docs/backend/api/authentication.md)** — JWT authentication, Google OAuth, role-based access control
+- **[API Overview](../docs/backend/api/README.md)** — Endpoints, request/response examples, common patterns
+
 ## Development Commands
 
 ```bash
@@ -66,7 +73,8 @@ backend/
 ├── Dtos/                # Data Transfer Objects
 ├── Mapping/             # DTO ↔ Entity mappings
 ├── Middleware/
-│   └── UserContextMiddleware.cs  # Loads User entity from JWT claims
+│   ├── ErrorHandlingMiddleware.cs  # Global exception handler, returns standardized HTTP errors
+│   └── UserContextMiddleware.cs    # Loads User entity from JWT claims
 ├── Extensions/          # Service collection & app builder extensions
 └── Program.cs          # Application entry point
 ```
@@ -121,6 +129,26 @@ This applies to services, controllers, and middleware. DTOs and entities use `re
 
 ### Middleware Configuration
 - Configured in `Extensions/WebApplicationExtensions.cs`
+
+### ErrorHandlingMiddleware
+- Registered **first** in the pipeline to catch exceptions from all downstream middleware/controllers
+- Maps .NET exceptions to appropriate HTTP status codes (400, 401, 403, 404, 409, 500)
+- Returns standardized JSON error responses: `{ message, statusCode, detail }`
+- Stack traces (`detail`) only included in Development environment (hidden in Production)
+- Logs all exceptions with appropriate severity levels (Info/Warning/Error)
+- Controllers do NOT need try-catch blocks — middleware handles all exceptions globally
+- Exception → HTTP status mapping:
+  - `ArgumentException` with "not found" → 404 Not Found
+  - `ArgumentException` (other) → 400 Bad Request
+  - `ArgumentNullException` → 400 Bad Request
+  - `InvalidOperationException` with "locked"/"cannot" → 403 Forbidden
+  - `InvalidOperationException` (other) → 400 Bad Request
+  - `KeyNotFoundException` → 404 Not Found
+  - `UnauthorizedAccessException` → 401 Unauthorized
+  - `DbUpdateConcurrencyException` → 409 Conflict
+  - `DbUpdateException` → 500 Internal Server Error
+  - Generic `Exception` → 500 Internal Server Error
+- See [`/docs/backend/api/error-handling.md`](../../docs/backend/api/error-handling.md) for comprehensive documentation
 
 ### Authentication (JWT-in-Cookie)
 - `JwtService` signs a JWT (HS256); default expiry **24h** (env: `JWT_EXPIRATION_HOURS`)
@@ -474,7 +502,6 @@ Backend loads secrets from `/run/secrets/backend_env` in production (Docker secr
 ## Known Limitations
 
 - No validation layer on backend DTOs (validation done in entity layer)
-- No error handling middleware (returns raw exceptions)
 - `ExerciseProgressService` validates answers server-side — frontend sends answer strings (option IDs for MC, text for others)
 - Lesson completion requires 70% XP threshold (`ExerciseProgressService.DefaultCompletionThreshold`)
 - `UserExerciseProgress.ExerciseId` FK uses `DeleteBehavior.NoAction` (SQL Server multiple cascade path constraint)
