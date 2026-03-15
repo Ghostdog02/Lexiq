@@ -195,15 +195,42 @@ public static class ServiceCollectionExtensions
                         Title = "Lexiq API",
                         Version = "v1",
                         Description =
-                            "Language learning platform API for Bulgarian speakers learning Italian",
+                            "RESTful API for the Lexiq language learning platform. "
+                            + "Supports Italian lessons for Bulgarian speakers with progress tracking, "
+                            + "gamification (XP, levels, streaks), and leaderboards. "
+                            + "\n\nAuthentication: JWT token in HttpOnly cookie (AuthToken). "
+                            + "Login via Google OAuth at POST /api/auth/google-login. "
+                            + "\n\nAll endpoints return standardized error responses: "
+                            + "{ \"message\": \"...\", \"statusCode\": 400, \"detail\": null }. "
+                            + "\n\nDocumentation: https://github.com/lexiq/docs",
                         Contact = new OpenApiContact()
                         {
                             Name = "Lexiq Team",
                             Email = "support@lexiq.com",
                         },
+                        License = new OpenApiLicense()
+                        {
+                            Name = "MIT",
+                            Url = new Uri("https://opensource.org/licenses/MIT"),
+                        },
                     };
 
-                    // Add Bearer authentication scheme
+                    // Add servers
+                    document.Servers =
+                    [
+                        new OpenApiServer
+                        {
+                            Url = "http://localhost:8080",
+                            Description = "Development server",
+                        },
+                        new OpenApiServer
+                        {
+                            Url = "https://api.lexiqlanguage.eu",
+                            Description = "Production server",
+                        },
+                    ];
+
+                    // Add Cookie authentication scheme (actual auth method)
                     document.Components ??= new();
 
                     if (document.Components.SecuritySchemes == null)
@@ -212,13 +239,81 @@ public static class ServiceCollectionExtensions
                             new Dictionary<string, IOpenApiSecurityScheme>();
                     }
 
+                    document.Components.SecuritySchemes["CookieAuth"] = new OpenApiSecurityScheme
+                    {
+                        Type = SecuritySchemeType.ApiKey,
+                        In = ParameterLocation.Cookie,
+                        Name = "AuthToken",
+                        Description =
+                            "JWT token stored in HttpOnly cookie. "
+                            + "Obtain by calling POST /api/auth/google-login with Google OAuth token. "
+                            + "Cookie is automatically sent with requests when using credentials: 'include' (fetch) "
+                            + "or withCredentials: true (axios).",
+                    };
+
+                    // Add Bearer scheme for documentation purposes (though actual auth uses cookie)
                     document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
                     {
                         Type = SecuritySchemeType.Http,
                         Scheme = "bearer",
                         BearerFormat = "JWT",
                         Description =
-                            "JWT Authorization header using the Bearer scheme. Enter your token in the text input below.",
+                            "Alternative: Manually extract JWT from AuthToken cookie and send as Bearer token. "
+                            + "Not recommended - use cookie authentication instead.",
+                    };
+
+                    // Add global security requirement (cookie auth)
+                    document.Security =
+                    [
+                        new OpenApiSecurityRequirement
+                        {
+                            [
+                                new OpenApiSecuritySchemeReference("CookieAuth")
+                                {
+                                    Description = "JWT token in HttpOnly cookie",
+                                }
+                            ] = [],
+                        },
+                    ];
+
+                    // Add common tags
+                    document.Tags = new HashSet<OpenApiTag>
+                    {
+                        new OpenApiTag
+                        {
+                            Name = "Authentication",
+                            Description = "Google OAuth login, logout, and auth status",
+                        },
+                        new OpenApiTag
+                        {
+                            Name = "Languages",
+                            Description = "Language management (Italian, etc.)",
+                        },
+                        new OpenApiTag { Name = "Courses", Description = "Course CRUD operations" },
+                        new OpenApiTag { Name = "Lessons", Description = "Lesson management" },
+                        new OpenApiTag
+                        {
+                            Name = "Exercises",
+                            Description =
+                                "Exercise management (MultipleChoice, FillInBlank, Listening, Translation)",
+                        },
+                        new OpenApiTag
+                        {
+                            Name = "Progress",
+                            Description = "User progress tracking, XP, and submissions",
+                        },
+                        new OpenApiTag
+                        {
+                            Name = "Leaderboard",
+                            Description = "Leaderboard rankings, streaks, levels",
+                        },
+                        new OpenApiTag
+                        {
+                            Name = "User Management",
+                            Description = "Admin user and role management",
+                        },
+                        new OpenApiTag { Name = "Uploads", Description = "File upload operations" },
+                        new OpenApiTag { Name = "Avatars", Description = "User avatar management" },
                     };
 
                     return Task.CompletedTask;
