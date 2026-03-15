@@ -65,7 +65,7 @@ Tests/
 
 1. Starts a SQL Server 2022 container
 2. Runs all EF Core migrations (`MigrateAsync`)
-3. Seeds a permanent content hierarchy once per test run
+3. Seeds a minimal content hierarchy once per test run
 
 ### Permanent Content Hierarchy
 
@@ -75,22 +75,14 @@ Seeded once, **never cleared** between tests:
 System User (satisfies Course.CreatedById FK)
   └─ Language: "Italian"
        └─ Course
-            └─ Lesson
-                 └─ 40 × Exercise (4 types)  (ExerciseIds[0..39])
-                      ├─ [0-9]:   FillInBlank (10 exercises)
-                      ├─ [10-19]: MultipleChoice (10 exercises, 3 options each)
-                      ├─ [20-29]: Listening (10 exercises)
-                      └─ [30-39]: Translation (10 exercises)
+            └─ Lesson (empty — tests create their own exercises)
 ```
-
-**Why 40 exercises across 4 types?**
-- `UserExerciseProgress` PK is `(UserId, ExerciseId)` — streak tests need one distinct `ExerciseId` per calendar day
-- 10 iterations per type enables comprehensive testing of type-specific validation logic
-- MultipleChoice tests require option IDs (GUIDs) instead of text answers
-- Listening/Translation tests verify fuzzy matching and accepted answers
 
 **Why a system user?**
 `Course.CreatedById` is a FK to `Users`. The system user is created first and excluded from `ClearLeaderboardDataAsync` so the content hierarchy survives between tests.
+
+**Why no pre-seeded exercises?**
+Tests create their own exercises in `InitializeAsync` to avoid interdependencies. The `DatabaseFixture` exposes `LessonId` so test classes can create exercises in that lesson. Exercises are deleted in `ClearLeaderboardDataAsync` between tests to prevent accumulation.
 
 ### Creating a DbContext in Tests
 
@@ -141,24 +133,22 @@ All tests follow **strict AAA structure** as defined in `.claude/agents/test-gen
 public async Task Student_CompletesExercise_UnlocksNextExercise()
 {
     // Arrange
-    var exercises = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
-    if (exercises == null || exercises.Count < 2)
-        throw new InvalidOperationException("Fixture should seed at least 2 exercises");
-
-    var firstEx = exercises.First(e => e.OrderIndex == 0);
-    var secondEx = exercises.First(e => e.OrderIndex == 1);
+    var firstExId = _exerciseIds[0];
+    var secondExId = _exerciseIds[1];
 
     // Act
-    var submitResult = await SubmitAnswerAsync(firstEx.Id, "answer");
-    var exercisesAfter = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
+    var submitResult = await SubmitAnswerAsync(firstExId, "answer");
+
+    var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
+    var firstEx = exercises.First(e => e.Id == firstExId);
+    var secondEx = exercises.First(e => e.Id == secondExId);
 
     // Assert
-    firstEx.IsLocked.Should().BeFalse("first exercise should be unlocked");
-    secondEx.IsLocked.Should().BeTrue("second exercise should be locked initially");
+    firstEx.IsLocked.Should().BeFalse("first exercise starts unlocked");
+    secondEx.IsLocked.Should().BeFalse("completing first exercise unlocks second");
     submitResult.Should().NotBeNull();
     submitResult!.IsCorrect.Should().BeTrue();
     submitResult.PointsEarned.Should().Be(10);
-    exercisesAfter!.First(e => e.OrderIndex == 1).IsLocked.Should().BeFalse();
 }
 ```
 
@@ -286,40 +276,40 @@ The second message tells you the fixture seeding failed, not the business logic.
 
 ### Helper Method Pattern
 
-Helper methods (private methods that fetch data or perform HTTP calls) should throw on failure, not assert:
+Helper methods should perform HTTP calls or data fetching without validation. Assertions belong in the test's Assert section only:
 
 ```csharp
-// CORRECT — throws descriptive exception
-private async Task<LeaderboardResponse> GetLeaderboardAsync(HttpClient client, TimeFrame timeFrame)
+// CORRECT — no validation in helper
+private async Task<LeaderboardResponse?> GetLeaderboardAsync(HttpClient client, TimeFrame timeFrame)
 {
-    var response = await client.GetAsync($"/api/leaderboard?timeFrame={timeFrame}");
+    var response = await client.GetAsync(
+        $"/api/leaderboard?timeFrame={timeFrame}",
+        TestContext.Current.CancellationToken
+    );
 
     if (response.StatusCode != HttpStatusCode.OK)
-        throw new InvalidOperationException($"Failed to fetch leaderboard: {response.StatusCode}");
+        return null;
 
-    var leaderboard = await response.Content.ReadFromJsonAsync<LeaderboardResponse>();
-
-    if (leaderboard == null)
-        throw new InvalidOperationException("Leaderboard response was null");
-
-    return leaderboard;
-}
-
-// WRONG — assertions in helper
-private async Task<LeaderboardResponse> GetLeaderboardAsync(HttpClient client, TimeFrame timeFrame)
-{
-    var response = await client.GetAsync($"/api/leaderboard?timeFrame={timeFrame}");
-    response.StatusCode.Should().Be(HttpStatusCode.OK); // ← WRONG
-    var leaderboard = await response.Content.ReadFromJsonAsync<LeaderboardResponse>();
-    leaderboard.Should().NotBeNull(); // ← WRONG
-    return leaderboard!;
+    return await response.Content.ReadFromJsonAsync<LeaderboardResponse>(
+        cancellationToken: TestContext.Current.CancellationToken
+    );
 }
 ```
 
-**Why throw instead of assert in helpers?**
-- Helper failures indicate fixture/setup problems, not test failures
-- Stack traces point directly to the broken setup step
-- Test failures only occur in the Assert section where actual verification happens
+**Usage in test:**
+```csharp
+// Act
+var leaderboard = await GetLeaderboardAsync(_client, TimeFrame.AllTime);
+
+// Assert
+leaderboard.Should().NotBeNull();
+leaderboard!.Entries.Should().NotBeEmpty();
+```
+
+**Why no validation in helpers?**
+- Keeps Arrange section free of assertions (strict AAA pattern)
+- Test failures only occur in Assert section with clear FluentAssertions messages
+- Avoids ambiguity about what's being tested vs what's setup
 
 ## Test Class Pattern
 
@@ -330,6 +320,7 @@ public class MyTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
     private readonly DatabaseFixture _fixture;
     private BackendDbContext _ctx = null!;
+    private List<string> _exerciseIds = null!;
 
     public MyTests(DatabaseFixture fixture) => _fixture = fixture;
 
@@ -338,7 +329,19 @@ public class MyTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
         _ctx = _fixture.CreateDbContext();
         await DbSeeder.ClearLeaderboardDataAsync(_ctx, _fixture.SystemUserId);
-        // ... seed test-specific data
+
+        // Create exercises for this test class
+        _exerciseIds = new List<string>();
+        for (var i = 0; i < 10; i++)
+        {
+            var id = await DbSeeder.CreateFillInBlankExerciseAsync(
+                _ctx,
+                _fixture.LessonId,
+                orderIndex: i,
+                isLocked: i != 0  // Only first exercise unlocked
+            );
+            _exerciseIds.Add(id);
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -369,14 +372,43 @@ var user = new UserBuilder()
 
 ## DbSeeder
 
+### Creating Exercises
+
+Tests create exercises in `InitializeAsync` using helper methods. All exercises accept `"answer"` as the correct response for test simplicity:
+
+```csharp
+// In InitializeAsync
+using var scope = Factory.Services.CreateScope();
+var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
+
+// Create exercises for this test
+_exerciseIds = new List<string>();
+for (var i = 0; i < 10; i++)
+{
+    var id = await DbSeeder.CreateFillInBlankExerciseAsync(
+        ctx,
+        Fixture.LessonId,
+        orderIndex: i,
+        isLocked: i != 0  // Only first exercise unlocked
+    );
+    _exerciseIds.Add(id);
+}
+```
+
+**Available exercise creation helpers:**
+- `CreateFillInBlankExerciseAsync(ctx, lessonId, orderIndex, isLocked, points)`
+- `CreateMultipleChoiceExerciseAsync(ctx, lessonId, orderIndex, isLocked, points)` — creates 3 options (1 correct)
+- `CreateListeningExerciseAsync(ctx, lessonId, orderIndex, isLocked, points)`
+- `CreateTranslationExerciseAsync(ctx, lessonId, orderIndex, isLocked, points)`
+
 ### Adding Progress
 
 ```csharp
-await DbSeeder.AddProgressAsync(ctx, userId, fixture.ExerciseIds[0],
+await DbSeeder.AddProgressAsync(ctx, userId, _exerciseIds[0],
     isCompleted: true, pointsEarned: 10, completedAt: DateTime.UtcNow);
 
 // Add N consecutive days of activity
-await DbSeeder.AddConsecutiveDaysActivityAsync(ctx, userId, fixture.ExerciseIds,
+await DbSeeder.AddConsecutiveDaysActivityAsync(ctx, userId, _exerciseIds,
     days: 5, startDaysAgo: 0);
 ```
 
@@ -385,11 +417,12 @@ await DbSeeder.AddConsecutiveDaysActivityAsync(ctx, userId, fixture.ExerciseIds,
 `ClearLeaderboardDataAsync` deletes in FK-safe order:
 
 1. `UserExerciseProgress` (FK → Exercises, NoAction)
-2. `UserAvatars`
-3. Identity junction tables: `UserClaims`, `UserLogins`, `UserRoles`, `UserTokens`
-4. `Users` (excluding system user)
+2. `Exercises` (deleted after progress to prevent accumulation across tests)
+3. `UserAvatars`
+4. Identity junction tables: `UserClaims`, `UserLogins`, `UserRoles`, `UserTokens`
+5. `Users` (excluding system user)
 
-Language / Course / Lesson / Exercise rows are **never deleted**.
+Language / Course / Lesson rows are **never deleted**.
 
 ## End-to-End Tests
 
@@ -492,11 +525,11 @@ var progress = await GetLessonProgressAsync(lessonId);
 using var scope = Factory.Services.CreateScope();
 var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-await DbSeeder.AddConsecutiveDaysActivityAsync(ctx, userId, Fixture.ExerciseIds, days: 3);
+await DbSeeder.AddConsecutiveDaysActivityAsync(ctx, userId, _exerciseIds, days: 3);
 await DbSeeder.AddAvatarAsync(ctx, userId);
 ```
 
-Language / Course / Lesson / Exercise rows are **never deleted**.
+Language / Course / Lesson rows are **never deleted**. Exercise rows are deleted in `ClearLeaderboardDataAsync`.
 
 ## AvatarService in Tests
 
@@ -638,7 +671,7 @@ If the production implementation changes, the duplicate will cause test failures
 ## Gotchas
 
 ### ExerciseId FK on INSERT
-`UserExerciseProgress.ExerciseId` uses `DeleteBehavior.NoAction` — SQL Server enforces this FK on INSERT, not just DELETE. Any `AddProgressAsync` call with an unknown `ExerciseId` will throw. Always use IDs from `fixture.ExerciseIds`.
+`UserExerciseProgress.ExerciseId` uses `DeleteBehavior.NoAction` — SQL Server enforces this FK on INSERT, not just DELETE. Any `AddProgressAsync` call with an unknown `ExerciseId` will throw. Always use IDs from exercises created in your test's `InitializeAsync` (stored in `_exerciseIds`).
 
 ### Flatpak IDE and NuGet
 If running VS Code / VS Codium inside a Flatpak container, the IDE cannot see NuGet packages installed outside the Flatpak sandbox. This causes red squiggles for `Testcontainers.MsSql` and other packages. The `dotnet` CLI is unaffected — build and test from the terminal.

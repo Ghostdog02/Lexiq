@@ -131,6 +131,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         // Assert
+        courseId.Should().NotBeNull();
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         createdLesson.Should().NotBeNull();
         createdLesson!.Title.Should().Be("Admin Test Lesson");
@@ -205,6 +206,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         // Assert
+        courseId.Should().NotBeNull();
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         updatedLesson.Should().NotBeNull();
         updatedLesson!.Title.Should().Be("Updated Title");
@@ -259,6 +261,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         // Assert
+        courseId.Should().NotBeNull();
         initialFetch.StatusCode.Should().Be(HttpStatusCode.OK);
         deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
         studentFetchAfterDelete.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -304,6 +307,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         // Assert
+        courseId.Should().NotBeNull();
         createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         createdLesson.Should().NotBeNull();
         createdLesson!.IsLocked.Should().BeTrue("new lessons are locked by default");
@@ -405,6 +409,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         // Assert
+        courseId.Should().NotBeNull();
         addExerciseResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         lessonWithExercises.Should().NotBeNull();
         lessonWithExercises!.Exercises.Should().HaveCount(2);
@@ -437,7 +442,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
 
     // Helper methods
 
-    private async Task<string> GetExistingCourseIdAsync()
+    private async Task<string?> GetExistingCourseIdAsync()
     {
         var response = await _adminClient.GetAsync(
             "/api/courses",
@@ -445,7 +450,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         if (response.StatusCode != HttpStatusCode.OK)
-            throw new InvalidOperationException("Failed to fetch courses from fixture");
+            return null;
 
         var courses =
             await response.Content.ReadFromJsonAsync<List<CourseDto>>(
@@ -453,7 +458,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
             ) ?? [];
 
         if (courses.Count == 0)
-            throw new InvalidOperationException("Fixture should seed at least one course");
+            return null;
 
         return courses.First().CourseId;
     }
