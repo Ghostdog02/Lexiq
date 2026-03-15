@@ -509,6 +509,92 @@ Backend loads secrets from `/run/secrets/backend_env` in production (Docker secr
 - **Exercise unlocking**: Hybrid strategy — first exercise unlocks with lesson, rest unlock sequentially on completion (infinite retries allowed)
 - **EF Core shadow FK gotcha**: `.WithMany()` without passing the navigation property creates a duplicate shadow FK (e.g. `ExerciseId1`). Always pass the inverse nav explicitly: `.WithMany(e => e.ExerciseProgress)`. See `BackendDbContext.cs` UserExerciseProgress configuration.
 
+## OpenAPI Configuration Gotchas
+
+### Collection Expression Syntax Error with Tags
+
+**Error:**
+```csharp
+document.Tags = [...];  // CS9174: Cannot initialize type 'ISet<OpenApiTag>' with collection expression
+```
+
+**Solution:**
+```csharp
+document.Tags = new HashSet<OpenApiTag> { ... };  // Must use HashSet, not collection expression
+```
+
+OpenAPI document properties expect specific collection types (`ISet`, `IList`, etc.) that aren't compatible with C# 12 collection expressions.
+
+### OpenApiSecurityScheme vs OpenApiSecuritySchemeReference
+
+**Error:**
+```csharp
+document.Security = [
+    new OpenApiSecurityRequirement {
+        [new OpenApiSecurityScheme { ... }] = []  // CS1503: Cannot convert to OpenApiSecuritySchemeReference
+    }
+];
+```
+
+**Cause:** `OpenApiSecurityRequirement` dictionary expects `OpenApiSecuritySchemeReference` as the key, not `OpenApiSecurityScheme`.
+
+**Solution:**
+```csharp
+document.Security = [
+    new OpenApiSecurityRequirement {
+        [new OpenApiSecuritySchemeReference("CookieAuth") {
+            Description = "JWT token in HttpOnly cookie"
+        }] = []
+    }
+];
+```
+
+The `referenceId` parameter must match a key defined in `document.Components.SecuritySchemes`.
+
+### OpenApiSecurityScheme Available Properties
+
+`OpenApiSecurityScheme` in Microsoft.OpenApi 2.3.0 has these properties:
+- `Type` (SecuritySchemeType)
+- `Description` (string)
+- `Name` (string)
+- `Scheme` (string)
+- `BearerFormat` (string)
+- `Flows` (OpenApiOAuthFlows)
+- `OpenIdConnectUrl` (Uri)
+- `Extensions` (IDictionary)
+
+**Does NOT have:**
+- ~~`Reference`~~ — use `OpenApiSecuritySchemeReference` instead
+- ~~`In`~~ — only available on `OpenApiSecuritySchemeReference`
+
+### OpenApiSecuritySchemeReference Constructor
+
+**Signature:**
+```csharp
+new OpenApiSecuritySchemeReference(
+    string referenceId,              // Required - must match Components.SecuritySchemes key
+    OpenApiDocument? hostDocument,   // Optional
+    string? externalResource         // Optional
+)
+```
+
+**Usage:**
+```csharp
+// Define the scheme in Components
+document.Components.SecuritySchemes["CookieAuth"] = new OpenApiSecurityScheme {
+    Type = SecuritySchemeType.ApiKey,
+    Name = "AuthToken",
+    Description = "JWT in HttpOnly cookie"
+};
+
+// Reference it in Security requirement
+document.Security = [
+    new OpenApiSecurityRequirement {
+        [new OpenApiSecuritySchemeReference("CookieAuth")] = []
+    }
+];
+```
+
 ## Common Debugging Scenarios
 
 ### 401 Unauthorized Errors
