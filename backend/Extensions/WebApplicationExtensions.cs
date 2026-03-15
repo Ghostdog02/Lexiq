@@ -55,4 +55,10 @@ public static class WebApplicationExtensions
         app.UseMiddleware<UserContextMiddleware>();
         return app;
     }
+
+    public static WebApplication UseErrorHandling(this WebApplication app)
+    {
+        app.UseMiddleware<ErrorHandlingMiddleware>();
+        return app;
+    }
 }

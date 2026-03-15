@@ -49,6 +49,9 @@ public class Program
 
     private static void ConfigureMiddleware(WebApplication app)
     {
+        // Error handling MUST be first to catch exceptions from all downstream middleware
+        app.UseErrorHandling();
+
         app.UseRouting();
         app.UseCors("AllowAngular");
         app.UseStaticFiles();

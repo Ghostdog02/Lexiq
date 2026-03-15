@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/[controller]s")]
 [Authorize]
 public class LessonController(LessonService lessonService, ExerciseProgressService progressService)
     : ControllerBase
@@ -28,15 +28,8 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
         if (currentUser == null)
             return Unauthorized(new { message = "User is not authorized." });
 
-        try
-        {
-            var result = await _progressService.CompleteLessonAsync(currentUser.Id, lessonId);
-            return Ok(result);
-        }
-        catch (ArgumentException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        var result = await _progressService.CompleteLessonAsync(currentUser.Id, lessonId);
+        return Ok(result);
     }
 
     /// <summary>
