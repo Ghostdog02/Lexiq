@@ -95,7 +95,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
 
         // Act
         var createResponse = await _adminClient.PostAsJsonAsync(
-            "/api/lessons",
+            "/api/lessonss",
             createLessonDto,
             TestContext.Current.CancellationToken
         );
@@ -105,13 +105,13 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         var unlockResponse = await _adminClient.PostAsync(
-            $"/api/lessons/{createdLesson!.LessonId}/unlock",
+            $"/api/lessonss/{createdLesson!.LessonId}/unlock",
             null,
             TestContext.Current.CancellationToken
         );
 
         var studentFetchResponse = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
+            $"/api/lessonss/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
         );
 
@@ -165,7 +165,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         var createResponse = await _adminClient.PostAsJsonAsync(
-            "/api/lessons",
+            "/api/lessonss",
             createLessonDto,
             TestContext.Current.CancellationToken
         );
@@ -174,7 +174,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         await _adminClient.PostAsync(
-            $"/api/lessons/{createdLesson!.LessonId}/unlock",
+            $"/api/lessonss/{createdLesson!.LessonId}/unlock",
             null,
             TestContext.Current.CancellationToken
         );
@@ -190,13 +190,13 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         var updateResponse = await _adminClient.PutAsJsonAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
+            $"/api/lessonss/{createdLesson.LessonId}",
             updateDto,
             TestContext.Current.CancellationToken
         );
 
         var studentFetchResponse = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
+            $"/api/lessonss/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
         );
 
@@ -228,7 +228,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         var createResponse = await _adminClient.PostAsJsonAsync(
-            "/api/lessons",
+            "/api/lessonss",
             createLessonDto,
             TestContext.Current.CancellationToken
         );
@@ -237,24 +237,24 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         await _adminClient.PostAsync(
-            $"/api/lessons/{createdLesson!.LessonId}/unlock",
+            $"/api/lessonss/{createdLesson!.LessonId}/unlock",
             null,
             TestContext.Current.CancellationToken
         );
 
         var initialFetch = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
+            $"/api/lessonss/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
         );
 
         // Act
         var deleteResponse = await _adminClient.DeleteAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
+            $"/api/lessonss/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
         );
 
         var studentFetchAfterDelete = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
+            $"/api/lessonss/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
         );
 
@@ -289,7 +289,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
 
         // Act
         var createResponse = await creatorClient.PostAsJsonAsync(
-            "/api/lessons",
+            "/api/lessonss",
             createLessonDto,
             TestContext.Current.CancellationToken
         );
@@ -299,7 +299,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         var studentFetchResponse = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson!.LessonId}",
+            $"/api/lessonss/{createdLesson!.LessonId}",
             TestContext.Current.CancellationToken
         );
 
@@ -358,7 +358,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         var createResponse = await _adminClient.PostAsJsonAsync(
-            "/api/lessons",
+            "/api/lessonss",
             createLessonDto,
             TestContext.Current.CancellationToken
         );
@@ -367,7 +367,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         await _adminClient.PostAsync(
-            $"/api/lessons/{createdLesson!.LessonId}/unlock",
+            $"/api/lessonss/{createdLesson!.LessonId}/unlock",
             null,
             TestContext.Current.CancellationToken
         );
@@ -396,7 +396,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         var studentFetchResponse = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
+            $"/api/lessonss/{createdLesson.LessonId}",
             TestContext.Current.CancellationToken
         );
 

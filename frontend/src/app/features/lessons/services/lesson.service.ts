@@ -50,7 +50,7 @@ export class LessonService {
 
   async getLessonsByCourse(courseId: string): Promise<Lesson[]> {
     const result = await firstValueFrom(
-      this.httpClient.get<Lesson[]>(`/api/lesson/course/${courseId}`)
+      this.httpClient.get<Lesson[]>(`/api/lessons/course/${courseId}`)
     );
 
     if (!result) {
@@ -64,7 +64,7 @@ export class LessonService {
   async getLesson(lessonId: string): Promise<Lesson | null> {
     try {
       const result = await firstValueFrom(
-        this.httpClient.get<Lesson>(`/api/lesson/${lessonId}`)
+        this.httpClient.get<Lesson>(`/api/lessons/${lessonId}`)
       );
       return result;
     } catch (error) {
@@ -85,7 +85,7 @@ export class LessonService {
     };
 
     const result = await firstValueFrom(
-      this.httpClient.post<CreateLessonApiResponse>('/api/lesson', payload)
+      this.httpClient.post<CreateLessonApiResponse>('/api/lessons', payload)
     );
 
     console.log('✅ Lesson created:', result);
@@ -160,7 +160,7 @@ export class LessonService {
       };
 
       const result = await firstValueFrom(
-        this.httpClient.put<UpdateLessonApiResponse>(`/api/lesson/${lessonId}`, updateDto)
+        this.httpClient.put<UpdateLessonApiResponse>(`/api/lessons/${lessonId}`, updateDto)
       );
 
       console.log('✅ Lesson updated:', result);
@@ -174,7 +174,7 @@ export class LessonService {
   async deleteLesson(lessonId: string): Promise<boolean> {
     try {
       const response = await firstValueFrom(
-        this.httpClient.delete<{isSuccessful: boolean, message: string}>(`/api/lesson/${lessonId}`)
+        this.httpClient.delete<{isSuccessful: boolean, message: string}>(`/api/lessons/${lessonId}`)
       );
       console.log('✅ Lesson deleted:', response);
       return true;
@@ -207,7 +207,7 @@ export class LessonService {
   async completeLesson(lessonId: string): Promise<CompleteLessonResponse> {
     return await firstValueFrom(
       this.httpClient.post<CompleteLessonResponse>(
-        `/api/lesson/${lessonId}/complete`,
+        `/api/lessons/${lessonId}/complete`,
         {}
       )
     );

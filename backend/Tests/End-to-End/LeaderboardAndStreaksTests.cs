@@ -32,10 +32,28 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
     private string _student1Id = null!;
     private string _student2Id = null!;
 
+    private List<string> _exerciseIds = null!;
+
     public override async ValueTask InitializeAsync()
     {
         await base.InitializeAsync();
         await ClearTestDataAsync(); // Clean state before each test
+
+        // Create generic exercises for leaderboard/streak tests
+        using var scope = Factory.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
+
+        _exerciseIds = new List<string>();
+        for (var i = 0; i < 10; i++)  // Create 10 exercises for multi-student tests
+        {
+            var id = await DbSeeder.CreateFillInBlankExerciseAsync(
+                ctx,
+                Fixture.LessonId,
+                orderIndex: i,
+                isLocked: false
+            );
+            _exerciseIds.Add(id);
+        }
 
         // Create two competing students
         var (student1Id, student1Token) = await CreateAuthenticatedUserAsync(
@@ -77,7 +95,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
         // Act
         for (var i = 0; i < 3; i++)
         {
-            var exerciseId = Fixture.ExerciseIds[i];
+            var exerciseId = _exerciseIds[i];
             await SubmitAnswerAsync(_client1, exerciseId, "answer");
         }
 
@@ -101,7 +119,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
         await DbSeeder.AddConsecutiveDaysActivityAsync(
             ctx,
             _student1Id,
-            Fixture.ExerciseIds,
+            _exerciseIds,
             days: 3,
             startDaysAgo: 0,
             pointsPerDay: 10
@@ -127,7 +145,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
         await DbSeeder.AddConsecutiveDaysActivityAsync(
             ctx,
             _student1Id,
-            Fixture.ExerciseIds,
+            _exerciseIds,
             days: 3,
             startDaysAgo: 3, // Last activity was 3 days ago
             pointsPerDay: 10
@@ -154,7 +172,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
         await DbSeeder.AddProgressAsync(
             ctx,
             _student1Id,
-            Fixture.ExerciseIds[0],
+            _exerciseIds[0],
             isCompleted: true,
             pointsEarned: 10,
             completedAt: DateTime.UtcNow
@@ -176,10 +194,10 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
     {
         // Arrange
         for (var i = 0; i < 5; i++)
-            await SubmitAnswerAsync(_client1, Fixture.ExerciseIds[i], "answer");
+            await SubmitAnswerAsync(_client1, _exerciseIds[i], "answer");
 
         for (var i = 0; i < 3; i++)
-            await SubmitAnswerAsync(_client2, Fixture.ExerciseIds[i + 5], "answer");
+            await SubmitAnswerAsync(_client2, _exerciseIds[i + 5], "answer");
 
         // Act
         var leaderboard = await GetLeaderboardAsync(_client1, TimeFrame.AllTime);

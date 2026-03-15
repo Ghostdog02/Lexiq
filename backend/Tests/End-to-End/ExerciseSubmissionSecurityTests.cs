@@ -38,11 +38,28 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
     private string _studentToken = null!;
     private string _adminToken = null!;
     private string _creatorToken = null!;
+    private List<string> _exerciseIds = null!;
 
     public override async ValueTask InitializeAsync()
     {
         await base.InitializeAsync();
         await ClearTestDataAsync();
+
+        // Create generic exercises for security tests
+        using var scope = Factory.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
+
+        _exerciseIds = new List<string>();
+        for (var i = 0; i < 15; i++)
+        {
+            var id = await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+                ctx,
+                Fixture.LessonId,
+                orderIndex: i,
+                isLocked: i != 0  // Only first exercise unlocked
+            );
+            _exerciseIds.Add(id);
+        }
 
         // Create users with different roles
         var (_, studentToken) = await CreateAuthenticatedUserAsync(
@@ -82,8 +99,8 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
     public async Task Student_SubmitsWrongAnswer_DoesNotUnlockNextExercise()
     {
         // Arrange
-        var firstExId = Fixture.ExerciseIds[0];
-        var secondExId = Fixture.ExerciseIds[1];
+        var firstExId = _exerciseIds[0];
+        var secondExId = _exerciseIds[1];
 
         var exercisesBefore = await GetExercisesAsync(firstExId);
         if (exercisesBefore == null || exercisesBefore.Count < 2)
@@ -116,7 +133,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
     public async Task Student_SubmitsToLockedExercise_Returns403()
     {
         // Arrange
-        var lockedExerciseId = Fixture.ExerciseIds[2]; // Locked by fixture (OrderIndex > 0)
+        var lockedExerciseId = _exerciseIds[2]; // Locked by fixture (OrderIndex > 0)
 
         // Act
         var response = await _studentClient.PostAsJsonAsync(
@@ -135,7 +152,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
     public async Task Admin_SubmitsToLockedExercise_Success()
     {
         // Arrange
-        var lockedExerciseId = Fixture.ExerciseIds[2];
+        var lockedExerciseId = _exerciseIds[2];
 
         // Act
         var response = await _adminClient.PostAsJsonAsync(
@@ -161,7 +178,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
     public async Task ContentCreator_SubmitsToLockedExercise_Success()
     {
         // Arrange
-        var lockedExerciseId = Fixture.ExerciseIds[3];
+        var lockedExerciseId = _exerciseIds[3];
 
         // Act
         var response = await _creatorClient.PostAsJsonAsync(
@@ -272,18 +289,13 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-        // Get a MultipleChoice exercise from fixture (ExerciseIds[10-19])
-        var mcExerciseId = Fixture.ExerciseIds[10];
-
-        // Unlock it manually for test (bypass admin-only unlock endpoint)
-        var mcExercise = await ctx.Exercises.FindAsync(
-            [mcExerciseId],
-            TestContext.Current.CancellationToken
+        // Create a MultipleChoice exercise for this test
+        var mcExerciseId = await Helpers.DbSeeder.CreateMultipleChoiceExerciseAsync(
+            ctx,
+            Fixture.LessonId,
+            orderIndex: 100,
+            isLocked: false
         );
-        if (mcExercise == null)
-            throw new InvalidOperationException($"MC exercise {mcExerciseId} not found");
-        mcExercise.IsLocked = false;
-        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Get the correct option ID
         var mcExerciseWithOptions = await ctx
@@ -317,8 +329,8 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
     public async Task GetLessonProgress_ReturnsCorrectStructure()
     {
         // Arrange
-        var firstExId = Fixture.ExerciseIds[0];
-        var secondExId = Fixture.ExerciseIds[1];
+        var firstExId = _exerciseIds[0];
+        var secondExId = _exerciseIds[1];
 
         // Submit correct answer to first exercise to create progress
         await SubmitAnswerAsync(_studentClient, firstExId, "answer");
@@ -368,8 +380,8 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
     public async Task GetLessonSubmissions_ReturnsAllExercisesWithSubmissionState()
     {
         // Arrange
-        var firstExId = Fixture.ExerciseIds[0];
-        var secondExId = Fixture.ExerciseIds[1];
+        var firstExId = _exerciseIds[0];
+        var secondExId = _exerciseIds[1];
 
         // Submit correct answer to first, wrong to second (which unlocks it)
         await SubmitAnswerAsync(_studentClient, firstExId, "answer");

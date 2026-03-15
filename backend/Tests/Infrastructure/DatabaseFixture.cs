@@ -33,18 +33,9 @@ public class DatabaseFixture : IAsyncLifetime
     public string SystemUserId { get; } = Guid.NewGuid().ToString();
 
     /// <summary>
-    /// 40 shared exercise IDs for use in UserExerciseProgress rows.
-    /// Multiple IDs are needed because PK is (UserId, ExerciseId) —
-    /// streak tests require one distinct ExerciseId per day of activity.
-    ///
-    /// Distribution:
-    /// - [0-9]: FillInBlank (10 exercises)
-    /// - [10-19]: MultipleChoice (10 exercises)
-    /// - [20-29]: Listening (10 exercises)
-    /// - [30-39]: Translation (10 exercises)
+    /// The single lesson ID where tests create their own exercises.
     /// </summary>
-    public IReadOnlyList<string> ExerciseIds { get; } =
-        Enumerable.Range(0, 40).Select(_ => Guid.NewGuid().ToString()).ToList();
+    public string LessonId { get; private set; } = null!;
 
     public async ValueTask InitializeAsync()
     {
@@ -107,11 +98,11 @@ public class DatabaseFixture : IAsyncLifetime
 
         await ctx.SaveChangesAsync();
 
-        var lessonId = Guid.NewGuid().ToString();
+        LessonId = Guid.NewGuid().ToString();
         ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                Id = LessonId,
                 CourseId = courseId,
                 Title = "Test Lesson",
                 LessonContent = "{}",
@@ -119,124 +110,9 @@ public class DatabaseFixture : IAsyncLifetime
                 IsLocked = false, // First lesson unlocked for E2E tests
             }
         );
-        
+
         await ctx.SaveChangesAsync();
 
-        // Seed 10 iterations of each exercise type (40 total)
-        var exercises = new List<Exercise>();
-
-        // Exercises 0-9: FillInBlank (10 exercises)
-        for (var i = 0; i < 10; i++)
-        {
-            exercises.Add(
-                new FillInBlankExercise
-                {
-                    Id = ExerciseIds[i],
-                    LessonId = lessonId,
-                    Title = $"FillInBlank {i}",
-                    Text = $"Fill in the blank _",
-                    CorrectAnswer = "answer",
-                    AcceptedAnswers = "ans,solution",
-                    CaseSensitive = false,
-                    TrimWhitespace = true,
-                    DifficultyLevel = DifficultyLevel.Beginner,
-                    Points = 10,
-                    OrderIndex = i,
-                    IsLocked = i != 0, // Only first exercise unlocked
-                }
-            );
-        }
-
-        // Exercises 10-19: MultipleChoice (10 exercises with 3 options each)
-        for (var i = 10; i < 20; i++)
-        {
-            var mcId = ExerciseIds[i];
-            var mcExercise = new MultipleChoiceExercise
-            {
-                Id = mcId,
-                LessonId = lessonId,
-                Title = $"MultipleChoice {i}",
-                Instructions = "Select the correct answer",
-                DifficultyLevel = DifficultyLevel.Beginner,
-                Points = 10,
-                OrderIndex = i,
-                IsLocked = true,
-                Options = new List<ExerciseOption>
-                {
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = mcId,
-                        OptionText = $"Wrong answer A for MC {i}",
-                        IsCorrect = false,
-                        OrderIndex = 0,
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = mcId,
-                        OptionText = $"Correct answer for MC {i}",
-                        IsCorrect = true,
-                        OrderIndex = 1,
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = mcId,
-                        OptionText = $"Wrong answer B for MC {i}",
-                        IsCorrect = false,
-                        OrderIndex = 2,
-                    },
-                },
-            };
-            exercises.Add(mcExercise);
-        }
-
-        // Exercises 20-29: Listening (10 exercises)
-        for (var i = 20; i < 30; i++)
-        {
-            exercises.Add(
-                new ListeningExercise
-                {
-                    Id = ExerciseIds[i],
-                    LessonId = lessonId,
-                    Title = $"Listening {i}",
-                    AudioUrl = $"https://example.com/audio{i}.mp3",
-                    CorrectAnswer = "audio answer",
-                    AcceptedAnswers = "audio,sound",
-                    CaseSensitive = false,
-                    MaxReplays = 3,
-                    DifficultyLevel = DifficultyLevel.Beginner,
-                    Points = 10,
-                    OrderIndex = i,
-                    IsLocked = true,
-                }
-            );
-        }
-
-        // Exercises 30-39: Translation (10 exercises)
-        for (var i = 30; i < 40; i++)
-        {
-            exercises.Add(
-                new TranslationExercise
-                {
-                    Id = ExerciseIds[i],
-                    LessonId = lessonId,
-                    Title = $"Translation {i}",
-                    SourceText = "Hello",
-                    TargetText = "Ciao",
-                    SourceLanguageCode = "en",
-                    TargetLanguageCode = "it",
-                    MatchingThreshold = 0.85,
-                    DifficultyLevel = DifficultyLevel.Beginner,
-                    Points = 10,
-                    OrderIndex = i,
-                    IsLocked = true,
-                }
-            );
-        }
-
-        ctx.Exercises.AddRange(exercises);
-        await ctx.SaveChangesAsync();
+        // Tests create their own exercises as needed
     }
 }

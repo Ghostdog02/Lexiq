@@ -25,6 +25,7 @@ public class GetStreakTests(DatabaseFixture fixture)
     private Database.BackendDbContext _ctx = null!;
     private LeaderboardService _service = null!;
     private string _userId = null!;
+    private List<string> _exerciseIds = null!;
 
     // xUnit creates a new instance per test, so InitializeAsync/DisposeAsync run per test.
     public async ValueTask InitializeAsync()
@@ -38,6 +39,19 @@ public class GetStreakTests(DatabaseFixture fixture)
             .Build();
         await DbSeeder.AddUserAsync(_ctx, user);
         _userId = user.Id;
+
+        // Create 30 generic exercises for streak tests (enough for any consecutive days test)
+        _exerciseIds = new List<string>();
+        for (var i = 0; i < 30; i++)
+        {
+            var id = await DbSeeder.CreateFillInBlankExerciseAsync(
+                _ctx,
+                _fixture.LessonId,
+                orderIndex: i,
+                isLocked: false
+            );
+            _exerciseIds.Add(id);
+        }
 
         _service = new LeaderboardService(_ctx, CreateAvatarService(_ctx));
     }
@@ -60,11 +74,19 @@ public class GetStreakTests(DatabaseFixture fixture)
     [Fact]
     public async Task GetStreak_OnlyUncompletedProgress_ReturnsBothZero()
     {
+        // Arrange - create 1 exercise
+        var exerciseId = await DbSeeder.CreateFillInBlankExerciseAsync(
+            _ctx,
+            _fixture.LessonId,
+            orderIndex: 0,
+            isLocked: false
+        );
+
         // IsCompleted = false rows are ignored by the streak query
         await DbSeeder.AddProgressAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds[0],
+            exerciseId,
             isCompleted: false,
             pointsEarned: 0,
             completedAt: DateTime.UtcNow
@@ -79,10 +101,18 @@ public class GetStreakTests(DatabaseFixture fixture)
     [Fact]
     public async Task GetStreak_SingleCompletionToday_ReturnsBothOne()
     {
+        // Arrange - create 1 exercise
+        var exerciseId = await DbSeeder.CreateFillInBlankExerciseAsync(
+            _ctx,
+            _fixture.LessonId,
+            orderIndex: 0,
+            isLocked: false
+        );
+
         await DbSeeder.AddProgressAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds[0],
+            exerciseId,
             isCompleted: true,
             pointsEarned: 10,
             completedAt: DateTime.UtcNow
@@ -101,7 +131,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddProgressAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds[0],
+            _exerciseIds[0],
             isCompleted: true,
             pointsEarned: 10,
             completedAt: DateTime.UtcNow.Date.AddDays(-1)
@@ -120,7 +150,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddProgressAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds[0],
+            _exerciseIds[0],
             isCompleted: true,
             pointsEarned: 10,
             completedAt: DateTime.UtcNow.Date.AddDays(-2)
@@ -138,7 +168,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddConsecutiveDaysActivityAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds,
+            _exerciseIds,
             days: 3,
             startDaysAgo: 0
         );
@@ -156,7 +186,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddConsecutiveDaysActivityAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds,
+            _exerciseIds,
             days: 3,
             startDaysAgo: 1
         );
@@ -174,7 +204,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddProgressAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds[0],
+            _exerciseIds[0],
             isCompleted: true,
             pointsEarned: 10,
             completedAt: DateTime.UtcNow.Date.AddDays(-1)
@@ -182,7 +212,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddProgressAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds[1],
+            _exerciseIds[1],
             isCompleted: true,
             pointsEarned: 10,
             completedAt: DateTime.UtcNow.Date.AddDays(-5)
@@ -190,7 +220,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddProgressAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds[2],
+            _exerciseIds[2],
             isCompleted: true,
             pointsEarned: 10,
             completedAt: DateTime.UtcNow.Date.AddDays(-6)
@@ -209,7 +239,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddProgressAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds[0],
+            _exerciseIds[0],
             isCompleted: true,
             pointsEarned: 10,
             completedAt: DateTime.UtcNow.Date.AddHours(9)
@@ -217,7 +247,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddProgressAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds[1],
+            _exerciseIds[1],
             isCompleted: true,
             pointsEarned: 10,
             completedAt: DateTime.UtcNow.Date.AddHours(20)
@@ -237,7 +267,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddProgressAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds[0],
+            _exerciseIds[0],
             isCompleted: true,
             pointsEarned: 10,
             completedAt: DateTime.UtcNow.Date.AddDays(-1)
@@ -246,7 +276,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddConsecutiveDaysActivityAsync(
             _ctx,
             _userId,
-            _fixture.ExerciseIds.Skip(1).ToList().AsReadOnly(),
+            _exerciseIds.Skip(1).ToList().AsReadOnly(),
             days: 4,
             startDaysAgo: 10
         );
@@ -270,7 +300,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         await DbSeeder.AddConsecutiveDaysActivityAsync(
             _ctx,
             otherUser.Id,
-            _fixture.ExerciseIds,
+            _exerciseIds,
             days: 5,
             startDaysAgo: 0
         );

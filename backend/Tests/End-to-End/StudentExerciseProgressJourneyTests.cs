@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using Backend.Api.Dtos;
+using Backend.Database;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Backend.Tests.EndToEnd;
@@ -48,17 +50,30 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     [Fact]
     public async Task Student_CompletesFirstExercise_UnlocksNextExercise()
     {
-        // Arrange
-        var exercises = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
-        if (exercises == null || exercises.Count < 2)
-            throw new InvalidOperationException("Fixture should seed at least 2 exercises");
+        // Arrange - create 2 exercises for this test
+        using var scope = Factory.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
+        await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+            ctx,
+            Fixture.LessonId,
+            orderIndex: 0,
+            isLocked: false
+        );
+        await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+            ctx,
+            Fixture.LessonId,
+            orderIndex: 1,
+            isLocked: true
+        );
+
+        var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
         var firstEx = exercises.First(e => e.OrderIndex == 0);
         var secondEx = exercises.First(e => e.OrderIndex == 1);
 
         // Act
         var submitResult = await SubmitAnswerAsync(firstEx.Id, "answer");
-        var exercisesAfter = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
+        var exercisesAfter = await GetExercisesForLessonAsync(Fixture.LessonId);
 
         // Assert
         firstEx.IsLocked.Should().BeFalse("first exercise should be unlocked");
@@ -78,11 +93,18 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     [Fact]
     public async Task Student_SubmitsWrongAnswer_CanRetryInfinitely()
     {
-        // Arrange
-        var exercises = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
-        if (exercises == null)
-            throw new InvalidOperationException("Fixture should seed exercises");
+        // Arrange - create 1 unlocked exercise
+        using var scope = Factory.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
+        await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+            ctx,
+            Fixture.LessonId,
+            orderIndex: 0,
+            isLocked: false
+        );
+
+        var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
         var firstEx = exercises.First(e => e.OrderIndex == 0);
 
         // Act
@@ -111,17 +133,24 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     [Fact]
     public async Task Student_ResubmitsCorrectAnswer_DoesNotDoubleXp()
     {
-        // Arrange
-        var exercises = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
-        if (exercises == null)
-            throw new InvalidOperationException("Fixture should seed exercises");
+        // Arrange - create 1 unlocked exercise
+        using var scope = Factory.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
+        await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+            ctx,
+            Fixture.LessonId,
+            orderIndex: 0,
+            isLocked: false
+        );
+
+        var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
         var firstEx = exercises.First(e => e.OrderIndex == 0);
         var firstSubmit = await SubmitAnswerAsync(firstEx.Id, "answer");
 
         // Act
         var secondSubmit = await SubmitAnswerAsync(firstEx.Id, "answer");
-        var progress = await GetLessonProgressAsync(Fixture.ExerciseIds[0]);
+        var progress = await GetLessonProgressAsync(Fixture.LessonId);
 
         // Assert
         firstSubmit.Should().NotBeNull();
@@ -140,22 +169,31 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     [Fact]
     public async Task Student_CompletesLesson_UnlocksNextLesson()
     {
-        // Arrange
-        var exercises = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
-        if (exercises == null || exercises.Count != 20)
-            throw new InvalidOperationException("Fixture should seed exactly 20 exercises");
+        // Arrange - create 40 exercises, first unlocked
+        using var scope = Factory.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-        var lessonId = exercises.First().LessonId;
+        for (var i = 0; i < 40; i++)
+        {
+            await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+                ctx,
+                Fixture.LessonId,
+                orderIndex: i,
+                isLocked: i != 0
+            );
+        }
 
-        // Act
-        for (var i = 0; i < 14; i++)
+        var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
+
+        // Act - complete 28 exercises (70% of 40)
+        for (var i = 0; i < 28; i++)
         {
             var ex = exercises.First(e => e.OrderIndex == i);
             await SubmitAnswerAsync(ex.Id, "answer");
         }
 
         var response = await _client.PostAsync(
-            $"/api/lessons/{lessonId}/complete",
+            $"/api/lessons/{Fixture.LessonId}/complete",
             null,
             TestContext.Current.CancellationToken
         );
@@ -168,19 +206,38 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         result.Should().NotBeNull();
         result.IsCompleted.Should().BeTrue();
-        result.EarnedXp.Should().Be(140, "14 exercises × 10 points");
-        result.TotalPossibleXp.Should().Be(200, "20 exercises × 10 points");
+        result.EarnedXp.Should().Be(280, "28 exercises × 10 points");
+        result.TotalPossibleXp.Should().Be(400, "40 exercises × 10 points");
         result.CompletionPercentage.Should().Be(70.0);
     }
 
     [Fact]
     public async Task Student_CompletesPartialLesson_ProgressRestoresCorrectly()
     {
-        // Arrange
-        var exercises = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
-        if (exercises == null)
-            throw new InvalidOperationException("Fixture should seed exercises");
+        // Arrange - create 3 exercises, first unlocked
+        using var scope = Factory.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
+        await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+            ctx,
+            Fixture.LessonId,
+            orderIndex: 0,
+            isLocked: false
+        );
+        await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+            ctx,
+            Fixture.LessonId,
+            orderIndex: 1,
+            isLocked: true
+        );
+        await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+            ctx,
+            Fixture.LessonId,
+            orderIndex: 2,
+            isLocked: true
+        );
+
+        var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
         var ex1 = exercises.First(e => e.OrderIndex == 0);
         var ex2 = exercises.First(e => e.OrderIndex == 1);
         var ex3 = exercises.First(e => e.OrderIndex == 2);
@@ -190,7 +247,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         await SubmitAnswerAsync(ex3.Id, "answer");
 
         // Act
-        var progress = await GetLessonProgressAsync(Fixture.ExerciseIds[0]);
+        var progress = await GetLessonProgressAsync(Fixture.LessonId);
 
         // Assert
         progress.Should().NotBeNull();
@@ -204,16 +261,23 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     [Fact]
     public async Task Student_SubmitsWrongAnswer_ProgressShowsIncorrect()
     {
-        // Arrange
-        var exercises = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
-        if (exercises == null)
-            throw new InvalidOperationException("Fixture should seed exercises");
+        // Arrange - create 1 unlocked exercise
+        using var scope = Factory.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
+        await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+            ctx,
+            Fixture.LessonId,
+            orderIndex: 0,
+            isLocked: false
+        );
+
+        var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
         var firstEx = exercises.First(e => e.OrderIndex == 0);
 
         // Act
         await SubmitAnswerAsync(firstEx.Id, "wrong");
-        var submissions = await GetLessonSubmissionsAsync(Fixture.ExerciseIds[0]);
+        var submissions = await GetLessonSubmissionsAsync(Fixture.LessonId);
 
         // Assert
         submissions.Should().NotBeNull();
@@ -227,14 +291,24 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     [Fact]
     public async Task Student_Below70Percent_LessonNotCompleted()
     {
-        // Arrange
-        var exercises = await GetExercisesForLessonAsync(Fixture.ExerciseIds[0]);
-        if (exercises == null)
-            throw new InvalidOperationException("Fixture should seed exercises");
+        // Arrange - create 40 exercises, first unlocked
+        using var scope = Factory.Services.CreateScope();
+        var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-        var lessonId = exercises.First().LessonId;
+        for (var i = 0; i < 40; i++)
+        {
+            await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+                ctx,
+                Fixture.LessonId,
+                orderIndex: i,
+                isLocked: i != 0
+            );
+        }
 
-        for (var i = 0; i < 13; i++)
+        var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
+
+        // Complete 27 exercises (67.5% of 40 - below 70% threshold)
+        for (var i = 0; i < 27; i++)
         {
             var ex = exercises.First(e => e.OrderIndex == i);
             await SubmitAnswerAsync(ex.Id, "answer");
@@ -242,7 +316,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
 
         // Act
         var response = await _client.PostAsync(
-            $"/api/lessons/{lessonId}/complete",
+            $"/api/lessons/{Fixture.LessonId}/complete",
             null,
             TestContext.Current.CancellationToken
         );
@@ -254,31 +328,16 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         result.Should().NotBeNull();
-        result.IsCompleted.Should().BeFalse("65% is below 70% threshold");
-        result.CompletionPercentage.Should().Be(65.0);
+        result.IsCompleted.Should().BeFalse("67.5% is below 70% threshold");
+        result.CompletionPercentage.Should().Be(67.5);
     }
 
     // Helper methods - no assertions, just return data
 
-    private async Task<List<ExerciseDto>?> GetExercisesForLessonAsync(string firstExerciseId)
+    private async Task<List<ExerciseDto>?> GetExercisesForLessonAsync(string lessonId)
     {
-        // Get the lesson ID from the first exercise
-        var exResponse = await _client.GetAsync(
-            $"/api/exercises/{firstExerciseId}",
-            TestContext.Current.CancellationToken
-        );
-        if (!exResponse.IsSuccessStatusCode)
-            return null;
-
-        var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            JsonOptions,
-            TestContext.Current.CancellationToken
-        );
-        if (exDto == null)
-            return null;
-
         var response = await _client.GetAsync(
-            $"/api/exercises/lesson/{exDto.LessonId}",
+            $"/api/exercises/lesson/{lessonId}",
             TestContext.Current.CancellationToken
         );
         if (!response.IsSuccessStatusCode)
@@ -306,27 +365,10 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         );
     }
 
-    private async Task<List<UserExerciseProgressDto>?> GetLessonProgressAsync(
-        string firstExerciseId
-    )
+    private async Task<List<UserExerciseProgressDto>?> GetLessonProgressAsync(string lessonId)
     {
-        // Get lesson ID first
-        var exResponse = await _client.GetAsync(
-            $"/api/exercises/{firstExerciseId}",
-            TestContext.Current.CancellationToken
-        );
-        if (!exResponse.IsSuccessStatusCode)
-            return null;
-
-        var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            JsonOptions,
-            TestContext.Current.CancellationToken
-        );
-        if (exDto == null)
-            return null;
-
         var response = await _client.GetAsync(
-            $"/api/exercises/lesson/{exDto.LessonId}/progress",
+            $"/api/exercises/lesson/{lessonId}/progress",
             TestContext.Current.CancellationToken
         );
         if (!response.IsSuccessStatusCode)
@@ -337,27 +379,10 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         );
     }
 
-    private async Task<List<SubmitAnswerResponse>?> GetLessonSubmissionsAsync(
-        string firstExerciseId
-    )
+    private async Task<List<SubmitAnswerResponse>?> GetLessonSubmissionsAsync(string lessonId)
     {
-        // Get lesson ID first
-        var exResponse = await _client.GetAsync(
-            $"/api/exercise/{firstExerciseId}",
-            TestContext.Current.CancellationToken
-        );
-        if (!exResponse.IsSuccessStatusCode)
-            return null;
-
-        var exDto = await exResponse.Content.ReadFromJsonAsync<ExerciseDto>(
-            JsonOptions,
-            TestContext.Current.CancellationToken
-        );
-        if (exDto == null)
-            return null;
-
         var response = await _client.GetAsync(
-            $"/api/exercise/lesson/{exDto.LessonId}/submissions",
+            $"/api/exercises/lesson/{lessonId}/submissions",
             TestContext.Current.CancellationToken
         );
         if (!response.IsSuccessStatusCode)
