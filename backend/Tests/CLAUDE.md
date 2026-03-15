@@ -402,6 +402,7 @@ Base class for E2E tests providing:
 - `WebApplicationFactory<Program>` wired to Testcontainers DB
 - `CreateAuthenticatedUserAsync(username, email, role)` — creates user + JWT token
 - `CreateClient(token)` — returns HttpClient with auth cookie
+- `JsonOptions` — application's `JsonSerializerOptions` for polymorphic deserialization
 - `ClearTestDataAsync()` — DB cleanup between tests
 
 **wwwroot/uploads directory creation:**
@@ -723,6 +724,26 @@ AssertValidUser(resultUser, payload); // test fails here if null
 
 var roles = await _userManager.GetRolesAsync(resultUser!); // ! is safe — assertion already passed
 ```
+
+### Polymorphic ExerciseDto Deserialization in Tests
+`ReadFromJsonAsync<ExerciseDto>()` with default `JsonSerializerOptions` fails with `NotSupportedException: must specify a type discriminator`. This happens because the default options don't match the application's serialization settings.
+
+**Always pass `JsonOptions`** (from `ControllerTestBase`) when deserializing polymorphic types:
+
+```csharp
+// WRONG — uses default JsonSerializerOptions, fails on abstract ExerciseDto
+var dto = await response.Content.ReadFromJsonAsync<ExerciseDto>(
+    cancellationToken: TestContext.Current.CancellationToken
+);
+
+// CORRECT — uses application's configured options with polymorphic support
+var dto = await response.Content.ReadFromJsonAsync<ExerciseDto>(
+    JsonOptions,
+    TestContext.Current.CancellationToken
+);
+```
+
+This applies to both `ReadFromJsonAsync<ExerciseDto>` and `ReadFromJsonAsync<List<ExerciseDto>>`.
 
 ### WebApplicationFactory — Unregistered Service Surfaces as AggregateException
 If a service class exists but was never added to `AddApplicationServices`, the DI container

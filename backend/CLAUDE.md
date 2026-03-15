@@ -77,6 +77,7 @@ backend/
 - Type discriminator MUST be first property in JSON: `{ "type": "MultipleChoice", ...rest }`
 - Frontend mapping: `return { type: ExerciseType.X, ...base }` NOT `{ ...base, type: ... }`
 - System.Text.Json fails with "must specify a type discriminator" if type is not first
+- **Controller serialization**: `Ok(dto)` passes `object` to the serializer, which uses the runtime type (no discriminator). Use `OkPolymorphic<ExerciseDto>(dto)` — a private helper that sets `DeclaredType` on `OkObjectResult` to force serialization through the base type. For `CreatedAtAction`, set `result.DeclaredType = typeof(ExerciseDto)` after creation.
 
 ### Enum Serialization
 - Add `[JsonConverter(typeof(JsonStringEnumConverter))]` to enums for string serialization
