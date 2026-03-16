@@ -365,7 +365,7 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
-## Coverage Gaps (Updated 2026-03-12)
+## Coverage Gaps (Updated 2026-03-16)
 
 ### Still Missing
 
@@ -415,5 +415,5 @@ dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLev
 - **Integration tests**: 5 classes (use Testcontainers)
 - **Unit tests**: 2 classes (pure, no DB)
 - **Authorization tests**: 92 tests across 8 categories (complete endpoint coverage for all roles)
-- **Coverage**: Auth flow, **Complete authorization matrix**, Exercise submission (FillInBlank + MultipleChoice), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
-- **Not covered**: Listening/Translation exercise types, FillInBlank edge cases, Course/Lesson CRUD business logic (DTO validation, OrderIndex auto-calc), Avatar upload validation
+- **Coverage**: Auth flow, **Complete authorization matrix**, Exercise submission (**all 4 types**), Answer validation (case sensitivity, whitespace, AcceptedAnswers, fuzzy matching), Course/Lesson CRUD (DTO validation, OrderIndex auto-calc, FK validation, partial updates, cascade deletes, unlocking), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
+- **Not covered**: Language CRUD, Avatar upload validation
