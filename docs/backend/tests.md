@@ -365,6 +365,30 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
+## Service Integration Tests
+
+### 13. **LanguageCrudTests.cs** (12 tests) — Language CRUD operations
+
+**Type**: Integration (Testcontainers)
+**Coverage**: `LanguageService` create, read, update, delete operations
+
+| Test | Purpose |
+|------|---------|
+| `CreateLanguage_ValidDto_ReturnsCreatedLanguage` | Valid DTO creates language successfully |
+| `CreateLanguage_NullFlagIconUrl_CreatesSuccessfully` | Null optional fields handled |
+| `CreateLanguage_SetsCreatedAt` | Timestamp initialized properly |
+| `GetAllLanguages_ReturnsAllLanguagesWithCourses` | Eager loads Courses navigation |
+| `GetLanguageById_IncludesCourses` | GetById includes Courses |
+| `GetLanguageById_NonexistentId_ReturnsNull` | Returns null for missing language |
+| `UpdateLanguage_UpdatesFields` | Updates name and FlagIconUrl |
+| `UpdateLanguage_NonexistentLanguage_ReturnsNull` | Returns null for missing language |
+| `UpdateLanguage_NullFlagIconUrl_SetsToNull` | Null in DTO sets field to null |
+| `DeleteLanguage_ExistingLanguage_ReturnsTrue` | Successful delete |
+| `DeleteLanguage_NonexistentLanguage_ReturnsFalse` | Returns false for missing language |
+| `DeleteLanguage_WithCourses_CascadeDeletes` | Cascade deletes child Courses |
+
+---
+
 ## Coverage Gaps (Updated 2026-03-16)
 
 ### Still Missing
