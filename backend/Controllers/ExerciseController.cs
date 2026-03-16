@@ -22,14 +22,6 @@ public class ExerciseController(
     private readonly ExerciseProgressService _progressService = progressService;
     private readonly UserManager<User> _userManager = userManager;
 
-    [HttpGet("lesson/{lessonId}")]
-    public async Task<ActionResult<List<ExerciseDto>>> GetExercisesByLesson(string lessonId)
-    {
-        var exercises = await _exerciseService.GetExercisesByLessonIdAsync(lessonId);
-
-        return OkPolymorphic<List<ExerciseDto>>(exercises.Select(e => e.ToDto()).ToList());
-    }
-
     [HttpGet("{id}")]
     public async Task<ActionResult<ExerciseDto>> GetExercise(string id)
     {
@@ -37,8 +29,8 @@ public class ExerciseController(
         if (exercise == null)
             return NotFound();
 
-        var user = HttpContext.GetCurrentUser();
-        var canBypassLocks = user != null && await user.CanBypassLocksAsync(_userManager);
+        var user = HttpContext.GetCurrentUser()!;
+        var canBypassLocks = await user.CanBypassLocksAsync(_userManager);
 
         if (exercise.IsLocked == true && !canBypassLocks)
             return StatusCode(
@@ -54,7 +46,11 @@ public class ExerciseController(
     public async Task<ActionResult<ExerciseDto>> CreateExercise(CreateExerciseDto dto)
     {
         var exercise = await _exerciseService.CreateExerciseAsync(dto);
-        var result = CreatedAtAction(nameof(GetExercise), new { id = exercise.Id }, exercise.ToDto());
+        var result = CreatedAtAction(
+            nameof(GetExercise),
+            new { id = exercise.Id },
+            exercise.ToDto()
+        );
         result.DeclaredType = typeof(ExerciseDto);
         return result;
     }
@@ -97,9 +93,7 @@ public class ExerciseController(
         if (string.IsNullOrWhiteSpace(request.Answer))
             return BadRequest(new { message = "Answer cannot be empty" });
 
-        var user = HttpContext.GetCurrentUser();
-        if (user == null)
-            return Unauthorized();
+        var user = HttpContext.GetCurrentUser()!;
 
         try
         {
@@ -111,43 +105,13 @@ public class ExerciseController(
 
             return Ok(result);
         }
-
         catch (ArgumentException ex)
         {
             return NotFound(new { message = ex.Message });
         }
-        
         catch (InvalidOperationException ex)
         {
             return StatusCode(403, new { message = ex.Message });
         }
-    }
-
-    //To do: move these endpoints to LessonController
-
-    [HttpGet("lesson/{lessonId}/progress")]
-    public async Task<ActionResult<List<UserExerciseProgressDto>>> GetLessonProgress(
-        string lessonId
-    )
-    {
-        var user = HttpContext.GetCurrentUser();
-        if (user == null)
-            return Unauthorized();
-
-        var fullProgress = await _progressService.GetFullLessonProgressAsync(user.Id, lessonId);
-        return Ok(fullProgress.ExerciseProgress.Values.ToList());
-    }
-
-    [HttpGet("lesson/{lessonId}/submissions")]
-    public async Task<ActionResult<List<SubmitAnswerResponse>>> GetLessonSubmissions(
-        string lessonId
-    )
-    {
-        var user = HttpContext.GetCurrentUser();
-        if (user == null)
-            return Unauthorized();
-
-        var submissions = await _progressService.GetLessonSubmissionsAsync(user.Id, lessonId);
-        return Ok(submissions);
     }
 }
