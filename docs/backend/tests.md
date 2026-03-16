@@ -1,6 +1,6 @@
 # Backend Test Coverage Documentation
 
-**Last Updated**: 2026-03-09
+**Last Updated**: 2026-03-16
 **Framework**: xUnit v3 + Testcontainers.MsSql
 **Test Project**: `backend/Tests/Backend.Tests.csproj`
 
@@ -29,7 +29,7 @@ The Lexiq backend has **12 test classes** covering authentication, authorization
 
 ---
 
-### 2. **AuthorizationTests.cs** (82 tests across 8 categories) — Role-based access control
+### 2. **AuthorizationTests.cs** (92 tests across 8 categories) — Role-based access control
 
 **Type**: Integration (WebApplicationFactory + Testcontainers)
 **Coverage**: Every protected endpoint in the system
@@ -424,10 +424,10 @@ dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLev
 ## Test Statistics
 
 - **Total test classes**: 12
-- **Total test methods**: ~185 (exact count depends on Theory inline data rows)
+- **Total test methods**: ~195 (exact count depends on Theory inline data rows)
 - **E2E tests**: 5 classes, 33 tests (full user journeys)
 - **Integration tests**: 5 classes (use Testcontainers)
 - **Unit tests**: 2 classes (pure, no DB)
-- **Authorization tests**: 82 tests across 8 categories (complete endpoint coverage for all roles)
+- **Authorization tests**: 92 tests across 8 categories (complete endpoint coverage for all roles)
 - **Coverage**: Auth flow, **Complete authorization matrix**, Exercise submission (FillInBlank + MultipleChoice), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
 - **Not covered**: Listening/Translation exercise types, FillInBlank edge cases, Course/Lesson CRUD business logic (DTO validation, OrderIndex auto-calc), Avatar upload validation
