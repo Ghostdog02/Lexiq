@@ -319,6 +319,211 @@ Cookie: AuthToken=eyJhbGciOiJIUzI1NiIs...
 
 ---
 
+### GET /api/lessons/{lessonId}/exercises
+
+Get all exercises for a specific lesson.
+
+**Authentication:** Required
+**Roles:** Any authenticated user
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `lessonId` | string (GUID) | Lesson ID |
+
+**Request:**
+```http
+GET /api/lessons/lesson1/exercises HTTP/1.1
+Host: localhost:8080
+Cookie: AuthToken=eyJhbGciOiJIUzI1NiIs...
+```
+
+**Success Response (200 OK):**
+```json
+[
+  {
+    "type": "MultipleChoice",
+    "id": "ex1",
+    "lessonId": "lesson1",
+    "title": "Choose the correct greeting",
+    "instructions": "Select the appropriate formal greeting",
+    "estimatedDurationMinutes": 2,
+    "difficultyLevel": "Beginner",
+    "points": 10,
+    "orderIndex": 0,
+    "explanation": "Buongiorno is used until afternoon",
+    "isLocked": false,
+    "options": [
+      {
+        "id": "opt1",
+        "optionText": "Buongiorno",
+        "isCorrect": true,
+        "orderIndex": 0
+      }
+    ]
+  }
+]
+```
+
+**Response Fields:**
+See [Exercise Endpoints](exercises.md) for complete ExerciseDto field documentation including all exercise types (MultipleChoice, FillInBlank, Listening, Translation).
+
+**Error Responses:**
+
+**401 Unauthorized:**
+```json
+{
+  "message": "User is not authorized.",
+  "statusCode": 401,
+  "detail": null
+}
+```
+
+---
+
+### GET /api/lessons/{lessonId}/progress
+
+Get user progress for all exercises in a lesson.
+
+**Authentication:** Required
+**Roles:** Any authenticated user
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `lessonId` | string (GUID) | Lesson ID |
+
+**Request:**
+```http
+GET /api/lessons/lesson1/progress HTTP/1.1
+Host: localhost:8080
+Cookie: AuthToken=eyJhbGciOiJIUzI1NiIs...
+```
+
+**Success Response (200 OK):**
+```json
+[
+  {
+    "exerciseId": "ex1",
+    "isCompleted": true,
+    "pointsEarned": 10,
+    "completedAt": "2025-03-14T10:30:00Z"
+  },
+  {
+    "exerciseId": "ex2",
+    "isCompleted": false,
+    "pointsEarned": 0,
+    "completedAt": null
+  }
+]
+```
+
+**Note:** Returns progress for ALL exercises in the lesson, including those never attempted (with `isCompleted: false`, `pointsEarned: 0`, `completedAt: null`).
+
+**Response Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `exerciseId` | string (GUID) | Exercise ID |
+| `isCompleted` | boolean | `true` if answered correctly |
+| `pointsEarned` | integer | XP earned (0 if incorrect or not attempted) |
+| `completedAt` | DateTime? | UTC timestamp of first correct submission |
+
+**Error Responses:**
+
+**401 Unauthorized:**
+```json
+{
+  "message": "User not authenticated"
+}
+```
+
+---
+
+### GET /api/lessons/{lessonId}/submissions
+
+Get submission results for all exercises in a lesson (includes correct answers for failed attempts and lesson progress summary).
+
+**Authentication:** Required
+**Roles:** Any authenticated user
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `lessonId` | string (GUID) | Lesson ID |
+
+**Request:**
+```http
+GET /api/lessons/lesson1/submissions HTTP/1.1
+Host: localhost:8080
+Cookie: AuthToken=eyJhbGciOiJIUzI1NiIs...
+```
+
+**Success Response (200 OK):**
+```json
+[
+  {
+    "isCorrect": true,
+    "pointsEarned": 10,
+    "correctAnswer": null,
+    "explanation": "Buongiorno is the formal morning greeting",
+    "lessonProgress": {
+      "completedExercises": 7,
+      "totalExercises": 10,
+      "earnedXp": 70,
+      "totalPossibleXp": 100,
+      "completionPercentage": 0.70,
+      "meetsCompletionThreshold": true
+    }
+  },
+  {
+    "isCorrect": false,
+    "pointsEarned": 0,
+    "correctAnswer": "Ciao",
+    "explanation": "Mi chiamo means 'my name is'",
+    "lessonProgress": {
+      "completedExercises": 7,
+      "totalExercises": 10,
+      "earnedXp": 70,
+      "totalPossibleXp": 100,
+      "completionPercentage": 0.70,
+      "meetsCompletionThreshold": true
+    }
+  }
+]
+```
+
+**Response Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `isCorrect` | boolean | `true` if answered correctly |
+| `pointsEarned` | integer | XP earned (0 if incorrect or not attempted) |
+| `correctAnswer` | string? | Correct answer (only shown if `isCorrect: false`) |
+| `explanation` | string? | Explanation text |
+| `lessonProgress` | LessonProgressSummary | Current lesson-wide progress |
+
+**LessonProgressSummary:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `completedExercises` | integer | Count of correctly completed exercises |
+| `totalExercises` | integer | Total exercises in lesson |
+| `earnedXp` | integer | XP earned from completed exercises |
+| `totalPossibleXp` | integer | Total possible XP in lesson |
+| `completionPercentage` | number | Completion percentage (0.0-1.0) |
+| `meetsCompletionThreshold` | boolean | `true` if ≥70% threshold met |
+
+**Note:** Returns submission results for ALL exercises in the lesson, not just attempted ones. Use this to restore user state after session restart.
+
+**Error Responses:**
+
+**401 Unauthorized:**
+```json
+{
+  "message": "User not authenticated"
+}
+```
+
+---
+
 ### POST /api/lessons
 
 Create a new lesson with optional exercises.
