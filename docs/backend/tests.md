@@ -408,6 +408,35 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
+### 15. **ExerciseValidationTests.cs** (23 tests) — Exercise answer validation
+
+**Type**: Integration (Testcontainers)
+**Coverage**: All four exercise type validation rules
+
+#### FillInBlank (9 tests)
+- Case sensitivity on/off
+- Whitespace trimming on/off
+- AcceptedAnswers comma-separated parsing
+- AcceptedAnswers whitespace handling
+
+#### Translation (8 tests)
+- Exact match (100% similarity)
+- Levenshtein distance calculation
+- Threshold edge cases (70%, 80%, 90%)
+- Multiple character substitutions
+
+#### Listening (4 tests)
+- Case sensitivity on/off
+- Always trims whitespace
+- AcceptedAnswers parsing
+
+#### MultipleChoice (3 tests)
+- Correct option ID validation
+- Wrong option ID rejection
+- Invalid option ID handling
+
+---
+
 ## Coverage Gaps (Updated 2026-03-16)
 
 ### Still Missing
