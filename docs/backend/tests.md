@@ -376,13 +376,10 @@ threshold(n) = 100 * n * (n - 1)
 **Untested Endpoints:**
 | Endpoint | Method | Coverage |
 |----------|--------|----------|
-| POST /api/course | POST | **Authorization complete** (DTO validation, business logic still missing) |
-| PUT /api/course/{id} | PUT | **Authorization complete** (DTO validation, business logic still missing) |
-| POST /api/lesson | POST | **Authorization complete** (DTO validation, business logic still missing) |
-| PUT /api/lesson/{id} | PUT | **Authorization complete** (DTO validation, business logic still missing) |
-| POST /api/lesson/{id}/complete | POST | **Fully covered** in StudentExerciseProgressJourneyTests |
-| PUT /api/user/avatar | PUT | **Authorization complete** (file validation, upsert logic still missing) |
-| GET /api/user/profile | GET | **Does not exist** (documentation error - endpoint not implemented) |
+| POST /api/language | POST | **Not tested** |
+| PUT /api/language/{id} | PUT | **Not tested** |
+| DELETE /api/language/{id} | DELETE | **Not tested** |
+| PUT /api/user/avatar | PUT | **Authorization only** (file validation, upsert logic not tested) |
 
 **Business Logic:**
 - Course/Lesson CRUD: DTO validation, OrderIndex auto-calculation, FK validation, update partial fields
