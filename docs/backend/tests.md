@@ -6,7 +6,7 @@
 
 ## Overview
 
-The Lexiq backend has **12 test classes** covering authentication, authorization, exercise submission, leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
+The Lexiq backend has **15 test classes** covering authentication, authorization, CRUD operations (Language, Course), exercise validation (all 4 types), leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
 
 ---
 
@@ -477,11 +477,11 @@ dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLev
 
 ## Test Statistics
 
-- **Total test classes**: 12
-- **Total test methods**: ~195 (exact count depends on Theory inline data rows)
+- **Total test classes**: 15
+- **Total test methods**: ~246 (exact count depends on Theory inline data rows)
 - **E2E tests**: 5 classes, 33 tests (full user journeys)
-- **Integration tests**: 5 classes (use Testcontainers)
+- **Integration tests**: 8 classes (5 service tests + 3 existing integration tests)
 - **Unit tests**: 2 classes (pure, no DB)
 - **Authorization tests**: 92 tests across 8 categories (complete endpoint coverage for all roles)
-- **Coverage**: Auth flow, **Complete authorization matrix**, Exercise submission (**all 4 types**), Answer validation (case sensitivity, whitespace, AcceptedAnswers, fuzzy matching), Course/Lesson CRUD (DTO validation, OrderIndex auto-calc, FK validation, partial updates, cascade deletes, unlocking), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
-- **Not covered**: Language CRUD, Avatar upload validation
+- **Coverage**: Auth flow, **Complete authorization matrix**, **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
+- **Not covered**: Avatar upload validation
