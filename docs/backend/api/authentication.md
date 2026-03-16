@@ -176,16 +176,34 @@ app.MapControllers();
 - Stores user in `HttpContext.Items["CurrentUser"]`
 - Access via `HttpContext.GetCurrentUser()` extension method
 
-**Example:**
+**Example (with `[Authorize]` attribute):**
 ```csharp
-var currentUser = HttpContext.GetCurrentUser();
-if (currentUser == null)
-    return Unauthorized(new { message = "User is not authorized." });
+[Authorize]
+public async Task<IActionResult> GetProfile()
+{
+    // No null check needed - [Authorize] guarantees authentication
+    var currentUser = HttpContext.GetCurrentUser()!;
 
-// currentUser is the full User entity (not just claims)
-var userId = currentUser.Id;
-var email = currentUser.Email;
-var totalXp = currentUser.TotalPointsEarned;
+    // currentUser is the full User entity (not just claims)
+    var userId = currentUser.Id;
+    var email = currentUser.Email;
+    var totalXp = currentUser.TotalPointsEarned;
+
+    return Ok(new { id = userId, email });
+}
+```
+
+**Example (without `[Authorize]` - public endpoint):**
+```csharp
+[AllowAnonymous]
+public async Task<IActionResult> GetPublicData()
+{
+    var currentUser = HttpContext.GetCurrentUser();
+    if (currentUser == null)
+        return Unauthorized(new { message = "User is not authorized." });
+
+    // Use currentUser...
+}
 ```
 
 ## Authorization
@@ -245,29 +263,58 @@ public class LessonController : ControllerBase
 Business logic allows Admin and ContentCreator roles to bypass exercise/lesson locks for testing purposes:
 
 ```csharp
-// ExerciseProgressService.SubmitAnswerAsync
-var user = await _userManager.FindByIdAsync(userId);
-var canBypassLocks = user != null && await user.CanBypassLocksAsync(_userManager);
+// ExerciseController.GetExercise
+[Authorize]
+public async Task<ActionResult<ExerciseDto>> GetExercise(string id)
+{
+    var exercise = await _exerciseService.GetExerciseByIdAsync(id);
+    if (exercise == null)
+        return NotFound();
 
-if (exercise.IsLocked && !canBypassLocks)
-    throw new InvalidOperationException("Cannot submit answers for a locked exercise");
+    var user = HttpContext.GetCurrentUser()!;
+    var canBypassLocks = await user.CanBypassLocksAsync(_userManager);
+
+    if (exercise.IsLocked && !canBypassLocks)
+        return StatusCode(403, new { message = "Exercise is locked. Complete previous exercises to unlock." });
+
+    return Ok(exercise.ToDto());
+}
 ```
 
 This prevents the "chicken and egg" problem where content creators can't test locked exercises without unlocking them first.
 
 ## Common Auth Scenarios
 
-### Scenario 1: Check if User is Authenticated
+### Scenario 1: Require Authentication (Recommended Pattern)
+
+Use `[Authorize]` attribute - authentication is guaranteed, no null check needed:
 
 ```csharp
+[Authorize]
 [HttpGet]
 public async Task<IActionResult> GetProfile()
 {
-    var currentUser = HttpContext.GetCurrentUser();
-    if (currentUser == null)
-        return Unauthorized(new { message = "User is not authorized." });
-
+    // [Authorize] guarantees authentication - currentUser cannot be null
+    var currentUser = HttpContext.GetCurrentUser()!;
     return Ok(new { id = currentUser.Id, email = currentUser.Email });
+}
+```
+
+**Controller-level authorization** (all endpoints require auth by default):
+
+```csharp
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]  // ← All endpoints in this controller require authentication
+public class LessonController : ControllerBase
+{
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetLesson(string id)
+    {
+        // No null check needed - inherited [Authorize] from class level
+        var currentUser = HttpContext.GetCurrentUser()!;
+        // ...
+    }
 }
 ```
 
@@ -281,11 +328,14 @@ if (!isAdmin)
 
 ### Scenario 3: Public Endpoint with Optional Auth
 
+When using `[AllowAnonymous]`, null checks ARE required because the user may not be authenticated:
+
 ```csharp
 [AllowAnonymous]
 [HttpGet]
 public async Task<IActionResult> GetLeaderboard()
 {
+    // ⚠️ Null check required - endpoint allows anonymous access
     var currentUser = HttpContext.GetCurrentUser();
 
     var leaderboard = await _leaderboardService.GetLeaderboardAsync();
@@ -299,6 +349,39 @@ public async Task<IActionResult> GetLeaderboard()
     return Ok(leaderboard);
 }
 ```
+
+**Rule of thumb:**
+- `[Authorize]` → No null check needed (use `!` operator)
+- `[AllowAnonymous]` → Null check required (user may not be authenticated)
+
+### Understanding the `!` Operator in Auth Contexts
+
+When you see `HttpContext.GetCurrentUser()!` in controller code, the `!` (null-forgiving operator) is a **compiler hint**, not suppressing an actual null check:
+
+```csharp
+[Authorize]
+public async Task<IActionResult> SubmitAnswer(string exerciseId, SubmitAnswerRequest request)
+{
+    // [Authorize] guarantees this cannot be null
+    var user = HttpContext.GetCurrentUser()!;
+
+    // Use user without defensive checks
+    await _progressService.SubmitAnswerAsync(user.Id, exerciseId, request.Answer);
+    return Ok();
+}
+```
+
+**Why this is safe:**
+1. `[Authorize]` attribute runs in the authorization middleware **before** the controller
+2. If authentication fails, the request is rejected with 401 — controller never executes
+3. `UserContextMiddleware` loads the user entity after successful authentication
+4. By the time controller code runs, the user is **guaranteed** to exist
+5. The `!` tells the compiler "I know this isn't null" — it's documentation, not suppression
+
+**When NOT to use `!`:**
+- Production service/business logic code — always throw explicit exceptions
+- `[AllowAnonymous]` endpoints — user genuinely can be null
+- Before checking `[Authorize]` has been applied — verify the attribute exists first
 
 ## Security Considerations
 
