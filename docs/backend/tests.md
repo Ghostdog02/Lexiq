@@ -385,13 +385,9 @@ threshold(n) = 100 * n * (n - 1)
 
 ## Recommendations
 
-1. **Add E2E user journey tests** — test complete workflows, not just isolated endpoints
-2. **Test exercise submission flow** — the core mechanic of the app (submit answer → validate → award XP → unlock next → update progress)
-3. **Test lesson completion** — verify 70% threshold, next lesson unlock, cascade exercise unlock
-4. **Test progress restoration** — verify frontend receives correct data structure
-5. **Test answer validation** — verify correct/incorrect answers are graded properly for each exercise type
-6. **Add admin bypass tests** — verify Admins can access locked content
-7. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement (currently open!)
+1. **Add Language CRUD tests** — test LanguageService create, update, delete, cascade behavior
+2. **Add avatar upload validation tests** — file size/type validation, upsert behavior, binary storage
+3. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement (currently open!)
 
 ---
 
