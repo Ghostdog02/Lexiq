@@ -444,21 +444,17 @@ threshold(n) = 100 * n * (n - 1)
 **Untested Endpoints:**
 | Endpoint | Method | Coverage |
 |----------|--------|----------|
-| POST /api/language | POST | **Not tested** |
-| PUT /api/language/{id} | PUT | **Not tested** |
-| DELETE /api/language/{id} | DELETE | **Not tested** |
 | PUT /api/user/avatar | PUT | **Authorization only** (file validation, upsert logic not tested) |
 
 **Business Logic:**
-- Language CRUD: DTO validation, business logic, cascade delete behavior
 - Avatar upload: File size/type validation, upsert behavior, existing avatar replacement
 
 ---
 
 ## Recommendations
 
-1. **Add Language CRUD tests** — test LanguageService create, update, delete, cascade behavior
-2. **Add avatar upload validation tests** — file size/type validation, upsert behavior, binary storage
+1. **Add avatar upload validation tests** — file size/type validation, upsert behavior, binary storage
+2. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement (currently open!)
 3. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement (currently open!)
 
 ---
