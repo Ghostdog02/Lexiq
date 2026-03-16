@@ -369,10 +369,6 @@ threshold(n) = 100 * n * (n - 1)
 
 ### Still Missing
 
-**Untested Exercise Types:**
-- Listening exercise validation (audio URL required, max replays)
-- Translation exercise fuzzy matching (MatchingThreshold)
-
 **Untested Endpoints:**
 | Endpoint | Method | Coverage |
 |----------|--------|----------|
