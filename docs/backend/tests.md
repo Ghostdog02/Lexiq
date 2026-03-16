@@ -378,11 +378,8 @@ threshold(n) = 100 * n * (n - 1)
 | PUT /api/user/avatar | PUT | **Authorization only** (file validation, upsert logic not tested) |
 
 **Business Logic:**
-- Course/Lesson CRUD: DTO validation, OrderIndex auto-calculation, FK validation, update partial fields
+- Language CRUD: DTO validation, business logic, cascade delete behavior
 - Avatar upload: File size/type validation, upsert behavior, existing avatar replacement
-- FillInBlank case sensitivity and whitespace trimming edge cases
-- AcceptedAnswers comma-separated validation
-- Lesson unlock cascade to first exercise (covered indirectly)
 
 ---
 
