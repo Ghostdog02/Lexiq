@@ -208,7 +208,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         result.IsCompleted.Should().BeTrue();
         result.EarnedXp.Should().Be(280, "28 exercises × 10 points");
         result.TotalPossibleXp.Should().Be(400, "40 exercises × 10 points");
-        result.CompletionPercentage.Should().Be(70.0);
+        result.CompletionPercentage.Should().Be(0.70, "28 out of 40 exercises completed");
     }
 
     [Fact]
@@ -329,7 +329,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         result.Should().NotBeNull();
         result.IsCompleted.Should().BeFalse("67.5% is below 70% threshold");
-        result.CompletionPercentage.Should().Be(67.5);
+        result.CompletionPercentage.Should().Be(0.68, "27 out of 40 exercises completed");
     }
 
     // Helper methods - no assertions, just return data
@@ -337,7 +337,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     private async Task<List<ExerciseDto>?> GetExercisesForLessonAsync(string lessonId)
     {
         var response = await _client.GetAsync(
-            $"/api/exercises/lesson/{lessonId}",
+            $"/api/lessons/{lessonId}/exercises",
             TestContext.Current.CancellationToken
         );
         if (!response.IsSuccessStatusCode)
@@ -368,7 +368,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     private async Task<List<UserExerciseProgressDto>?> GetLessonProgressAsync(string lessonId)
     {
         var response = await _client.GetAsync(
-            $"/api/exercises/lesson/{lessonId}/progress",
+            $"/api/lessons/{lessonId}/progress",
             TestContext.Current.CancellationToken
         );
         if (!response.IsSuccessStatusCode)
@@ -382,7 +382,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     private async Task<List<SubmitAnswerResponse>?> GetLessonSubmissionsAsync(string lessonId)
     {
         var response = await _client.GetAsync(
-            $"/api/exercises/lesson/{lessonId}/submissions",
+            $"/api/lessons/{lessonId}/submissions",
             TestContext.Current.CancellationToken
         );
         if (!response.IsSuccessStatusCode)

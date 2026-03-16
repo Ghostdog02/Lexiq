@@ -342,7 +342,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
 
         // Act
         var response = await _studentClient.GetAsync(
-            $"/api/exercises/lesson/{lessonId}/progress",
+            $"/api/lessons/{lessonId}/progress",
             TestContext.Current.CancellationToken
         );
 
@@ -401,7 +401,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
 
         // Act
         var response = await _studentClient.GetAsync(
-            $"/api/exercises/lesson/{lessonId}/submissions",
+            $"/api/lessons/{lessonId}/submissions",
             TestContext.Current.CancellationToken
         );
 
@@ -453,7 +453,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         var lessonId = exDto.LessonId;
 
         var listResponse = await _studentClient.GetAsync(
-            $"/api/exercises/lesson/{lessonId}",
+            $"/api/lessons/{lessonId}/exercises",
             TestContext.Current.CancellationToken
         );
 
