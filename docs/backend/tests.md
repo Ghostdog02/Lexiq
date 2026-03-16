@@ -389,6 +389,25 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
+### 14. **CourseCrudTests.cs** (16 tests) — Course CRUD operations
+
+**Type**: Integration (Testcontainers)
+**Coverage**: `CourseService` create, read, update, delete, partial updates
+
+**Categories:**
+- DTO validation (invalid language, null fields, timestamps)
+- Read operations (ordering by OrderIndex, eager loading)
+- Update operations (partial updates, timestamp changes)
+- Delete operations (cascade deletes, non-existent handling)
+
+**Key Tests:**
+- `CreateCourseAsync_InvalidLanguageName_ThrowsArgumentException`
+- `UpdateCourse_PartialFields_OnlyUpdatesProvidedFields`
+- `DeleteCourse_WithLessons_CascadeDeletes`
+- `GetAllCourses_ReturnsCoursesOrderedByOrderIndex`
+
+---
+
 ## Coverage Gaps (Updated 2026-03-16)
 
 ### Still Missing
