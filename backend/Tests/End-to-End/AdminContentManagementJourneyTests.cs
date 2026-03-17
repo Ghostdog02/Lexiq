@@ -97,6 +97,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         var createResponse = await _adminClient.PostAsJsonAsync(
             "/api/lessons",
             createLessonDto,
+            JsonOptions,
             TestContext.Current.CancellationToken
         );
 
@@ -170,6 +171,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
             createLessonDto,
             TestContext.Current.CancellationToken
         );
+        
         var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
             cancellationToken: TestContext.Current.CancellationToken
         );
@@ -365,6 +367,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         var createResponse = await _adminClient.PostAsJsonAsync(
             "/api/lessons",
             createLessonDto,
+            JsonOptions,
             TestContext.Current.CancellationToken
         );
         var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
@@ -378,7 +381,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         );
 
         // Act
-        var addExerciseDto = new CreateFillInBlankExerciseDto(
+        CreateExerciseDto addExerciseDto = new CreateFillInBlankExerciseDto(
             LessonId: createdLesson.LessonId,
             Title: "Exercise 2",
             Instructions: null,
@@ -397,6 +400,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         var addExerciseResponse = await _adminClient.PostAsJsonAsync(
             "/api/exercises",
             addExerciseDto,
+            JsonOptions,
             TestContext.Current.CancellationToken
         );
 

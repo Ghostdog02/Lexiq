@@ -167,7 +167,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
                     exerciseDto.OrderIndex ?? i
                 );
                 exercise.IsLocked = i != 0; // First exercise unlocked, rest locked
-                _context.Exercises.Add(exercise);
+                lesson.Exercises.Add(exercise);
             }
         }
 
@@ -188,14 +188,19 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
                 ?? throw new ArgumentException($"Course with ID '{dto.CourseId}' not found.");
             lesson.CourseId = dto.CourseId;
         }
+        
         if (dto.Title != null)
             lesson.Title = dto.Title;
+
         if (dto.Description != null)
             lesson.Description = dto.Description;
+
         if (dto.EstimatedDurationMinutes.HasValue)
             lesson.EstimatedDurationMinutes = dto.EstimatedDurationMinutes.Value;
+
         if (dto.OrderIndex.HasValue)
             lesson.OrderIndex = dto.OrderIndex.Value;
+
         if (dto.LessonContent != null)
             lesson.LessonContent = dto.LessonContent; // Update Editor.js content
 
