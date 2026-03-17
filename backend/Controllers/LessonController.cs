@@ -84,12 +84,9 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
         }
 
         var currentUser = HttpContext.GetCurrentUser()!;
-        var progress = await _lessonService.GetFullLessonProgressAsync(
-            currentUser.Id,
-            lessonId
-        );
+        var progress = await _lessonService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
 
-        return Ok(lesson.ToDto(progress.Summary, progress.ExerciseProgress));
+        return OkPolymorphic<LessonDto>(lesson.ToDto(progress.Summary, progress.ExerciseProgress));
     }
 
     /// <summary>
@@ -109,7 +106,14 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
     public async Task<ActionResult<LessonDto>> CreateLesson(CreateLessonDto dto)
     {
         var lesson = await _lessonService.CreateLessonAsync(dto);
-        return CreatedAtAction(nameof(GetLesson), new { lessonId = lesson.Id }, lesson.ToDto());
+        var result = CreatedAtAction(
+            nameof(GetLesson),
+            new { lessonId = lesson.Id },
+            lesson.ToDto()
+        );
+        result.DeclaredType = typeof(LessonDto);
+
+        return result;
     }
 
     [HttpPut("{lessonId}")]
