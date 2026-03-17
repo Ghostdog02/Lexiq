@@ -137,9 +137,8 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
     /// polymorphic type discriminators, camelCase naming, and enum converters.
     /// </summary>
     protected JsonSerializerOptions JsonOptions =>
-        Factory.Services
-            .GetRequiredService<IOptions<JsonOptions>>()
-            .Value.JsonSerializerOptions;
+        Factory.Services.GetRequiredService<IOptions<JsonOptions>>().Value.JsonSerializerOptions;
+
     /// <summary>
     /// Clears all test user data (users, progress, avatars) except the system user.
     /// Call this at the start of InitializeAsync in E2E tests to ensure clean state.
@@ -216,12 +215,7 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
     private static void EnsureUploadDirectoriesExist()
     {
         // Navigate from Tests/ to backend/ (parent directory)
-        var backendRoot = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            "..",
-            "..",
-            ".."
-        );
+        var backendRoot = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..");
 
         var uploadPaths = new[] { "audio", "documents", "images", "videos", "files" };
         foreach (var subdir in uploadPaths)

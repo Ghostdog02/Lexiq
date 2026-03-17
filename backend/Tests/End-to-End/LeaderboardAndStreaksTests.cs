@@ -216,7 +216,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
 
     // Helper methods
 
-    private async Task<LeaderboardResponse> GetLeaderboardAsync(
+    private static async Task<LeaderboardResponse> GetLeaderboardAsync(
         HttpClient client,
         TimeFrame timeFrame
     )
@@ -241,7 +241,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
         return leaderboard;
     }
 
-    private async Task SubmitAnswerAsync(HttpClient client, string exerciseId, string answer)
+    private static async Task SubmitAnswerAsync(HttpClient client, string exerciseId, string answer)
     {
         var response = await client.PostAsJsonAsync(
             $"/api/exercises/{exerciseId}/submit",

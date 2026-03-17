@@ -27,7 +27,7 @@ public class LanguageService(BackendDbContext context)
         {
             Name = dto.Name,
             FlagIconUrl = dto.FlagIconUrl,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         _context.Languages.Add(language);

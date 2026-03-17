@@ -466,7 +466,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         );
     }
 
-    private async Task<ExerciseSubmitResult?> SubmitAnswerAsync(
+    private static async Task<ExerciseSubmitResult?> SubmitAnswerAsync(
         HttpClient client,
         string exerciseId,
         string answer
