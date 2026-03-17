@@ -3,7 +3,6 @@
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
 [![Angular](https://img.shields.io/badge/Angular-21-DD0031)](https://angular.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/License-Proprietary-orange)]()
 
 A full-stack language learning platform for Bulgarian speakers studying Italian. Built as both a functional application and a technical showcase by a two-person team — a backend/DevOps specialist and a frontend developer.
 
@@ -314,4 +313,6 @@ Lexiq/
 
 ## License
 
-Proprietary. All rights reserved by the project maintainers. For collaboration or usage enquiries, open a [GitHub Issue](https://github.com/Ghostdog02/Lexiq/issues).
+Copyright 2026 Alexander
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
