@@ -684,9 +684,13 @@ xUnit v3 analyzer raises xUnit1051 warnings when async methods that accept `Canc
 
 **HTTP client calls:**
 ```csharp
-// HTTP operations
+// HTTP operations (non-polymorphic DTOs)
 await client.PostAsJsonAsync("/api/endpoint", dto, TestContext.Current.CancellationToken);
 await response.Content.ReadFromJsonAsync<Dto>(TestContext.Current.CancellationToken);
+
+// HTTP operations (polymorphic DTOs — requires JsonOptions)
+await client.PostAsJsonAsync("/api/exercises", exerciseDto, JsonOptions, TestContext.Current.CancellationToken);
+await response.Content.ReadFromJsonAsync<ExerciseDto>(JsonOptions, TestContext.Current.CancellationToken);
 ```
 
 **EF Core operations:**
@@ -758,10 +762,13 @@ AssertValidUser(resultUser, payload); // test fails here if null
 var roles = await _userManager.GetRolesAsync(resultUser!); // ! is safe — assertion already passed
 ```
 
-### Polymorphic ExerciseDto Deserialization in Tests
-`ReadFromJsonAsync<ExerciseDto>()` with default `JsonSerializerOptions` fails with `NotSupportedException: must specify a type discriminator`. This happens because the default options don't match the application's serialization settings.
+### Polymorphic DTO Serialization and Deserialization in Tests
+System.Text.Json requires special handling for polymorphic types (`CreateExerciseDto`, `ExerciseDto`) in tests. Both serialization (sending) and deserialization (receiving) need `JsonOptions`.
 
-**Always pass `JsonOptions`** (from `ControllerTestBase`) when deserializing polymorphic types:
+#### Deserialization (ReadFromJsonAsync)
+`ReadFromJsonAsync<ExerciseDto>()` with default `JsonSerializerOptions` fails with `NotSupportedException: must specify a type discriminator`.
+
+**Always pass `JsonOptions`** when deserializing polymorphic types:
 
 ```csharp
 // WRONG — uses default JsonSerializerOptions, fails on abstract ExerciseDto
@@ -776,7 +783,44 @@ var dto = await response.Content.ReadFromJsonAsync<ExerciseDto>(
 );
 ```
 
-This applies to both `ReadFromJsonAsync<ExerciseDto>` and `ReadFromJsonAsync<List<ExerciseDto>>`.
+#### Serialization (PostAsJsonAsync)
+When posting polymorphic DTOs, you must:
+1. Pass `JsonOptions` to include type discriminator configuration
+2. Declare the variable as the **base type** to force serialization through the polymorphic serializer
+
+**Always pass `JsonOptions` and use base type declaration:**
+
+```csharp
+// WRONG — concrete type declaration, serializer omits type discriminator
+var addExerciseDto = new CreateFillInBlankExerciseDto(...);
+await client.PostAsJsonAsync("/api/exercises", addExerciseDto, TestContext.Current.CancellationToken);
+
+// CORRECT — base type declaration forces polymorphic serialization with discriminator
+CreateExerciseDto addExerciseDto = new CreateFillInBlankExerciseDto(...);
+await client.PostAsJsonAsync(
+    "/api/exercises",
+    addExerciseDto,
+    JsonOptions,
+    TestContext.Current.CancellationToken
+);
+```
+
+**Why base type matters:** When the variable is declared as `CreateFillInBlankExerciseDto`, the serializer treats it as a concrete type and doesn't add the `"type"` discriminator. Declaring as `CreateExerciseDto` forces serialization through the `[JsonPolymorphic]` base type, which includes the discriminator.
+
+**Nested polymorphic types:** When polymorphic DTOs are nested in collections (like `CreateLessonDto.Exercises`), the collection is already typed as `List<CreateExerciseDto>?`, so the base type is implicit. Just pass `JsonOptions`:
+
+```csharp
+var createLessonDto = new CreateLessonDto(
+    ...,
+    Exercises: [
+        new CreateFillInBlankExerciseDto(...),  // ← implicitly treated as CreateExerciseDto
+    ]
+);
+
+await client.PostAsJsonAsync("/api/lessons", createLessonDto, JsonOptions, TestContext.Current.CancellationToken);
+```
+
+This applies to all polymorphic types: `CreateExerciseDto`, `ExerciseDto`, and their derived types.
 
 ### WebApplicationFactory — Unregistered Service Surfaces as AggregateException
 If a service class exists but was never added to `AddApplicationServices`, the DI container

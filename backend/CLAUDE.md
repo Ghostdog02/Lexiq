@@ -304,6 +304,25 @@ public abstract record ExerciseDto(...);
   - Both throw `InvalidOperationException` → controller returns 403 Forbidden
   - Admin and ContentCreator roles bypass both checks via `CanBypassLocksAsync`
 
+### Navigation Property Population
+
+**EF Core does not auto-populate navigation properties when adding entities to DbContext:**
+- Adding entities to `_context.SomeCollection.Add(entity)` only tracks them — it does NOT populate parent navigation properties
+- When returning entities from service methods that will be mapped to DTOs, ensure navigation collections are populated
+- **Pattern**: Add child entities to the parent's navigation collection, not directly to DbContext:
+
+```csharp
+// WRONG — exercises not in lesson.Exercises after SaveChangesAsync
+_context.Exercises.Add(exercise);
+
+// CORRECT — EF Core tracks via parent's collection and populates navigation property
+lesson.Exercises.Add(exercise);
+```
+
+**Why it matters:** If a service method returns an entity and the controller calls `.ToDto()`, the mapping will iterate navigation properties. Empty collections cause incorrect DTOs even though data was saved to the database.
+
+**Example:** `LessonService.CreateLessonAsync` adds exercises to `lesson.Exercises`, not `_context.Exercises`, so `lesson.ToDto()` includes the created exercises in the response.
+
 ### Performance & Optimization
 
 - **Unified progress fetching**: `GetFullLessonProgressAsync` returns both `LessonProgressSummary` and per-exercise progress dict in one query via `LessonProgressResult`. Avoid calling separate methods for summary vs. exercise-level progress.
