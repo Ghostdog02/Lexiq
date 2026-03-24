@@ -578,3 +578,8 @@ FodyWeavers.xsd
 
 # Claude config files
 settings.local.json
+
+# Report Coverage directory
+TestResults/
+coverage.xml
+index.htm
