@@ -366,6 +366,390 @@ public class FileUploadsServiceTests : IAsyncLifetime
             );
     }
 
+    // ── File Type-Specific Tests ────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("test.jpg", "image/jpeg")]
+    [InlineData("test.jpeg", "image/jpeg")]
+    [InlineData("test.png", "image/png")]
+    [InlineData("test.gif", "image/gif")]
+    [InlineData("test.webp", "image/webp")]
+    [InlineData("test.svg", "image/svg+xml")]
+    [InlineData("test.bmp", "image/bmp")]
+    public async Task UploadFileAsync_ValidImageExtensions_Succeeds(
+        string filename,
+        string contentType
+    )
+    {
+        // Arrange
+        var file = CreateMockFile(filename, 1024, contentType);
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "image", "http://test");
+
+        // Assert
+        result
+            .IsSuccess.Should()
+            .BeTrue(because: $"{Path.GetExtension(filename)} is a valid image extension");
+        result.Url.Should().StartWith("/api/uploads/image/");
+        result.Extension.Should().Be(Path.GetExtension(filename).TrimStart('.'));
+    }
+
+    [Theory]
+    [InlineData("test.pdf", "application/pdf")]
+    [InlineData("test.doc", "application/msword")]
+    [InlineData("test.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")]
+    [InlineData("test.txt", "text/plain")]
+    public async Task UploadFileAsync_ValidDocumentExtensions_Succeeds(
+        string filename,
+        string contentType
+    )
+    {
+        // Arrange
+        var file = CreateMockFile(filename, 1024, contentType);
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "document", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Url.Should().StartWith("/api/uploads/document/");
+    }
+
+    [Theory]
+    [InlineData("test.mp4", "video/mp4")]
+    [InlineData("test.avi", "video/x-msvideo")]
+    [InlineData("test.mov", "video/quicktime")]
+    [InlineData("test.webm", "video/webm")]
+    public async Task UploadFileAsync_ValidVideoExtensions_Succeeds(
+        string filename,
+        string contentType
+    )
+    {
+        // Arrange
+        var file = CreateMockFile(filename, 1024, contentType);
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "video", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Url.Should().StartWith("/api/uploads/video/");
+    }
+
+    [Theory]
+    [InlineData("test.mp3", "audio/mpeg")]
+    [InlineData("test.wav", "audio/wav")]
+    [InlineData("test.ogg", "audio/ogg")]
+    [InlineData("test.m4a", "audio/mp4")]
+    public async Task UploadFileAsync_ValidAudioExtensions_Succeeds(
+        string filename,
+        string contentType
+    )
+    {
+        // Arrange
+        var file = CreateMockFile(filename, 1024, contentType);
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "audio", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Url.Should().StartWith("/api/uploads/audio/");
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_ValidImage_SavesFileAndReturnsUrl()
+    {
+        // Arrange
+        var file = CreateMockFile("test.png", 1024, "image/png");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "image", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Url.Should().StartWith("/api/uploads/image/");
+        result.Name.Should().Be("test.png");
+        result.Size.Should().Be(1024);
+        result.Extension.Should().Be("png");
+        result.Title.Should().Be("test");
+
+        // Verify file was actually saved
+        var savedPath = _sut.FindFilePhysicalPath(Path.GetFileName(result.Url));
+        savedPath.Should().NotBeNull(because: "uploaded file should exist on disk");
+        File.Exists(savedPath)
+            .Should()
+            .BeTrue(because: "FindFilePhysicalPath returned a path");
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_CaseInsensitiveExtension_Succeeds()
+    {
+        // Arrange - uppercase extension
+        var file = CreateMockFile("test.PNG", 1024, "image/png");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "image", "http://test");
+
+        // Assert
+        result
+            .IsSuccess.Should()
+            .BeTrue(
+                because: "extension validation uses ToLowerInvariant() for case-insensitive matching"
+            );
+        result.Extension.Should().Be("png", because: "extension is normalized to lowercase");
+    }
+
+    // ── Upload by URL Tests ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task UploadFileByUrlAsync_EmptyUrl_ReturnsFailure()
+    {
+        // Arrange
+        var emptyUrl = "";
+
+        // Act
+        var result = await _sut.UploadFileByUrlAsync(emptyUrl, "image", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Be("URL is required");
+    }
+
+    [Fact]
+    public async Task UploadFileByUrlAsync_InvalidFileType_ReturnsFailure()
+    {
+        // Arrange
+        var url = "https://example.com/test.png";
+
+        // Act
+        var result = await _sut.UploadFileByUrlAsync(url, "invalid-type", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Be("Invalid file type");
+    }
+
+    [Fact]
+    public async Task UploadFileByUrlAsync_InvalidUrl_ReturnsFailure()
+    {
+        // Arrange
+        var invalidUrl = "not-a-valid-url";
+
+        // Act
+        var result = await _sut.UploadFileByUrlAsync(invalidUrl, "image", "http://test");
+
+        // Assert
+        result
+            .IsSuccess.Should()
+            .BeFalse(
+                because: "HttpClient.GetByteArrayAsync will throw on invalid URL, caught by try-catch"
+            );
+        result.Message.Should().Contain("Upload failed");
+    }
+
+    [Fact]
+    public async Task UploadFileByUrlAsync_UnreachableUrl_ReturnsFailure()
+    {
+        // Arrange - use a URL that will timeout or fail
+        var unreachableUrl = "https://192.0.2.1/test.png"; // TEST-NET-1, reserved for docs
+
+        // Act
+        var result = await _sut.UploadFileByUrlAsync(unreachableUrl, "image", "http://test");
+
+        // Assert
+        result
+            .IsSuccess.Should()
+            .BeFalse(because: "unreachable URLs throw HttpRequestException");
+        result.Message.Should().Contain("Upload failed");
+    }
+
+    // ── Physical Path Retrieval Tests ───────────────────────────────────────
+
+    [Fact]
+    public async Task GetFilePhysicalPath_ExistingFile_ReturnsPath()
+    {
+        // Arrange
+        var filename = "existing.png";
+        await CreateTestFileAsync("images", filename, 100);
+
+        // Act
+        var result = _sut.GetFilePhysicalPath(filename, "image");
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Should().EndWith(filename);
+        File.Exists(result).Should().BeTrue();
+    }
+
+    [Fact]
+    public void GetFilePhysicalPath_NonExistentFile_ReturnsNull()
+    {
+        // Arrange
+        var filename = "nonexistent.png";
+
+        // Act
+        var result = _sut.GetFilePhysicalPath(filename, "image");
+
+        // Assert
+        result
+            .Should()
+            .BeNull(
+                because: "GetFilePhysicalPath returns null when File.Exists() check fails"
+            );
+    }
+
+    [Fact]
+    public void GetFilePhysicalPath_InvalidFileType_ReturnsNull()
+    {
+        // Arrange
+        var filename = "test.png";
+
+        // Act
+        var result = _sut.GetFilePhysicalPath(filename, "invalid-type");
+
+        // Assert
+        result
+            .Should()
+            .BeNull(because: "invalid fileType doesn't match any config, returns null early");
+    }
+
+    [Fact]
+    public async Task FindFilePhysicalPath_SearchesAllFolders()
+    {
+        // Arrange - create files in different category folders
+        var imageFilename = "test-image.png";
+        var documentFilename = "test-document.pdf";
+        await CreateTestFileAsync("images", imageFilename, 100);
+        await CreateTestFileAsync("documents", documentFilename, 100);
+
+        // Act
+        var imageResult = _sut.FindFilePhysicalPath(imageFilename);
+        var documentResult = _sut.FindFilePhysicalPath(documentFilename);
+
+        // Assert
+        imageResult
+            .Should()
+            .NotBeNull(
+                because: "FindFilePhysicalPath searches all type folders (images, documents, videos, audio, files)"
+            );
+        imageResult.Should().Contain("images");
+
+        documentResult.Should().NotBeNull();
+        documentResult.Should().Contain("documents");
+    }
+
+    [Fact]
+    public void FindFilePhysicalPath_NonExistentFile_ReturnsNull()
+    {
+        // Arrange
+        var filename = "nonexistent.png";
+
+        // Act
+        var result = _sut.FindFilePhysicalPath(filename);
+
+        // Assert
+        result
+            .Should()
+            .BeNull(
+                because: "FindFilePhysicalPath returns null after searching all folders without finding the file"
+            );
+    }
+
+    [Fact]
+    public async Task GetFileByFilenameAsync_ExistingFile_ReturnsSuccess()
+    {
+        // Arrange
+        var filename = "existing.png";
+        await CreateTestFileAsync("images", filename, 1024);
+
+        // Act
+        var result = await _sut.GetFileByFilenameAsync(filename, "image", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        result.Name.Should().Be(filename);
+        result.Size.Should().Be(1024);
+        result.Extension.Should().Be("png");
+        result.Url.Should().Be($"http://test/api/uploads/image/{filename}");
+    }
+
+    [Fact]
+    public async Task GetFileByFilenameAsync_NoFileType_SearchesAllFolders()
+    {
+        // Arrange
+        var filename = "test.pdf";
+        await CreateTestFileAsync("documents", filename, 500);
+
+        // Act - pass null for fileType to trigger search across all folders
+        var result = await _sut.GetFileByFilenameAsync(filename, null, "http://test");
+
+        // Assert
+        result
+            .IsSuccess.Should()
+            .BeTrue(
+                because: "null fileType triggers foreach loop over all _fileTypeConfigs"
+            );
+        result.Name.Should().Be(filename);
+    }
+
+    [Fact]
+    public async Task GetFileByFilenameAsync_NonExistentFile_ReturnsFailure()
+    {
+        // Arrange
+        var filename = "nonexistent.png";
+
+        // Act
+        var result = await _sut.GetFileByFilenameAsync(filename, "image", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Be("File not found");
+    }
+
+    // ── DetermineFileType Tests ─────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(".jpg", "image")]
+    [InlineData(".png", "image")]
+    [InlineData(".pdf", "document")]
+    [InlineData(".docx", "document")]
+    [InlineData(".mp4", "video")]
+    [InlineData(".mp3", "audio")]
+    [InlineData(".zip", "file")]
+    public void DetermineFileType_ValidExtension_ReturnsCorrectType(
+        string extension,
+        string expectedType
+    )
+    {
+        // Act
+        var result = _sut.DetermineFileType(extension);
+
+        // Assert
+        result
+            .Should()
+            .Be(
+                expectedType,
+                because: $"{extension} is registered in {expectedType} file type config"
+            );
+    }
+
+    [Fact]
+    public void DetermineFileType_UnknownExtension_ReturnsFile()
+    {
+        // Arrange
+        var unknownExtension = ".xyz";
+
+        // Act
+        var result = _sut.DetermineFileType(unknownExtension);
+
+        // Assert
+        result
+            .Should()
+            .Be("file", because: "unknown extensions default to generic 'file' type");
+    }
+
     // ── Helper Methods ──────────────────────────────────────────────────────
 
     private static Mock<IFormFile> CreateMockFile(string filename, long length, string contentType)
