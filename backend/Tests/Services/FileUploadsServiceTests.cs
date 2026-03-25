@@ -63,6 +63,146 @@ public class FileUploadsServiceTests : IAsyncLifetime
         GC.SuppressFinalize(this);
     }
 
+    // ── Security Tests ──────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task UploadFileAsync_PathTraversalInFilename_Stripped()
+    {
+        // Arrange - Path.GetFileName() automatically strips directory components
+        var file = CreateMockFile("../../../etc/passwd.png", 100, "image/png");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "image", "http://test");
+
+        // Assert
+        result
+            .IsSuccess.Should()
+            .BeTrue(
+                because: "Path.GetFileName('../../../etc/passwd.png') returns 'passwd.png', stripping path traversal sequences — files are saved with GUID names anyway"
+            );
+        result.Name.Should().Be("passwd.png", because: "SanitizeFilename returns Path.GetFileName result");
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_FilenameWithEmbeddedDots_Rejects()
+    {
+        // Arrange - filename itself contains ".." after path stripping
+        var maliciousFile = CreateMockFile("file..name.png", 100, "image/png");
+
+        // Act
+        var result = await _sut.UploadFileAsync(maliciousFile.Object, "image", "http://test");
+
+        // Assert
+        result
+            .IsSuccess.Should()
+            .BeFalse(
+                because: "SanitizeFilename rejects filenames containing '..' even after Path.GetFileName() to prevent obfuscated path traversal"
+            );
+        result.Message.Should().Contain("Invalid filename");
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_SlashInFilename_Stripped()
+    {
+        // Arrange - Path.GetFileName() treats "/" as path separator and strips it
+        var file = CreateMockFile("directory/malicious.png", 100, "image/png");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "image", "http://test");
+
+        // Assert
+        result
+            .IsSuccess.Should()
+            .BeTrue(
+                because: "Path.GetFileName('directory/malicious.png') returns 'malicious.png' on Linux"
+            );
+        result.Name.Should().Be("malicious.png");
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_FilenameWithEmbeddedBackslash_Rejects()
+    {
+        // Arrange - filename itself contains "\\" after path stripping
+        var maliciousFile = CreateMockFile("file\\name.png", 100, "image/png");
+
+        // Act
+        var result = await _sut.UploadFileAsync(maliciousFile.Object, "image", "http://test");
+
+        // Assert
+        result
+            .IsSuccess.Should()
+            .BeFalse(
+                because: "SanitizeFilename rejects filenames containing '\\' even after Path.GetFileName() to prevent path manipulation"
+            );
+        result.Message.Should().Contain("Invalid filename");
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_GuidFilenames_PreventDirectoryEscape()
+    {
+        // Arrange
+        var file = CreateMockFile("user-provided-name.png", 100, "image/png");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "image", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var savedFilename = Path.GetFileName(result.Url);
+        savedFilename
+            .Should()
+            .NotBe(
+                "user-provided-name.png",
+                because: "service generates GUID filenames to prevent any filename-based attacks"
+            );
+        Guid.TryParse(
+            Path.GetFileNameWithoutExtension(savedFilename),
+            out _
+        )
+            .Should()
+            .BeTrue(because: "saved filename is a GUID");
+    }
+
+    [Fact]
+    public async Task GetFilePhysicalPath_PathTraversalAttempt_ReturnsNull()
+    {
+        // Arrange
+        var safeFilename = "test.png";
+        await CreateTestFileAsync("images", safeFilename, 100);
+
+        // Act - try to escape uploads directory with path traversal
+        var result = _sut.GetFilePhysicalPath("../../../etc/passwd", "image");
+
+        // Assert
+        result
+            .Should()
+            .BeNull(
+                because: "IsPathWithinUploadsDirectory must prevent path traversal to access files outside uploads folder"
+            );
+    }
+
+    [Fact]
+    public async Task GetFileByFilenameAsync_PathTraversalAttempt_ReturnsFalse()
+    {
+        // Arrange
+        var safeFilename = "test.png";
+        await CreateTestFileAsync("images", safeFilename, 100);
+
+        // Act
+        var result = await _sut.GetFileByFilenameAsync(
+            "../../../etc/passwd",
+            "image",
+            "http://test"
+        );
+
+        // Assert
+        result
+            .IsSuccess.Should()
+            .BeFalse(
+                because: "GetFileByFilenameAsync must reject path traversal attempts via IsPathWithinUploadsDirectory check"
+            );
+    }
+
     // ── Helper Methods ──────────────────────────────────────────────────────
 
     private static Mock<IFormFile> CreateMockFile(string filename, long length, string contentType)
