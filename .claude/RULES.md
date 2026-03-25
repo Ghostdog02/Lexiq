@@ -113,6 +113,27 @@ Add GetStreak integration tests                        ← Testcontainers integr
 Add GetLeaderboard integration tests                   ← Testcontainers integration
 ```
 
+#### Large Test File Grouping
+
+When adding a large test file (>500 lines or >40 tests), split into logical commit groups:
+
+| Commit | Contents |
+|--------|----------|
+| `Add <Class> test infrastructure` | Test class setup, `IAsyncLifetime`, helper methods, mocks |
+| `Add <Class> security tests` | Security-focused tests (path traversal, sanitization, authentication) |
+| `Add <Class> validation tests` | Input validation, size limits, type checking |
+| `Add <Class> functional tests` | Core functionality, file type tests, success paths |
+
+**Rationale:** Large test files (e.g., FileUploadsServiceTests with 57 tests) are easier to review when split by concern. Each commit is independently verifiable and focused on one aspect of the system under test.
+
+Example for FileUploadsService tests:
+```
+Add FileUploadsService test infrastructure              ← setup, teardown, helpers, mocks
+Add FileUploadsService security tests                   ← path traversal, GUID filenames, sanitization
+Add FileUploadsService validation tests                 ← null/empty, size limits, extension validation
+Add FileUploadsService file type, URL, and path tests  ← all file types, URL upload, physical path retrieval
+```
+
 ## Testing
 
 See [`backend/Tests/CLAUDE.md`](../backend/Tests/CLAUDE.md) for full test project documentation.
