@@ -26,7 +26,11 @@ public class FileUploadsServiceTests : IAsyncLifetime
     public FileUploadsServiceTests()
     {
         // Use a temp directory for test uploads
-        _testUploadPath = Path.Combine(Path.GetTempPath(), "lexiq-test-uploads", Guid.NewGuid().ToString());
+        _testUploadPath = Path.Combine(
+            Path.GetTempPath(),
+            "lexiq-test-uploads",
+            Guid.NewGuid().ToString()
+        );
     }
 
     public async ValueTask InitializeAsync()
@@ -53,6 +57,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
             {
                 Directory.Delete(_testUploadPath, recursive: true);
             }
+            
             catch
             {
                 // Best effort cleanup - ignore errors
@@ -80,7 +85,9 @@ public class FileUploadsServiceTests : IAsyncLifetime
             .BeTrue(
                 because: "Path.GetFileName('../../../etc/passwd.png') returns 'passwd.png', stripping path traversal sequences — files are saved with GUID names anyway"
             );
-        result.Name.Should().Be("passwd.png", because: "SanitizeFilename returns Path.GetFileName result");
+        result
+            .Name.Should()
+            .Be("passwd.png", because: "SanitizeFilename returns Path.GetFileName result");
     }
 
     [Fact]
@@ -155,10 +162,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
                 "user-provided-name.png",
                 because: "service generates GUID filenames to prevent any filename-based attacks"
             );
-        Guid.TryParse(
-            Path.GetFileNameWithoutExtension(savedFilename),
-            out _
-        )
+        Guid.TryParse(Path.GetFileNameWithoutExtension(savedFilename), out _)
             .Should()
             .BeTrue(because: "saved filename is a GUID");
     }
@@ -200,6 +204,165 @@ public class FileUploadsServiceTests : IAsyncLifetime
             .IsSuccess.Should()
             .BeFalse(
                 because: "GetFileByFilenameAsync must reject path traversal attempts via IsPathWithinUploadsDirectory check"
+            );
+    }
+
+    // ── Validation Tests ────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task UploadFileAsync_NullFile_ReturnsFailure()
+    {
+        // Arrange
+        IFormFile? nullFile = null;
+
+        // Act
+        var result = await _sut.UploadFileAsync(nullFile!, "image", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result
+            .Message.Should()
+            .Be("No file uploaded", because: "null file is rejected at the start of validation");
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_EmptyFile_ReturnsFailure()
+    {
+        // Arrange
+        var emptyFile = CreateMockFile("empty.png", 0, "image/png");
+
+        // Act
+        var result = await _sut.UploadFileAsync(emptyFile.Object, "image", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result
+            .Message.Should()
+            .Be(
+                "No file uploaded",
+                because: "zero-length files are rejected (file.Length == 0 check)"
+            );
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_InvalidFileType_ReturnsFailure()
+    {
+        // Arrange
+        var file = CreateMockFile("test.png", 100, "image/png");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "invalid-type", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result
+            .Message.Should()
+            .Be("Invalid file type", because: "fileType must match a key in _fileTypeConfigs");
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_ImageExceedsSizeLimit_ReturnsFailure()
+    {
+        // Arrange - image limit is 5MB
+        var oversizedFile = CreateMockFile("large.png", 6 * 1024 * 1024, "image/png");
+
+        // Act
+        var result = await _sut.UploadFileAsync(oversizedFile.Object, "image", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result
+            .Message.Should()
+            .Contain(
+                "File size exceeds limit of 5MB",
+                because: "image file type has 5MB max size in config"
+            );
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_DocumentExceedsSizeLimit_ReturnsFailure()
+    {
+        // Arrange - document limit is 10MB
+        var oversizedFile = CreateMockFile("large.pdf", 11 * 1024 * 1024, "application/pdf");
+
+        // Act
+        var result = await _sut.UploadFileAsync(oversizedFile.Object, "document", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Contain("File size exceeds limit of 10MB");
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_VideoExceedsSizeLimit_ReturnsFailure()
+    {
+        // Arrange - video limit is 50MB
+        var oversizedFile = CreateMockFile("large.mp4", 51 * 1024 * 1024, "video/mp4");
+
+        // Act
+        var result = await _sut.UploadFileAsync(oversizedFile.Object, "video", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Contain("File size exceeds limit of 50MB");
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_AudioExceedsSizeLimit_ReturnsFailure()
+    {
+        // Arrange - audio limit is 10MB
+        var oversizedFile = CreateMockFile("large.mp3", 11 * 1024 * 1024, "audio/mpeg");
+
+        // Act
+        var result = await _sut.UploadFileAsync(oversizedFile.Object, "audio", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Contain("File size exceeds limit of 10MB");
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_InvalidImageExtension_ReturnsFailure()
+    {
+        // Arrange
+        var file = CreateMockFile("document.pdf", 100, "application/pdf");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "image", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result
+            .Message.Should()
+            .Contain(
+                "Invalid file type",
+                because: ".pdf is not in the allowed extensions for image file type"
+            );
+        result
+            .Message.Should()
+            .Contain(
+                ".jpg, .jpeg, .png, .gif, .webp, .svg, .bmp",
+                because: "error message lists allowed extensions"
+            );
+    }
+
+    [Fact]
+    public async Task UploadFileAsync_InvalidDocumentExtension_ReturnsFailure()
+    {
+        // Arrange
+        var file = CreateMockFile("image.png", 100, "image/png");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "document", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Message.Should().Contain("Invalid file type");
+        result
+            .Message.Should()
+            .Contain(
+                ".pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx, .txt",
+                because: "document allowed extensions list"
             );
     }
 
