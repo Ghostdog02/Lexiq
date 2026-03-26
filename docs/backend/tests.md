@@ -6,7 +6,7 @@
 
 ## Overview
 
-The Lexiq backend has **17 test classes** covering authentication, authorization, user/role management, CRUD operations (Language, Course), exercise validation (all 4 types), leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
+The Lexiq backend has **18 test classes** covering authentication, authorization, user/role management, file upload security, CRUD operations (Language, Course), exercise validation (all 4 types), leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
 
 ---
 
@@ -437,7 +437,60 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
-### 16. **UserManagementControllerTests.cs** (22 tests) — User management operations
+### 16. **FileUploadsServiceTests.cs** (57 tests) — File upload security and validation
+
+**Type**: Unit tests (mocked `IWebHostEnvironment`, temp directory isolation)
+**Coverage**: FileUploadsService security, validation, and file handling
+
+#### Security Tests (8 tests)
+- Path traversal protection via `Path.GetFileName()` stripping
+- Embedded dots (`..`) rejection in filenames
+- Slash and backslash handling
+- GUID filename generation prevents filename-based attacks
+- `GetFilePhysicalPath` path traversal protection
+- `GetFileByFilenameAsync` path traversal rejection
+
+#### Validation Tests (8 tests)
+- Null and empty file rejection
+- Invalid file type rejection
+- Size limit enforcement per category:
+  - Image: 5MB
+  - Document: 10MB
+  - Video: 50MB
+  - Audio: 10MB
+- Extension validation for image and document types
+- Error messages list allowed extensions
+
+#### File Type Tests (28 Theory tests)
+- All valid extensions for each category:
+  - **Image**: .jpg, .jpeg, .png, .gif, .webp, .svg, .bmp
+  - **Document**: .pdf, .doc, .docx, .txt
+  - **Video**: .mp4, .avi, .mov, .webm
+  - **Audio**: .mp3, .wav, .ogg, .m4a
+- File save verification
+- Case-insensitive extension matching
+
+#### Upload by URL Tests (4 tests)
+- Empty URL rejection
+- Invalid URL rejection
+- Unreachable URL handling (timeout)
+- Invalid file type rejection
+
+#### Physical Path Tests (9 tests)
+- File existence checks
+- Cross-folder search (`FindFilePhysicalPath`)
+- Invalid file type handling
+- `GetFileByFilenameAsync` with/without file type parameter
+
+**Key Patterns:**
+- Uses temp directory for test isolation (cleaned up in `DisposeAsync`)
+- Mocks `IFormFile` with `CopyToAsync` implementation
+- Tests organized by concern: security → validation → functional
+- 4-commit split for large test file (infrastructure, security, validation, functional)
+
+---
+
+### 17. **UserManagementControllerTests.cs** (22 tests) — User management operations
 
 **Type**: Integration (WebApplicationFactory + Testcontainers)
 **Coverage**: UserManagementController endpoints for admin user operations
@@ -485,7 +538,7 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
-### 17. **RoleManagementControllerTests.cs** (7 tests) — Role management operations
+### 18. **RoleManagementControllerTests.cs** (7 tests) — Role management operations
 
 **Type**: Integration (WebApplicationFactory + Testcontainers)
 **Coverage**: RoleManagementController endpoint for retrieving user roles
@@ -517,7 +570,6 @@ threshold(n) = 100 * n * (n - 1)
 
 **Business Logic:**
 - Avatar upload: File size/type validation, upsert behavior, existing avatar replacement
-- File upload security: Path traversal prevention, filename sanitization, size/type validation
 - User language enrollment: UserLanguageService CRUD operations
 - Achievement unlocking: XP threshold logic, idempotency
 - Profile assembly: Multi-service aggregation
@@ -528,7 +580,6 @@ threshold(n) = 100 * n * (n - 1)
 
 1. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement controllers (⚠️ **tests exist but controllers lack authorization attributes**)
 2. **Add avatar upload validation tests** — file size/type validation, upsert behavior, binary storage (AvatarService)
-3. **Add file upload security tests** — path traversal, sanitization, per-type validation (FileUploadsService)
 
 ---
 
@@ -550,12 +601,12 @@ dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLev
 
 ## Test Statistics
 
-- **Total test classes**: 17
-- **Total test methods**: ~275 (exact count depends on Theory inline data rows)
+- **Total test classes**: 18
+- **Total test methods**: ~332 (exact count depends on Theory inline data rows)
 - **E2E tests**: 5 classes, 33 tests (full user journeys)
-- **Integration tests**: 10 classes (5 service tests + 3 auth/leaderboard tests + 2 controller tests)
-- **Unit tests**: 2 classes (pure, no DB)
+- **Integration tests**: 11 classes (6 service tests + 3 auth/leaderboard tests + 2 controller tests)
+- **Unit tests**: 2 classes (pure, no DB) + 1 service unit test (FileUploadsService with mocked dependencies)
 - **Authorization tests**: 92 tests across 8 categories (complete endpoint coverage for all roles)
 - **Controller tests**: 2 classes, 29 tests (UserManagement: 22, RoleManagement: 7)
-- **Coverage**: Auth flow, **Complete authorization matrix**, **User/role management** (CRUD, role assignment, authorization enforcement), **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
-- **Not covered**: Avatar upload validation, File upload security, User language enrollment, Achievement service, Profile service
+- **Coverage**: Auth flow, **Complete authorization matrix**, **User/role management** (CRUD, role assignment, authorization enforcement), **File upload security** (path traversal, sanitization, size/type validation, GUID protection), **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
+- **Not covered**: Avatar upload validation, User language enrollment, Achievement service, Profile service
