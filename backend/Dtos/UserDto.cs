@@ -9,6 +9,14 @@ public record UserDetailsDto(
     DateTime RegistrationDate
 );
 
+public record UserManagementUpdateDto(
+    string UserId,
+    string UserName,
+    string Email,
+    string PhoneNumber,
+    DateTime LastLoginDate
+);
+
 public record UserXpDto(
     string UserId,
     int TotalXp,
