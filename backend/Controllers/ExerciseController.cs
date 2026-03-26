@@ -2,6 +2,7 @@ using Backend.Api.Dtos;
 using Backend.Api.Mapping;
 using Backend.Api.Middleware;
 using Backend.Api.Services;
+using Backend.Database.Entities.Exercises;
 using Backend.Database.Entities.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -113,5 +114,39 @@ public class ExerciseController(
         {
             return StatusCode(403, new { message = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Gets the correct answer for an exercise (useful for tests and content creators)
+    /// </summary>
+    /// <param name="id">Exercise ID</param>
+    /// <returns>CorrectAnswerDto with the answer string</returns>
+    [HttpGet("{id}/correct-answer")]
+    public async Task<ActionResult<CorrectAnswerDto>> GetCorrectAnswer(string id)
+    {
+        var exercise = await _exerciseService.GetExerciseByIdAsync(id);
+
+        if (exercise == null)
+            return NotFound(new { message = "Exercise not found" });
+
+        var correctAnswer = GetCorrectAnswerForExercise(exercise);
+
+        return Ok(new CorrectAnswerDto(correctAnswer));
+    }
+
+    /// <summary>
+    /// Extracts correct answer from exercise based on type (mirrors LessonService.GetCorrectAnswer)
+    /// </summary>
+    private static string? GetCorrectAnswerForExercise(Exercise exercise)
+    {
+        return exercise switch
+        {
+            MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.OptionText,
+            FillInBlankExercise fib => fib.CorrectAnswer,
+            TranslationExercise te => te.TargetText,
+            ListeningExercise le => le.CorrectAnswer,
+            _ => null,
+        };
     }
 }
