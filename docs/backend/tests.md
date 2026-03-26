@@ -1,12 +1,12 @@
 # Backend Test Coverage Documentation
 
-**Last Updated**: 2026-03-16
+**Last Updated**: 2026-03-25
 **Framework**: xUnit v3 + Testcontainers.MsSql
 **Test Project**: `backend/Tests/Backend.Tests.csproj`
 
 ## Overview
 
-The Lexiq backend has **15 test classes** covering authentication, authorization, CRUD operations (Language, Course), exercise validation (all 4 types), leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
+The Lexiq backend has **17 test classes** covering authentication, authorization, user/role management, CRUD operations (Language, Course), exercise validation (all 4 types), leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
 
 ---
 
@@ -437,7 +437,76 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
-## Coverage Gaps (Updated 2026-03-16)
+### 16. **UserManagementControllerTests.cs** (22 tests) — User management operations
+
+**Type**: Integration (WebApplicationFactory + Testcontainers)
+**Coverage**: UserManagementController endpoints for admin user operations
+
+#### GET /api/userManagement (3 tests)
+- Admin can retrieve all users
+- Student returns 403 Forbidden
+- Unauthenticated returns 401 Unauthorized
+
+#### GET /api/userManagement/{id} (3 tests)
+- Admin retrieves user by ID
+- Returns 404 for nonexistent user
+- Student returns 403 Forbidden
+
+#### GET /api/userManagement/email/{email} (3 tests)
+- Admin retrieves user by email
+- Returns 404 for nonexistent email
+- Student returns 403 Forbidden
+
+#### POST /api/userManagement/assignRole (4 tests)
+- Admin assigns role to user without roles
+- Admin attempting role assignment to user with existing role returns NoContent (idempotent)
+- Returns 404 for nonexistent user
+- Student returns 403 Forbidden
+
+#### PUT /api/userManagement/{id} (3 tests)
+- Admin updates user details (FullName, Email, PhoneNumber, LastLoginDate)
+- Returns 404 for nonexistent user
+- Student returns 403 Forbidden
+
+#### PUT /api/userManagement/updateLoginDate/{id} (3 tests)
+- Admin updates LastLoginDate to current UTC time
+- Returns 404 for nonexistent user
+- Student returns 403 Forbidden
+
+#### DELETE /api/userManagement/{id} (3 tests)
+- Admin deletes user
+- Returns 404 for nonexistent user
+- Student returns 403 Forbidden
+
+**Key Patterns:**
+- Uses `UserManagementUpdateDto` for full user updates (5 fields)
+- Verification uses fresh `UserManager` scope to avoid stale data
+- All mutations restricted to Admin role
+
+---
+
+### 17. **RoleManagementControllerTests.cs** (7 tests) — Role management operations
+
+**Type**: Integration (WebApplicationFactory + Testcontainers)
+**Coverage**: RoleManagementController endpoint for retrieving user roles
+
+#### GET /api/roleManagement/{email} (7 tests)
+- Admin retrieves ContentCreator role for test user
+- Admin retrieves Admin role for admin user
+- Admin retrieves Student role for student user
+- Returns 404 for nonexistent email
+- Returns 404 for user with no role assigned
+- Student returns 403 Forbidden
+- Unauthenticated returns 401 Unauthorized
+
+**Key Patterns:**
+- Endpoint returns first role as JSON string (quoted)
+- Tests verify authorization before functionality
+- Covers edge case: user exists but has no role
+
+---
+
+## Coverage Gaps (Updated 2026-03-25)
 
 ### Still Missing
 
@@ -448,14 +517,18 @@ threshold(n) = 100 * n * (n - 1)
 
 **Business Logic:**
 - Avatar upload: File size/type validation, upsert behavior, existing avatar replacement
+- File upload security: Path traversal prevention, filename sanitization, size/type validation
+- User language enrollment: UserLanguageService CRUD operations
+- Achievement unlocking: XP threshold logic, idempotency
+- Profile assembly: Multi-service aggregation
 
 ---
 
 ## Recommendations
 
-1. **Add avatar upload validation tests** — file size/type validation, upsert behavior, binary storage
-2. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement (currently open!)
-3. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement (currently open!)
+1. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement controllers (⚠️ **tests exist but controllers lack authorization attributes**)
+2. **Add avatar upload validation tests** — file size/type validation, upsert behavior, binary storage (AvatarService)
+3. **Add file upload security tests** — path traversal, sanitization, per-type validation (FileUploadsService)
 
 ---
 
@@ -477,11 +550,12 @@ dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLev
 
 ## Test Statistics
 
-- **Total test classes**: 15
-- **Total test methods**: ~246 (exact count depends on Theory inline data rows)
+- **Total test classes**: 17
+- **Total test methods**: ~275 (exact count depends on Theory inline data rows)
 - **E2E tests**: 5 classes, 33 tests (full user journeys)
-- **Integration tests**: 8 classes (5 service tests + 3 existing integration tests)
+- **Integration tests**: 10 classes (5 service tests + 3 auth/leaderboard tests + 2 controller tests)
 - **Unit tests**: 2 classes (pure, no DB)
 - **Authorization tests**: 92 tests across 8 categories (complete endpoint coverage for all roles)
-- **Coverage**: Auth flow, **Complete authorization matrix**, **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
-- **Not covered**: Avatar upload validation
+- **Controller tests**: 2 classes, 29 tests (UserManagement: 22, RoleManagement: 7)
+- **Coverage**: Auth flow, **Complete authorization matrix**, **User/role management** (CRUD, role assignment, authorization enforcement), **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
+- **Not covered**: Avatar upload validation, File upload security, User language enrollment, Achievement service, Profile service
