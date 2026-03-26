@@ -602,6 +602,83 @@ No body returned.
 
 ---
 
+### GET /api/exercises/{id}/correct-answer
+
+Get the correct answer for an exercise (useful for E2E tests and content creators).
+
+**Authentication:** Required
+**Roles:** Any authenticated user
+
+**URL Parameters:**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | string (GUID) | Exercise ID |
+
+**Request:**
+```http
+GET /api/exercises/ex1/correct-answer HTTP/1.1
+Host: localhost:8080
+Cookie: AuthToken=eyJhbGciOiJIUzI1NiIs...
+```
+
+**Success Response (200 OK):**
+```json
+{
+  "correctAnswer": "Buongiorno"
+}
+```
+
+**Response Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `correctAnswer` | string? | The correct answer for the exercise (null if exercise has no correct option) |
+
+**Correct Answer by Exercise Type:**
+
+**MultipleChoice:**
+- Returns `OptionText` of the first option where `IsCorrect = true`
+- Example: `{ "correctAnswer": "Buongiorno" }`
+
+**FillInBlank:**
+- Returns the `CorrectAnswer` property
+- Example: `{ "correctAnswer": "Ciao" }`
+
+**Listening:**
+- Returns the `CorrectAnswer` property
+- Example: `{ "correctAnswer": "Come stai?" }`
+
+**Translation:**
+- Returns the `TargetText` property (the expected translation)
+- Example: `{ "correctAnswer": "Buonasera, come sta?" }`
+
+**Error Responses:**
+
+**404 Not Found:**
+```json
+{
+  "message": "Exercise not found",
+  "statusCode": 404,
+  "detail": null
+}
+```
+
+**401 Unauthorized:**
+```json
+{
+  "message": "User not authenticated"
+}
+```
+
+**Use Cases:**
+- **E2E Testing:** Tests can programmatically verify correct answers without parsing exercise details
+- **Content Creators:** Preview correct answers without manually solving exercises
+- **Students:** Can access correct answers (students already see answers after wrong submissions, so this doesn't introduce new security vulnerabilities)
+
+**Edge Case:**
+If a `MultipleChoice` exercise has no option with `IsCorrect = true`, returns `{ "correctAnswer": null }`.
+
+---
+
 
 
 ## Business Rules
