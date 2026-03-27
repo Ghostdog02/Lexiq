@@ -37,7 +37,7 @@ export class LessonService {
 
   async getCourses(): Promise<Course[]> {
     const result = await firstValueFrom(
-      this.httpClient.get<Course[]>('/api/course')
+      this.httpClient.get<Course[]>('/api/courses')
     );
 
     if (!result) {
@@ -193,7 +193,7 @@ export class LessonService {
   async submitExerciseAnswer(exerciseId: string, answer: string): Promise<SubmitAnswerResponse> {
     return await firstValueFrom(
       this.httpClient.post<SubmitAnswerResponse>(
-        `/api/exercise/${exerciseId}/submit`,
+        `/api/exercises/${exerciseId}/submit`,
         { answer }
       )
     );
@@ -223,7 +223,7 @@ export class LessonService {
     try {
       return await firstValueFrom(
         this.httpClient.get<UserExerciseProgress[]>(
-          `/api/exercise/lesson/${lessonId}/progress`
+          `/api/lessons/${lessonId}/progress`
         )
       );
     } catch (error) {
@@ -242,7 +242,7 @@ export class LessonService {
     try {
       return await firstValueFrom(
         this.httpClient.get<SubmitAnswerResponse[]>(
-          `/api/exercise/lesson/${lessonId}/submissions`
+          `/api/lessons/${lessonId}/submissions`
         )
       );
     } catch (error) {
