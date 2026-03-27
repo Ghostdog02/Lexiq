@@ -580,6 +580,6 @@ FodyWeavers.xsd
 settings.local.json
 
 # Report Coverage directory
-TestResults/
+report/
 coverage.xml
 index.htm
