@@ -187,22 +187,6 @@ export class LessonService {
   }
 
   /**
-   * Submit an answer for a specific exercise.
-   * @param exerciseId The ID of the exercise
-   * @param answer The user's answer (option ID for multiple choice, text for others)
-   * @returns Server response with correctness, points, and lesson progress
-   */
-  async submitExerciseAnswer(exerciseId: string, answer: string): Promise<SubmitAnswerResponse> {
-    return await firstValueFrom(
-      this.httpClient.post<SubmitAnswerResponse>(
-        `/api/exercise/${exerciseId}/submit`,
-        { answer },
-        { withCredentials: true }
-      )
-    );
-  }
-
-  /**
    * Mark a lesson as completed.
    * @param lessonId The ID of the lesson to complete
    * @returns Completion status, XP earned, and next lesson info
@@ -247,7 +231,7 @@ export class LessonService {
     try {
       return await firstValueFrom(
         this.httpClient.get<SubmitAnswerResponse[]>(
-          `/api/exercise/lesson/${lessonId}/submissions`,
+          `/api/lessons/${lessonId}/submissions`,
           { withCredentials: true }
         )
       );
