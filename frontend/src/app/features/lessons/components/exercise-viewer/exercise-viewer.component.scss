@@ -6,6 +6,57 @@
 @include cards.system;
 
 .exercises-view {
+  .progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+
+    .progress-info, .xp-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .progress-label, .xp-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.0625rem;
+      color: var(--muted);
+    }
+
+    .progress-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .xp-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fbbf24;
+      text-shadow: 0 0 0.625rem rgba(251, 191, 36, 0.3);
+    }
+  }
+
+  .progress-bar-container {
+    height: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 2rem;
+    position: relative;
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent) 0%, var(--accent-light) 100%);
+      border-radius: var(--radius-sm);
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 1.25rem rgba(124, 92, 255, 0.5);
+    }
+  }
+
   .exercise-card {
     min-height: 25rem;
     display: flex;

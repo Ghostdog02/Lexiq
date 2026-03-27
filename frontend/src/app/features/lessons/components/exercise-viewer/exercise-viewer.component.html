@@ -1,5 +1,22 @@
-<div class="exercises-view fade-in" [formGroup]="exerciseForm">
+<div class="exercises-view fade-in">
   @if (currentExercise) {
+  <!-- Progress header -->
+  <div class="progress-header">
+    <div class="progress-info">
+      <span class="progress-label">Progress</span>
+      <span class="progress-value">{{ state.currentIndex + 1 }} / {{ state.viewModels.length }}</span>
+    </div>
+    <div class="xp-info">
+      <span class="xp-label">XP</span>
+      <span class="xp-value">{{ state.earnedXp }} / {{ state.totalPossibleXp }}</span>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-bar-container">
+    <div class="progress-bar" [style.width.%]="state.progressPercentage"></div>
+  </div>
+
   <!-- Exercise card -->
   <div class="exercise-card card" [class.locked]="isCurrentLocked">
     <!-- Locked overlay -->
@@ -74,7 +91,7 @@
         <div class="answer-input-wrapper">
           <input type="text" class="answer-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
             [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect" placeholder="Type your answer..."
-            [formControl]="currentAnswerGroup.controls.answer" [disabled]="isCurrentLocked" aria-label="Your answer" />
+            [formControl]="state.currentFormControl" [disabled]="isCurrentLocked" aria-label="Your answer" />
         </div>
         @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
         <div class="correct-answer-reveal">
@@ -99,7 +116,7 @@
           <div class="lang-badge">{{ currentTranslation?.targetLanguageCode | uppercase }}</div>
           <textarea class="translation-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
             [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
-            placeholder="Write your translation..." [formControl]="currentAnswerGroup.controls.answer"
+            placeholder="Write your translation..." [formControl]="state.currentFormControl"
             [disabled]="isCurrentLocked" rows="3" aria-label="Your translation"></textarea>
         </div>
         @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
@@ -133,7 +150,7 @@
         <div class="answer-input-wrapper">
           <input type="text" class="answer-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
             [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect" placeholder="Type what you hear..."
-            [formControl]="currentAnswerGroup.controls.answer" [disabled]="isCurrentLocked" aria-label="Your answer" />
+            [formControl]="state.currentFormControl" [disabled]="isCurrentLocked" aria-label="Your answer" />
         </div>
         @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
         <div class="correct-answer-reveal">
@@ -166,31 +183,31 @@
     <!-- Action buttons -->
     <div class="exercise-actions">
       @if (!isCurrentSubmitted && !isCurrentLocked) {
-      <button class="btn primary" [disabled]="!currentAnswerValue" (click)="submitAnswer()" aria-label="Submit answer">
+      <button class="btn primary" [disabled]="!state.currentAnswer" (click)="submitAnswer()" aria-label="Submit answer">
         Check Answer
       </button>
       } @else if (isCurrentSubmitted) {
-      @if (currentExerciseIndex < exercises.length - 1) { <button class="btn primary" (click)="nextExercise()"
-        aria-label="Next exercise">
-        Continue
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round" />
-        </svg>
+      @if (state.canGoNext) {
+        <button class="btn primary" (click)="nextExercise()" aria-label="Next exercise">
+          Continue
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
         </button>
-        } @else {
+      } @else {
         <button class="btn success" (click)="finishLesson()" aria-label="Finish lesson">
           <span class="icon">&#x1F3C6;</span>
           Complete Lesson
         </button>
-        }
-        }
+      }
+      }
     </div>
   </div>
 
   <!-- Navigation dots -->
   <div class="exercise-nav">
-    <button class="nav-btn" [disabled]="currentExerciseIndex === 0" (click)="previousExercise()"
+    <button class="nav-btn" [disabled]="!state.canGoPrevious" (click)="previousExercise()"
       aria-label="Previous exercise">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
         <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -199,16 +216,20 @@
     </button>
 
     <div class="nav-dots">
-      @for (exercise of exercises; track $index) {
-      <button class="nav-dot" [class.active]="$index === currentExerciseIndex" [class.completed]="getSubmission($index)"
-        [class.correct]="getSubmission($index)?.isCorrect === true"
-        [class.incorrect]="getSubmission($index)?.isCorrect === false"
-        [class.locked]="exercise.isLocked && !getSubmission($index)" [disabled]="!isExerciseAccessible($index)"
-        (click)="goToExercise($index)" [attr.aria-label]="'Go to exercise ' + ($index + 1)"></button>
+      @for (vm of state.viewModels; track vm.exercise.id; let i = $index) {
+      <button class="nav-dot"
+        [class.active]="vm.exercise.id === state.currentExerciseId"
+        [class.completed]="vm.isSubmitted"
+        [class.correct]="vm.submission?.isCorrect === true"
+        [class.incorrect]="vm.submission?.isCorrect === false"
+        [class.locked]="!vm.isAccessible"
+        [disabled]="!vm.isAccessible"
+        (click)="goToExercise(vm.exercise.id)"
+        [attr.aria-label]="'Go to exercise ' + (i + 1)"></button>
       }
     </div>
 
-    <button class="nav-btn" [disabled]="currentExerciseIndex === exercises.length - 1" (click)="nextExercise()"
+    <button class="nav-btn" [disabled]="!state.canGoNext" (click)="nextExercise()"
       aria-label="Next exercise">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
         <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"
