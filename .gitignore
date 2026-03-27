@@ -586,3 +586,6 @@ index.htm
 
 # Rtk files
 .rtk/
+
+# Git worktree files in claude
+.claude/worktrees/
