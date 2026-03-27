@@ -584,17 +584,90 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
+### 20. **AvatarServiceTests.cs** (30 tests) — Avatar validation, storage, and retrieval
+
+**Type**: Integration (Testcontainers) + Unit (static validation methods)
+**Coverage**: AvatarService validation, upsert, retrieval, batch checks, Google download
+
+#### Test Categories
+
+**Static Validation (11 tests):**
+- ValidateAvatarFile with all valid extensions (.jpg, .jpeg, .png, .gif, .webp)
+- Empty file rejection
+- Size limit enforcement (1MB max)
+- Unsupported extension rejection (.bmp, .svg, .tiff, .pdf)
+- Exact size limit boundary test
+
+**Content Type Mapping (7 tests):**
+- GetContentType for all valid extensions
+- Case-insensitive extension matching
+- Unknown extension falls back to image/jpeg
+
+**Upsert Operations (2 tests):**
+- UpsertAvatarAsync creates new UserAvatar record
+- UpsertAvatarAsync updates existing avatar (no duplicates)
+
+**Retrieval (2 tests):**
+- GetAvatarAsync returns binary data and content type
+- GetAvatarAsync returns null for users without avatar
+
+**Existence Checks (2 tests):**
+- HasAvatarAsync returns true/false correctly
+- No avatar returns false
+
+**Batch Operations (3 tests):**
+- GetUsersWithAvatarsAsync returns only users with avatars
+- Empty list returns empty set
+- No avatars returns empty set
+
+**Google Download (2 tests):**
+- DownloadAvatarAsync handles invalid URLs gracefully
+- DownloadAvatarAsync handles unreachable URLs without throwing
+
+**Key Patterns:**
+- Mocks IHttpClientFactory for DownloadAvatarAsync tests
+- Uses NullLogger for service construction
+- Tests both create and update paths for upsert behavior
+- Verifies no duplicate records created on update
+
+---
+
+### 21. **UserAvatarUploadTests.cs** (15 tests) — Avatar upload and retrieval endpoints
+
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: UserController avatar endpoints (PUT, GET)
+
+#### PUT /api/user/avatar (9 tests)
+- Valid image creates new avatar
+- Valid image updates existing avatar (upsert behavior)
+- Exceeds size limit returns 400
+- Invalid file type (.bmp) returns 400
+- Empty file returns 400
+- No auth token returns 401
+- All allowed file types (.jpg, .jpeg, .png, .gif, .webp) return 200
+
+#### GET /api/user/{userId}/avatar (6 tests)
+- Existing avatar returns 200 with binary data
+- Response includes correct Content-Type header
+- Cache-Control header set to public, max-age=86400 (24h)
+- No avatar returns 404
+- Nonexistent user returns 404
+- No auth token returns 401
+
+**Key Patterns:**
+- Creates multipart/form-data content for file uploads
+- Verifies full upload → retrieve cycle
+- Tests upsert behavior by uploading twice
+- Validates binary data equality
+- Uses minimal JPEG magic number (0xFF 0xD8) for test images
+
+---
+
 ## Coverage Gaps (Updated 2026-03-27)
 
 ### Still Missing
 
-**Untested Endpoints:**
-| Endpoint | Method | Coverage |
-|----------|--------|----------|
-| PUT /api/user/avatar | PUT | **Authorization only** (file validation, upsert logic not tested) |
-
 **Business Logic:**
-- Avatar upload: File size/type validation, upsert behavior, existing avatar replacement
 - Achievement unlocking: XP threshold logic, idempotency
 - Profile assembly: Multi-service aggregation
 
@@ -603,7 +676,6 @@ threshold(n) = 100 * n * (n - 1)
 ## Recommendations
 
 1. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement controllers (⚠️ **tests exist but controllers lack authorization attributes**)
-2. **Add avatar upload validation tests** — file size/type validation, upsert behavior, binary storage (AvatarService)
 
 ---
 
@@ -625,12 +697,12 @@ dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLev
 
 ## Test Statistics
 
-- **Total test classes**: 19
-- **Total test methods**: ~342 (exact count depends on Theory inline data rows)
+- **Total test classes**: 21
+- **Total test methods**: ~387 (exact count depends on Theory inline data rows)
 - **E2E tests**: 5 classes, 33 tests (full user journeys)
-- **Integration tests**: 12 classes (7 service tests + 3 auth/leaderboard tests + 2 controller tests)
+- **Integration tests**: 13 classes (8 service tests + 3 auth/leaderboard tests + 2 controller tests)
 - **Unit tests**: 2 classes (pure, no DB) + 1 service unit test (FileUploadsService with mocked dependencies)
 - **Authorization tests**: 92 tests across 8 categories (complete endpoint coverage for all roles)
-- **Controller tests**: 2 classes, 29 tests (UserManagement: 22, RoleManagement: 7)
-- **Coverage**: Auth flow, **Complete authorization matrix**, **User/role management** (CRUD, role assignment, authorization enforcement), **File upload security** (path traversal, sanitization, size/type validation, GUID protection), **User language enrollment** (enroll, unenroll, composite key enforcement), **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
-- **Not covered**: Avatar upload validation, Achievement service, Profile service
+- **Controller tests**: 3 classes, 44 tests (UserManagement: 22, RoleManagement: 7, UserAvatarUpload: 15)
+- **Coverage**: Auth flow, **Complete authorization matrix**, **User/role management** (CRUD, role assignment, authorization enforcement), **File upload security** (path traversal, sanitization, size/type validation, GUID protection), **User language enrollment** (enroll, unenroll, composite key enforcement), **Avatar upload and retrieval** (validation, upsert, binary storage, batch checks, Google download), **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
+- **Not covered**: Achievement service, Profile service

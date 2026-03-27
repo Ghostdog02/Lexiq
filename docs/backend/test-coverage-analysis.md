@@ -12,6 +12,7 @@ The Lexiq backend has **strong coverage** for:
 - ✅ **User/role management** (UserManagementController: 22 tests, RoleManagementController: 7 tests)
 - ✅ **File upload security** (FileUploadsService: 57 tests - path traversal, sanitization, validation)
 - ✅ **User language enrollment** (UserLanguageService: 10 tests - enroll, unenroll, composite key enforcement)
+- ✅ **Avatar upload and retrieval** (AvatarService: 30 tests, UserController: 15 tests - validation, upsert, binary storage)
 - ✅ Core learning workflows (exercise submission, progress, unlocking)
 - ✅ Leaderboard, streaks, levels, and XP calculations
 - ✅ Content CRUD (Language, Course, Lesson - both service and E2E layers)
@@ -19,7 +20,6 @@ The Lexiq backend has **strong coverage** for:
 
 **Critical gaps** identified:
 - ⚠️ **Admin controllers authorization** (UserManagement, RoleManagement) - tests exist but controllers lack `[Authorize]` attributes - **security risk**
-- ❌ Avatar upload validation (file size, type, upsert behavior)
 - ❌ Achievement unlock logic
 - ❌ Profile assembly service
 - ❌ User XP service
@@ -31,40 +31,39 @@ The Lexiq backend has **strong coverage** for:
 ### Priority 1: Security & Critical Business Logic
 
 #### 1. Avatar Upload Validation (UserController + AvatarService)
-**Status**: ⚠️ Authorization tested, but file validation and upsert logic NOT tested
+**Status**: ✅ **COMPLETE** (45 tests implemented)
 **Impact**: High - user-facing feature with file upload security implications
 
-**Missing test scenarios:**
-- File size validation (max 1MB)
-- File type validation (jpg, jpeg, png, gif, webp)
-- Empty file rejection
-- Upsert behavior (create vs. update existing avatar)
-- Binary storage correctness
-- Content-Type header mapping
-- Download from Google (DownloadAvatarAsync)
-- Batch existence checks (GetUsersWithAvatarsAsync)
+**Test Coverage Implemented:**
+- ✅ File size validation (max 1MB, boundary test, oversized rejection)
+- ✅ File type validation (all valid extensions: jpg, jpeg, png, gif, webp)
+- ✅ Unsupported extension rejection (.bmp, .svg, .tiff, .pdf)
+- ✅ Empty file rejection
+- ✅ Upsert behavior (create new avatar, update existing avatar)
+- ✅ Binary storage correctness (upload → retrieve cycle verified)
+- ✅ Content-Type header mapping (all extensions, case-insensitive, default fallback)
+- ✅ Download from Google (DownloadAvatarAsync with error handling)
+- ✅ Batch existence checks (GetUsersWithAvatarsAsync with multiple users)
+- ✅ Cache-Control header validation (24h public cache)
+- ✅ Authentication enforcement (401 for unauthenticated requests)
+- ✅ 404 handling (nonexistent user, no avatar)
 
-**Recommended test class:**
+**Test Classes:**
 ```
-Tests/Services/AvatarServiceTests.cs
-Tests/Controllers/UserControllerTests.cs (E2E file upload)
+Tests/Services/AvatarServiceTests.cs (30 tests)
+Tests/Controllers/UserAvatarUploadTests.cs (15 tests)
 ```
 
-**Critical tests to write:**
-```csharp
-[Fact] PutAvatar_ValidImage_CreatesNewAvatar()
-[Fact] PutAvatar_ValidImage_UpdatesExistingAvatar()
-[Fact] PutAvatar_ExceedsSize_Returns400()
-[Fact] PutAvatar_InvalidType_Returns400()
-[Fact] PutAvatar_EmptyFile_Returns400()
-[Fact] GetAvatar_ExistingUser_Returns200WithImageBytes()
-[Fact] GetAvatar_NoAvatar_Returns404()
-[Fact] ValidateAvatarFile_ValidExtensions_ReturnsTrue()
-[Fact] ValidateAvatarFile_InvalidExtension_ReturnsFalseWithError()
-[Fact] DownloadAvatarAsync_GoogleUrl_ReturnsImageBytes()
-[Fact] DownloadAvatarAsync_ExceedsSize_ReturnsNull()
-[Fact] GetUsersWithAvatarsAsync_ReturnsOnlyUsersWithAvatars()
-```
+**Test Organization:**
+1. **Static Validation** (11 tests - ValidateAvatarFile with all extensions and edge cases)
+2. **Content Type Mapping** (7 tests - GetContentType with case-insensitive matching)
+3. **Upsert Operations** (2 tests - create and update behavior)
+4. **Retrieval** (2 tests - existing avatar and missing avatar)
+5. **Existence Checks** (2 tests - HasAvatarAsync true/false)
+6. **Batch Operations** (3 tests - GetUsersWithAvatarsAsync with various scenarios)
+7. **Google Download** (2 tests - invalid and unreachable URL handling)
+8. **E2E Upload** (9 tests - PUT /api/user/avatar with all validation scenarios)
+9. **E2E Retrieval** (6 tests - GET /api/user/{userId}/avatar with auth and cache headers)
 
 ---
 
@@ -312,8 +311,8 @@ See **Priority 1, Item 1** above for detailed avatar test plan.
 1. ✅ **User/Role management tests complete**: UserManagementControllerTests (22 tests), RoleManagementControllerTests (7 tests)
 2. ✅ **File upload security tests complete**: FileUploadsServiceTests (57 tests)
 3. ✅ **User enrollment tests complete**: UserLanguageServiceTests (10 tests)
-4. ⚠️ **Verify controller authorization**: Confirm `[Authorize(Roles = "Admin")]` is present on UserManagement and RoleManagement controllers
-5. **Add avatar upload tests**: UserController + AvatarService (10-12 tests)
+4. ✅ **Avatar upload tests complete**: AvatarServiceTests (30 tests), UserAvatarUploadTests (15 tests)
+5. ⚠️ **Verify controller authorization**: Confirm `[Authorize(Roles = "Admin")]` is present on UserManagement and RoleManagement controllers
 
 ### Short Term (Next Sprint)
 
@@ -354,7 +353,7 @@ Follow existing patterns from `backend/Tests/CLAUDE.md`:
 
 | Area | Current | Recommended | Total After |
 |------|---------|-------------|-------------|
-| Avatar upload | 0 | 12 | 12 |
+| Avatar upload | 45 ✅ | 0 | 45 |
 | File uploads | 57 ✅ | 0 | 57 |
 | User/Role management | 29 ✅ | 0 | 29 |
 | User enrollment | 10 ✅ | 0 | 10 |
@@ -362,23 +361,24 @@ Follow existing patterns from `backend/Tests/CLAUDE.md`:
 | Profile service | 0 | 7 | 7 |
 | UserXp service | 0 | 5 | 5 |
 | EF Core edge cases | 0 | 3 | 3 |
-| **Total** | **~342** | **+31** | **~373** |
+| **Total** | **~387** | **+21** | **~408** |
 
 ---
 
 ## Coverage Metrics After Implementation
 
 ### Service Coverage
-- **Current**: 12/17 services tested (71%) — added FileUploadsService, UserLanguageService
+- **Current**: 13/17 services tested (76%) — added FileUploadsService, UserLanguageService, AvatarService
 - **After remaining work**: 17/17 services tested (100%)
 
 ### Controller Coverage
-- **Current**: 7/11 controllers tested (64%) — added UserManagement, RoleManagement
+- **Current**: 8/11 controllers tested (73%) — added UserManagement, RoleManagement, UserController (avatar endpoints)
 - **After remaining work**: 11/11 controllers tested (100%)
 
 ### Business Logic Coverage
 - **Before**: Strong (auth, content, progress, leaderboard)
 - **After**: Comprehensive (adds file uploads, avatars, enrollment, achievements, profile)
+- **Current**: File uploads ✅, Avatars ✅, Enrollment ✅, User/Role management ✅
 
 ---
 
