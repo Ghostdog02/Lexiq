@@ -114,14 +114,14 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
     public async Task GetNextLessonAsync_LastLessonInCourse_ReturnsFirstLessonOfNextCourse()
     {
         // Arrange
-        var lastLessonFirstCourseId = Guid.NewGuid().ToString();
-        var firstLessonSecondCourseId = Guid.NewGuid().ToString();
+        var lastLessonSecondCourseId = Guid.NewGuid().ToString();
+        var firstLessonThirdCourseId = Guid.NewGuid().ToString();
 
         // Use _secondCourseId and _thirdCourseId which don't have pre-existing lessons
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lastLessonFirstCourseId,
+                Id = lastLessonSecondCourseId,
                 CourseId = _secondCourseId,
                 Title = "Last Lesson Course 2",
                 LessonContent = "{}",
@@ -131,22 +131,22 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = firstLessonSecondCourseId,
+                Id = firstLessonThirdCourseId,
                 CourseId = _thirdCourseId,
                 Title = "First Lesson Course 3",
                 LessonContent = "{}",
                 OrderIndex = 0,
             }
         );
-        
+
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _sut.GetNextLessonAsync(lastLessonFirstCourseId);
+        var result = await _sut.GetNextLessonAsync(lastLessonSecondCourseId);
 
         // Assert
         result.Should().NotBeNull();
-        result.Id.Should().Be(firstLessonSecondCourseId);
+        result.Id.Should().Be(firstLessonThirdCourseId);
         result.Title.Should().Be("First Lesson Course 3");
     }
 
