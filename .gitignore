@@ -583,3 +583,6 @@ settings.local.json
 report/
 coverage.xml
 index.htm
+
+# Rtk files
+.rtk/

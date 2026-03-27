@@ -1,7 +1,7 @@
 # Backend Test Coverage Analysis
 
-**Generated**: 2026-03-25
-**Current Test Count**: ~332 tests across 18 test classes
+**Generated**: 2026-03-27
+**Current Test Count**: ~342 tests across 19 test classes
 **Framework**: xUnit v3 + Testcontainers.MsSql + FluentAssertions
 
 ## Executive Summary
@@ -11,6 +11,7 @@ The Lexiq backend has **strong coverage** for:
 - ✅ Authorization matrix (92 tests across all endpoints and roles)
 - ✅ **User/role management** (UserManagementController: 22 tests, RoleManagementController: 7 tests)
 - ✅ **File upload security** (FileUploadsService: 57 tests - path traversal, sanitization, validation)
+- ✅ **User language enrollment** (UserLanguageService: 10 tests - enroll, unenroll, composite key enforcement)
 - ✅ Core learning workflows (exercise submission, progress, unlocking)
 - ✅ Leaderboard, streaks, levels, and XP calculations
 - ✅ Content CRUD (Language, Course, Lesson - both service and E2E layers)
@@ -19,7 +20,6 @@ The Lexiq backend has **strong coverage** for:
 **Critical gaps** identified:
 - ⚠️ **Admin controllers authorization** (UserManagement, RoleManagement) - tests exist but controllers lack `[Authorize]` attributes - **security risk**
 - ❌ Avatar upload validation (file size, type, upsert behavior)
-- ❌ User enrollment/language management
 - ❌ Achievement unlock logic
 - ❌ Profile assembly service
 - ❌ User XP service
@@ -123,34 +123,31 @@ Tests/Services/FileUploadsServiceTests.cs (57 tests)
 ### Priority 2: Business Logic Coverage
 
 #### 4. User Language Enrollment (UserLanguageService + UserLanguageController)
-**Status**: ❌ No tests exist
+**Status**: ✅ **COMPLETE** (10 tests implemented)
 **Impact**: Medium - user enrollment feature with FK constraints
 
-**Missing test scenarios:**
-- Enrollment creates UserLanguage record
-- Duplicate enrollment returns existing record (idempotency)
-- Enrollment with invalid languageId returns null
-- Unenrollment deletes record
-- Unenrollment of non-existent enrollment returns false
-- GetUserLanguages includes Language navigation property
-- Composite key enforcement (UserId, LanguageId)
+**Test Coverage Implemented:**
+- ✅ Enrollment creates UserLanguage record with correct timestamp
+- ✅ Idempotent enrollment returns existing record without updating timestamp
+- ✅ Enrollment with invalid languageId returns null
+- ✅ Unenrollment deletes record and returns true
+- ✅ Unenrollment of non-existent enrollment returns false
+- ✅ GetUserLanguagesAsync includes Language navigation property (eager loading)
+- ✅ GetUserLanguagesAsync returns empty list for users with no enrollments
+- ✅ GetUserLanguagesAsync returns all enrollments for multi-language users
+- ✅ Composite key uniqueness enforced by database (tests DbUpdateException)
+- ✅ Timestamp validation on enrollment
 
-**Recommended test class:**
+**Test Class:**
 ```
-Tests/Services/UserLanguageServiceTests.cs
-Tests/Controllers/UserLanguageControllerTests.cs (E2E)
+Tests/Services/UserLanguageServiceTests.cs (10 tests)
 ```
 
-**Critical tests to write:**
-```csharp
-[Fact] EnrollUserAsync_ValidLanguage_CreatesUserLanguage()
-[Fact] EnrollUserAsync_AlreadyEnrolled_ReturnsExisting()
-[Fact] EnrollUserAsync_InvalidLanguage_ReturnsNull()
-[Fact] UnenrollUserAsync_ExistingEnrollment_ReturnsTrue()
-[Fact] UnenrollUserAsync_NonExistentEnrollment_ReturnsFalse()
-[Fact] GetUserLanguagesAsync_IncludesLanguageNavigation()
-[Fact] EnrollUserAsync_SetsEnrolledAtTimestamp()
-```
+**Key Patterns:**
+- Uses `DbSeeder.ClearLeaderboardDataAsync()` for test isolation
+- Composite key testing requires `_ctx.ChangeTracker.Clear()` to bypass EF Core's identity map
+- Tests idempotency by comparing timestamps
+- Tests database-level constraints separate from application-level validation
 
 ---
 
@@ -314,12 +311,12 @@ See **Priority 1, Item 1** above for detailed avatar test plan.
 
 1. ✅ **User/Role management tests complete**: UserManagementControllerTests (22 tests), RoleManagementControllerTests (7 tests)
 2. ✅ **File upload security tests complete**: FileUploadsServiceTests (57 tests)
-3. ⚠️ **Verify controller authorization**: Confirm `[Authorize(Roles = "Admin")]` is present on UserManagement and RoleManagement controllers
-4. **Add avatar upload tests**: UserController + AvatarService (10-12 tests)
+3. ✅ **User enrollment tests complete**: UserLanguageServiceTests (10 tests)
+4. ⚠️ **Verify controller authorization**: Confirm `[Authorize(Roles = "Admin")]` is present on UserManagement and RoleManagement controllers
+5. **Add avatar upload tests**: UserController + AvatarService (10-12 tests)
 
 ### Short Term (Next Sprint)
 
-5. **Add user enrollment tests**: UserLanguageService (6-8 tests)
 6. **Add achievement tests**: AchievementService (5-6 tests)
 7. **Add profile service tests**: ProfileService (6-7 tests)
 
@@ -360,19 +357,19 @@ Follow existing patterns from `backend/Tests/CLAUDE.md`:
 | Avatar upload | 0 | 12 | 12 |
 | File uploads | 57 ✅ | 0 | 57 |
 | User/Role management | 29 ✅ | 0 | 29 |
-| User enrollment | 0 | 8 | 8 |
+| User enrollment | 10 ✅ | 0 | 10 |
 | Achievements | 0 | 6 | 6 |
 | Profile service | 0 | 7 | 7 |
 | UserXp service | 0 | 5 | 5 |
 | EF Core edge cases | 0 | 3 | 3 |
-| **Total** | **~332** | **+41** | **~373** |
+| **Total** | **~342** | **+31** | **~373** |
 
 ---
 
 ## Coverage Metrics After Implementation
 
 ### Service Coverage
-- **Current**: 11/17 services tested (65%) — added FileUploadsService
+- **Current**: 12/17 services tested (71%) — added FileUploadsService, UserLanguageService
 - **After remaining work**: 17/17 services tested (100%)
 
 ### Controller Coverage

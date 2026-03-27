@@ -1,12 +1,12 @@
 # Backend Test Coverage Documentation
 
-**Last Updated**: 2026-03-25
+**Last Updated**: 2026-03-27
 **Framework**: xUnit v3 + Testcontainers.MsSql
 **Test Project**: `backend/Tests/Backend.Tests.csproj`
 
 ## Overview
 
-The Lexiq backend has **18 test classes** covering authentication, authorization, user/role management, file upload security, CRUD operations (Language, Course), exercise validation (all 4 types), leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
+The Lexiq backend has **19 test classes** covering authentication, authorization, user/role management, user language enrollment, file upload security, CRUD operations (Language, Course), exercise validation (all 4 types), leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
 
 ---
 
@@ -559,7 +559,32 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
-## Coverage Gaps (Updated 2026-03-25)
+### 19. **UserLanguageServiceTests.cs** (10 tests) — User language enrollment
+
+**Type**: Integration (Testcontainers)
+**Coverage**: UserLanguageService enrollment, unenrollment, and composite key behavior
+
+#### Test Coverage
+- Enrollment creates UserLanguage record with correct timestamp
+- Idempotent enrollment returns existing record without updating timestamp
+- Enrollment with invalid languageId returns null
+- Unenrollment deletes record and returns true
+- Unenrollment of non-existent enrollment returns false
+- GetUserLanguagesAsync includes Language navigation property (eager loading)
+- GetUserLanguagesAsync returns empty list for users with no enrollments
+- GetUserLanguagesAsync returns all enrollments for multi-language users
+- Composite key uniqueness enforced by database (tests DbUpdateException)
+- Timestamp validation on enrollment
+
+**Key Patterns:**
+- Uses `DbSeeder.ClearLeaderboardDataAsync()` for test isolation
+- Composite key testing requires `_ctx.ChangeTracker.Clear()` to bypass EF Core's identity map
+- Tests idempotency by comparing timestamps (duplicate enrollment preserves original timestamp)
+- Tests database-level constraints separate from application-level validation
+
+---
+
+## Coverage Gaps (Updated 2026-03-27)
 
 ### Still Missing
 
@@ -570,7 +595,6 @@ threshold(n) = 100 * n * (n - 1)
 
 **Business Logic:**
 - Avatar upload: File size/type validation, upsert behavior, existing avatar replacement
-- User language enrollment: UserLanguageService CRUD operations
 - Achievement unlocking: XP threshold logic, idempotency
 - Profile assembly: Multi-service aggregation
 
@@ -601,12 +625,12 @@ dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLev
 
 ## Test Statistics
 
-- **Total test classes**: 18
-- **Total test methods**: ~332 (exact count depends on Theory inline data rows)
+- **Total test classes**: 19
+- **Total test methods**: ~342 (exact count depends on Theory inline data rows)
 - **E2E tests**: 5 classes, 33 tests (full user journeys)
-- **Integration tests**: 11 classes (6 service tests + 3 auth/leaderboard tests + 2 controller tests)
+- **Integration tests**: 12 classes (7 service tests + 3 auth/leaderboard tests + 2 controller tests)
 - **Unit tests**: 2 classes (pure, no DB) + 1 service unit test (FileUploadsService with mocked dependencies)
 - **Authorization tests**: 92 tests across 8 categories (complete endpoint coverage for all roles)
 - **Controller tests**: 2 classes, 29 tests (UserManagement: 22, RoleManagement: 7)
-- **Coverage**: Auth flow, **Complete authorization matrix**, **User/role management** (CRUD, role assignment, authorization enforcement), **File upload security** (path traversal, sanitization, size/type validation, GUID protection), **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
-- **Not covered**: Avatar upload validation, User language enrollment, Achievement service, Profile service
+- **Coverage**: Auth flow, **Complete authorization matrix**, **User/role management** (CRUD, role assignment, authorization enforcement), **File upload security** (path traversal, sanitization, size/type validation, GUID protection), **User language enrollment** (enroll, unenroll, composite key enforcement), **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
+- **Not covered**: Avatar upload validation, Achievement service, Profile service
