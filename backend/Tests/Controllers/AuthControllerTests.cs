@@ -115,7 +115,14 @@ public class AuthControllerTests(DatabaseFixture fixture)
     [Fact]
     public async Task Logout_SetsExpiredAuthTokenCookie()
     {
-        var response = await _client.PostAsync(
+        // Log in first to obtain the AuthToken cookie
+        await _client.PostAsJsonAsync(
+            "/api/auth/google-login",
+            new { idToken = "fake-token" },
+            TestContext.Current.CancellationToken
+        );
+
+        var response = await _client.PostAsJsonAsync<object?>(
             "/api/auth/logout",
             null,
             TestContext.Current.CancellationToken
@@ -127,7 +134,9 @@ public class AuthControllerTests(DatabaseFixture fixture)
 
     private static string GetAuthCookieHeader(HttpResponseMessage response)
     {
-        response.Headers.TryGetValues("Set-Cookie", out var values);
+        var hasValues = response.Headers.TryGetValues("Set-Cookie", out var values);
+        hasValues.Should().BeTrue("response should contain Set-Cookie header");
+        values.Should().NotBeNull("Set-Cookie values should not be null");
         return values!.First(c => c.StartsWith("AuthToken="));
     }
 

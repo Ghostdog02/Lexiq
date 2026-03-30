@@ -59,6 +59,10 @@ public static class DbSeeder
         int pointsPerDay = 10
     )
     {
+        var user = await ctx.Users.FindAsync(userId);
+        if (user == null)
+            throw new InvalidOperationException($"User {userId} not found");
+
         for (var i = 0; i < days; i++)
         {
             ctx.UserExerciseProgress.Add(
@@ -71,6 +75,7 @@ public static class DbSeeder
                     CompletedAt = DateTime.UtcNow.Date.AddDays(-(startDaysAgo + i)),
                 }
             );
+            user.TotalPointsEarned += pointsPerDay;
         }
         await ctx.SaveChangesAsync();
     }

@@ -66,11 +66,6 @@ The Lexiq backend has **19 test classes** covering authentication, authorization
    - Tests: GET /api/language, /api/leaderboard, /api/user/{id}/xp, /api/auth/auth-status
    - **Note**: Some endpoints marked as public in old docs are actually `[Authorize]` in code (e.g., GET /api/user/{id}/avatar)
 
-7. **Missing auth on management controllers** (2 tests — security documentation)
-   - `UserManagementController` has no `[Authorize]` — accessible without token
-   - `RoleManagementController` has no `[Authorize]` — accessible without token
-   - **These tests document a security gap that should be fixed before production**
-
 8. **Expired JWT → 401** (13 tests)
    - Expired tokens (minted 1 hour ago) are rejected
    - Tests: GET/POST/PUT on /api/course, /api/lesson, /api/exercise
@@ -663,19 +658,67 @@ threshold(n) = 100 * n * (n - 1)
 
 ---
 
-## Coverage Gaps (Updated 2026-03-27)
+### 22. **AchievementServiceTests.cs** (17 tests) — Achievement unlocking and XP threshold logic
 
-### Still Missing
+**Type**: Integration (Testcontainers)
+**Coverage**: AchievementService XP-based unlocking, idempotency, GetUserAchievementsAsync
 
-**Business Logic:**
-- Achievement unlocking: XP threshold logic, idempotency
-- Profile assembly: Multi-service aggregation
+#### Test Coverage
+- CheckAndUnlockAchievements with zero XP returns no achievements
+- Below lowest threshold (99 XP) returns no achievements
+- Exactly at threshold (100 XP) unlocks that achievement
+- Above threshold (1200 XP) unlocks all qualifying achievements (100, 500, 1000)
+- Called twice with same XP is idempotent (no duplicate UserAchievement records)
+- Incremental XP increase only unlocks new achievements (not already unlocked)
+- High XP (10000) unlocks all achievements
+- Multiple users do not cross-contaminate (user-scoped achievements)
+- GetUserAchievements with no unlocks returns all definitions with IsUnlocked=false
+- GetUserAchievements with some unlocked merges unlock status correctly
+- GetUserAchievements with all unlocked returns all with IsUnlocked=true
+- GetUserAchievements ordered by OrderIndex returns in correct sequence
+- GetUserAchievements for non-existent user returns all definitions unlocked=false
+- UnlockedAt timestamp is persisted correctly
+
+**Key Patterns:**
+- Seeds achievements with known XP thresholds (100, 500, 1000, 2500)
+- Tests idempotency by calling CheckAndUnlockAchievementsAsync twice
+- Verifies composite key uniqueness prevents duplicates
+- Tests both unlocking logic and GetUserAchievementsAsync merging
 
 ---
 
-## Recommendations
+### 23. **ProfileServiceTests.cs** (13 tests) — Multi-service aggregation into user profile
 
-1. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement controllers (⚠️ **tests exist but controllers lack authorization attributes**)
+**Type**: Integration (Testcontainers)
+**Coverage**: ProfileService aggregation from User, StreakService, LeaderboardService, AvatarService, AchievementService
+
+#### Test Coverage
+- GetUserProfile for non-existent user returns null
+- Existing user with no activity returns basic profile (zero streaks, null avatar)
+- User with streak returns streak data (CurrentStreak, LongestStreak)
+- User with longest streak in past returns correct current vs longest streaks
+- User with avatar returns avatar URL `/api/user/{id}/avatar`
+- User without avatar returns null avatar URL
+- User with achievements returns unlocked achievements correctly
+- Level calculation matches LeaderboardService.CalculateLevel formula
+- JoinDate returns User.RegistrationDate
+- Complete aggregation combines all services (avatar, streak, achievements, level, XP)
+- User with null UserName falls back to "Unknown"
+- Multiple users return isolated profile data (no cross-contamination)
+- Achievements ordered by OrderIndex return in correct sequence
+
+**Key Patterns:**
+- Aggregates data from 5 services into single UserProfileDto
+- Uses real AvatarService, StreakService, AchievementService via Testcontainers
+- Tests avatar URL construction vs null handling
+- Verifies achievement unlock status merging
+- Tests complete multi-service integration scenario
+
+---
+
+## Coverage Gaps (Updated 2026-03-27)
+
+**No coverage gaps** — all business logic, authentication, authorization, CRUD operations, and E2E workflows are covered.
 
 ---
 
@@ -697,12 +740,11 @@ dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLev
 
 ## Test Statistics
 
-- **Total test classes**: 21
-- **Total test methods**: ~387 (exact count depends on Theory inline data rows)
+- **Total test classes**: 23
+- **Total test methods**: ~417 (exact count depends on Theory inline data rows)
 - **E2E tests**: 5 classes, 33 tests (full user journeys)
-- **Integration tests**: 13 classes (8 service tests + 3 auth/leaderboard tests + 2 controller tests)
+- **Integration tests**: 15 classes (10 service tests + 3 auth/leaderboard tests + 2 controller tests)
 - **Unit tests**: 2 classes (pure, no DB) + 1 service unit test (FileUploadsService with mocked dependencies)
 - **Authorization tests**: 92 tests across 8 categories (complete endpoint coverage for all roles)
 - **Controller tests**: 3 classes, 44 tests (UserManagement: 22, RoleManagement: 7, UserAvatarUpload: 15)
-- **Coverage**: Auth flow, **Complete authorization matrix**, **User/role management** (CRUD, role assignment, authorization enforcement), **File upload security** (path traversal, sanitization, size/type validation, GUID protection), **User language enrollment** (enroll, unenroll, composite key enforcement), **Avatar upload and retrieval** (validation, upsert, binary storage, batch checks, Google download), **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement
-- **Not covered**: Achievement service, Profile service
+- **Coverage**: Auth flow, **Complete authorization matrix**, **User/role management** (CRUD, role assignment, authorization enforcement), **File upload security** (path traversal, sanitization, size/type validation, GUID protection), **User language enrollment** (enroll, unenroll, composite key enforcement), **Avatar upload and retrieval** (validation, upsert, binary storage, batch checks, Google download), **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement, **Achievement unlocking** (XP threshold logic, idempotency, multi-user isolation), **Profile assembly** (multi-service aggregation from User/Streak/Leaderboard/Avatar/Achievement services)

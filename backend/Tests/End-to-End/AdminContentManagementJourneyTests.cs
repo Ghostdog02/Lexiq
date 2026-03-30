@@ -65,9 +65,10 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
     {
         // Arrange
         var courseId = await GetExistingCourseIdAsync();
+        courseId.Should().NotBeNull("course should exist for lesson creation");
 
         var createLessonDto = new CreateLessonDto(
-            CourseId: courseId,
+            CourseId: courseId!,
             Title: "Admin Test Lesson",
             Description: "Created by admin",
             EstimatedDurationMinutes: 30,
@@ -156,8 +157,9 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
     {
         // Arrange
         var courseId = await GetExistingCourseIdAsync();
+        courseId.Should().NotBeNull("course should exist for lesson creation");
         var createLessonDto = new CreateLessonDto(
-            CourseId: courseId,
+            CourseId: courseId!,
             Title: "Original Title",
             Description: "Original description",
             EstimatedDurationMinutes: 30,
@@ -221,8 +223,9 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
     {
         // Arrange
         var courseId = await GetExistingCourseIdAsync();
+        courseId.Should().NotBeNull("course should exist for lesson creation");
         var createLessonDto = new CreateLessonDto(
-            CourseId: courseId,
+            CourseId: courseId!,
             Title: "To Be Deleted",
             Description: null,
             EstimatedDurationMinutes: 30,
@@ -282,9 +285,10 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         var creatorClient = CreateClient(creatorToken);
 
         var courseId = await GetExistingCourseIdAsync();
+        courseId.Should().NotBeNull("course should exist for lesson creation");
 
         var createLessonDto = new CreateLessonDto(
-            CourseId: courseId,
+            CourseId: courseId!,
             Title: "Creator Lesson",
             Description: "Created by ContentCreator",
             EstimatedDurationMinutes: 30,
@@ -337,8 +341,9 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
     {
         // Arrange
         var courseId = await GetExistingCourseIdAsync();
+        courseId.Should().NotBeNull("course should exist for lesson creation");
         var createLessonDto = new CreateLessonDto(
-            CourseId: courseId,
+            CourseId: courseId!,
             Title: "Expandable Lesson",
             Description: null,
             EstimatedDurationMinutes: 30,

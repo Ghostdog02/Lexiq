@@ -33,6 +33,12 @@ public class DatabaseFixture : IAsyncLifetime
     public string SystemUserId { get; } = Guid.NewGuid().ToString();
 
     /// <summary>
+    /// The single course ID in the permanent content hierarchy.
+    /// Tests that create additional courses should exclude this ID during cleanup.
+    /// </summary>
+    public string CourseId { get; private set; } = null!;
+
+    /// <summary>
     /// The single lesson ID where tests create their own exercises.
     /// </summary>
     public string LessonId { get; private set; } = null!;
@@ -84,11 +90,11 @@ public class DatabaseFixture : IAsyncLifetime
         ctx.Languages.Add(new Language { Id = languageId, Name = "Italian" });
         await ctx.SaveChangesAsync();
 
-        var courseId = Guid.NewGuid().ToString();
+        CourseId = Guid.NewGuid().ToString();
         ctx.Courses.Add(
             new Course
             {
-                Id = courseId,
+                Id = CourseId,
                 LanguageId = languageId,
                 Title = "Test Course",
                 CreatedById = SystemUserId,
@@ -103,7 +109,7 @@ public class DatabaseFixture : IAsyncLifetime
             new Lesson
             {
                 Id = LessonId,
-                CourseId = courseId,
+                CourseId = CourseId,
                 Title = "Test Lesson",
                 LessonContent = "{}",
                 OrderIndex = 0,

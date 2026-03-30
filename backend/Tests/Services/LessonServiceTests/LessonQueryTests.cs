@@ -2,6 +2,7 @@ using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
+using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -12,9 +13,9 @@ namespace Backend.Tests.Services.LessonServiceTests;
 /// <summary>
 /// Tests for lesson queries: listing lessons and fetching detailed lesson data with includes.
 /// </summary>
-public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LessonQueryTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture _fixture = fixture;
     private BackendDbContext _ctx = null!;
     private LessonService _sut = null!;
 
@@ -22,11 +23,13 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     private string _secondCourseId = null!;
     private string _languageId = null!;
 
-    public LessonQueryTests(DatabaseFixture fixture) => _fixture = fixture;
-
     public async ValueTask InitializeAsync()
     {
         _ctx = _fixture.CreateDbContext();
+
+        // Clean up state from previous tests
+        await DbSeeder.ClearLeaderboardDataAsync(_ctx, _fixture.SystemUserId);
+        await ClearTestCoursesAndLessonsAsync();
 
         var exerciseService = new ExerciseService(_ctx);
         _sut = new LessonService(_ctx, exerciseService);
@@ -56,6 +59,23 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
         await _ctx.DisposeAsync();
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Deletes all lessons except the fixture's base lesson, and all courses except the fixture's base course.
+    /// Required because ClearLeaderboardDataAsync only deletes exercises, not lessons or courses.
+    /// </summary>
+    private async Task ClearTestCoursesAndLessonsAsync()
+    {
+        // Delete all lessons except the fixture's base lesson
+        await _ctx
+            .Lessons.Where(l => l.Id != _fixture.LessonId)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+
+        // Delete all courses except the fixture's base course
+        await _ctx
+            .Courses.Where(c => c.Id != _fixture.CourseId)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
     }
 
     #region GetLessonsByCourseAsync
