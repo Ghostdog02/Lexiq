@@ -44,8 +44,9 @@ Tests/
     ├── CalculateLevelTests.cs  ← Pure unit tests (no DB)
     ├── JwtServiceTests.cs      ← Pure unit tests (no DB)
     ├── LoginUserTests.cs       ← Testcontainers integration tests
-    ├── GetStreakTests.cs        ← Testcontainers integration tests
-    └── GetLeaderboardTests.cs  ← Testcontainers integration tests
+    ├── GetStreakTests.cs       ← Testcontainers integration tests
+    ├── EfCoreEdgeCaseTests.cs  ← EF Core edge cases (TPH, cascade, navigation)
+    └── UserXpServiceTests.cs   ← XP aggregation and activity tracking
 ```
 
 ## Key Packages
@@ -82,7 +83,7 @@ System User (satisfies Course.CreatedById FK)
 `Course.CreatedById` is a FK to `Users`. The system user is created first and excluded from `ClearLeaderboardDataAsync` so the content hierarchy survives between tests.
 
 **Why no pre-seeded exercises?**
-Tests create their own exercises in `InitializeAsync` to avoid interdependencies. The `DatabaseFixture` exposes `LessonId` so test classes can create exercises in that lesson. Exercises are deleted in `ClearLeaderboardDataAsync` between tests to prevent accumulation.
+Tests create their own exercises in `InitializeAsync` to avoid interdependencies. The `DatabaseFixture` exposes `CourseId` and `LessonId` so test classes can create their own courses/lessons and exclude the fixture's base ones during cleanup. Exercises are deleted in `ClearLeaderboardDataAsync` between tests to prevent accumulation. Test classes that create additional courses/lessons should clean them up in `InitializeAsync` before creating new ones.
 
 ### Creating a DbContext in Tests
 
@@ -356,6 +357,45 @@ public class MyTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
 **Always call `GC.SuppressFinalize(this)` as the last statement in every `Dispose` and `DisposeAsync` method.** This prevents the GC from enqueuing the object for finalization when managed cleanup is already complete.
 
+### Test Isolation for Course/Lesson Tests
+
+Tests that create their own courses or lessons must clean them up in `InitializeAsync` to prevent state leakage when running the full test suite. `ClearLeaderboardDataAsync` only deletes exercises, users, and progress — not courses or lessons.
+
+**Pattern for tests that create courses/lessons**:
+
+```csharp
+public async ValueTask InitializeAsync()
+{
+    _ctx = _fixture.CreateDbContext();
+
+    // Clean up state from previous tests
+    await DbSeeder.ClearLeaderboardDataAsync(_ctx, _fixture.SystemUserId);
+    await ClearTestCoursesAndLessonsAsync();  // ← Required for test isolation
+
+    // Now create test-specific courses/lessons
+    _secondCourseId = Guid.NewGuid().ToString();
+    _ctx.Courses.Add(new Course { ... });
+    await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+}
+
+/// <summary>
+/// Deletes all lessons except the fixture's base lesson, and all courses except the fixture's base course.
+/// Required because ClearLeaderboardDataAsync only deletes exercises, not lessons or courses.
+/// </summary>
+private async Task ClearTestCoursesAndLessonsAsync()
+{
+    await _ctx.Lessons
+        .Where(l => l.Id != _fixture.LessonId)
+        .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+
+    await _ctx.Courses
+        .Where(c => c.Id != _fixture.CourseId)
+        .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+}
+```
+
+**Why this matters**: Tests run in unpredictable order when using `dotnet test` with the full suite. Without cleanup, courses/lessons created in one test persist and cause assertion failures in later tests (e.g., `OrderIndex` calculations, "first lesson" queries).
+
 ## UserBuilder
 
 Direct `DbContext` inserts bypass `UserManager`. ASP.NET Core Identity enforces unique indexes on `NormalizedUserName` and `NormalizedEmail` — these must be set manually:
@@ -422,7 +462,10 @@ await DbSeeder.AddConsecutiveDaysActivityAsync(ctx, userId, _exerciseIds,
 4. Identity junction tables: `UserClaims`, `UserLogins`, `UserRoles`, `UserTokens`
 5. `Users` (excluding system user)
 
-Language / Course / Lesson rows are **never deleted**.
+**Content hierarchy cleanup**:
+- Language row is **never deleted**
+- The fixture's base Course and Lesson (exposed via `DatabaseFixture.CourseId` and `LessonId`) are **never deleted**
+- Test classes that create additional courses/lessons should clean them up in `InitializeAsync` (e.g., `LessonCrudTests` and `LessonNavigationTests` use a `ClearTestCoursesAndLessonsAsync` helper that excludes the fixture's base entities)
 
 ## End-to-End Tests
 
@@ -529,7 +572,7 @@ await DbSeeder.AddConsecutiveDaysActivityAsync(ctx, userId, _exerciseIds, days: 
 await DbSeeder.AddAvatarAsync(ctx, userId);
 ```
 
-Language / Course / Lesson rows are **never deleted**. Exercise rows are deleted in `ClearLeaderboardDataAsync`.
+**Content hierarchy cleanup**: Language row and the fixture's base Course/Lesson are never deleted. Exercise rows are deleted in `ClearLeaderboardDataAsync`. Test classes that create additional courses/lessons handle their own cleanup.
 
 ## AvatarService in Tests
 
