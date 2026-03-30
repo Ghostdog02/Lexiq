@@ -325,7 +325,7 @@ public class CourseCrudTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
         );
 
         var originalUpdatedAt = course.UpdatedAt;
-        await Task.Delay(100); // Ensure timestamp difference
+        await Task.Delay(100, TestContext.Current.CancellationToken); // Ensure timestamp difference
 
         var dto = new UpdateCourseDto(
             LanguageName: ItalianLanguageName,
