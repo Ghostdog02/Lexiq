@@ -66,11 +66,6 @@ The Lexiq backend has **19 test classes** covering authentication, authorization
    - Tests: GET /api/language, /api/leaderboard, /api/user/{id}/xp, /api/auth/auth-status
    - **Note**: Some endpoints marked as public in old docs are actually `[Authorize]` in code (e.g., GET /api/user/{id}/avatar)
 
-7. **Missing auth on management controllers** (2 tests — security documentation)
-   - `UserManagementController` has no `[Authorize]` — accessible without token
-   - `RoleManagementController` has no `[Authorize]` — accessible without token
-   - **These tests document a security gap that should be fixed before production**
-
 8. **Expired JWT → 401** (13 tests)
    - Expired tokens (minted 1 hour ago) are rejected
    - Tests: GET/POST/PUT on /api/course, /api/lesson, /api/exercise
@@ -724,12 +719,6 @@ threshold(n) = 100 * n * (n - 1)
 ## Coverage Gaps (Updated 2026-03-27)
 
 **No coverage gaps** — all business logic, authentication, authorization, CRUD operations, and E2E workflows are covered.
-
----
-
-## Recommendations
-
-1. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement controllers (⚠️ **tests exist but controllers lack authorization attributes**)
 
 ---
 
