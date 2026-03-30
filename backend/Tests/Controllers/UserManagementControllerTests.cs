@@ -287,6 +287,7 @@ public class UserManagementControllerTests(DatabaseFixture fixture)
 
         // Verify role was assigned
         var userWithRole = await userManager.FindByIdAsync(newUser.Id);
+        userWithRole.Should().NotBeNull("user should exist after role assignment");
         var roles = await userManager.GetRolesAsync(userWithRole!);
         roles.Should().Contain("ContentCreator");
     }
@@ -439,6 +440,7 @@ public class UserManagementControllerTests(DatabaseFixture fixture)
         {
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
             var user = await userManager.FindByIdAsync(_testUserId);
+            user.Should().NotBeNull("test user should exist in database");
             user!.LastLoginDate = originalDate;
             await userManager.UpdateAsync(user);
         }

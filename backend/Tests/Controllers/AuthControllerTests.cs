@@ -127,7 +127,9 @@ public class AuthControllerTests(DatabaseFixture fixture)
 
     private static string GetAuthCookieHeader(HttpResponseMessage response)
     {
-        response.Headers.TryGetValues("Set-Cookie", out var values);
+        var hasValues = response.Headers.TryGetValues("Set-Cookie", out var values);
+        hasValues.Should().BeTrue("response should contain Set-Cookie header");
+        values.Should().NotBeNull("Set-Cookie values should not be null");
         return values!.First(c => c.StartsWith("AuthToken="));
     }
 
