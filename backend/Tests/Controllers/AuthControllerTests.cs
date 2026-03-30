@@ -115,7 +115,7 @@ public class AuthControllerTests(DatabaseFixture fixture)
     [Fact]
     public async Task Logout_SetsExpiredAuthTokenCookie()
     {
-        var response = await _client.PostAsync(
+        var response = await _client.PostAsJsonAsync<object?>(
             "/api/auth/logout",
             null,
             TestContext.Current.CancellationToken
