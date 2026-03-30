@@ -12,17 +12,15 @@ namespace Backend.Tests.Services.LessonServiceTests;
 /// <summary>
 /// Tests for lesson queries: listing lessons and fetching detailed lesson data with includes.
 /// </summary>
-public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LessonQueryTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture _fixture = fixture;
     private BackendDbContext _ctx = null!;
     private LessonService _sut = null!;
 
     private string _courseId = null!;
     private string _secondCourseId = null!;
     private string _languageId = null!;
-
-    public LessonQueryTests(DatabaseFixture fixture) => _fixture = fixture;
 
     public async ValueTask InitializeAsync()
     {

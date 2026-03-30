@@ -17,16 +17,14 @@ namespace Backend.Tests.Services;
 /// - Business logic (OrderIndex handling, FK validation, partial updates)
 /// - Edge cases (multiple courses, timestamps, ordering, cascade deletes)
 /// </summary>
-public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class CourseCrudTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture _fixture = fixture;
     private BackendDbContext _ctx = null!;
     private CourseService _sut = null!;
     private string _testUserId = null!;
     private string _languageId = null!;
     private const string ItalianLanguageName = "Italian";
-
-    public CourseCrudTests(DatabaseFixture fixture) => _fixture = fixture;
 
     public async ValueTask InitializeAsync()
     {

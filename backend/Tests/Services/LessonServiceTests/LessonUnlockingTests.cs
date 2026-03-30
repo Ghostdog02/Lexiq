@@ -13,9 +13,9 @@ namespace Backend.Tests.Services.LessonServiceTests;
 /// <summary>
 /// Tests for lesson unlocking: automatic and manual unlocking with exercise cascade behavior.
 /// </summary>
-public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
+    private readonly DatabaseFixture _fixture = fixture;
     private BackendDbContext _ctx = null!;
     private LessonService _sut = null!;
 
@@ -23,8 +23,6 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
     private string _secondCourseId = null!;
     private string _thirdCourseId = null!;
     private string _languageId = null!;
-
-    public LessonUnlockingTests(DatabaseFixture fixture) => _fixture = fixture;
 
     public async ValueTask InitializeAsync()
     {
