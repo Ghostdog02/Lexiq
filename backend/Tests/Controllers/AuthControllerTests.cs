@@ -115,6 +115,13 @@ public class AuthControllerTests(DatabaseFixture fixture)
     [Fact]
     public async Task Logout_SetsExpiredAuthTokenCookie()
     {
+        // Log in first to obtain the AuthToken cookie
+        await _client.PostAsJsonAsync(
+            "/api/auth/google-login",
+            new { idToken = "fake-token" },
+            TestContext.Current.CancellationToken
+        );
+
         var response = await _client.PostAsJsonAsync<object?>(
             "/api/auth/logout",
             null,
