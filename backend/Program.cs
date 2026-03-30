@@ -41,19 +41,21 @@ public class Program
         services.AddApplicationServices();
         services.AddControllersWithOptions();
         services.AddIdentityConfiguration();
-        services.AddGoogleAuthentication();
         services.AddJwtAuthentication();
-        services.AddSwaggerDocumentation();
+        services.AddOpenApiDocumentation();
         services.LimitFileUploads();
         services.AddHealthChecks();
     }
 
     private static void ConfigureMiddleware(WebApplication app)
     {
+        // Error handling MUST be first to catch exceptions from all downstream middleware
+        app.UseErrorHandling();
+
         app.UseRouting();
         app.UseCors("AllowAngular");
         app.UseStaticFiles();
-        app.UseSwaggerWithUI();
+        app.UseOpenApiEndpoint();
         app.UseAuthentication();
         app.UseUserContext(); // Extract user entity from JWT
         app.UseAuthorization();

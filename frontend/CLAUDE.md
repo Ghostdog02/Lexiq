@@ -50,13 +50,15 @@ frontend/src/app/
 │       ├── components/
 │       │   ├── leaderboard/         # User rankings
 │       │   └── profile/             # User profile & achievements
-│       └── models/                  # leaderboard.interface, user.model
+│       ├── models/                  # leaderboard.interface, user.model
+│       └── services/               # leaderboard.service
 ├── help/                            # Help & FAQ (component + service)
 ├── nav-bar/                         # Navigation sidebar
 ├── not-found/                       # 404 page (lazy loaded)
 ├── shared/
 │   ├── _buttons.scss               # Shared button mixin (@include buttons.system)
 │   ├── _cards.scss                 # Shared card mixin (@include cards.system)
+│   ├── _mixins.scss                # Shared visual mixins: glass-card (import as `@use '...shared/mixins' as mixins;`)
 │   ├── components/
 │   │   └── editor/                  # EditorJS ControlValueAccessor wrapper + dark theme
 │   └── services/
@@ -77,6 +79,7 @@ frontend/src/app/
 - **Subscription cleanup** via `takeUntilDestroyed(DestroyRef)` operator
 - **Component styles**: Always use SCSS (configured in `angular.json`)
 - **Bootstrap 5** is included but should be used minimally (prefer custom design system)
+- **ngx-toastr v20** is installed — providers: `provideAnimationsAsync()` + `provideToastr()` in `app.config.ts`; base CSS imported via `angular.json` styles; custom theme in `src/app/shared/_toastr.scss`
 
 ## Environment Variables
 
@@ -97,6 +100,16 @@ BACKEND_API_URL=/api            # proxied through nginx; not a direct backend UR
 4. JWT is set as an HttpOnly cookie (`AuthToken`) in the response — nothing stored in localStorage
 5. `AuthService` emits `true` via its `BehaviorSubject` auth state
 6. Components subscribe to `getAuthStatusListener()` for reactive updates
+
+### Auth Guards
+
+- Use functional `CanActivateFn` — class-based `CanActivate` is deprecated in Angular 14+
+- Guards are **synchronous** — `APP_INITIALIZER` resolves auth state before routing starts, so `authService.getIsAuth()` is reliable with no async needed
+- `inject()` works inside `CanActivateFn` — Angular establishes an injection context for functional guards (e.g. `inject(ToastrService)`)
+- `returnUrl` pattern: pass `state.url` as query param to `/google-login`; validate with `startsWith('/')` in `loginUserWithGoogle()` to prevent open redirect attacks
+- Guards live in `src/app/auth/guards/`
+- **Role-based guards**: `authGuard` checks authentication only; `contentGuard` checks `Admin || ContentCreator` for content creation routes — stack them: `canActivate: [authGuard, contentGuard]`
+- **`isAdmin` is strictly Admin role only** — `isContentCreator` is a separate field; both set from `roles: string[]` in the `/api/auth/is-admin` response (the `isAdmin` boolean in that DTO is ignored in favour of the array)
 
 ### HTTP Requests
 
@@ -136,6 +149,20 @@ type LessonForm = FormGroup<LessonFormControls>;
 - Factory methods create typed forms
 - Separate factory methods per form type
 - NonNullableFormBuilder ensures non-null values
+
+### SCSS Linter Auto-Formatting
+
+- A linter auto-formats `.scss` files on write — after using the Write tool on a SCSS file, always re-read before any follow-up Edit or you'll get "file modified since read" errors
+- Safe pattern: Write full file → if follow-up edits needed, Read first → then Edit
+
+### Performance Anti-Patterns
+
+- **Never call methods in template bindings** — Angular re-executes them on every change detection cycle (every click, scroll, timer, XHR). Pre-compute the result as a component property instead:
+  - ❌ `[innerHTML]="parseContent(lesson.content)"`
+  - ✅ Compute `this.parsedContent = ...` once in `ngOnInit`/load method, bind with `[innerHTML]="parsedContent"`
+- **Avoid `transition: all`** — forces the browser to watch every CSS property per animation frame; enumerate only the properties that actually change (e.g. `background, color, transform, border-color`)
+- **`Promise.all` for independent page-load fetches** — when two HTTP calls don't depend on each other, fire them in parallel: `const [a, b] = await Promise.all([service.getX(), service.getY()])` halves perceived load time vs. sequential awaits
+- **Pass pre-fetched data as `@Input` instead of re-fetching in child `ngOnInit`** — if a parent already fetches data at load time, pass it down as an input so the child component is instantaneous; avoids a redundant HTTP round-trip on every mount
 
 ### Subscription Management
 
@@ -193,12 +220,14 @@ When restoring component state from previous submissions:
 **Upload Gotchas**:
 - When `uploader.uploadByFile` is provided, Editor.js ignores `field` and `endpoints` config entirely
 - The custom uploader's FormData field name must match the backend `IFormFile` parameter name (`"file"`)
+- Files are **lazily uploaded** — `uploadByFile` returns a `blob:` URL immediately (no request); actual upload happens in `uploadPendingFiles(contentJson)` called by `LessonEditorComponent.onSubmit()`
+- `URL.revokeObjectURL()` called on all pending blob URLs in `ngOnDestroy()` to prevent memory leaks
 - File type is communicated via URL route (`/uploads/image`), NOT the FormData field name
 
 **Performance Optimization**:
 - Editor onChange fires on ALL interactions (focus, mouse moves, selection changes)
 - Debounce with 300ms timeout + content comparison to prevent excessive saves
-- Track `lastSavedContent` string and only call `onChange()` if different
+- Track `lastSavedBlocks` (`JSON.stringify(content.blocks)`) — do NOT compare full `save()` output; EditorJS always generates a fresh `time` timestamp making full-string comparison always differ
 - Clear timeout on `ngOnDestroy()` to prevent memory leaks
 
 The rich text editor implements `ControlValueAccessor` for seamless Reactive Forms integration:
@@ -294,12 +323,18 @@ feature/
 
 - **No `!important`** — increase specificity instead (exception: Editor.js overrides via `::ng-deep`)
 - **Use `rem` units** for new styles, not `px` — base is 16px
-- **Reuse CSS variables** from `src/styles.scss` (colors, radii, shadows, glass effects)
+- **SCSS selector scope**: Nesting `.child {}` inside `.parent {}` compiles to `.parent .child` — it does NOT apply when `.child` appears under a different parent. Define utility classes (e.g. `.icon`) separately in each context they're used.
+- **Reuse CSS variables** from `src/styles.scss` (colors, radii, shadows, glass effects) — **never hardcode color values** (e.g., use `var(--accent)` not `#7c5cff`)
+- **Use TypeScript enums** for discrete value sets (time frames, statuses, categories) — never pass raw string literals between components
 - **Reuse mixins** from `styles.scss` via `@use`: `@use '../path/styles.scss' as styles;` then `@include styles.animated-background`
 - **Never use `@import`** for Sass — always use `@use` with a namespace (Dart Sass 3.0 requirement)
+- **`@use` in `styles.scss` must come before `:root {}` and all other rules** — Dart Sass enforces this; violating it causes build errors in every component that imports `styles.scss`
 - **Component styles**: Always use SCSS, use `@use` for `styles.scss` only when mixins are needed
 - **Shared button mixin**: `@use 'path/to/shared/buttons' as buttons;` then `@include buttons.system;` — provides `.btn` with variants (primary, secondary, small, icon-only, link-btn, success, large, no-exercises-btn)
 - **Shared card mixin**: `@use 'path/to/shared/cards' as cards;` then `@include cards.system;` — provides `.card` glass morphism pattern with inner glow border and responsive breakpoint
+- **`glass-card` mixin** (glassmorphic base): `@use 'path/to/shared/mixins' as mixins;` then `@include mixins.glass-card;` — applies background gradient, border, shadow, `backdrop-filter: blur(10px)`, and inner glow `::before`; does NOT include `transition` (callers own animation behaviour)
+- **Never put `transition` inside visual/appearance mixins** — mixins set how something looks; the calling rule defines how it animates (avoids accidentally overriding or duplicating transition declarations)
+- **Shared toastr theme**: Lives in `src/app/shared/_toastr.scss`, imported at the top of `styles.scss` — scoped to `.toast-auth` class
 - **Editor.js dark theme**: Lives in `shared/components/editor/editor.component.scss` with `::ng-deep` — consuming components should NOT duplicate these overrides
 - **Fixing `!important`**: Nest overrides inside parent class for equal specificity + source-order win; `:has()` pseudo-class provides high specificity naturally
 
@@ -315,6 +350,7 @@ Use CSS variables defined in `src/styles.scss`:
 
 // Accent Colors
 --accent: #7c5cff;       // Primary purple accent
+--accent-rgb: 124, 92, 255; // RGB channels for rgba() usage: rgba(var(--accent-rgb), 0.4)
 --accent-light: #9178ff; // Lighter purple (hover states, links)
 --accent-dark: #5a3ce6;  // Darker purple (gradients, shadows)
 
@@ -569,21 +605,42 @@ When creating new components, ensure:
 - [ ] Follows glassmorphism pattern for cards/panels
 - [ ] Buttons use defined `.btn.primary` or `.btn.oauth` styles
 - [ ] Hover effects include `transform: translateY(-2px)` and purple shadow
-- [ ] Border radius uses `var(--radius)` or `var(--radius-sm)`
+- [ ] Border radius uses `var(--radius)` (16px) or `var(--radius-sm)` (100px) — never hardcode
 - [ ] Typography uses `var(--font-family)` and correct font weights
 - [ ] Links use accent-light color with underline on hover
 - [ ] Responsive breakpoints at 1024px and 480px
 - [ ] Accessibility attributes present (aria-label, role, etc.)
 - [ ] Focus states defined with purple accent outline
+- [ ] **All sizes in `rem`**, not `px` — base is 16px (e.g. `24px` → `1.5rem`)
+- [ ] **No hardcoded hex/rgba colors** — use CSS vars; for rgba tints use `rgba(var(--accent-rgb), 0.15)` pattern
+- [ ] **Extract repeated easing** as a Sass `$_ease` variable at the top of the file
+- [ ] **`transition: all` is banned** — enumerate only the properties that actually animate
+
+### Design Token Reference
+
+Tokens in `src/styles.scss` `:root` — use these instead of raw values:
+
+| Token | Value | Use for |
+|-------|-------|---------|
+| `--color-correct` | `#10b981` | Correct answer states (border, icon, text) |
+| `--color-correct-rgb` | `16, 185, 129` | `rgba(var(--color-correct-rgb), 0.15)` tints |
+| `--color-correct-light` | `#34d399` | Feedback text on correct state |
+| `--color-error-light` | `#f87171` | Feedback text on incorrect state |
+| `--color-xp` | `#fbbf24` | XP/points highlights |
+| `--color-xp-rgb` | `251, 191, 36` | XP rgba tints |
+| `--muted-rgb` | `139, 152, 165` | `rgba(var(--muted-rgb), 0.1)` for muted-tinted backgrounds |
+| `--bg-rgb` | `26, 36, 41` | `rgba(var(--bg-rgb), 0.95)` for overlays on the page background |
+| `--border-highlight` | `rgba(255,255,255,0.2)` | Bright border on hover/active states |
 
 ## Known Limitations
 
-- Help and Leaderboard services return mock data (not yet integrated with backend)
+- Help service returns mock data (not yet integrated with backend)
 - **Frontend/Backend property name mismatches cause silent failures** in Angular templates
   - `@switch` statements won't match if property name is wrong
   - Template expressions return undefined without error
   - Always verify API response matches TypeScript interface property names
 - `Exercise` interface in `exercise.interface.ts` must include `isLocked: boolean` — backend `ExerciseDto` returns it, exercise-viewer depends on it
+- **`submitExerciseAnswer` returns `SubmitAnswerResponse`, not `ExerciseSubmitResult`** — the backend submit endpoint always includes `lessonProgress` in the response body; type the service call and the `submissionResults` map as `SubmitAnswerResponse` to avoid TS2322 mismatches on `currentSubmission` and `getSubmission()` getters
 
 ## Common Debugging Scenarios
 

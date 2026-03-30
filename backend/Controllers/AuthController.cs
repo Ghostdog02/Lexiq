@@ -44,6 +44,7 @@ public class AuthController(
     }
 
     [HttpPost("logout")]
+    [Authorize]
     public IActionResult Logout()
     {
         SetAuthCookie("", DateTime.UtcNow.AddDays(-1));
@@ -56,10 +57,12 @@ public class AuthController(
     {
         var isAuthenticated = HttpContext.User.Identity?.IsAuthenticated ?? false;
 
-        return Ok(new AuthStatusResponseDto(
-            Message: isAuthenticated ? "Authenticated" : "Not authenticated",
-            IsLogged: isAuthenticated
-        ));
+        return Ok(
+            new AuthStatusResponseDto(
+                Message: isAuthenticated ? "Authenticated" : "Not authenticated",
+                IsLogged: isAuthenticated
+            )
+        );
     }
 
     /// <summary>

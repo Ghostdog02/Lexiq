@@ -84,10 +84,77 @@ Add IP address redaction to deployment logs
 
 When multiple changes exist:
 1. **Group logically** by concern/feature
-2. **Commit separately** - don't mix unrelated changes
-3. **Order matters** - dependencies first
+2. **Commit separately** — don't mix unrelated changes
+3. **Order matters** — dependencies first (infrastructure before tests, bug fix before tests that exercise the fix)
 
-Example grouping:
-- Group 1: Documentation updates → Commit
-- Group 2: Security fix → Commit
-- Group 3: Refactoring → Commit
+Example grouping for a general feature:
+- Group 1: Bug fix or core change → Commit
+- Group 2: Documentation updates → Commit
+- Group 3: Tests → Commit (or split further by category)
+
+#### Test Suite Grouping
+
+When adding a new test suite, split into these commits:
+
+| Commit | Contents |
+|--------|----------|
+| `Add <Name> test infrastructure` | `.csproj`, `.sln` update, `DatabaseFixture`, builders, seeders, project exclusions in parent `.csproj` |
+| `Add <Class> unit tests` | Pure unit test classes (no DB, no fixture) — one commit per class if substantial |
+| `Add <Class> integration tests` | DB-backed integration test classes — one commit per test class |
+| `Document <bug/pattern> in CLAUDE.md` | Any CLAUDE.md or RULES.md additions — separate from code changes |
+
+**Rationale:** Reviewers can validate infrastructure, unit tests, and integration tests independently. Infrastructure commits are the dependency — they must go first.
+
+Example for LeaderboardService tests:
+```
+Add Backend.Tests project and test infrastructure     ← csproj, sln, DatabaseFixture, UserBuilder, DbSeeder
+Add CalculateLevel unit tests                          ← pure unit, no DB
+Add GetStreak integration tests                        ← Testcontainers integration
+Add GetLeaderboard integration tests                   ← Testcontainers integration
+```
+
+#### Large Test File Grouping
+
+When adding a large test file (>500 lines or >40 tests), split into logical commit groups:
+
+| Commit | Contents |
+|--------|----------|
+| `Add <Class> test infrastructure` | Test class setup, `IAsyncLifetime`, helper methods, mocks |
+| `Add <Class> security tests` | Security-focused tests (path traversal, sanitization, authentication) |
+| `Add <Class> validation tests` | Input validation, size limits, type checking |
+| `Add <Class> functional tests` | Core functionality, file type tests, success paths |
+
+**Rationale:** Large test files (e.g., FileUploadsServiceTests with 57 tests) are easier to review when split by concern. Each commit is independently verifiable and focused on one aspect of the system under test.
+
+Example for FileUploadsService tests:
+```
+Add FileUploadsService test infrastructure              ← setup, teardown, helpers, mocks
+Add FileUploadsService security tests                   ← path traversal, GUID filenames, sanitization
+Add FileUploadsService validation tests                 ← null/empty, size limits, extension validation
+Add FileUploadsService file type, URL, and path tests  ← all file types, URL upload, physical path retrieval
+```
+
+## Testing
+
+See [`backend/Tests/CLAUDE.md`](../backend/Tests/CLAUDE.md) for full test project documentation.
+
+### Quick Commands
+
+```bash
+# All tests (requires Docker)
+cd backend && dotnet test Tests/Backend.Tests.csproj --logger "console;verbosity=normal"
+
+# Single class
+dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~GetLeaderboardTests"
+
+# Unit tests only (no Docker)
+dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLevelTests"
+```
+
+### Test Conventions
+
+- **Never `UseInMemoryDatabase`** — always Testcontainers (real SQL Server behaviour)
+- **xUnit v3**: `IAsyncLifetime` methods return `ValueTask`, not `Task`
+- **`IClassFixture<DatabaseFixture>`**: shares the container; `IAsyncLifetime` on the test class reseeds per test
+- **`fixture.ExerciseIds`**: always use these for `UserExerciseProgress` rows — FK is enforced on INSERT
+- **`UserBuilder`**: always use for creating test users — sets Identity's required normalized fields

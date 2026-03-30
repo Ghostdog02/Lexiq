@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Api.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/[controller]s")]
 [Authorize]
 public class LessonController(LessonService lessonService, ExerciseProgressService progressService)
     : ControllerBase
@@ -24,19 +24,9 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
     [HttpPost("{lessonId}/complete")]
     public async Task<ActionResult<CompleteLessonResponse>> CompleteLesson(string lessonId)
     {
-        var currentUser = HttpContext.GetCurrentUser();
-        if (currentUser == null)
-            return Unauthorized(new { message = "User is not authorized." });
-
-        try
-        {
-            var result = await _progressService.CompleteLessonAsync(currentUser.Id, lessonId);
-            return Ok(result);
-        }
-        catch (ArgumentException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        var currentUser = HttpContext.GetCurrentUser()!;
+        var result = await _progressService.CompleteLessonAsync(currentUser.Id, lessonId);
+        return Ok(result);
     }
 
     /// <summary>
@@ -67,12 +57,9 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
         if (lessons == null)
             return NotFound(new { message = $"Course '{courseId}' not found" });
 
-        var currentUser = HttpContext.GetCurrentUser();
-        if (currentUser == null)
-            return Unauthorized(new { message = "User is not authorized." });
-
+        var currentUser = HttpContext.GetCurrentUser()!;
         var lessonIds = lessons.Select(l => l.Id).ToList();
-        var progressMap = await _progressService.GetProgressForLessonsAsync(
+        var progressMap = await _lessonService.GetProgressForLessonsAsync(
             currentUser.Id,
             lessonIds
         );
@@ -96,11 +83,10 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
             return NotFound(new { message = "Lesson not found" });
         }
 
-        var currentUser = HttpContext.GetCurrentUser();
+        var currentUser = HttpContext.GetCurrentUser()!;
+        var progress = await _lessonService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
 
-        var progress = await _progressService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
-
-        return Ok(lesson.ToDto(progress.Summary, progress.ExerciseProgress));
+        return OkPolymorphic<LessonDto>(lesson.ToDto(progress.Summary, progress.ExerciseProgress));
     }
 
     /// <summary>
@@ -120,7 +106,14 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
     public async Task<ActionResult<LessonDto>> CreateLesson(CreateLessonDto dto)
     {
         var lesson = await _lessonService.CreateLessonAsync(dto);
-        return CreatedAtAction(nameof(GetLesson), new { lessonId = lesson.Id }, lesson.ToDto());
+        var result = CreatedAtAction(
+            nameof(GetLesson),
+            new { lessonId = lesson.Id },
+            lesson.ToDto()
+        );
+        result.DeclaredType = typeof(LessonDto);
+
+        return result;
     }
 
     [HttpPut("{lessonId}")]
@@ -144,4 +137,51 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
 
         return NoContent();
     }
+
+    /// <summary>
+    /// Gets all exercises for a specific lesson
+    /// </summary>
+    /// <param name="lessonId">The lesson ID</param>
+    [HttpGet("{lessonId}/exercises")]
+    public async Task<ActionResult<List<ExerciseDto>>> GetExercisesByLesson(string lessonId)
+    {
+        var exercises = await _lessonService.GetExercisesByLessonIdAsync(lessonId);
+
+        return OkPolymorphic<List<ExerciseDto>>(exercises.Select(e => e.ToDto()).ToList());
+    }
+
+    /// <summary>
+    /// Gets user progress for all exercises in a lesson
+    /// </summary>
+    /// <param name="lessonId">The lesson ID</param>
+    [HttpGet("{lessonId}/progress")]
+    public async Task<ActionResult<List<UserExerciseProgressDto>>> GetLessonProgress(
+        string lessonId
+    )
+    {
+        var user = HttpContext.GetCurrentUser()!;
+        var fullProgress = await _lessonService.GetFullLessonProgressAsync(user.Id, lessonId);
+        return Ok(fullProgress.ExerciseProgress.Values.ToList());
+    }
+
+    /// <summary>
+    /// Gets all exercise submissions for a lesson with correct answers for incorrect attempts
+    /// </summary>
+    /// <param name="lessonId">The lesson ID</param>
+    [HttpGet("{lessonId}/submissions")]
+    public async Task<ActionResult<List<SubmitAnswerResponse>>> GetLessonSubmissions(
+        string lessonId
+    )
+    {
+        var user = HttpContext.GetCurrentUser()!;
+        var submissions = await _lessonService.GetLessonSubmissionsAsync(user.Id, lessonId);
+        return Ok(submissions);
+    }
+
+    /// <summary>
+    /// Returns 200 OK with DeclaredType set to T, ensuring System.Text.Json serializes
+    /// through the base type and includes [JsonPolymorphic] type discriminators.
+    /// </summary>
+    private static OkObjectResult OkPolymorphic<T>(T value) =>
+        new(value) { DeclaredType = typeof(T) };
 }

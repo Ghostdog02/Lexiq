@@ -19,7 +19,9 @@
         @if (!isLoading && !error && courses.length === 0) {
         <div class="empty-state">
           <p>No courses available yet.</p>
+          @if (isAdmin || isContentCreator) {
           <button class="btn-create" (click)="redirectToCreateExercise()">Create your first lesson</button>
+          }
         </div>
         }
 
@@ -122,9 +124,11 @@
           }
         </button>
 
+        @if (isAdmin || isContentCreator) {
         <button class="add-unit-button" (click)="redirectToCreateExercise()" aria-label="Add new unit">
           <span aria-hidden="true">+</span>
         </button>
+        }
       </section>
     </section>
   </section>

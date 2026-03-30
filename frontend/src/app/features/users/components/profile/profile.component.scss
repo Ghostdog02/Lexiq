@@ -1,4 +1,7 @@
 @use '../../../../../styles.scss' as styles;
+@use '../../../../shared/loading' as loading;
+
+@include loading.system;
 
 :host {
   @include styles.animated-background;

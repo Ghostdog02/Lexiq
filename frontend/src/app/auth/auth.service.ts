@@ -14,9 +14,11 @@ export class AuthService {
 
   private authStatusListener = new BehaviorSubject<boolean>(false);
   private adminStatusListener = new BehaviorSubject<boolean>(false);
+  private contentCreatorStatusListener = new BehaviorSubject<boolean>(false);
 
   public isLogged: boolean = false;
   public isAdmin: boolean = false;
+  public isContentCreator: boolean = false;
 
   /**
    * Initialize auth state by checking backend /auth-status endpoint.
@@ -27,8 +29,7 @@ export class AuthService {
     this.changeAuthStatus(this.isLogged);
 
     if (this.isLogged) {
-      this.isAdmin = await this.checkAdminStatus();
-      this.adminStatusListener.next(this.isAdmin);
+      await this.checkAdminStatus();
     }
   }
 
@@ -48,12 +49,19 @@ export class AuthService {
     return this.isAdmin;
   }
 
+  getIsContentCreator() {
+    return this.isContentCreator;
+  }
+
+  getContentCreatorStatusListener() {
+    return this.contentCreatorStatusListener.asObservable();
+  }
+
   async getInitialValue() {
     try {
       const response = await firstValueFrom(
         this.httpClient.get<{ message: string; isLogged: boolean }>(
-          AUTH_API_URL + '/auth-status',
-          { withCredentials: true }
+          AUTH_API_URL + '/auth-status'
         )
       );
 
@@ -63,19 +71,24 @@ export class AuthService {
     }
   }
 
-  async checkAdminStatus(): Promise<boolean> {
+  async checkAdminStatus(): Promise<void> {
     try {
       const response = await firstValueFrom(
         this.httpClient.get<{ isAdmin: boolean; roles: string[] }>(
-          AUTH_API_URL + '/is-admin',
-          { withCredentials: true }
+          AUTH_API_URL + '/is-admin'
         )
       );
 
-      return response?.isAdmin ?? false;
+      const roles = response?.roles ?? [];
+      this.isAdmin = roles.includes('Admin');
+      this.isContentCreator = roles.includes('ContentCreator');
     } catch {
-      return false;
+      this.isAdmin = false;
+      this.isContentCreator = false;
     }
+
+    this.adminStatusListener.next(this.isAdmin);
+    this.contentCreatorStatusListener.next(this.isContentCreator);
   }
 
   changeAuthStatus(status: boolean) {
@@ -83,38 +96,40 @@ export class AuthService {
     this.isLogged = status;
   }
 
-  async loginUserWithGoogle(googleToken: string) {
+  clearAuthState(): void {
+    this.changeAuthStatus(false);
+    this.isAdmin = false;
+    this.isContentCreator = false;
+    this.adminStatusListener.next(false);
+    this.contentCreatorStatusListener.next(false);
+  }
+
+  async loginUserWithGoogle(googleToken: string, returnUrl?: string) {
     try {
       await firstValueFrom(
         this.httpClient.post(
           AUTH_API_URL + '/google-login',
-          { idToken: googleToken },
-          { withCredentials: true }
+          { idToken: googleToken }
         )
       );
 
       this.changeAuthStatus(true);
-      this.isAdmin = await this.checkAdminStatus();
-      this.adminStatusListener.next(this.isAdmin);
-      this.router.navigateByUrl('/');
+      await this.checkAdminStatus();
+
+      const safeReturnUrl = returnUrl?.startsWith('/') ? returnUrl : '/';
+      this.router.navigateByUrl(safeReturnUrl);
     } catch {
-      this.changeAuthStatus(false);
-      this.isAdmin = false;
-      this.adminStatusListener.next(false);
+      this.clearAuthState();
     }
   }
 
   async logoutUser() {
     try {
       await firstValueFrom(
-        this.httpClient.post(AUTH_API_URL + '/logout', null, {
-          withCredentials: true,
-        })
+        this.httpClient.post(AUTH_API_URL + '/logout', null)
       );
 
-      this.changeAuthStatus(false);
-      this.isAdmin = false;
-      this.adminStatusListener.next(false);
+      this.clearAuthState();
       this.router.navigate(['/']);
     } catch (error: any) {
       throw new Error(`An error occurred during logout: ${error.message}`);

@@ -103,6 +103,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     return this.state.currentViewModel?.submission || null;
   }
 
+  /** True only when the current exercise was answered correctly. Wrong attempts keep the form enabled for retry. */
   get isCurrentSubmitted(): boolean {
     return this.state.currentViewModel?.isSubmitted || false;
   }
@@ -216,7 +217,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   }
 
   getOptionClass(optionId: string, isCorrect: boolean): string {
-    if (!this.isCurrentSubmitted) {
+    if (!this.currentSubmission) {
       return this.isOptionSelected(optionId) ? 'selected' : '';
     }
 

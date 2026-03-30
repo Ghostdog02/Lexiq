@@ -154,13 +154,13 @@ public record ExerciseOptionDto(string Id, string OptionText, bool IsCorrect, in
 [JsonDerivedType(typeof(CreateListeningExerciseDto), typeDiscriminator: "Listening")]
 [JsonDerivedType(typeof(CreateTranslationExerciseDto), typeDiscriminator: "Translation")]
 public abstract record CreateExerciseDto(
-    string? LessonId, // Null when nested inside CreateLessonDto (lesson assigns its own ID)
+    string? LessonId, 
     string Title,
     string? Instructions,
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex, // Optional - auto-calculated if null
+    int? OrderIndex, 
     string? Explanation
 );
 
@@ -193,7 +193,7 @@ public record CreateFillInBlankExerciseDto(
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex, // Optional - auto-calculated if null
+    int? OrderIndex, 
     string? Explanation,
     string Text,
     string CorrectAnswer,
@@ -245,7 +245,7 @@ public record CreateTranslationExerciseDto(
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex, // Optional - auto-calculated if null
+    int? OrderIndex, 
     string? Explanation,
     string SourceText,
     string TargetText,

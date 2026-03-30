@@ -39,7 +39,7 @@ public class UserLanguageService(BackendDbContext context)
         return userLanguage;
     }
 
-    public async Task<bool> UnenrollUserAsync(string userId, int languageId)
+    public async Task<bool> UnenrollUserAsync(string userId, string languageId)
     {
         var userLanguage = await _context.UserLanguages.FindAsync(userId, languageId);
         if (userLanguage == null)

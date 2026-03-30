@@ -5,6 +5,8 @@
 @include buttons.system;
 @include cards.system;
 
+$_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+
 .exercises-view {
   .progress-header {
     display: flex;
@@ -617,7 +619,7 @@
     .exercise-actions {
       display: flex;
       justify-content: flex-end;
-      gap: 16px;
+      gap: 1rem;
       margin-top: auto;
     }
   }
@@ -705,8 +707,6 @@
     }
   }
 }
-
-.fade-in { animation: fadeIn 0.4s ease-out; }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }

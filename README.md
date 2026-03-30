@@ -1,574 +1,318 @@
-# Lexiq 🎓
+# Lexiq
 
 [![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
 [![Angular](https://img.shields.io/badge/Angular-21-DD0031)](https://angular.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/License-Proprietary-orange)]()
 
-A modern, full-stack language learning platform designed for Bulgarian speakers learning Italian.
+A full-stack language learning platform for Bulgarian speakers studying Italian. Built as both a functional application and a technical showcase by a two-person team — a backend/DevOps specialist and a frontend developer.
 
-## 👥 Contributors
+**Live deployment**: [lexiqlanguage.eu](https://www.lexiqlanguage.eu) — hosted on Hetzner Cloud with Let's Encrypt TLS.
+
+## Contributors
 
 | Contributor | Role | GitHub |
 |-------------|------|--------|
-| **Ghostdog02** | Project Lead | [@Ghostdog02](https://github.com/Ghostdog02) |
-| **powercell12** | Frontend Design | [@powercell12](https://github.com/powercell12) |
+| **Ghostdog02** | Backend, DevOps & Architecture | [@Ghostdog02](https://github.com/Ghostdog02) |
+| **powercell12** | Frontend & UI Design | [@powercell12](https://github.com/powercell12) |
 
-## 📋 Table of Contents
+---
 
-- [Project Overview](#-project-overview)
-- [Goals & Vision](#-goals--vision)
-- [Features](#-features)
-- [Tech Stack](#-tech-stack)
-- [Architecture](#-architecture)
-- [Current Development](#-current-development)
-- [Planned Enhancements](#-planned-enhancements)
-- [Getting Started](#-getting-started)
-- [API Documentation](#-api-documentation)
-- [Project Structure](#-project-structure)
-- [Contributing](#-contributing)
+## Architecture
 
-## 🌟 Project Overview
+Lexiq is a three-tier application: an Angular 21 SPA served by nginx, an ASP.NET Core 10 Web API, and a SQL Server 2022 database — all containerised via Docker Compose. In production, nginx terminates TLS for both the frontend (`lexiqlanguage.eu`) and the API subdomain (`api.lexiqlanguage.eu`), forwarding plain HTTP to the backend container on port 8080. The backend has no awareness of TLS.
 
-**Lexiq** is a comprehensive language learning application that provides an interactive, gamified learning experience. The platform features a structured curriculum with courses, lessons, and exercises, complemented by a progress tracking system and XP-based achievements.
+### Content Model
 
-A functional language learning platform for Bulgarian speakers studying Italian.
+The curriculum follows a four-level hierarchy: **Language → Course → Lesson → Exercise**.
 
-**Team**: Collaborative effort between a Backend/DevOps specialist and a Frontend developer with Machine Learning interests.
+Exercises are stored in a single table using Table-Per-Hierarchy (TPH) with a discriminator column. Four concrete types are supported: **MultipleChoice**, **FillInBlank**, **Listening**, and **Translation**. Each uses `[JsonPolymorphic]` with a `type` discriminator as the first JSON property, enabling clean round-trip serialisation without custom converters.
 
-## 🎯 Goals & Vision
+Lesson and exercise access is gated: exercises unlock sequentially as correct answers are submitted, and a lesson unlocks the next when 70% of its available XP has been earned.
 
-### Primary Objectives
+### Lesson Editor
 
-- **Structured Learning**: Provide a clear learning path through courses, lessons, and exercises
-- **Engagement**: Gamification through XP, progress tracking, and achievement systems
-- **Accessibility**: Intuitive UI with responsive design and smooth user experience
-- **Scalability**: Architecture designed to support multiple languages and expanding content
+Lessons are authored through a dynamic, block-based content editor built on **Editor.js**, wrapped as an Angular `ControlValueAccessor` so it integrates seamlessly with Reactive Forms. Content creators can compose rich lesson material by inserting and reordering blocks of different types: text paragraphs, embedded images, uploaded documents, PDFs, and audio files. File uploads are handled by a dedicated upload service — files are stored on the server with a 1-year `max-age` cache header, and GUID-based filenames guarantee uniqueness. The editor serialises its state to structured JSON, which is persisted on the backend and re-hydrated when the lesson is opened again. A 300ms debounce on the `onChange` handler prevents redundant API calls during active editing.
 
-### Target Audience
+### Authentication
 
-- Bulgarian speakers learning Italian
-- Language learners seeking structured, self-paced education
+The frontend initiates the Google OAuth flow, receives an ID token, and POSTs it to `/api/auth/google-login`. The backend validates the token server-side via `GoogleJsonWebSignature.ValidateAsync()`, creates the user record if needed, and issues a signed JWT (HS256) stored in an **HttpOnly, SameSite=Lax cookie** named `AuthToken`. The token is never exposed to JavaScript.
 
-## ✨ Features
+A custom `UserContextMiddleware` sits between authentication and authorisation in the ASP.NET Core pipeline. It extracts `ClaimTypes.NameIdentifier` from the validated JWT and pre-loads the full `User` entity into `HttpContext.Items` — so every controller has immediate access to the authenticated user without redundant DB lookups or claim parsing.
 
-### Implemented Features
+### Role-Based Access Control
 
-#### 🔐 Authentication & Authorization
-- **Google OAuth Integration**: Seamless single sign-on
-- **Cookie-based Sessions**: Secure HttpOnly cookies with JWT tokens
-- **Role-based Access Control**: Three-tier system (Admin, ContentCreator, User)
-- **User Profile Management**: Track learning progress and achievements
+The system enforces a three-tier role hierarchy — **Admin**, **ContentCreator**, and **User** — at both layers of the stack.
 
-#### 📚 Content Management System
-- **Multi-language Support**: Extensible language configuration
-- **Course Hierarchy**: Language → Course → Lesson → Exercise structure
-- **Rich Content Editor**: Editor.js integration for multimedia lesson content
-- **Polymorphic Exercises**: Four exercise types with specialized logic:
-  - **Multiple Choice**: Traditional quiz questions with multiple options
-  - **Fill in the Blank**: Text completion with accepted answer variations
-  - **Listening Comprehension**: Audio-based exercises with replay limits
-  - **Translation**: Bidirectional translation with similarity scoring
+On the backend, roles are managed via **ASP.NET Core Identity**. Controllers declare their access requirements with `[Authorize(Roles = "Admin,ContentCreator")]` or `[AllowAnonymous]` attributes. Mutation endpoints (create, update, delete for courses, lessons, and exercises) require the Admin or ContentCreator role; read endpoints require authentication; leaderboard and avatar endpoints are public.
 
-#### 📊 Progress Tracking & Gamification
-- **User Progress System**: Track completion status for every exercise
-- **XP Calculation**: Point-based system tied to exercise difficulty
-- **Progress Dashboard**: Visual progress indicators and completion percentages
-- **Exercise Unlocking**: Sequential unlocking based on completion (70% threshold for lesson completion)
-- **Leaderboard Ready**: Public XP endpoints for competitive features
+On the frontend, Angular route guards enforce the same boundaries without requiring a round-trip:
+- `AuthGuard` — redirects unauthenticated users to the login page
+- `NoAuthGuard` — redirects already-authenticated users away from the login page
+- `ContentGuard` — restricts access to content management routes to users with the Admin or ContentCreator role
 
-#### 🖼️ Media & File Management
-- **File Upload System**: Support for images, audio, documents
-- **Static File Serving**: Optimized with 1-year cache headers
-- **CORS-enabled**: Cross-origin resource access for uploaded content
-- **Multiple File Types**: Images (PNG, JPG), Audio (MP3), Documents (PDF, DOCX)
+This dual enforcement means unauthorised users cannot reach protected UI routes, and even if they construct API requests manually, the backend will reject them independently.
 
-#### 👨‍💼 Admin Tools
-- **Content Creation Interface**: Rich editor for lesson authoring
-- **Exercise Builder**: Type-safe form builders for each exercise type
-- **Course Management**: Full CRUD operations for courses and lessons
-- **User Management**: Admin dashboard for user oversight
+### Gamification
 
-#### 🏗️ Infrastructure & DevOps
-- **Dockerized Stack**: Complete containerization for consistency
-- **CI/CD Pipeline**: Automated deployment with GitHub Actions
-- **Health Checks**: Service monitoring and automatic recovery
-- **Auto-migration**: Database schema updates on container startup
-- **Production Ready**: Deployed on Hetzner with Let's Encrypt SSL
+Users earn XP for correct exercise submissions. XP is queryable both from raw progress records (used in time-windowed leaderboard queries with explicit SQL `JOIN` + `GROUP BY`) and from a materialised `TotalPointsEarned` column on the `User` entity (used for all-time ranking, avoiding per-request aggregation). Rank change is computed stateless by comparing current-period XP against the equivalent prior period — no snapshot tables are required. Levels follow the formula `floor((1 + sqrt(1 + xp/25)) / 2)`. Streaks are derived from consecutive UTC calendar days with at least one completed exercise.
 
-### Key Technical Achievements
+Avatars are downloaded from Google on first login and stored as `varbinary(max)` in a dedicated `UserAvatars` table (1:1 with `User`). Keeping avatar bytes out of the main `User` entity ensures the context middleware does not load binary data on every request.
 
-#### Backend Architecture
+### Key Design Decisions
 
-- **Polymorphic Exercise System**: Implemented Table-Per-Hierarchy (TPH) inheritance with `[JsonPolymorphic]` discriminators, enabling type-safe serialization of 4 distinct exercise types while maintaining a single database table for optimal performance
+- **JWT in HttpOnly cookie** — prevents XSS access to tokens. SameSite=Lax works because nginx proxies `/api/*` same-origin from the browser's perspective, so no `SameSite=None` + HTTPS requirement in development.
+- **UserContextMiddleware** — pre-loads the authenticated user once per request; controllers call `HttpContext.GetCurrentUser()` instead of re-querying.
+- **TPH for exercises** — single table, EF Core handles polymorphic eager loading via cast-based `ThenInclude((e as MultipleChoiceExercise)!.Options)`.
+- **Explicit JOIN before GroupBy in EF Core** — navigation property access inside a `GroupBy` key wraps rows in `TransparentIdentifier<>`, causing SQL translation failure. Leaderboard queries use explicit `.Join()` to flatten to scalar columns first.
+- **nginx-only TLS with Certbot sidecar** — the backend container speaks plain HTTP on port 8080; TLS is terminated exclusively at nginx. A dedicated Certbot container runs once at stack startup to fix certificate file permissions, then exits (`restart: no`). Certificates are stored in a named Docker volume (`letsencrypt-certs`) that survives all container restarts and redeploys. Renewal runs automatically via a weekly GitHub Actions cron job that SSHs into the Hetzner server and triggers `certbot renew` inside the container. `cap_add: NET_BIND_SERVICE` is required because nginx runs as an unprivileged user and cannot otherwise bind to ports below 1024.
+- **Operation result enums** — service methods that can fail for distinct reasons return a typed enum (e.g. `UnlockStatus`) rather than a bare `bool`, preserving failure context at the call site.
 
-- **Middleware Pipeline Pattern**: Custom `UserContextMiddleware` that pre-loads authenticated user entities from JWT claims, eliminating N+1 query problems and providing controllers with immediate access to full user context via `HttpContext.GetCurrentUser()`
+---
 
-- **Sequential Exercise Unlocking**: Event-driven unlocking system where exercise completion automatically triggers the next exercise unlock, with lesson completion (70% XP threshold) cascading to unlock the first exercise of the next lesson
-
-- **Answer Validation Strategy**: Server-side validation with polymorphic dispatching - Multiple Choice validates option IDs, Fill-in-Blank handles accepted answer variations with case-sensitivity control, Translation uses Levenshtein distance for similarity scoring, and Listening enforces replay limits
-
-#### Frontend Architecture
-
-- **Type-safe Reactive Forms**: Compile-time safety through TypeScript discriminated unions (`ExerciseFormValue`) and typed `FormGroup<T>` interfaces, preventing runtime errors and enabling IntelliSense for complex nested form structures
-
-- **ControlValueAccessor Pattern**: Editor.js wrapper implementing Angular's `ControlValueAccessor` interface, seamlessly integrating third-party rich text editor into Reactive Forms with two-way data binding and validation support
-
-- **Form Factory Pattern**: Centralized form creation in `LessonFormService` with separate factory methods per exercise type, ensuring consistent validation rules and type-safe form construction across the application
-
-- **Debounced Content Persistence**: Editor.js onChange handler with 300ms debounce and content comparison, reducing API calls by 95% during active editing while maintaining data integrity
-
-#### Performance Optimizations
-
-- **Aggressive HTTP Caching**: 1-year `max-age` with `immutable` directive on uploaded media (images have GUID filenames, ensuring uniqueness), reducing bandwidth usage and improving page load times
-
-- **Batch Progress Queries**: Single database query using `GroupJoin` to fetch lesson progress for multiple lessons simultaneously, eliminating N+1 problems in course listing pages
-
-#### DevOps & Deployment
-
-- **Zero-downtime Deployment**: GitHub Actions pipeline with health check validation, automatic rollback on failure, and graceful container shutdown to preserve in-flight requests
-
-- **Database Migration Resilience**: Auto-migration with exponential backoff retry (10 attempts, 3-second delays) to handle SQL Server slow startup in Docker, ensuring reliable container orchestration
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### Backend
+
 | Component | Technology | Version |
 |-----------|------------|---------|
-| **Framework** | ASP.NET Core Web API | 10.0 |
-| **ORM** | Entity Framework Core | 10.0 |
-| **Database** | Microsoft SQL Server | 2022 |
-| **Authentication** | Google OAuth 2.0 + JWT | - |
-| **Language** | C# | 13.0 |
+| Framework | ASP.NET Core Web API | 10.0 |
+| ORM | Entity Framework Core | 10.0 |
+| Database | Microsoft SQL Server | 2022 |
+| Authentication | Google OAuth 2.0 + JWT HS256 | — |
+| Language | C# | 13.0 |
 
 ### Frontend
+
 | Component | Technology | Version |
 |-----------|------------|---------|
-| **Framework** | Angular (Standalone) | 21 |
-| **Language** | TypeScript | 5.7 |
-| **State Management** | RxJS | 7.8 |
-| **Forms** | Reactive Forms | - |
-| **Rich Text Editor** | Editor.js | 2.x |
+| Framework | Angular (standalone components) | 21 |
+| Language | TypeScript | 5.7 |
+| Reactive primitives | RxJS | 7.8 |
+| Forms | Angular Reactive Forms | — |
+| Rich text | Editor.js | 2.x |
 
 ### Infrastructure
+
 | Component | Technology |
 |-----------|------------|
-| **Containerization** | Docker Compose |
-| **CI/CD** | GitHub Actions |
-| **Hosting** | Hetzner Cloud |
-| **SSL** | Let's Encrypt (LettuceEncrypt) |
-| **Reverse Proxy** | Nginx |
+| Containerisation | Docker Compose |
+| CI/CD | GitHub Actions |
+| Hosting | Hetzner Cloud |
+| TLS | Let's Encrypt via Certbot |
+| Reverse proxy | nginx (unprivileged) |
 
-## 🏛️ Architecture
+---
 
-### System Overview
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              Docker Compose                                  │
-│                                                                              │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
-│  │    Frontend     │    │     Backend     │    │    Database     │         │
-│  │   (Angular 21)  │    │  (ASP.NET Core) │    │  (SQL Server)   │         │
-│  │                 │    │                 │    │                 │         │
-│  │  ┌───────────┐  │    │  ┌───────────┐  │    │  ┌───────────┐  │         │
-│  │  │   Nginx   │  │───▶│  │Controllers│  │───▶│  │  Tables   │  │         │
-│  │  │  :4200    │  │    │  │   :8080   │  │    │  │   :1433   │  │         │
-│  │  └───────────┘  │    │  └─────┬─────┘  │    │  └───────────┘  │         │
-│  │                 │    │        │        │    │                 │         │
-│  │  ┌───────────┐  │    │  ┌─────▼─────┐  │    │                 │         │
-│  │  │  Angular  │  │    │  │ Services  │  │    │                 │         │
-│  │  │   SPA     │  │    │  └─────┬─────┘  │    │                 │         │
-│  │  └───────────┘  │    │        │        │    │                 │         │
-│  │                 │    │  ┌─────▼─────┐  │    │                 │         │
-│  │                 │    │  │ DbContext │  │    │                 │         │
-│  │                 │    │  └───────────┘  │    │                 │         │
-│  └─────────────────┘    └─────────────────┘    └─────────────────┘         │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Data Model
-
-```
-┌─────────────┐      ┌─────────────┐      ┌─────────────┐      ┌─────────────┐
-│  Language   │      │   Course    │      │   Lesson    │      │  Exercise   │
-├─────────────┤      ├─────────────┤      ├─────────────┤      ├─────────────┤
-│ Id          │◀────▶│ LanguageId  │◀────▶│ CourseId    │◀────▶│ LessonId    │
-│ Name        │  1:M │ Title       │  1:M │ Title       │  1:M │ Title       │
-│ Code        │      │ Description │      │ Content     │      │ Type (TPH)  │
-│ NativeName  │      │ OrderIndex  │      │ IsLocked    │      │ IsLocked    │
-└─────────────┘      └─────────────┘      └─────────────┘      └──────┬──────┘
-                                                                      │
-                     ┌────────────────────────────────────────────────┼────────┐
-                     │                    │                           │        │
-              ┌──────▼──────┐      ┌──────▼──────┐      ┌─────────────▼───┐    │
-              │ MultiChoice │      │ FillInBlank │      │    Listening    │    │
-              ├─────────────┤      ├─────────────┤      ├─────────────────┤    │
-              │ Options[]   │      │CorrectAnswer│      │ AudioUrl        │    │
-              │             │      │AcceptedAns[]│      │ MaxReplays      │    │
-              └─────────────┘      └─────────────┘      └─────────────────┘    │
-                                                                               │
-                                                                        ┌──────▼──────┐
-                                                                        │ Translation │
-                                                                        ├─────────────┤
-                                                                        │ SourceText  │
-                                                                        │ TargetText  │
-                                                                        │ LangCodes   │
-                                                                        └─────────────┘
-
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         User Progress Tracking                              │
-│                                                                              │
-│  ┌──────────┐         ┌──────────────────────┐         ┌──────────┐        │
-│  │   User   │◀───────▶│ UserExerciseProgress │◀───────▶│ Exercise │        │
-│  │          │   M:M   │                      │   M:1   │          │        │
-│  │ Id       │         │ UserId               │         │ Id       │        │
-│  │ Email    │         │ ExerciseId           │         │ Points   │        │
-│  │ Name     │         │ IsCompleted          │         │ Type     │        │
-│  │          │         │ PointsEarned         │         │          │        │
-│  │          │         │ CompletedAt          │         │          │        │
-│  └──────────┘         └──────────────────────┘         └──────────┘        │
-│                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Authentication Flow
-
-```
-┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐
-│  User    │    │ Frontend │    │ Backend  │    │  Google  │
-└────┬─────┘    └────┬─────┘    └────┬─────┘    └────┬─────┘
-     │               │               │               │
-     │ Click Login   │               │               │
-     │──────────────▶│               │               │
-     │               │  OAuth Popup  │               │
-     │               │──────────────────────────────▶│
-     │               │               │               │
-     │               │◀──────────────────────────────│
-     │               │  ID Token     │               │
-     │               │               │               │
-     │               │ POST /auth/google-login       │
-     │               │──────────────▶│               │
-     │               │               │ Validate Token│
-     │               │               │──────────────▶│
-     │               │               │◀──────────────│
-     │               │               │  Valid        │
-     │               │  Set Cookie   │               │
-     │               │◀──────────────│               │
-     │               │  "AuthToken"  │               │
-     │               │  (HttpOnly)   │               │
-     │  Redirect /   │               │               │
-     │◀──────────────│               │               │
-     │               │               │               │
-     │ Browse App    │               │               │
-     │──────────────▶│  API Requests │               │
-     │               │──────────────▶│               │
-     │               │ (Cookie Auto) │               │
-```
-
-## 🚧 Current Development
-
-**Branch**: `feature/exercise-system`
-
-### Active Work
-
-1. **Exercise System Enhancements**
-   - ✅ Exercise submission and validation logic
-   - ✅ User progress tracking (UserExerciseProgress entity)
-   - ✅ Sequential exercise unlocking (first with lesson, rest on completion)
-   - ✅ Lesson completion with 70% XP threshold
-
-2. **User XP System**
-   - ✅ Total XP calculation from completed exercises
-   - ✅ Public endpoint for leaderboard integration
-   - ✅ Real-time XP display in dashboard
-
-3. **Lesson Creation Flow**
-   - ✅ Fixed JSON deserialization for polymorphic exercises
-   - ✅ Type discriminator positioning for System.Text.Json
-   - ✅ Enum string conversion (DifficultyLevel)
-   - ✅ Dynamic lesson icon assignment
-
-4. **Performance Optimizations**
-   - ✅ Editor.js debouncing (300ms) to reduce saves
-   - ✅ HTTP cache headers (1-year max-age) for uploaded images
-   - ✅ Content comparison to prevent duplicate saves
-
-### Recent Fixes
-
-- **JSON Deserialization**: Resolved 500 errors for lesson creation by positioning type discriminator first
-- **Enum Serialization**: Added `JsonStringEnumConverter` for frontend compatibility
-- **Model Validation**: Re-enabled model state validation (removed `SuppressModelStateInvalidFilter`)
-- **LessonId Nullability**: Made optional for nested exercise creation
-
-## 🔮 Planned Enhancements
-
-### Medium-term
-
-- [ ] **Email Notifications**: Lesson completion certificates, progress reports
-- [ ] **Mobile Responsiveness**: Optimize UI for tablets and smartphones
-- [ ] **Offline Support**: PWA with service workers for offline lesson access
-- [ ] **AI-powered Hints**: Machine learning integration for exercise hints
-- [ ] **Voice Recognition**: Speech-to-text for pronunciation exercises
-- [ ] **Social Features**: User profiles, friend system, shared progress
-
-### Long-term
-
-- [ ] **Multi-language Platform**: Support for additional language pairs
-- [ ] **Adaptive Learning**: AI-driven difficulty adjustment
-- [ ] **Content Marketplace**: User-generated lesson sharing
-- [ ] **Mobile Apps**: Native iOS and Android applications
-- [ ] **Integration APIs**: Third-party LMS integration
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
-- [.NET 10.0 SDK](https://dotnet.microsoft.com/download) (for local development)
-- [Node.js 20+](https://nodejs.org/) and npm (for local development)
-- A Google Cloud project with OAuth 2.0 credentials
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose — required for all setups
+- [.NET 10 SDK](https://dotnet.microsoft.com/download) — local backend development only
+- [Node.js 20+](https://nodejs.org/) — local frontend development only
+- A Google Cloud project with OAuth 2.0 credentials (see below)
 
-### Quick Start with Docker
+---
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Ghostdog02/Lexiq.git
-   cd Lexiq
-   ```
+### Google OAuth Setup
 
-2. **Create secrets files**
+**1. Create a project and configure the consent screen**
 
-   Create the following directory structure and files:
-   ```
-   secrets/
-   ├── database/
-   │   └── password.txt          # Your SQL Server SA password
-   └── backend/
-       └── .env                  # Backend environment variables
-   ```
+Open [Google Cloud Console](https://console.cloud.google.com/) and create or select a project. Navigate to **APIs & Services → OAuth consent screen**:
+- User type: **External**
+- Fill in app name, support email, and developer contact email
+- Add scopes: `openid`, `email`, `profile`
+- Add your own Google account as a **test user** — required while the app is in testing mode
 
-   **secrets/database/password.txt**
-   ```
-   YourStrongPassword123!
-   ```
+**2. Create OAuth 2.0 credentials**
 
-   **secrets/backend/.env**
-   ```
-   DB_SERVER=db
-   DB_NAME=LexiqDb
-   DB_USER_ID=sa
-   DB_PASSWORD=YourStrongPassword123!
-   GOOGLE_CLIENT_ID=your-google-oauth-client-id.apps.googleusercontent.com
-   GOOGLE_CLIENT_SECRET=your-google-oauth-client-secret
-   JWT_SECRET=your-256-bit-secret-key-for-signing-jwt-tokens
-   JWT_EXPIRATION_HOURS=24
-   ```
+Navigate to **APIs & Services → Credentials → Create Credentials → OAuth 2.0 Client ID**:
+- Application type: **Web application**
+- **Authorised JavaScript origins**: `http://localhost:4200` (Angular dev server). Add your production frontend domain for deployment.
+- **Authorised redirect URIs**: `http://localhost:4200`. The Angular app handles the OAuth redirect; the backend only ever receives the resulting ID token via a POST request — it is never called by Google directly.
 
-3. **Start all services**
-   ```bash
-   docker compose up --build
-   ```
+Copy the **Client ID** and **Client Secret**.
 
-4. **Access the application**
-   - Frontend: http://localhost:4200
-   - Backend API: http://localhost:8080
-   - Swagger docs: http://localhost:8080/swagger
-   - Health check: http://localhost:8080/health
+> **Note**: origin and redirect URI changes can take a few minutes to propagate before Google accepts login attempts.
+
+---
+
+### Environment Variables
+
+Create `backend/.env`:
+
+```env
+DB_SERVER=db
+DB_NAME=LexiqDb
+DB_USER_ID=sa
+DB_PASSWORD=YourStrongPassword123!
+
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+
+JWT_SECRET=a-random-string-of-at-least-32-characters
+JWT_EXPIRATION_HOURS=24
+```
+
+Create `backend/Database/password.txt` containing only the SA password (must match `DB_PASSWORD`):
+
+```
+YourStrongPassword123!
+```
+
+> Generate a secure `JWT_SECRET` with: `openssl rand -base64 32`
+
+---
+
+### Run with Docker
+
+```bash
+git clone https://github.com/Ghostdog02/Lexiq.git
+cd Lexiq
+docker compose up --build
+```
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:4200 |
+| Backend API | http://localhost:8080 |
+| Swagger UI | http://localhost:8080/swagger |
+
+The backend runs EF Core migrations automatically on startup, retrying with exponential backoff until SQL Server is ready.
+
+---
 
 ### Local Development
 
-#### Backend
+**Backend** — run from `backend/`:
 
 ```bash
-cd backend
-
-# Restore dependencies
 dotnet restore
+dotnet watch run        # starts on port 8080, reloads on save
+```
 
-# Run the development server (port 8080)
-dotnet watch run
+**Database migrations:**
 
-# Create a new migration
-dotnet ef migrations add <MigrationName> --project Database/Backend.Database.csproj
-
-# Apply migrations
+```bash
+dotnet ef migrations add <Name> --project Database/Backend.Database.csproj
 dotnet ef database update --project Database/Backend.Database.csproj
 ```
 
-#### Frontend
+**Frontend** — run from `frontend/`:
 
 ```bash
-cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server (port 4200)
-npm start
-
-# Build for production
-npm run build
-
-# Run tests
-npm test
+npm start              # starts on port 4200, proxies /api/* → localhost:8080
 ```
 
-## 📚 API Documentation
+---
 
-### Authentication Endpoints
+## Running Tests
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/auth/google-login` | Authenticate with Google OAuth | No |
-| POST | `/api/auth/logout` | Clear authentication cookie | Yes |
-| GET | `/api/auth/auth-status` | Check if user is authenticated | No |
-| GET | `/api/auth/is-admin` | Check if user has admin role | Yes |
+Backend tests use **xUnit v3** with **Testcontainers**, spinning up a live SQL Server instance in Docker. Docker must be running before executing tests.
 
-### Content Endpoints
+```bash
+cd backend
+dotnet test Tests/Backend.Tests.csproj
+```
 
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/course` | List all courses | Yes |
-| GET | `/api/course/{id}` | Get course details | Yes |
-| POST | `/api/course` | Create new course | Admin/Creator |
-| PUT | `/api/course/{id}` | Update course | Admin/Creator |
-| DELETE | `/api/course/{id}` | Delete course | Admin/Creator |
-| GET | `/api/lesson/course/{courseId}` | Get lessons by course | Yes |
-| GET | `/api/lesson/{id}` | Get lesson with exercises | Yes |
-| POST | `/api/lesson` | Create new lesson | Admin/Creator |
-| PUT | `/api/lesson/{id}` | Update lesson | Admin/Creator |
-| POST | `/api/lesson/{id}/complete` | Mark lesson complete | Yes |
-| POST | `/api/exercise/{id}/submit` | Submit exercise answer | Yes |
-| GET | `/api/exercise/lesson/{lessonId}/progress` | Get lesson progress | Yes |
+The test suite is organised under `backend/Tests/`:
 
-### User Endpoints
+| Directory | Contents |
+|-----------|----------|
+| `Services/` | Unit tests (`CalculateLevel`) and integration tests (`GetStreak`, `GetLeaderboard`) |
+| `Builders/` | Fluent `UserBuilder` — constructs test users directly via `DbContext`, bypassing `UserManager` |
+| `Infrastructure/` | `DatabaseFixture` — manages the Testcontainers lifecycle and per-test data seeding |
+| `Helpers/` | `DbSeeder` — seeds the fixture database with the minimum schema required by each test |
+
+---
+
+## API Reference
+
+### Authentication
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| GET | `/api/user/xp` | Get current user's XP | Yes |
-| GET | `/api/user/{userId}/xp` | Get any user's XP (leaderboard) | No |
+| POST | `/api/auth/google-login` | Validate Google ID token, issue JWT cookie | No |
+| POST | `/api/auth/logout` | Clear the AuthToken cookie | Yes |
+| GET | `/api/auth/auth-status` | Returns whether the request is authenticated | No |
+| GET | `/api/auth/is-admin` | Returns whether the user has the Admin role | Yes |
 
-### Upload Endpoints
+### Content
 
 | Method | Endpoint | Description | Auth |
 |--------|----------|-------------|------|
-| POST | `/api/uploads/image` | Upload image file | Yes |
-| POST | `/api/uploads/file` | Upload document file | Yes |
-| GET | `/api/uploads/image/{filename}` | Retrieve uploaded image | No |
-| GET | `/api/uploads/file/{filename}` | Retrieve uploaded file | No |
+| GET | `/api/courses` | List all courses | Yes |
+| GET | `/api/courses/{id}` | Course with lessons | Yes |
+| POST | `/api/courses` | Create course | Admin / ContentCreator |
+| PUT | `/api/courses/{id}` | Update course | Admin / ContentCreator |
+| DELETE | `/api/courses/{id}` | Delete course | Admin / ContentCreator |
+| GET | `/api/lessons/{id}` | Lesson with exercises | Yes |
+| POST | `/api/lessons` | Create lesson | Admin / ContentCreator |
+| PUT | `/api/lessons/{id}` | Update lesson | Admin / ContentCreator |
+| DELETE | `/api/lessons/{id}` | Delete lesson | Admin / ContentCreator |
+| GET | `/api/exercises/lesson/{lessonId}` | Exercises for a lesson | Yes |
+| POST | `/api/exercises/{id}/submit` | Submit an answer | Yes |
+| GET | `/api/exercises/lesson/{lessonId}/progress` | Progress for all exercises in lesson | Yes |
 
-For complete API documentation, visit the Swagger UI at `http://localhost:8080/swagger` when running the application.
+### Leaderboard & User
 
-## 📁 Project Structure
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/leaderboard?timeFrame=Weekly\|Monthly\|AllTime` | Ranked leaderboard with XP, level, streak, rank change | No (includes current user data if authenticated) |
+| GET | `/api/user/xp` | Authenticated user's total XP | Yes |
+| GET | `/api/user/{id}/xp` | Any user's total XP | No |
+| GET | `/api/user/{id}/avatar` | User avatar image (24h cache) | No |
+| PUT | `/api/user/avatar` | Upload a new avatar | Yes |
+
+### Uploads
+
+| Method | Endpoint | Description | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/uploads/{fileType}` | Upload a file (image, audio, document) | Yes |
+| GET | `/api/uploads/{fileType}/{filename}` | Retrieve an uploaded file | No |
+| GET | `/api/uploads/list/{fileType}` | List uploaded files by type | Yes |
+
+Full interactive documentation is available at `http://localhost:8080/swagger`.
+
+---
+
+## Project Structure
 
 ```
 Lexiq/
 ├── backend/
-│   ├── Controllers/              # API endpoints
+│   ├── Controllers/          # HTTP layer — delegates directly to services
+│   ├── Services/             # Business logic: auth, leaderboard, progress, avatars
 │   ├── Database/
-│   │   ├── Entities/             # EF Core entities
-│   │   │   ├── Users/            # User, UserLanguage
-│   │   │   └── Exercises/        # Exercise base + subtypes
-│   │   └── Migrations/           # Database migrations
-│   ├── Services/                 # Business logic layer
-│   │   ├── GoogleAuthService.cs
-│   │   ├── JwtService.cs
-│   │   ├── LessonService.cs
-│   │   ├── ExerciseService.cs
-│   │   ├── ExerciseProgressService.cs
-│   │   └── UserXpService.cs
-│   ├── Dtos/                     # Data Transfer Objects
-│   ├── Mapping/                  # Entity ↔ DTO mappings
-│   ├── Middleware/               # Request pipeline middleware
-│   ├── Extensions/               # Service configuration
-│   └── wwwroot/uploads/          # Uploaded files
+│   │   ├── Entities/         # EF Core models — TPH exercise hierarchy, Identity users
+│   │   ├── Migrations/       # EF Core migration history
+│   │   └── Extensions/       # Seed data and migration retry helpers
+│   ├── Dtos/                 # Request/response contracts (record types)
+│   ├── Mapping/              # Entity ↔ DTO extension methods
+│   ├── Middleware/           # UserContextMiddleware: JWT → full User entity per request
+│   ├── Extensions/           # Service registration and middleware pipeline setup
+│   ├── Tests/                # xUnit v3 + Testcontainers integration and unit tests
+│   └── Program.cs
 ├── frontend/
 │   └── src/app/
-│       ├── auth/                 # Authentication services
+│       ├── auth/             # AuthService, Google login component, route guards
 │       ├── features/
-│       │   ├── lessons/
-│       │   │   ├── components/
-│       │   │   │   ├── home/           # Dashboard
-│       │   │   │   ├── lesson-viewer/  # Exercise player
-│       │   │   │   └── lesson-editor/  # Content creator
-│       │   │   ├── models/             # TypeScript interfaces
-│       │   │   └── services/           # API integration
-│       │   └── users/
-│       │       ├── components/
-│       │       │   ├── profile/        # User profile
-│       │       │   └── leaderboard/    # Rankings
-│       │       └── services/
-│       ├── shared/
-│       │   └── components/
-│       │       └── editor/      # Editor.js wrapper
-│       └── nav-bar/             # Navigation
+│       │   ├── lessons/      # Course/lesson/exercise views, lesson editor, form builders
+│       │   └── users/        # User profile, leaderboard
+│       ├── shared/           # Editor.js ControlValueAccessor wrapper
+│       └── nav-bar/
+├── .github/workflows/        # CI/CD — build, push to GHCR, deploy to Hetzner
 ├── scripts/
-│   └── deploy.sh                # Automated deployment
-├── .github/workflows/
-│   ├── build-and-push.yml       # Docker image CI
-│   └── deploy.yml               # Production deployment
-├── docker-compose.yml           # Local development
-├── docker-compose.prod.yml      # Production configuration
-└── CLAUDE.md                    # AI assistant documentation
+│   └── deploy.sh             # Zero-downtime deployment with health-check and rollback
+├── docker-compose.yml        # Local development
+└── docker-compose.prod.yml   # Production: nginx TLS termination, Docker secrets
 ```
-
-## 🤝 Contributing
-
-We welcome contributions from the community! Here's how to get started:
-
-1. **Fork the repository**
-2. **Create a feature branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **Make your changes**
-   - Follow the existing code style
-   - Add tests for new features
-   - Update documentation as needed
-4. **Commit your changes**
-   ```bash
-   git commit -m "Add amazing feature"
-   ```
-5. **Push to your fork**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-6. **Open a Pull Request**
-
-### Development Guidelines
-
-- Use descriptive commit messages
-- Follow C# coding conventions for backend
-- Follow Angular style guide for frontend
-- Write unit tests for new features
-- Update CLAUDE.md files when adding architectural patterns
-- Ensure Docker builds succeed before submitting PR
-
-## 📄 License
-
-This project is currently proprietary and unlicensed. All rights reserved by the project maintainers.
-
-For usage permissions or collaboration inquiries, please contact the development team.
-
-## 🙏 Acknowledgments
-
-- **ASP.NET Core Identity**: Authentication and authorization infrastructure
-- **Editor.js**: Rich content editing capabilities
-- **Angular Team**: Standalone components architecture
-- **Entity Framework Core**: Object-relational mapping
-- **Docker**: Containerization and deployment
-- **GitHub Actions**: CI/CD automation
-- **Hetzner**: Cloud hosting infrastructure
-
-## 📧 Contact
-
-For questions, suggestions, or collaboration opportunities:
-
-- **Project Repository**: [https://github.com/Ghostdog02/Lexiq](https://github.com/Ghostdog02/Lexiq)
-- **Issues**: [GitHub Issues](https://github.com/Ghostdog02/Lexiq/issues)
 
 ---
 
-**Built with ❤️ for language learners and tech enthusiasts**
+## License
+
+Copyright 2026 Alexander
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.

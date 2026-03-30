@@ -69,7 +69,7 @@
             [attr.aria-pressed]="isOptionSelected(option.id)">
             <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E', 'F'][i] }}</span>
             <span class="option-text">{{ option.optionText }}</span>
-            @if (isCurrentSubmitted) {
+            @if (currentSubmission) {
             @if (option.isCorrect) {
             <span class="result-icon correct">&#x2713;</span>
             } @else if (isOptionSelected(option.id)) {
@@ -91,9 +91,9 @@
         <div class="answer-input-wrapper">
           <input type="text" class="answer-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
             [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect" placeholder="Type your answer..."
-            [formControl]="state.currentFormControl" [disabled]="isCurrentLocked" aria-label="Your answer" />
+            [formControl]="state.currentFormControl!" [disabled]="isCurrentLocked" aria-label="Your answer" />
         </div>
-        @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
+        @if (currentSubmission !== null && !currentSubmission!.isCorrect) {
         <div class="correct-answer-reveal">
           <span class="label">Correct answer:</span>
           <span class="answer">{{ currentFillInBlank?.correctAnswer }}</span>
@@ -116,10 +116,10 @@
           <div class="lang-badge">{{ currentTranslation?.targetLanguageCode | uppercase }}</div>
           <textarea class="translation-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
             [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
-            placeholder="Write your translation..." [formControl]="state.currentFormControl"
+            placeholder="Write your translation..." [formControl]="state.currentFormControl!"
             [disabled]="isCurrentLocked" rows="3" aria-label="Your translation"></textarea>
         </div>
-        @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
+        @if (currentSubmission !== null && !currentSubmission!.isCorrect) {
         <div class="correct-answer-reveal">
           <span class="label">Expected translation:</span>
           <span class="answer">{{ currentTranslation?.targetText }}</span>
@@ -150,9 +150,9 @@
         <div class="answer-input-wrapper">
           <input type="text" class="answer-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
             [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect" placeholder="Type what you hear..."
-            [formControl]="state.currentFormControl" [disabled]="isCurrentLocked" aria-label="Your answer" />
+            [formControl]="state.currentFormControl!" [disabled]="isCurrentLocked" aria-label="Your answer" />
         </div>
-        @if (isCurrentSubmitted && !currentSubmission?.isCorrect) {
+        @if (currentSubmission !== null && !currentSubmission!.isCorrect) {
         <div class="correct-answer-reveal">
           <span class="label">Correct answer:</span>
           <span class="answer">{{ currentListening?.correctAnswer }}</span>
@@ -164,7 +164,7 @@
     </div>
 
     <!-- Feedback after submission -->
-    @if (isCurrentSubmitted && currentSubmission) {
+    @if (currentSubmission) {
     <div class="feedback" [class.correct]="currentSubmission.isCorrect"
       [class.incorrect]="!currentSubmission.isCorrect">
       @if (currentSubmission.isCorrect) {

@@ -40,7 +40,7 @@ public class UserLanguageController(UserLanguageService userLanguageService) : C
     }
 
     [HttpDelete("{languageId}")]
-    public async Task<IActionResult> Unenroll(int languageId)
+    public async Task<IActionResult> Unenroll(string languageId)
     {
         var user = HttpContext.GetCurrentUser();
         if (user == null)
