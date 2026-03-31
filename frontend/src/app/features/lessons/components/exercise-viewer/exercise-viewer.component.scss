@@ -16,7 +16,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   // Constrain internal content width
   & > * {
     width: 100%;
-    max-width: 70rem;
+    max-width: var(--page-max-width);
   }
 
   .progress-header {
