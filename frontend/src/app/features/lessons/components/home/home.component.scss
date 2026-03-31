@@ -51,7 +51,7 @@
   position: sticky;
   top: 0;
   flex: 1 1 auto;
-  max-width: 20rem;
+  max-width: 25rem;  // Increased from 20rem to allow more width
 }
 
 .header-stats {
@@ -68,6 +68,7 @@
     justify-content: center;
     gap: 0.875rem;
     flex: 1;
+    min-width: 0;  // Allow flex items to shrink below content width
 
     .stat-icon {
       font-size: var(--icon-size-md);
@@ -176,6 +177,8 @@
 
 .add-unit-button {
   @include sidebar-button;
+  flex: 1;
+  min-width: 0;
 }
 
 .unit-header {
@@ -442,6 +445,8 @@
 
 .jump-button {
   @include sidebar-button;
+  flex: 1;
+  min-width: 0;
 }
 
 /* Responsive layout */
