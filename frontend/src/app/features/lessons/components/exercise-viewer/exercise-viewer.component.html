@@ -114,10 +114,12 @@
         </div>
         <div class="target-section">
           <div class="lang-badge">{{ currentTranslation?.targetLanguageCode | uppercase }}</div>
-          <textarea class="translation-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
-            [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
-            placeholder="Write your translation..." [formControl]="state.currentFormControl!"
-            [disabled]="isCurrentLocked" rows="3" aria-label="Your translation"></textarea>
+          <div class="answer-input-wrapper">
+            <input type="text" class="answer-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
+              [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
+              placeholder="Write your translation..." [formControl]="state.currentFormControl!"
+              [disabled]="isCurrentLocked" aria-label="Your translation" />
+          </div>
         </div>
         @if (currentSubmission !== null && !currentSubmission!.isCorrect) {
         <div class="correct-answer-reveal">
