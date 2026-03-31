@@ -10,26 +10,15 @@
 $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
 :host {
-  @include styles.animated-background;
+  // @include styles.animated-background;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  width: 100%;
-  min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
   color: var(--white);
-  font-family: var(--font-family);
+  overflow-x: hidden;
 }
 
 .lesson-detail-container {
-  width: 100%;
-  padding: 2.5rem 1.5rem;
-  max-width: 70rem;
-
-  @media (max-width: 768px) {
-    padding: 1.25rem 1rem;
-  }
+  
 }
 
 .lesson-main {

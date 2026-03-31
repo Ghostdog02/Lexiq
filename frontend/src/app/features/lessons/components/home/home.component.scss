@@ -29,12 +29,8 @@
 }
 
 .home-grid {
-  @include styles.animated-background;
   display: flex;
-  justify-content: center;
-  padding: 1rem 5rem 0 5rem;
   gap: 2rem;
-  max-width: 110rem;
 }
 
 .sidebar {
@@ -42,11 +38,11 @@
   flex-direction: column;
   gap: 1rem;
   position: sticky;
-  top: 1rem;  // Keep 1rem spacing from viewport top when sticky
-  align-self: flex-start;  // Required for sticky to work in flex container
+  top: 1rem; 
+  align-self: flex-start;  
   flex: 1 2 auto;
   min-width: 25rem;
-  max-width: 30rem;  // Increased to prevent text wrapping
+  max-width: 30rem; 
 }
 
 .sidebar-row {
@@ -64,7 +60,7 @@
   justify-content: space-evenly;
   gap: 0.875rem;
   flex: 1;
-  min-width: 0;  // Allow flex items to shrink below content width
+  min-width: 0; 
 
   .stat-icon {
     font-size: var(--icon-size-md);
