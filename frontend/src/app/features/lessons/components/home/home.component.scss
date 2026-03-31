@@ -31,7 +31,7 @@
 .home-grid {
   @include styles.animated-background;
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   padding: 2rem;
   gap: 2rem;
   max-width: 110rem;
@@ -45,7 +45,8 @@
   top: 1rem;  // Keep 1rem spacing from viewport top when sticky
   align-self: flex-start;  // Required for sticky to work in flex container
   flex: 1 2 auto;
-  max-width: 25rem;
+  min-width: 25rem;
+  max-width: 30rem;  // Increased to prevent text wrapping
 }
 
 .sidebar-row {
@@ -67,12 +68,13 @@
 
   .stat-icon {
     font-size: var(--icon-size-md);
+    margin: 0;
   }
 
   .stat-content {
     display: flex;
-    flex-direction: row;
-    gap: 0.125rem;
+    flex-direction: column;
+    gap: 0.2rem;
   }
 
   .stat-value {
@@ -170,8 +172,8 @@
 
 .unit-header {
   text-align: center;
-  margin: 0 0 2rem;
-  padding: 2rem;
+  margin: 0 0 1rem;
+  padding: 1rem;
   background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
   border-radius: var(--radius);
   border: 1px solid var(--border);
