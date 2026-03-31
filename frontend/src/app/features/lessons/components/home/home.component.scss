@@ -30,33 +30,34 @@
 
 .learning-path-container {
   @include styles.animated-background;
-  padding: 2rem clamp(1rem, 3vw, 3rem);
-  max-width: 1600px;
-  margin: 0 auto;
+  display: flex;
+  padding: 0 0 0 1rem;
+  max-width: 100rem;
+  justify-content: center;
 }
 
 .home-grid {
   display: flex;
   justify-content: center;
-  // gap: clamp(2rem, 4vw, 4rem);
   gap: 1rem;
+  max-width: 80rem;
+  flex: 2 1 auto;
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1.55rem;
+  gap: 1rem;
   position: sticky;
-  align-self: flex-start;
-  top: 2rem;
+  top: 0;
   flex: 1 1 auto;
-  min-width: 14rem;
+  max-width: 20rem;
 }
 
 .header-stats {
   display: flex;
   flex-direction: row;
-  gap: 0.75rem;
+  gap: 1rem;
 
   .stat-card {
     @include mixins.glass-card;
@@ -166,11 +167,11 @@
   display: flex;
   flex-direction: row;
   gap: 1rem;
+  flex: 1;
 }
 
 .courses-container {
-  flex: 2 1 auto;
-  max-width: 50rem;
+  max-width: 40rem;
 }
 
 .add-unit-button {
