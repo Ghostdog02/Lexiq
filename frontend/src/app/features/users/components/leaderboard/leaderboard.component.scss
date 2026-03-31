@@ -8,7 +8,6 @@
   display: flex;
   justify-content: center;
   width: 100%;
-  padding-right: 7em;
   min-height: 100vh;
   background-color: var(--background-color);
   position: relative;
@@ -34,6 +33,7 @@
   padding-top: 24px;
   position: relative;
   z-index: 1;
+  max-width: 70rem;
 }
 
 .leaderboard-header {
