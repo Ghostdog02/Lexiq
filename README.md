@@ -12,8 +12,8 @@ A full-stack language learning platform for Bulgarian speakers studying Italian.
 
 | Contributor | Role | GitHub |
 |-------------|------|--------|
-| **Ghostdog02** | Backend, DevOps & Architecture | [@Ghostdog02](https://github.com/Ghostdog02) |
-| **powercell12** | Frontend & UI Design | [@powercell12](https://github.com/powercell12) |
+| **Ghostdog02** | Backend, DevOps, Architecture and Frontend | [@Ghostdog02](https://github.com/Ghostdog02) |
+| **powercell12** | UI Design | [@powercell12](https://github.com/powercell12) |
 
 ---
 
