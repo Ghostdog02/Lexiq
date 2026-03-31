@@ -28,19 +28,13 @@
   }
 }
 
-.learning-path-container {
+.home-grid {
   @include styles.animated-background;
   display: flex;
-  padding: 0 0 0 1rem;
-  max-width: 100rem;
   justify-content: center;
-}
-
-.home-grid {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  max-width: 80rem;
+  padding-top: 1rem;
+  gap: 2rem;
+  max-width: 110rem;
   flex: 2 1 auto;
 }
 
@@ -51,47 +45,47 @@
   position: sticky;
   top: 0;
   flex: 1 1 auto;
-  max-width: 25rem;  // Increased from 20rem to allow more width
+  max-width: 25rem;
 }
 
-.header-stats {
+.sidebar-row {
   display: flex;
   flex-direction: row;
   gap: 1rem;
+}
 
-  .stat-card {
-    @include mixins.glass-card;
-    @include hover-lift;
-    padding: 1.125rem 1.5rem;
+.stat-card {
+  @include mixins.glass-card;
+  @include hover-lift;
+  padding: 1.125rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.875rem;
+  flex: 1;
+  min-width: 0;  // Allow flex items to shrink below content width
+
+  .stat-icon {
+    font-size: var(--icon-size-md);
+  }
+
+  .stat-content {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.875rem;
-    flex: 1;
-    min-width: 0;  // Allow flex items to shrink below content width
+    flex-direction: column;
+    gap: 0.125rem;
+  }
 
-    .stat-icon {
-      font-size: var(--icon-size-md);
-    }
+  .stat-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--white);
+  }
 
-    .stat-content {
-      display: flex;
-      flex-direction: column;
-      gap: 0.125rem;
-    }
-
-    .stat-value {
-      font-size: 1.6rem;
-      font-weight: 800;
-      color: var(--white);
-    }
-
-    .stat-label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
+  .stat-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
   }
 }
 
@@ -162,13 +156,6 @@
     font-size: 0.75rem;
     font-weight: 700;
   }
-}
-
-.sidebar-buttons {
-  display: flex;
-  flex-direction: row;
-  gap: 1rem;
-  flex: 1;
 }
 
 .courses-container {
