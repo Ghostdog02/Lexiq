@@ -31,11 +31,10 @@
 .home-grid {
   @include styles.animated-background;
   display: flex;
-  justify-content: center;
-  padding-top: 1rem;
+  justify-content: space-between;
+  padding: 2rem;
   gap: 2rem;
   max-width: 110rem;
-  flex: 2 1 auto;
 }
 
 .sidebar {
@@ -43,8 +42,9 @@
   flex-direction: column;
   gap: 1rem;
   position: sticky;
-  top: 0;
-  flex: 1 1 auto;
+  top: 1rem;  // Keep 1rem spacing from viewport top when sticky
+  align-self: flex-start;  // Required for sticky to work in flex container
+  flex: 1 2 auto;
   max-width: 25rem;
 }
 
@@ -71,7 +71,7 @@
 
   .stat-content {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 0.125rem;
   }
 
@@ -159,7 +159,7 @@
 }
 
 .courses-container {
-  max-width: 40rem;
+  flex: 2 1 auto;
 }
 
 .add-unit-button {
