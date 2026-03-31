@@ -135,10 +135,34 @@
       <div class="listening">
         <div class="audio-section">
           @if (currentListening?.audioUrl) {
-          <audio controls class="audio-player">
-            <source [src]="currentListening?.audioUrl" type="audio/mpeg">
-            Your browser does not support the audio element.
+          <!-- Hidden audio element -->
+          <audio #audioEl [src]="currentListening?.audioUrl" (loadedmetadata)="onAudioLoaded(audioEl)"
+            (timeupdate)="onTimeUpdate(audioEl)" (ended)="isPlaying = false">
           </audio>
+
+          <!-- Custom audio player UI -->
+          <div class="custom-audio-player">
+            <button type="button" class="play-pause-btn" (click)="togglePlayPause()" aria-label="Play or pause audio">
+              @if (isPlaying) {
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" />
+                <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" />
+              </svg>
+              } @else {
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M8 5v14l11-7L8 5z" fill="currentColor" />
+              </svg>
+              }
+            </button>
+
+            <div class="audio-controls">
+              <span class="time-display">{{ formatTime(currentTime) }}</span>
+              <div class="progress-bar-track" (click)="seekAudio($event)">
+                <div class="progress-bar-fill" [style.width.%]="progressPercentage"></div>
+              </div>
+              <span class="time-display">{{ formatTime(duration) }}</span>
+            </div>
+          </div>
           } @else {
           <div class="no-audio">
             <span class="icon">&#x1F50A;</span>
