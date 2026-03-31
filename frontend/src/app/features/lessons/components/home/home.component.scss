@@ -48,7 +48,8 @@
   position: sticky;
   align-self: flex-start;
   top: 2rem;
-  flex: 0 0 clamp(280px, 25vw, 380px);
+  flex: 1 1 auto;
+  min-width: 17.5rem;
 }
 
 .header-stats {
@@ -167,7 +168,7 @@
 }
 
 .path-wrapper {
-  flex: 1 1 auto;
+  flex: 2 1 auto;
   max-width: 800px;
 }
 
