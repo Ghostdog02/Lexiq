@@ -51,6 +51,13 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   isAdmin = false;
   isSubmitting = false;
 
+  // Audio player state
+  audioElement: HTMLAudioElement | null = null;
+  isPlaying = false;
+  currentTime = 0;
+  duration = 0;
+  progressPercentage = 0;
+
   ExerciseType = ExerciseType;
 
   async ngOnInit() {
@@ -66,6 +73,10 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.state.reset();
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.audioElement = null;
+    }
   }
 
   /**
@@ -228,5 +239,47 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   getSubmission(exerciseId: string) {
     return this.state.getViewModelById(exerciseId)?.submission;
+  }
+
+  // Audio player methods
+
+  onAudioLoaded(audio: HTMLAudioElement) {
+    this.audioElement = audio;
+    this.duration = audio.duration;
+  }
+
+  togglePlayPause() {
+    if (!this.audioElement) return;
+
+    if (this.isPlaying) {
+      this.audioElement.pause();
+      this.isPlaying = false;
+    } else {
+      this.audioElement.play();
+      this.isPlaying = true;
+    }
+  }
+
+  onTimeUpdate(audio: HTMLAudioElement) {
+    this.currentTime = audio.currentTime;
+    this.progressPercentage = (audio.currentTime / audio.duration) * 100;
+  }
+
+  seekAudio(event: MouseEvent) {
+    if (!this.audioElement) return;
+
+    const progressBar = event.currentTarget as HTMLElement;
+    const rect = progressBar.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const percentage = clickX / rect.width;
+
+    this.audioElement.currentTime = percentage * this.audioElement.duration;
+  }
+
+  formatTime(seconds: number): string {
+    if (isNaN(seconds)) return '0:00';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 }
