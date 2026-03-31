@@ -1,5 +1,15 @@
 @use 'app/shared/toastr';
 
+/* Global CSS Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
 :root {
   --background-color: #192023;
   --primary-color: #dbe5eb;
