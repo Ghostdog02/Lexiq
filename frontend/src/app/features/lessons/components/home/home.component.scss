@@ -38,7 +38,8 @@
 .home-grid {
   display: flex;
   justify-content: center;
-  gap: clamp(2rem, 4vw, 4rem);
+  // gap: clamp(2rem, 4vw, 4rem);
+  gap: 1rem;
 }
 
 .sidebar {
@@ -49,7 +50,7 @@
   align-self: flex-start;
   top: 2rem;
   flex: 1 1 auto;
-  min-width: 17.5rem;
+  min-width: 14rem;
 }
 
 .header-stats {
@@ -167,7 +168,7 @@
   gap: 1rem;
 }
 
-.path-wrapper {
+.courses-container {
   flex: 2 1 auto;
   max-width: 800px;
 }
@@ -458,7 +459,7 @@
     order: -1;
   }
 
-  .path-wrapper {
+  .courses-container {
     width: 100%;
     max-width: 800px;
   }

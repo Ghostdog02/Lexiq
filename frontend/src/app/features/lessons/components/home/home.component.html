@@ -26,7 +26,7 @@
         }
 
         @if (!isLoading && !error && courses.length > 0) {
-        <section class="units-container">
+        <section>
           @for (course of courses; track course.courseId; let i = $index) {
 
           <header class="unit-header" [style.--unit-color]="course.color">
