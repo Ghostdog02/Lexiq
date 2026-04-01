@@ -1,3 +1,4 @@
+@use '../styles.scss' as styles;
 @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Cascadia+Code:ital,wght@0,200..700;1,200..700&display=swap');
 
 #appComponent {
@@ -11,9 +12,11 @@
 }
 
 .content-wrapper {
+  @include styles.animated-background;
   flex-grow: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  // justify-content: center;
+  padding: 1rem 5rem 0 5rem;
+  max-width: 90rem;
 }
