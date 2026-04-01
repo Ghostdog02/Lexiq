@@ -201,6 +201,15 @@
         Check Answer
       </button>
       } @else if (isCurrentSubmitted) {
+      @if (state.canGoPrevious) {
+        <button class="btn primary" (click)="previousExercise()" aria-label="Previous exercise">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+            <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+          </svg>
+          Back
+        </button>
+      }
       @if (state.canGoNext) {
         <button class="btn primary" (click)="nextExercise()" aria-label="Next exercise">
           Continue
@@ -252,13 +261,13 @@
     </button>
   </div>
 
-  <!-- Back to content link -->
-  <button class="btn link-btn" (click)="onBackToContent()">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+  <!-- Back to content button -->
+  <button class="btn primary" (click)="onBackToContent()" aria-label="Back to lesson content">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
       <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
         stroke-linejoin="round" />
     </svg>
-    Back to lesson content
+    Back to Lesson
   </button>
   }
 </div>
