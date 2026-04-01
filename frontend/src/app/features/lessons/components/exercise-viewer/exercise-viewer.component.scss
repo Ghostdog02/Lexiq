@@ -64,7 +64,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     background: rgba(255, 255, 255, 0.04);
     border-radius: var(--radius-sm);
     overflow: hidden;
-    // margin-bottom: 3rem;
     position: relative;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 
@@ -99,8 +98,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
     &.locked {
       .exercise-content,
-      .exercise-title,
-      .exercise-instructions {
+      .exercise-title {
         filter: blur(0.25rem);
         pointer-events: none;
         user-select: none;
@@ -194,17 +192,8 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       line-height: 1.15;
     }
 
-    .exercise-instructions {
-      color: var(--text-secondary);
-      font-size: 1.1875rem;
-      line-height: 1.7;
-      max-width: 50rem;
-      font-weight: 400;
-    }
-
     .exercise-content {
       flex: 1;
-      // margin-bottom: 2rem;
 
       .multiple-choice {
         .options-list {
@@ -303,7 +292,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
               }
 
               .result-icon {
-                // margin-left: auto;
                 color: var(--color-success);
                 font-size: 1.125rem;
               }
@@ -321,7 +309,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
               }
 
               .result-icon {
-                // margin-left: auto;
                 color: var(--color-error);
                 font-size: 1.125rem;
               }
@@ -379,7 +366,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         .question-display {
           font-size: 1.5rem;
           line-height: 1.75;
-          // margin-bottom: 2.5rem;
           font-weight: 500;
           color: var(--white);
           letter-spacing: -0.015em;
@@ -432,7 +418,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
           background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
           padding: 2.5rem;
           border-radius: 1rem;
-          // margin-bottom: 2rem;
           text-align: center;
           border: 0.0625rem solid var(--border);
           position: relative;
@@ -554,7 +539,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
           }
 
           .replay-hint {
-            // margin-top: 1rem;
             font-size: 0.8125rem;
             color: var(--accent-light);
             font-weight: 600;
@@ -596,7 +580,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       }
 
       .correct-answer-reveal {
-        // margin-top: 1.25rem;
         padding: 0.5rem 1rem;
         background: rgba(var(--color-success-rgb), 0.06);
         border: 0.0625rem solid rgba(var(--color-success-rgb), 0.15);
@@ -625,7 +608,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .feedback {
-      // margin-bottom: 2rem;
       padding: 1rem 1.25rem;
       border-radius: var(--radius);
       display: flex;
@@ -680,7 +662,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       display: flex;
       justify-content: flex-end;
       gap: 1rem;
-      // margin-top: auto;
     }
   }
 }
@@ -690,7 +671,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  // margin-top: 2.5rem;
 
   .nav-btn {
     background: none;
