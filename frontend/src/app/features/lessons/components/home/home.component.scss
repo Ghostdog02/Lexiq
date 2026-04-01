@@ -407,7 +407,6 @@
   }
 }
 
-// Completed lessons get a green-tinted progress bar
 .lesson-node.completed .lesson-progress {
   .progress-fill {
     background: linear-gradient(90deg, var(--color-success-dark) 0%, var(--color-success) 100%);
