@@ -1,8 +1,8 @@
-import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, inject, DestroyRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, NonNullableFormBuilder } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import {
   AnyExercise,
   ExerciseType,
@@ -35,6 +35,7 @@ import { AuthService } from '../../../../auth/auth.service';
 })
 export class ExerciseViewerComponent implements OnInit, OnDestroy {
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private fb = inject(NonNullableFormBuilder);
   private lessonService = inject(LessonService);
   private exerciseService = inject(ExerciseService);
@@ -44,9 +45,9 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   // State service manages all exercise state
   readonly state = inject(ExerciseViewerStateService);
 
-  @Input({ required: true }) exercises!: AnyExercise[];
-  @Input({ required: true }) lessonId!: string;
-  @Output() backToContent = new EventEmitter<void>();
+  exercises: AnyExercise[] = [];
+  lessonId: string = '';
+  isLoading = true;
 
   isAdmin = false;
   isSubmitting = false;
@@ -66,9 +67,43 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((isAdmin) => this.isAdmin = isAdmin);
 
+    // Get lessonId from route params
+    const lessonId = this.route.snapshot.paramMap.get('id');
+    if (!lessonId) {
+      console.error('❌ No lesson ID in route params');
+      this.router.navigate(['/']);
+      return;
+    }
+
+    this.lessonId = lessonId;
+
+    // Load lesson to get exercises
+    await this.loadLesson();
+
     // Initialize state and build forms
     await this.initializeState();
     this.buildForms();
+  }
+
+  private async loadLesson(): Promise<void> {
+    this.isLoading = true;
+
+    try {
+      const lesson = await this.lessonService.getLesson(this.lessonId);
+
+      if (!lesson) {
+        console.error('❌ Lesson not found');
+        this.router.navigate(['/']);
+        return;
+      }
+
+      this.exercises = lesson.exercises as AnyExercise[];
+    } catch (err) {
+      console.error('❌ Error loading lesson:', err);
+      this.router.navigate(['/']);
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   ngOnDestroy() {
@@ -218,7 +253,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   }
 
   onBackToContent() {
-    this.backToContent.emit();
+    this.router.navigate(['/lesson', this.lessonId]);
   }
 
   // Helper methods for multiple choice options

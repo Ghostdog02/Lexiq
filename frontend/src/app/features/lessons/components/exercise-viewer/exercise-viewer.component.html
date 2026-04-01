@@ -1,3 +1,9 @@
+@if (isLoading) {
+<div class="loading-state">
+  <div class="loading-spinner"></div>
+  <p>Loading exercises...</p>
+</div>
+} @else {
 <div class="exercises-view fade-in">
   @if (currentExercise) {
   <!-- Progress header -->
@@ -268,3 +274,4 @@
   </button>
   }
 </div>
+}
