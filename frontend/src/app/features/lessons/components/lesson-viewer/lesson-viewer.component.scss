@@ -10,7 +10,6 @@
 $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
 :host {
-  // @include styles.animated-background;
   display: flex;
   flex-direction: column;
   color: var(--white);
@@ -18,7 +17,9 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .lesson-detail-container {
-  
+  h1, h2, p {
+    margin: 0;
+  }
 }
 
 .lesson-main {
@@ -78,7 +79,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       font-weight: 800;
       line-height: 1.1;
       letter-spacing: -0.03125rem;
-      margin: 0;
       background: linear-gradient(135deg, var(--white) 0%, rgba(255, 255, 255, 0.7) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -94,7 +94,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       align-items: center;
       gap: 0.75rem;
       flex-shrink: 0;
-      margin: 0;
 
       .meta-item {
         display: flex;
@@ -134,7 +133,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     display: flex;
     align-items: center;
     gap: 0.625rem;
-    margin: 0;
     letter-spacing: 0.03125rem;
 
     .icon {
@@ -142,65 +140,48 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
   }
 
-  #second-section-label {
-    margin-top: 1.2em;
-  }
-
   .lesson-description {
     display: flex;
     justify-content: start;
     align-items: center;
     padding: 1rem;
-    font-size: 1.25rem;
-    // line-height: 1.6;
     color: var(--text-secondary);
     font-size: 1.5rem;
-    // border-left: 4px solid var(--accent);
+    border-left: 4px solid var(--accent);
   }
 
   .lesson-content {
     .markdown-content {
-      width: 100%;
       font-size: 1.5rem;
     }
 
-    ::ng-deep {
-      h1, h2, h3 {
-        color: var(--white);
-        // margin-top: 1.5em;
-        margin-bottom: 0.8em;
-      }
+    h1, h2, h3 {
+      color: var(--white);
+      margin: 0;
+    }
 
-      p {
-        margin-bottom: 1.2em;
-        line-height: 1.8;
+    p {
+      line-height: 1.8;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    ul, ol {
+      li {
         color: rgba(255, 255, 255, 0.9);
       }
+    }
 
-      ul, ol {
-        padding-left: 1.5rem;
-        margin-bottom: 1.2em;
+    code {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 0.25rem;
+      font-family: monospace;
+      color: #e2e8f0;
+    }
 
-        li {
-          margin-bottom: 0.5em;
-          color: rgba(255, 255, 255, 0.9);
-        }
-      }
-
-      code {
-        background: rgba(0, 0, 0, 0.3);
-        padding: 0.125rem 0.375rem;
-        border-radius: 0.25rem;
-        font-family: monospace;
-        color: #e2e8f0;
-      }
-
-      blockquote {
-        border-left: 4px solid var(--accent-light);
-        padding-left: 1rem;
-        font-style: italic;
-        color: var(--muted);
-      }
+    blockquote {
+      border-left: 4px solid var(--accent-light);
+      font-style: italic;
+      color: var(--muted);
     }
   }
 
@@ -251,13 +232,13 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   h2 {
     font-size: 1.5rem;
     font-weight: 700;
-    margin-bottom: 0.75rem;
+    // margin-bottom: 0.75rem;
     color: var(--white);
   }
 
   p {
     color: var(--text-secondary);
-    margin-bottom: 2rem;
+    // margin-bottom: 2rem;
     font-size: 1rem;
   }
 }
