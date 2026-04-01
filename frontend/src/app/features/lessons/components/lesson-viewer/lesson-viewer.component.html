@@ -78,9 +78,9 @@
 
     <!-- Exercises View — delegated to ExerciseViewerComponent -->
     @if (currentView === 'exercises' && lesson.exercises.length > 0) {
-    <app-exercise-viewer [exercises]="$any(lesson.exercises)" [lessonId]="lesson.lessonId"
-      (backToContent)="goToContent()" />
-    }
+      <app-exercise-viewer [exercises]="$any(lesson.exercises)" [lessonId]="lesson.lessonId"
+        (backToContent)="goToContent()" />
+      }
     }
   </main>
 </div>
