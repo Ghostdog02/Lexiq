@@ -5,16 +5,15 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { LessonService } from '../../services/lesson.service';
 import { ContentParserService } from '../../../../shared/services/content-parser.service';
 import { Lesson } from '../../models/lesson.interface';
-import { ExerciseViewerComponent } from '../exercise-viewer/exercise-viewer.component';
 
 /**
- * Displays lesson content (instructions, textbook material) and delegates
- * exercise solving to ExerciseViewerComponent.
+ * Displays lesson content (instructions, textbook material).
+ * Navigates to separate exercise-viewer route for exercises.
  */
 @Component({
   selector: 'app-lesson-viewer',
   standalone: true,
-  imports: [CommonModule, ExerciseViewerComponent],
+  imports: [CommonModule],
   templateUrl: './lesson-viewer.component.html',
   styleUrl: './lesson-viewer.component.scss'
 })
@@ -29,7 +28,6 @@ export class LessonViewerComponent implements OnInit {
   parsedContent: SafeHtml | null = null;
   isLoading = true;
   error: string | null = null;
-  currentView: 'content' | 'exercises' = 'content';
 
   ngOnInit() {
     const lessonId = this.route.snapshot.paramMap.get('id');
@@ -68,11 +66,9 @@ export class LessonViewerComponent implements OnInit {
   }
 
   startExercises() {
-    this.currentView = 'exercises';
-  }
-
-  goToContent() {
-    this.currentView = 'content';
+    if (this.lesson) {
+      this.router.navigate(['/lesson', this.lesson.lessonId, 'exercises']);
+    }
   }
 
   goBack() {

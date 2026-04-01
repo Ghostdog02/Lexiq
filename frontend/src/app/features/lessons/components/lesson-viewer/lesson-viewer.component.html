@@ -38,7 +38,6 @@
       <button class="btn primary" (click)="goBack()">Go Back Home</button>
     </div>
     } @else {
-    @if (currentView === 'content') {
     <div class="content-view">
       <div class="section-wrapper">
         <h3 class="section-label"><span class="icon">📋</span> Instructions</h3>
@@ -74,13 +73,6 @@
       </div>
       }
     </div>
-    }
-
-    <!-- Exercises View — delegated to ExerciseViewerComponent -->
-    @if (currentView === 'exercises' && lesson.exercises.length > 0) {
-      <app-exercise-viewer [exercises]="$any(lesson.exercises)" [lessonId]="lesson.lessonId"
-        (backToContent)="goToContent()" />
-      }
     }
   </main>
 </div>
