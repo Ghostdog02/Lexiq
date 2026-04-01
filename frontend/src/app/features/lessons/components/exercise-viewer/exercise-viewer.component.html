@@ -6,18 +6,6 @@
 } @else {
 <div class="exercises-view fade-in">
   @if (currentExercise) {
-  <!-- Progress header -->
-  <div class="progress-header">
-    <div class="progress-info">
-      <span class="progress-label">Progress</span>
-      <span class="progress-value">{{ state.currentIndex + 1 }} / {{ state.viewModels.length }}</span>
-    </div>
-    <div class="xp-info">
-      <span class="xp-label">XP</span>
-      <span class="xp-value">{{ state.earnedXp }} / {{ state.totalPossibleXp }}</span>
-    </div>
-  </div>
-
   <!-- Progress bar -->
   <div class="progress-bar-container">
     <div class="progress-bar" [style.width.%]="state.progressPercentage"></div>
