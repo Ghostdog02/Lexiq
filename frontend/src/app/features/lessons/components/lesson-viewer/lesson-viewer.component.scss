@@ -13,13 +13,14 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   display: flex;
   flex-direction: column;
   color: var(--white);
-  overflow-x: hidden;
+  // overflow-x: hidden;
+  h1, h2, p {
+    margin: 0 !important;
+  }
 }
 
 .lesson-detail-container {
-  h1, h2, p {
-    margin: 0;
-  }
+  
 }
 
 .lesson-main {
@@ -124,7 +125,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   .section-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
   }
 
   .section-label {
@@ -151,37 +151,47 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .lesson-content {
-    .markdown-content {
+    // ::ng-deep is required for [innerHTML] content which doesn't receive Angular's
+    // view encapsulation attributes. Dynamically injected HTML elements don't get
+    // [_ngcontent-xxx] attributes, so standard selectors can't target them.
+    // This is the documented pattern for styling innerHTML-rendered content.
+    .markdown-content, ::ng-deep * {
       font-size: 1.5rem;
-    }
-
-    h1, h2, h3 {
-      color: var(--white);
       margin: 0;
-    }
+      padding: 0;
 
-    p {
-      line-height: 1.8;
-      color: rgba(255, 255, 255, 0.9);
-    }
+      h1, h2, h3, h4, h5, h6 {
+        color: var(--white);
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
 
-    ul, ol {
-      li {
+      p {
+        line-height: 1.8;
         color: rgba(255, 255, 255, 0.9);
       }
-    }
 
-    code {
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 0.25rem;
-      font-family: monospace;
-      color: #e2e8f0;
-    }
+      ul, ol {
+        list-style-position: inside;  // Keeps bullets/numbers inside the content flow
 
-    blockquote {
-      border-left: 4px solid var(--accent-light);
-      font-style: italic;
-      color: var(--muted);
+        li {
+          color: rgba(255, 255, 255, 0.9);
+        }
+      }
+
+      code {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 0.25rem;
+        font-family: monospace;
+        color: #e2e8f0;
+      }
+
+      blockquote {
+        border-left: 4px solid var(--accent-light);
+        padding-left: 1rem; 
+        font-style: italic;
+        color: var(--muted);
+      }
     }
   }
 
