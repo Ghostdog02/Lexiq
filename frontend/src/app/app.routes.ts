@@ -47,6 +47,12 @@ export const routes: Routes = [
         canActivate: [authGuard]
     },
     {
+        path: 'lesson/:id/exercises',
+        loadComponent: () => import('./features/lessons/components/exercise-viewer/exercise-viewer.component').then(m => m.ExerciseViewerComponent),
+        title: "Exercises",
+        canActivate: [authGuard]
+    },
+    {
         path: 'error',
         loadComponent: () => import('./error-page/error-page.component').then(m => m.ErrorPageComponent),
         title: "Error"
