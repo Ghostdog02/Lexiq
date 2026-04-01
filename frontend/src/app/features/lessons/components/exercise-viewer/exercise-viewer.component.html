@@ -48,12 +48,9 @@
       }
     </div>
 
-    <!-- Exercise title and instructions -->
+    <!-- Exercise title -->
     @if (currentExercise.title) {
     <h2 class="exercise-title">{{ currentExercise.title }}</h2>
-    }
-    @if (currentExercise.instructions) {
-    <p class="exercise-instructions">{{ currentExercise.instructions }}</p>
     }
 
     <!-- Exercise content based on type -->
@@ -108,9 +105,6 @@
         <div class="source-section">
           <div class="lang-badge">{{ currentTranslation?.sourceLanguageCode | uppercase }}</div>
           <p class="source-text">{{ currentTranslation?.sourceText }}</p>
-        </div>
-        <div class="arrow-divider">
-          <span>&#x27A1;</span>
         </div>
         <div class="target-section">
           <div class="lang-badge">{{ currentTranslation?.targetLanguageCode | uppercase }}</div>

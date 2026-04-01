@@ -95,7 +95,6 @@ export class LessonService {
   private mapFormToCreateDto(formValue: ExerciseFormValue, index: number): CreateExerciseDto {
     const base: CreateExerciseBase = {
       title: formValue.title,
-      instructions: formValue.instructions,
       estimatedDurationMinutes: formValue.estimatedDurationMinutes,
       difficultyLevel: formValue.difficultyLevel,
       points: formValue.points,
