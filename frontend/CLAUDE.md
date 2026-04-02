@@ -59,6 +59,7 @@ frontend/src/app/
 │   ├── _buttons.scss               # Shared button mixin (@include buttons.system)
 │   ├── _cards.scss                 # Shared card mixin (@include cards.system)
 │   ├── _mixins.scss                # Shared visual mixins: glass-card (import as `@use '...shared/mixins' as mixins;`)
+│   ├── _state-feedback.scss        # State-based feedback styling (correct/incorrect/warning) with gradients and glows
 │   ├── components/
 │   │   └── editor/                  # EditorJS ControlValueAccessor wrapper + dark theme
 │   └── services/
@@ -333,10 +334,45 @@ feature/
 - **Shared button mixin**: `@use 'path/to/shared/buttons' as buttons;` then `@include buttons.system;` — provides `.btn` with variants (primary, secondary, small, icon-only, link-btn, success, large, no-exercises-btn)
 - **Shared card mixin**: `@use 'path/to/shared/cards' as cards;` then `@include cards.system;` — provides `.card` glass morphism pattern with inner glow border and responsive breakpoint
 - **`glass-card` mixin** (glassmorphic base): `@use 'path/to/shared/mixins' as mixins;` then `@include mixins.glass-card;` — applies background gradient, border, shadow, `backdrop-filter: blur(10px)`, and inner glow `::before`; does NOT include `transition` (callers own animation behaviour)
+- **State feedback mixins**: `@use 'path/to/shared/state-feedback' as state;` — provides consistent correct/incorrect/warning visual treatment with gradients, glows, and overlays (see below)
 - **Never put `transition` inside visual/appearance mixins** — mixins set how something looks; the calling rule defines how it animates (avoids accidentally overriding or duplicating transition declarations)
 - **Shared toastr theme**: Lives in `src/app/shared/_toastr.scss`, imported at the top of `styles.scss` — scoped to `.toast-auth` class
 - **Editor.js dark theme**: Lives in `shared/components/editor/editor.component.scss` with `::ng-deep` — consuming components should NOT duplicate these overrides
 - **Fixing `!important`**: Nest overrides inside parent class for equal specificity + source-order win; `:has()` pseudo-class provides high specificity naturally
+
+### State Feedback Mixins (`shared/_state-feedback.scss`)
+
+For consistent correct/incorrect/warning visual treatment across components. Import with `@use 'path/to/shared/state-feedback' as state;`
+
+**Available mixins:**
+```scss
+// Full feedback box treatment (gradient + overlay + glow)
+@include state.state-feedback(var(--color-correct-rgb), 'top right');
+
+// Gradient background only (customizable opacity)
+@include state.state-gradient-background($color-rgb, $opacity-start: 0.15, $opacity-end: 0.1, $border-opacity: 0.4, $glow-intensity: 0.15);
+
+// Radial gradient overlay via ::before
+@include state.radial-overlay($color-rgb, $position: 'top right', $opacity: 0.15, $radius: 0.875rem);
+
+// Colored box-shadow glow
+@include state.state-glow($color-rgb, $intensity: 0.2, $spread: 1rem);
+
+// Lighter treatment for option buttons
+@include state.option-state($color-rgb, $opacity: 0.12);
+```
+
+**Example usage:**
+```scss
+.feedback.correct {
+  @include state.state-feedback(var(--color-correct-rgb), 'top right');
+  @include state.state-gradient-background(var(--color-correct-rgb), 0.18, 0.12);
+}
+
+.option.incorrect {
+  @include state.option-state(var(--color-error-rgb));
+}
+```
 
 ### Color Palette (CSS Custom Properties)
 
