@@ -56,6 +56,8 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   flex-direction: column;
   align-items: center;
   width: 100%;
+  min-height: 100vh;
+  gap: 1rem;
 
   // Constrain internal content width
   & > * {
@@ -67,7 +69,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     display: flex;
     align-items: center;
     gap: 1rem;
-    margin-bottom: 1.5rem;
+    max-width: 100%;
 
     .progress-bar-container {
       flex: 1;
@@ -98,12 +100,13 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .exercise-card {
-    min-height: 32rem;
+    flex: 1;
+    min-width: 60rem;
     display: flex;
     flex-direction: column;
+    gap: 1.5rem;
     padding: 2rem 3rem 2rem;
 
-    // Reset browser default margins for all content elements
     h1, h2, h3, h4, h5, h6, p {
       margin: 0;
     }
@@ -131,7 +134,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
       .locked-content {
         text-align: center;
-        padding: 3rem;
+        padding: 2rem;
 
         .lock-icon {
           font-size: 3rem;
@@ -151,7 +154,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         p {
           font-size: 0.9375rem;
           color: var(--text-secondary);
-          margin: 0;
           line-height: 1.5;
         }
       }
@@ -161,7 +163,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin: 0;
 
       .exercise-type-badge {
         font-size: 1rem;
@@ -206,6 +207,8 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
     .exercise-content {
       flex: 1;
+      overflow-y: auto;
+      min-height: 0;
 
       .multiple-choice {
         .options-list {
@@ -221,7 +224,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
             display: flex;
             align-items: center;
             gap: 1.5rem;
-            width: 100%;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             text-align: left;
@@ -333,7 +335,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         position: relative;
 
         .answer-input {
-          width: 100%;
           background: rgba(255, 255, 255, 0.03);
           border: 0.0625rem solid rgba(255, 255, 255, 0.1);
           border-radius: 1rem;
@@ -383,7 +384,9 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
           letter-spacing: -0.015em;
 
           .question-text {
-            display: block;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
           }
         }
       }
@@ -463,8 +466,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
             align-items: center;
             justify-content: center;
             gap: 1.5rem;
-            // width: 100%;
-            // max-width: 40rem;
 
             .play-pause-btn {
               width: 3.5rem;
@@ -683,7 +684,6 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   align-items: center;
   justify-content: center;
   gap: 1.5rem;
-  margin-top: 2rem;
 
   .nav-dots {
     display: flex;
