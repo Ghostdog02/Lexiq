@@ -11,31 +11,31 @@ body {
 }
 
 :root {
-  --background-color: #192023;
-  --primary-color: #dbe5eb;
+  --background-color: #0f1419;  // Deeper background for more contrast
+  --primary-color: #e8f0f5;     // Brighter primary text
   --font-family: "Bricolage Grotesque", sans-serif;
 
-  --panel: #1e2732;
-  --accent: #7c5cff;
-  --accent-rgb: 124, 92, 255;
-  --accent-light: #9178ff;
-  --accent-dark: #5a3ce6;
-  --muted: #8b98a5;
-  --muted-rgb: 139, 152, 165;
-  --text-secondary: #b8c4cf;
+  --panel: #1a2129;             // Darker panel
+  --accent: #8b6eff;            // Brighter, more saturated purple
+  --accent-rgb: 139, 110, 255;
+  --accent-light: #a48fff;      // Lighter, more vibrant
+  --accent-dark: #6b4ee6;       // Deeper contrast
+  --muted: #9aa5b1;             // Slightly brighter muted
+  --muted-rgb: 154, 165, 177;
+  --text-secondary: #c5d1dc;    // Brighter secondary text
   --white: #ffffff;
 
   /* Background RGB channels (for rgba() usage) */
-  --bg-rgb: 26, 36, 41;
+  --bg-rgb: 15, 20, 25;
 
-  /* Glass Effects */
-  --glass: rgba(255,255,255,0.04);
-  --glass-hover: rgba(255,255,255,0.08);
-  --border: rgba(255,255,255,0.08);
-  --border-highlight: rgba(255,255,255,0.2); // Bright border for hover/active states
+  /* Glass Effects - more refined, less glossy */
+  --glass: rgba(255,255,255,0.05);     // Slightly more visible
+  --glass-hover: rgba(255,255,255,0.09);
+  --border: rgba(255,255,255,0.12);     // More defined borders
+  --border-highlight: rgba(255,255,255,0.24); // Higher contrast highlights
 
-  --radius: 16px;
-  --radius-sm: 100px;
+  --radius: 1rem;
+  --radius-sm: 6.25rem;
 
   --shadow: 0 20px 60px rgba(0,0,0,0.5);
   --shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
