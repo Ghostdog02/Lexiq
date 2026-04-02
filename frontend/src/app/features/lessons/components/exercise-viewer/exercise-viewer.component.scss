@@ -620,7 +620,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
     .exercise-actions {
       display: flex;
-      justify-content: flex-end;
+      justify-content: center;
       gap: 1rem;
     }
   }
@@ -630,36 +630,59 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 1.5rem;
+  margin-top: 2rem;
 
   .nav-btn {
-    background: none;
-    border: none;
-    color: var(--muted);
+    background: var(--glass);
+    border: 1px solid var(--border);
+    color: var(--white);
     cursor: pointer;
-    padding: 0.5rem;
+    padding: 1rem;
+    width: 3.5rem;
+    height: 3.5rem;
     border-radius: 50%;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+    svg {
+      width: 1.5rem;
+      height: 1.5rem;
+    }
 
     &:hover:not(:disabled) {
-      background: var(--glass);
-      color: var(--white);
-      transform: scale(1.05);
+      background: var(--glass-hover);
+      border-color: var(--accent);
+      color: var(--accent-light);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(124, 92, 255, 0.3);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
     }
 
     &:disabled {
       opacity: 0.3;
       cursor: not-allowed;
+      background: rgba(255, 255, 255, 0.02);
+      border-color: rgba(255, 255, 255, 0.05);
     }
   }
 
   .nav-dots {
     display: flex;
-    gap: 0.5rem;
+    gap: 0.75rem;
 
     .nav-dot {
-      width: 0.5rem;
-      height: 0.5rem;
+      width: 0.75rem;
+      height: 0.75rem;
       border-radius: 50%;
       background: var(--border);
       border: none;
@@ -669,12 +692,12 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
       &:hover:not(:disabled) {
         background: var(--glass-hover);
-        transform: scale(1.2);
+        transform: scale(1.3);
       }
 
       &.active {
         background: var(--accent);
-        transform: scale(1.4);
+        transform: scale(1.5);
         box-shadow: 0 0 0.75rem rgba(124, 92, 255, 0.4);
       }
 
