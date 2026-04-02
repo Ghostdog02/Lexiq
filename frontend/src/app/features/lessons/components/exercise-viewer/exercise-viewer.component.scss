@@ -598,28 +598,47 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
       .correct-answer-reveal {
         padding: 1rem 1.25rem;
-        background: rgba(var(--color-correct-rgb), 0.08);
-        border: 0.125rem solid rgba(var(--color-correct-rgb), 0.2);
+        background: linear-gradient(135deg,
+          rgba(var(--color-correct-rgb), 0.15) 0%,
+          rgba(var(--color-correct-rgb), 0.1) 100%);
+        border: 0.125rem solid rgba(var(--color-correct-rgb), 0.35);
         border-radius: 0.75rem;
         color: var(--color-correct-light);
         display: flex;
         gap: 0.875rem;
         align-items: baseline;
         animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 1rem rgba(var(--color-correct-rgb), 0.12);
+        position: relative;
+        overflow: hidden;
+
+        &::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at bottom left,
+            rgba(var(--color-correct-rgb), 0.1),
+            transparent 50%);
+          pointer-events: none;
+        }
 
         .label {
           font-weight: 700;
           text-transform: uppercase;
           font-size: 0.75rem;
           letter-spacing: 0.08em;
-          opacity: 0.8;
+          opacity: 0.9;
           flex-shrink: 0;
+          position: relative;
+          z-index: 1;
         }
 
         .answer {
           font-weight: 600;
           font-size: 1.125rem;
           line-height: 1.5;
+          position: relative;
+          z-index: 1;
         }
       }
     }
@@ -631,10 +650,25 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       flex-direction: column;
       gap: 0.625rem;
       animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
 
       &.correct {
-        background: rgba(var(--color-correct-rgb), 0.1);
-        border: 0.125rem solid rgba(var(--color-correct-rgb), 0.25);
+        background: linear-gradient(135deg,
+          rgba(var(--color-correct-rgb), 0.18) 0%,
+          rgba(var(--color-correct-rgb), 0.12) 100%);
+        border: 0.125rem solid rgba(var(--color-correct-rgb), 0.4);
+        box-shadow: 0 0 1.5rem rgba(var(--color-correct-rgb), 0.15);
+
+        &::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at top right,
+            rgba(var(--color-correct-rgb), 0.15),
+            transparent 60%);
+          pointer-events: none;
+        }
 
         .feedback-text {
           color: var(--color-correct-light);
@@ -646,8 +680,21 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       }
 
       &.incorrect {
-        background: rgba(var(--color-error-rgb), 0.1);
-        border: 0.125rem solid rgba(var(--color-error-rgb), 0.25);
+        background: linear-gradient(135deg,
+          rgba(var(--color-error-rgb), 0.18) 0%,
+          rgba(var(--color-error-rgb), 0.12) 100%);
+        border: 0.125rem solid rgba(var(--color-error-rgb), 0.4);
+        box-shadow: 0 0 1.5rem rgba(var(--color-error-rgb), 0.15);
+
+        &::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at top right,
+            rgba(var(--color-error-rgb), 0.15),
+            transparent 60%);
+          pointer-events: none;
+        }
 
         .feedback-text {
           color: var(--color-error-light);
@@ -664,6 +711,8 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         display: flex;
         align-items: center;
         gap: 0.625rem;
+        position: relative;
+        z-index: 1;
       }
 
       .explanation {
@@ -672,6 +721,8 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         margin: 0;
         line-height: 1.65;
         padding-left: 2rem;
+        position: relative;
+        z-index: 1;
       }
     }
 
