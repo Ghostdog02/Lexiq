@@ -6,9 +6,16 @@
 } @else {
 <div class="exercises-view fade-in">
   @if (currentExercise) {
-  <!-- Progress bar -->
-  <div class="progress-bar-container">
-    <div class="progress-bar" [style.width.%]="state.progressPercentage"></div>
+  <!-- Progress bar with close button -->
+  <div class="progress-header">
+    <button class="nav-btn" (click)="onBackToContent()" aria-label="Close exercise viewer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </button>
+    <div class="progress-bar-container">
+      <div class="progress-bar" [style.width.%]="state.progressPercentage"></div>
+    </div>
   </div>
 
   <!-- Exercise card -->
@@ -241,15 +248,6 @@
       </svg>
     </button>
   </div>
-
-  <!-- Back to content button -->
-  <button class="btn primary" (click)="onBackToContent()" aria-label="Back to lesson content">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-      <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-        stroke-linejoin="round" />
-    </svg>
-    Back to Lesson
-  </button>
   }
 </div>
 }
