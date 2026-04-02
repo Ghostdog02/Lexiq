@@ -1,6 +1,7 @@
 @use '../../../../../styles.scss' as styles;
 @use '../../../../shared/buttons' as buttons;
 @use '../../../../shared/cards' as cards;
+@use '../../../../shared/state-feedback' as state;
 
 @include buttons.system;
 @include cards.system;
@@ -301,34 +302,33 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
             }
 
             &.correct {
-              background: rgba(var(--color-success-rgb), 0.05);
-              border-color: var(--color-success);
+              @include state.option-state(var(--color-correct-rgb));
 
               .option-letter {
-                background: transparent;
-                border-color: var(--color-success);
-                color: var(--color-success);
+                background: rgba(var(--color-correct-rgb), 0.15);
+                border-color: var(--color-correct);
+                color: var(--color-correct-light);
+                box-shadow: 0 0 0.75rem rgba(var(--color-correct-rgb), 0.3);
               }
 
               .result-icon {
-                color: var(--color-success);
+                color: var(--color-correct-light);
                 font-size: 1.125rem;
               }
             }
 
             &.incorrect {
-              background: rgba(var(--color-error-rgb), 0.05);
-              border-color: var(--color-error);
-              opacity: 0.7;
+              @include state.option-state(var(--color-error-rgb));
+              opacity: 0.85;
 
               .option-letter {
-                background: transparent;
+                background: rgba(var(--color-error-rgb), 0.15);
                 border-color: var(--color-error);
-                color: var(--color-error);
+                color: var(--color-error-light);
               }
 
               .result-icon {
-                color: var(--color-error);
+                color: var(--color-error-light);
                 font-size: 1.125rem;
               }
             }
@@ -597,30 +597,17 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       }
 
       .correct-answer-reveal {
+        @include state.state-gradient-background(var(--color-correct-rgb), 0.15, 0.1, 0.35, 0.12);
+        @include state.radial-overlay(var(--color-correct-rgb), 'bottom left', 0.1, 0.75rem);
+
         padding: 1rem 1.25rem;
-        background: linear-gradient(135deg,
-          rgba(var(--color-correct-rgb), 0.15) 0%,
-          rgba(var(--color-correct-rgb), 0.1) 100%);
-        border: 0.125rem solid rgba(var(--color-correct-rgb), 0.35);
+        border: 0.125rem solid;
         border-radius: 0.75rem;
         color: var(--color-correct-light);
         display: flex;
         gap: 0.875rem;
         align-items: baseline;
         animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 0 1rem rgba(var(--color-correct-rgb), 0.12);
-        position: relative;
-        overflow: hidden;
-
-        &::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at bottom left,
-            rgba(var(--color-correct-rgb), 0.1),
-            transparent 50%);
-          pointer-events: none;
-        }
 
         .label {
           font-weight: 700;
@@ -646,29 +633,15 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     .feedback {
       padding: 1.25rem 1.5rem;
       border-radius: 0.875rem;
+      border: 0.125rem solid;
       display: flex;
       flex-direction: column;
       gap: 0.625rem;
       animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
 
       &.correct {
-        background: linear-gradient(135deg,
-          rgba(var(--color-correct-rgb), 0.18) 0%,
-          rgba(var(--color-correct-rgb), 0.12) 100%);
-        border: 0.125rem solid rgba(var(--color-correct-rgb), 0.4);
-        box-shadow: 0 0 1.5rem rgba(var(--color-correct-rgb), 0.15);
-
-        &::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at top right,
-            rgba(var(--color-correct-rgb), 0.15),
-            transparent 60%);
-          pointer-events: none;
-        }
+        @include state.state-feedback(var(--color-correct-rgb), 'top right');
+        @include state.state-gradient-background(var(--color-correct-rgb), 0.18, 0.12, 0.4, 0.15);
 
         .feedback-text {
           color: var(--color-correct-light);
@@ -680,21 +653,8 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       }
 
       &.incorrect {
-        background: linear-gradient(135deg,
-          rgba(var(--color-error-rgb), 0.18) 0%,
-          rgba(var(--color-error-rgb), 0.12) 100%);
-        border: 0.125rem solid rgba(var(--color-error-rgb), 0.4);
-        box-shadow: 0 0 1.5rem rgba(var(--color-error-rgb), 0.15);
-
-        &::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(circle at top right,
-            rgba(var(--color-error-rgb), 0.15),
-            transparent 60%);
-          pointer-events: none;
-        }
+        @include state.state-feedback(var(--color-error-rgb), 'top right');
+        @include state.state-gradient-background(var(--color-error-rgb), 0.18, 0.12, 0.4, 0.15);
 
         .feedback-text {
           color: var(--color-error-light);
