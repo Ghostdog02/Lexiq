@@ -11,11 +11,11 @@ body {
 }
 
 :root {
-  --background-color: #0f1419;  // Deeper background for more contrast
+  --background-color: #192023;
   --primary-color: #e8f0f5;     // Brighter primary text
   --font-family: "Bricolage Grotesque", sans-serif;
 
-  --panel: #1a2129;             // Darker panel
+  --panel: #1e2732;
   --accent: #8b6eff;            // Brighter, more saturated purple
   --accent-rgb: 139, 110, 255;
   --accent-light: #a48fff;      // Lighter, more vibrant
@@ -26,7 +26,7 @@ body {
   --white: #ffffff;
 
   /* Background RGB channels (for rgba() usage) */
-  --bg-rgb: 15, 20, 25;
+  --bg-rgb: 26, 36, 41;
 
   /* Glass Effects - more refined, less glossy */
   --glass: rgba(255,255,255,0.05);     // Slightly more visible
@@ -47,20 +47,20 @@ body {
   --color-success-dark: #16a34a;
   --color-success-rgb: 34, 197, 94;
 
-  --color-correct: #10b981;           // Exercise correct answer (emerald)
-  --color-correct-rgb: 16, 185, 129;
-  --color-correct-light: #34d399;     // Lighter correct for feedback text
+  --color-correct: #00d97e;           // Vibrant neon green
+  --color-correct-rgb: 0, 217, 126;
+  --color-correct-light: #00ff99;     // Brighter correct for feedback text
 
-  --color-warning: #ffc107;
+  --color-warning: #ffd700;           // True gold
   --color-warning-dark: #ffa000;
-  --color-warning-rgb: 255, 193, 7;
+  --color-warning-rgb: 255, 215, 0;
 
-  --color-xp: #fbbf24;                // XP / points highlight
-  --color-xp-rgb: 251, 191, 36;
+  --color-xp: #ffd700;                // XP / points highlight (true gold)
+  --color-xp-rgb: 255, 215, 0;
 
-  --color-error: #ef4444;
-  --color-error-rgb: 239, 68, 68;
-  --color-error-light: #f87171;       // Lighter error for feedback text
+  --color-error: #df1919;             // Deep saturated red
+  --color-error-rgb: 223, 25, 25;
+  --color-error-light: #ff3333;       // Brighter error for feedback text
 }
 
 // Force dark OS palette for native select popups globally
