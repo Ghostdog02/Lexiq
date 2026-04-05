@@ -78,6 +78,13 @@
         .icon {
             font-size: var(--icon-size-md);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+            // Image icon sizing (SVG files via <img> tag)
+            &[width] {
+                width: 1.5rem;
+                height: 1.5rem;
+                flex-shrink: 0;
+            }
         }
 
         &:hover{
