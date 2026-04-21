@@ -50,6 +50,16 @@ public class ExerciseProgressService(
         var isCorrect = ValidateAnswer(exercise, answer);
         var pointsEarned = isCorrect ? exercise.Points : 0;
 
+        // Check hearts (don't allow submission if hearts depleted, unless bypass)
+        if (!canBypassLocks && user != null && user.Hearts <= 0)
+            throw new InvalidOperationException("No hearts remaining. Cannot submit answer.");
+
+        // Decrement hearts on wrong answer (but not for admins/creators)
+        if (!isCorrect && !canBypassLocks && user != null)
+        {
+            user.Hearts = Math.Max(0, user.Hearts - 1);
+        }
+
         // Upsert progress
         var progress = await _context.UserExerciseProgress.FirstOrDefaultAsync(p =>
             p.UserId == userId && p.ExerciseId == exerciseId
