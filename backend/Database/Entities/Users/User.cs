@@ -14,5 +14,9 @@ public class User : IdentityUser
 
     public int TotalPointsEarned { get; set; }
 
+    public int Hearts { get; set; } = 3;
+
+    public DateTime LastHeartResetAt { get; set; } = DateTime.UtcNow;
+
     public UserAvatar? Avatar { get; set; }
 }
