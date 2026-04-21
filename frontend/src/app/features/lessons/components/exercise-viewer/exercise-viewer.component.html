@@ -34,12 +34,15 @@
     <!-- Exercise header -->
     <div class="exercise-header">
       <h2 class="exercise-title-header">{{ currentExercise.title }}</h2>
-      @if (currentExercise.points) {
-      <span class="points-badge">+{{ currentExercise.points }} XP</span>
-      }
-      @if (isCurrentLocked) {
-      <span class="locked-badge">🔒 Locked</span>
-      }
+      <div class="header-badges">
+        <span class="hearts-badge">❤️ × {{ hearts }}</span>
+        @if (currentExercise.points) {
+        <span class="points-badge">+{{ currentExercise.points }} XP</span>
+        }
+        @if (isCurrentLocked) {
+        <span class="locked-badge">🔒 Locked</span>
+        }
+      </div>
     </div>
 
     <!-- Exercise content based on type -->
@@ -81,22 +84,18 @@
           <div class="question-display">
             <p class="question-text-inline">
               <span class="text-before">{{ parsed.before }}</span>
-              <span class="inline-input-wrapper">
-                <input
-                  type="text"
-                  class="inline-input"
-                  [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
-                  [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
-                  placeholder="..."
-                  [formControl]="state.currentFormControl!"
-                  [disabled]="isCurrentLocked"
-                  (keydown)="onInputKeydown($event)"
-                  aria-label="Fill in the blank"
-                />
-                @if (currentSubmission !== null && !currentSubmission!.isCorrect && currentFillInBlank.correctAnswer) {
-                <span class="correct-answer-hint">{{ currentFillInBlank.correctAnswer }}</span>
-                }
-              </span>
+              <input
+                type="text"
+                class="inline-input"
+                [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
+                [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
+                placeholder="..."
+                [value]="(currentSubmission !== null && !currentSubmission!.isCorrect) ? currentFillInBlank.correctAnswer : state.currentFormControl!.value"
+                [formControl]="state.currentFormControl!"
+                [disabled]="isCurrentLocked || isCurrentSubmitted"
+                (keydown)="onInputKeydown($event)"
+                aria-label="Fill in the blank"
+              />
               <span class="text-after">{{ parsed.after }}</span>
             </p>
           </div>
@@ -234,20 +233,24 @@
         <span class="keyboard-hint">press ⏎ to check</span>
       </div>
       } @else if (isCurrentSubmitted) {
-      <div class="check-button-wrapper">
-        <button class="btn"
-          [class.success]="currentSubmission?.isCorrect"
-          [class.danger]="!currentSubmission?.isCorrect"
-          (click)="nextExercise()"
-          [disabled]="!state.canGoNext"
-          aria-label="Continue to next exercise">
-          @if (currentSubmission?.isCorrect) {
-          Continue
-          } @else {
-          Try again
-          }
-        </button>
-      </div>
+        @if (!currentSubmission?.isCorrect && hearts <= 0) {
+        <div class="check-button-wrapper">
+          <button class="btn danger" (click)="onBackToContent()" aria-label="Back to lesson">
+            Back to Lesson
+          </button>
+        </div>
+        } @else {
+        <div class="check-button-wrapper">
+          <button class="btn"
+            [class.success]="currentSubmission?.isCorrect"
+            [class.danger]="!currentSubmission?.isCorrect"
+            (click)="nextExercise()"
+            [disabled]="!state.canGoNext"
+            aria-label="Continue to next exercise">
+            Continue
+          </button>
+        </div>
+        }
       }
     </div>
   </div>

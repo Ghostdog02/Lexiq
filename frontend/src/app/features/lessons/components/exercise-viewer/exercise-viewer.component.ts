@@ -3,6 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, NonNullableFormBuilder } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import {
   AnyExercise,
   ExerciseType,
@@ -41,6 +43,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   private exerciseService = inject(ExerciseService);
   private authService = inject(AuthService);
   private destroyRef = inject(DestroyRef);
+  private http = inject(HttpClient);
 
   // State service manages all exercise state
   readonly state = inject(ExerciseViewerStateService);
@@ -51,6 +54,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   isAdmin = false;
   isSubmitting = false;
+  hearts: number = 0;
 
   // Audio player state
   audioElement: HTMLAudioElement | null = null;
@@ -66,6 +70,9 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     this.authService.getAdminStatusListener()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((isAdmin) => this.isAdmin = isAdmin);
+
+    // Fetch user hearts
+    await this.fetchHearts();
 
     // Get lessonId from route params
     const lessonId = this.route.snapshot.paramMap.get('id');
@@ -137,6 +144,21 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
       vm.formControl = control;
     });
+  }
+
+  /**
+   * Fetch user's current hearts count from backend
+   */
+  private async fetchHearts(): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ hearts: number }>('/api/user/hearts', { withCredentials: true })
+      );
+      this.hearts = response.hearts;
+    } catch (err) {
+      console.error('❌ Failed to fetch hearts:', err);
+      this.hearts = 0;
+    }
   }
 
   // Getters that delegate to state service
@@ -228,6 +250,9 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     try {
       const result = await this.exerciseService.submitExerciseAnswer(exercise.id, answerValue);
       this.state.submitAnswer(exercise.id, result);
+
+      // Refetch hearts after submission (especially if wrong answer)
+      await this.fetchHearts();
     } catch (err) {
       console.error('❌ Failed to submit answer:', err);
     } finally {
