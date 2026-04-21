@@ -33,14 +33,7 @@
 
     <!-- Exercise header -->
     <div class="exercise-header">
-      <span class="exercise-type-badge" [attr.data-type]="currentExercise.type">
-        @switch (currentExercise.type) {
-        @case (ExerciseType.MultipleChoice) { Multiple Choice }
-        @case (ExerciseType.FillInBlank) { Fill in the Blank }
-        @case (ExerciseType.Translation) { Translation }
-        @case (ExerciseType.Listening) { Listening }
-        }
-      </span>
+      <h2 class="exercise-title-header">{{ currentExercise.title }}</h2>
       @if (currentExercise.points) {
       <span class="points-badge">+{{ currentExercise.points }} XP</span>
       }
@@ -48,11 +41,6 @@
       <span class="locked-badge">🔒 Locked</span>
       }
     </div>
-
-    <!-- Exercise title -->
-    @if (currentExercise.title) {
-    <h2 class="exercise-title">{{ currentExercise.title }}</h2>
-    }
 
     <!-- Exercise content based on type -->
     <div class="exercise-content">
@@ -80,22 +68,38 @@
       </div>
       }
 
-      <!-- Fill in the Blank -->
+      <!-- Fill in Blank -->
       @case (ExerciseType.FillInBlank) {
       <div class="fill-in-blank">
-        <div class="question-display">
-          <p class="question-text">{{ currentFillInBlank?.text }}</p>
-        </div>
-        <div class="answer-input-wrapper">
-          <input type="text" class="answer-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
-            [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect" placeholder="Type your answer..."
-            [formControl]="state.currentFormControl!" [disabled]="isCurrentLocked" aria-label="Your answer" />
-        </div>
-        @if (currentSubmission !== null && !currentSubmission!.isCorrect) {
-        <div class="correct-answer-reveal">
-          <span class="label">Correct answer:</span>
-          <span class="answer">{{ currentFillInBlank?.correctAnswer }}</span>
-        </div>
+        @if (currentFillInBlank) {
+          @if (currentExercise.question) {
+          <div class="instruction-line">
+            {{ currentExercise.question }}
+          </div>
+          }
+          @let parsed = parseFillInBlankText(currentFillInBlank.text);
+          <div class="question-display">
+            <p class="question-text-inline">
+              <span class="text-before">{{ parsed.before }}</span>
+              <span class="inline-input-wrapper">
+                <input
+                  type="text"
+                  class="inline-input"
+                  [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
+                  [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
+                  placeholder="..."
+                  [formControl]="state.currentFormControl!"
+                  [disabled]="isCurrentLocked"
+                  (keydown)="onInputKeydown($event)"
+                  aria-label="Fill in the blank"
+                />
+                @if (currentSubmission !== null && !currentSubmission!.isCorrect && currentFillInBlank.correctAnswer) {
+                <span class="correct-answer-hint">{{ currentFillInBlank.correctAnswer }}</span>
+                }
+              </span>
+              <span class="text-after">{{ parsed.after }}</span>
+            </p>
+          </div>
         }
       </div>
       }
@@ -103,18 +107,14 @@
       <!-- Translation -->
       @case (ExerciseType.Translation) {
       <div class="translation">
-        <div class="source-section">
-          <div class="lang-badge">{{ currentTranslation?.sourceLanguageCode | uppercase }}</div>
-          <p class="source-text">{{ currentTranslation?.sourceText }}</p>
+        <div class="question-display">
+          <p class="question-text">{{ currentExercise.question }}</p>
         </div>
-        <div class="target-section">
-          <div class="lang-badge">{{ currentTranslation?.targetLanguageCode | uppercase }}</div>
-          <div class="answer-input-wrapper">
-            <input type="text" class="answer-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
-              [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
-              placeholder="Write your translation..." [formControl]="state.currentFormControl!"
-              [disabled]="isCurrentLocked" aria-label="Your translation" />
-          </div>
+        <div class="answer-input-wrapper">
+          <input type="text" class="answer-input" [class.correct]="isCurrentSubmitted && currentSubmission?.isCorrect"
+            [class.incorrect]="isCurrentSubmitted && !currentSubmission?.isCorrect"
+            placeholder="Write your translation..." [formControl]="state.currentFormControl!"
+            [disabled]="isCurrentLocked" aria-label="Your translation" />
         </div>
         @if (currentSubmission !== null && !currentSubmission!.isCorrect) {
         <div class="correct-answer-reveal">
@@ -188,65 +188,68 @@
     @if (currentSubmission) {
     <div class="feedback" [class.correct]="currentSubmission.isCorrect"
       [class.incorrect]="!currentSubmission.isCorrect">
-      @if (currentSubmission.isCorrect) {
-      <span class="feedback-icon">&#x1F389;</span>
-      <span class="feedback-text">Correct! Great job!</span>
-      } @else {
-      <span class="feedback-icon">&#x1F914;</span>
-      <span class="feedback-text">Not quite. Keep practicing!</span>
-      }
-      @if (currentExercise.explanation) {
-      <p class="explanation">{{ currentExercise.explanation }}</p>
-      }
+      <span class="feedback-icon">
+        @if (currentSubmission.isCorrect) {
+        ✓
+        } @else {
+        ✕
+        }
+      </span>
+      <div class="feedback-content">
+        <div class="feedback-text">
+          @if (currentSubmission.isCorrect) {
+          Nice! That's right.
+          } @else {
+          Not quite.
+          }
+        </div>
+        @if (currentExercise.explanation) {
+        <div class="feedback-explanation">{{ currentExercise.explanation }}</div>
+        }
+      </div>
     </div>
     }
 
-    <!-- Action buttons -->
-    <div class="exercise-actions">
+    <!-- Footer: Hint (left) · Spacer · Check (right) -->
+    <div class="exercise-footer">
+      <button class="btn-hint" [disabled]="isCurrentSubmitted || isCurrentLocked" aria-label="Get a hint">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 2 C5 2 3.5 4 3.5 6 C3.5 7.5 4.5 8.5 5 9.5 L5 11 L11 11 L11 9.5 C11.5 8.5 12.5 7.5 12.5 6 C12.5 4 11 2 8 2 Z"/>
+          <path d="M6 13 L10 13"/>
+        </svg>
+        <span>Hint</span>
+        <span class="hint-cost">−5 XP</span>
+      </button>
+
+      <div class="footer-spacer"></div>
+
       @if (!isCurrentSubmitted && !isCurrentLocked) {
-      <button class="btn primary" [disabled]="!state.currentAnswer" (click)="submitAnswer()" aria-label="Submit answer">
-        Check Answer
-      </button>
-      } @else if (isCurrentSubmitted && !state.canGoNext) {
-      <button class="btn success" (click)="finishLesson()" aria-label="Finish lesson">
-        <span class="icon">&#x1F3C6;</span>
-        Complete Lesson
-      </button>
+      <div class="check-button-wrapper">
+        <button class="btn primary" [disabled]="!state.currentAnswer" (click)="submitAnswer()" aria-label="Submit answer">
+          Check
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 8 L13 8 M9 4 L13 8 L9 12"/>
+          </svg>
+        </button>
+        <span class="keyboard-hint">press ⏎ to check</span>
+      </div>
+      } @else if (isCurrentSubmitted) {
+      <div class="check-button-wrapper">
+        <button class="btn"
+          [class.success]="currentSubmission?.isCorrect"
+          [class.danger]="!currentSubmission?.isCorrect"
+          (click)="nextExercise()"
+          [disabled]="!state.canGoNext"
+          aria-label="Continue to next exercise">
+          @if (currentSubmission?.isCorrect) {
+          Continue
+          } @else {
+          Try again
+          }
+        </button>
+      </div>
       }
     </div>
-  </div>
-
-  <!-- Navigation dots -->
-  <div class="exercise-nav">
-    <button class="nav-btn" [disabled]="!state.canGoPrevious" (click)="previousExercise()"
-      aria-label="Previous exercise">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round" />
-      </svg>
-    </button>
-
-    <div class="nav-dots">
-      @for (vm of state.viewModels; track vm.exercise.id; let i = $index) {
-      <button class="nav-dot"
-        [class.active]="vm.exercise.id === state.currentExerciseId"
-        [class.completed]="vm.isSubmitted"
-        [class.correct]="vm.submission?.isCorrect === true"
-        [class.incorrect]="vm.submission?.isCorrect === false"
-        [class.locked]="!vm.isAccessible"
-        [disabled]="!vm.isAccessible"
-        (click)="goToExercise(vm.exercise.id)"
-        [attr.aria-label]="'Go to exercise ' + (i + 1)"></button>
-      }
-    </div>
-
-    <button class="nav-btn" [disabled]="!state.canGoNext" (click)="nextExercise()"
-      aria-label="Next exercise">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-        <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-          stroke-linejoin="round" />
-      </svg>
-    </button>
   </div>
   }
 </div>
