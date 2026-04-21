@@ -235,6 +235,23 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Handle Enter key press on input fields to submit answer or continue.
+   */
+  onInputKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+
+      if (this.isCurrentSubmitted && this.state.canGoNext) {
+        // Continue to next exercise
+        this.nextExercise();
+      } else if (!this.isCurrentSubmitted && this.state.currentAnswer) {
+        // Submit current answer
+        this.submitAnswer();
+      }
+    }
+  }
+
   async finishLesson() {
     try {
       const result = await this.lessonService.completeLesson(this.lessonId);
@@ -316,5 +333,24 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  /**
+   * Parse FillInBlank text to extract parts before and after the blank placeholder.
+   * Assumes the placeholder is "____" (four underscores).
+   */
+  parseFillInBlankText(text: string): { before: string; after: string; hasBlank: boolean } {
+    const placeholder = '____';
+    const index = text.indexOf(placeholder);
+
+    if (index === -1) {
+      return { before: text, after: '', hasBlank: false };
+    }
+
+    return {
+      before: text.substring(0, index),
+      after: text.substring(index + placeholder.length),
+      hasBlank: true
+    };
   }
 }
