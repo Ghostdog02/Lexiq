@@ -28,7 +28,7 @@ updates:
     open-pull-requests-limit: 6
     groups:
       npm-all:
-        update-types: ["minor", "patch"]
+        update-types: ["minor", "patch", "major"]
 
   - package-ecosystem: "nuget"
     directory: "/backend"
@@ -38,7 +38,7 @@ updates:
     open-pull-requests-limit: 6
     groups:
       nuget-all:
-        update-types: ["minor", "patch"]
+        update-types: ["minor", "patch", "major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -48,4 +48,4 @@ updates:
     open-pull-requests-limit: 6
     groups:
       actions-all:
-        update-types: ["minor", "patch"]
+        update-types: ["minor", "patch", "major"]

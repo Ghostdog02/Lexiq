@@ -2,9 +2,9 @@ name: "CodeQL Advanced"
 
 on:
   push:
-    branches: [ "master", "feature/lexiq-api" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "master", "feature/lexiq-api" ]
+    branches: [ "master" ]
   schedule:
     - cron: '39 19 * * 6'
 
