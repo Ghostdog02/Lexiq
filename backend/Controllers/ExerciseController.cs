@@ -2,6 +2,7 @@ using Backend.Api.Dtos;
 using Backend.Api.Mapping;
 using Backend.Api.Middleware;
 using Backend.Api.Services;
+using Backend.Database.Entities.Exercises;
 using Backend.Database.Entities.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -9,7 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Controllers;
 
-[Route("api/[controller]")]
+[Route("api/[controller]s")]
 [ApiController]
 [Authorize]
 public class ExerciseController(
@@ -22,14 +23,6 @@ public class ExerciseController(
     private readonly ExerciseProgressService _progressService = progressService;
     private readonly UserManager<User> _userManager = userManager;
 
-    [HttpGet("lesson/{lessonId}")]
-    public async Task<ActionResult<List<ExerciseDto>>> GetExercisesByLesson(string lessonId)
-    {
-        var exercises = await _exerciseService.GetExercisesByLessonIdAsync(lessonId);
-
-        return Ok(exercises.Select(e => e.ToDto()));
-    }
-
     [HttpGet("{id}")]
     public async Task<ActionResult<ExerciseDto>> GetExercise(string id)
     {
@@ -37,8 +30,8 @@ public class ExerciseController(
         if (exercise == null)
             return NotFound();
 
-        var user = HttpContext.GetCurrentUser();
-        var canBypassLocks = user != null && await user.CanBypassLocksAsync(_userManager);
+        var user = HttpContext.GetCurrentUser()!;
+        var canBypassLocks = await user.CanBypassLocksAsync(_userManager);
 
         if (exercise.IsLocked == true && !canBypassLocks)
             return StatusCode(
@@ -46,7 +39,7 @@ public class ExerciseController(
                 new { message = "Exercise is locked. Complete previous exercises to unlock." }
             );
 
-        return Ok(exercise.ToDto());
+        return OkPolymorphic<ExerciseDto>(exercise.ToDto());
     }
 
     [HttpPost]
@@ -54,7 +47,13 @@ public class ExerciseController(
     public async Task<ActionResult<ExerciseDto>> CreateExercise(CreateExerciseDto dto)
     {
         var exercise = await _exerciseService.CreateExerciseAsync(dto);
-        return CreatedAtAction(nameof(GetExercise), new { id = exercise.Id }, exercise.ToDto());
+        var result = CreatedAtAction(
+            nameof(GetExercise),
+            new { id = exercise.Id },
+            exercise.ToDto()
+        );
+        result.DeclaredType = typeof(ExerciseDto);
+        return result;
     }
 
     [HttpPut("{id}")]
@@ -65,8 +64,15 @@ public class ExerciseController(
         if (exercise == null)
             return NotFound();
 
-        return Ok(exercise.ToDto());
+        return OkPolymorphic<ExerciseDto>(exercise.ToDto());
     }
+
+    /// <summary>
+    /// Returns 200 OK with DeclaredType set to T, ensuring System.Text.Json serializes
+    /// through the base type and includes [JsonPolymorphic] type discriminators.
+    /// </summary>
+    private static OkObjectResult OkPolymorphic<T>(T value) =>
+        new(value) { DeclaredType = typeof(T) };
 
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin,ContentCreator")]
@@ -80,7 +86,7 @@ public class ExerciseController(
     }
 
     [HttpPost("{exerciseId}/submit")]
-    public async Task<ActionResult<SubmitAnswerResponse>> SubmitAnswer(
+    public async Task<ActionResult<ExerciseSubmitResult>> SubmitAnswer(
         string exerciseId,
         SubmitAnswerRequest request
     )
@@ -88,13 +94,11 @@ public class ExerciseController(
         if (string.IsNullOrWhiteSpace(request.Answer))
             return BadRequest(new { message = "Answer cannot be empty" });
 
-        var user = HttpContext.GetCurrentUser();
-        if (user == null)
-            return Unauthorized();
+        var user = HttpContext.GetCurrentUser()!;
 
         try
         {
-            var result = await _progressService.SubmitAnswerAsync(
+            ExerciseSubmitResult result = await _progressService.SubmitAnswerAsync(
                 user.Id,
                 exerciseId,
                 request.Answer
@@ -112,29 +116,37 @@ public class ExerciseController(
         }
     }
 
-    [HttpGet("lesson/{lessonId}/progress")]
-    public async Task<ActionResult<List<UserExerciseProgressDto>>> GetLessonProgress(
-        string lessonId
-    )
+    /// <summary>
+    /// Gets the correct answer for an exercise (useful for tests and content creators)
+    /// </summary>
+    /// <param name="id">Exercise ID</param>
+    /// <returns>CorrectAnswerDto with the answer string</returns>
+    [HttpGet("{id}/correct-answer")]
+    public async Task<ActionResult<CorrectAnswerDto>> GetCorrectAnswer(string id)
     {
-        var user = HttpContext.GetCurrentUser();
-        if (user == null)
-            return Unauthorized();
+        var exercise = await _exerciseService.GetExerciseByIdAsync(id);
 
-        var fullProgress = await _progressService.GetFullLessonProgressAsync(user.Id, lessonId);
-        return Ok(fullProgress.ExerciseProgress.Values.ToList());
+        if (exercise == null)
+            return NotFound(new { message = "Exercise not found" });
+
+        var correctAnswer = GetCorrectAnswerForExercise(exercise);
+
+        return Ok(new CorrectAnswerDto(correctAnswer));
     }
 
-    [HttpGet("lesson/{lessonId}/submissions")]
-    public async Task<ActionResult<List<SubmitAnswerResponse>>> GetLessonSubmissions(
-        string lessonId
-    )
+    /// <summary>
+    /// Extracts correct answer from exercise based on type (mirrors LessonService.GetCorrectAnswer)
+    /// </summary>
+    private static string? GetCorrectAnswerForExercise(Exercise exercise)
     {
-        var user = HttpContext.GetCurrentUser();
-        if (user == null)
-            return Unauthorized();
-
-        var submissions = await _progressService.GetLessonSubmissionsAsync(user.Id, lessonId);
-        return Ok(submissions);
+        return exercise switch
+        {
+            MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.OptionText,
+            FillInBlankExercise fib => fib.CorrectAnswer,
+            TranslationExercise te => te.TargetText,
+            ListeningExercise le => le.CorrectAnswer,
+            _ => null,
+        };
     }
 }

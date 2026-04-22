@@ -17,7 +17,7 @@ export interface Exercise {
   id: string;
   lessonId: string;
   title: string;
-  instructions: string;
+  question: string;
   estimatedDurationMinutes: number;
   difficultyLevel: DifficultyLevel | number;
   points: number;
@@ -29,7 +29,6 @@ export interface Exercise {
 
 export interface ExerciseFormControls {
   title: FormControl<string>;
-  instructions: FormControl<string>;
   question: FormControl<string>;
   estimatedDurationMinutes: FormControl<number>;
   difficultyLevel: FormControl<DifficultyLevel>;
@@ -132,7 +131,6 @@ export type QuestionOptionForm = FormGroup<QuestionOptionFormControls>;
 
 interface BaseExerciseFormValue {
   title: string;
-  instructions: string;
   estimatedDurationMinutes: number;
   question: string;
   difficultyLevel: DifficultyLevel;
@@ -183,7 +181,6 @@ export type ExerciseFormValue =
 
 export interface CreateExerciseBase {
   title: string;
-  instructions: string;
   estimatedDurationMinutes: number;
   difficultyLevel: DifficultyLevel;
   points: number;

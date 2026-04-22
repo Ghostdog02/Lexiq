@@ -48,7 +48,7 @@ public class CourseService(BackendDbContext context)
         return course;
     }
 
-    public async Task<Course?> UpdateCourseAsync(string id, Dtos.UpdateCourseDto dto)
+    public async Task<Course?> UpdateCourseAsync(string id, UpdateCourseDto dto)
     {
         var course = await _context.Courses.FindAsync(id);
         if (course == null)

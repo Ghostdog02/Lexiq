@@ -3,6 +3,7 @@ using Backend.Api.Mapping;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ namespace Backend.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Admin")]
 public class UserManagementController(BackendDbContext context, UserManager<User> userManager)
     : ControllerBase
 {
@@ -53,7 +55,7 @@ public class UserManagementController(BackendDbContext context, UserManager<User
     [HttpPost("assignRole")]
     public async Task<IActionResult> AssignRole([FromBody] UserRoleDto userRoleDto)
     {
-        var user = await _userManager.FindByIdAsync(userRoleDto.UserId.ToString());
+        var user = await _userManager.FindByIdAsync(userRoleDto.UserId);
 
         if (user == null)
             return NotFound($"User with ID {userRoleDto.UserId} not found.");
@@ -72,14 +74,22 @@ public class UserManagementController(BackendDbContext context, UserManager<User
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(string id, [FromBody] UpdateUserDto dto)
+    public async Task<IActionResult> Update(string id, [FromBody] UserManagementUpdateDto dto)
     {
         var existingUser = await _userManager.FindByIdAsync(id);
 
         if (existingUser == null)
             return NotFound($"User with id {id} was not found.");
 
-        existingUser.UpdateUserCredentials(dto, _userManager);
+        // Update user properties from DTO
+        existingUser.UserName = dto.UserName;
+        existingUser.NormalizedUserName = _userManager.NormalizeName(dto.UserName);
+        existingUser.Email = dto.Email;
+        existingUser.NormalizedEmail = _userManager.NormalizeEmail(dto.Email);
+        existingUser.PhoneNumber = dto.PhoneNumber;
+        existingUser.PhoneNumberConfirmed = !string.IsNullOrWhiteSpace(dto.PhoneNumber);
+        existingUser.LastLoginDate = dto.LastLoginDate;
+
         await _userManager.UpdateAsync(existingUser);
         await _context.SaveChangesAsync();
 

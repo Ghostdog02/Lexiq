@@ -37,7 +37,7 @@ export class LessonService {
 
   async getCourses(): Promise<Course[]> {
     const result = await firstValueFrom(
-      this.httpClient.get<Course[]>('/api/course', { withCredentials: true })
+      this.httpClient.get<Course[]>('/api/courses')
     );
 
     if (!result) {
@@ -50,7 +50,7 @@ export class LessonService {
 
   async getLessonsByCourse(courseId: string): Promise<Lesson[]> {
     const result = await firstValueFrom(
-      this.httpClient.get<Lesson[]>(`/api/lesson/course/${courseId}`, { withCredentials: true })
+      this.httpClient.get<Lesson[]>(`/api/lessons/course/${courseId}`)
     );
 
     if (!result) {
@@ -64,7 +64,7 @@ export class LessonService {
   async getLesson(lessonId: string): Promise<Lesson | null> {
     try {
       const result = await firstValueFrom(
-        this.httpClient.get<Lesson>(`/api/lesson/${lessonId}`, { withCredentials: true })
+        this.httpClient.get<Lesson>(`/api/lessons/${lessonId}`)
       );
       return result;
     } catch (error) {
@@ -85,7 +85,7 @@ export class LessonService {
     };
 
     const result = await firstValueFrom(
-      this.httpClient.post<CreateLessonApiResponse>('/api/lesson', payload, { withCredentials: true })
+      this.httpClient.post<CreateLessonApiResponse>('/api/lessons', payload)
     );
 
     console.log('✅ Lesson created:', result);
@@ -95,7 +95,6 @@ export class LessonService {
   private mapFormToCreateDto(formValue: ExerciseFormValue, index: number): CreateExerciseDto {
     const base: CreateExerciseBase = {
       title: formValue.title,
-      instructions: formValue.instructions,
       estimatedDurationMinutes: formValue.estimatedDurationMinutes,
       difficultyLevel: formValue.difficultyLevel,
       points: formValue.points,
@@ -160,7 +159,7 @@ export class LessonService {
       };
 
       const result = await firstValueFrom(
-        this.httpClient.put<UpdateLessonApiResponse>(`/api/lesson/${lessonId}`, updateDto, { withCredentials: true })
+        this.httpClient.put<UpdateLessonApiResponse>(`/api/lessons/${lessonId}`, updateDto)
       );
 
       console.log('✅ Lesson updated:', result);
@@ -174,9 +173,7 @@ export class LessonService {
   async deleteLesson(lessonId: string): Promise<boolean> {
     try {
       const response = await firstValueFrom(
-        this.httpClient.delete<{isSuccessful: boolean, message: string}>(`/api/lesson/${lessonId}`,
-          { withCredentials: true }
-        )
+        this.httpClient.delete<{isSuccessful: boolean, message: string}>(`/api/lessons/${lessonId}`)
       );
       console.log('✅ Lesson deleted:', response);
       return true;
@@ -187,22 +184,6 @@ export class LessonService {
   }
 
   /**
-   * Submit an answer for a specific exercise.
-   * @param exerciseId The ID of the exercise
-   * @param answer The user's answer (option ID for multiple choice, text for others)
-   * @returns Server response with correctness, points, and lesson progress
-   */
-  async submitExerciseAnswer(exerciseId: string, answer: string): Promise<SubmitAnswerResponse> {
-    return await firstValueFrom(
-      this.httpClient.post<SubmitAnswerResponse>(
-        `/api/exercise/${exerciseId}/submit`,
-        { answer },
-        { withCredentials: true }
-      )
-    );
-  }
-
-  /**
    * Mark a lesson as completed.
    * @param lessonId The ID of the lesson to complete
    * @returns Completion status, XP earned, and next lesson info
@@ -210,9 +191,8 @@ export class LessonService {
   async completeLesson(lessonId: string): Promise<CompleteLessonResponse> {
     return await firstValueFrom(
       this.httpClient.post<CompleteLessonResponse>(
-        `/api/lesson/${lessonId}/complete`,
-        {},
-        { withCredentials: true }
+        `/api/lessons/${lessonId}/complete`,
+        {}
       )
     );
   }
@@ -227,8 +207,7 @@ export class LessonService {
     try {
       return await firstValueFrom(
         this.httpClient.get<UserExerciseProgress[]>(
-          `/api/exercise/lesson/${lessonId}/progress`,
-          { withCredentials: true }
+          `/api/lessons/${lessonId}/progress`
         )
       );
     } catch (error) {
@@ -247,7 +226,7 @@ export class LessonService {
     try {
       return await firstValueFrom(
         this.httpClient.get<SubmitAnswerResponse[]>(
-          `/api/exercise/lesson/${lessonId}/submissions`,
+          `/api/lessons/${lessonId}/submissions`,
           { withCredentials: true }
         )
       );
@@ -265,8 +244,7 @@ export class LessonService {
     try {
       return await firstValueFrom(
         this.httpClient.get<UserXp>(
-          `/api/user/xp`,
-          { withCredentials: true }
+          `/api/user/xp`
         )
       );
     } catch (error) {
