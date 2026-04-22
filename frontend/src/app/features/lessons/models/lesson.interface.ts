@@ -18,7 +18,6 @@ export interface Lesson {
   earnedXp?: number;
   totalPossibleXp?: number;
   isCompleted?: boolean;
-  // Derived client-side, not from API
   status: LessonStatus;
   icon?: string; // Assigned dynamically by UI
 }
