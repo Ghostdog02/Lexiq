@@ -24,11 +24,11 @@ jobs:
     permissions:
       contents: read
       packages: read
-    
+
     steps:
       - name: Set lowercase repo name
         run: echo "REPO_LOWER=$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-      
+
       - name: Replace all slashesh with dashes
         run: |
           BRANCH="${{ github.ref_name }}"
@@ -42,8 +42,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-  continuous-delivery:
+      - name: Verify backend image exists
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/backend:${{ env.BRANCH }}
+          echo "✅ Backend image successfully pulled from registry"
+
+      - name: Verify frontend image exists
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/frontend:${{ env.BRANCH }}
+          echo "✅ Frontend image successfully pulled from registry"
+
+  test-backend:
     needs: pull-and-test
+    uses: Ghostdog02/Lexiq/.github/workflows/test.yml@master
+    permissions:
+      contents: read
+
+  continuous-delivery:
+    needs: test-backend
     uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@master
     permissions:
       packages: read
