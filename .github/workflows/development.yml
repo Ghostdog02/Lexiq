@@ -11,9 +11,9 @@ env:
 
 jobs:
   build-and-push-docker:
-    uses: Ghostdog02/Lexiq/.github/workflows/build-and-push-docker.yml@master
+    uses: Ghostdog02/Lexiq/.github/workflows/ci-cd/build-and-push-docker.yml@master
     with:
-      config-path: .github/workflows/build-and-push-docker.yml
+      config-path: .github/workflows/ci-cd/build-and-push-docker.yml
     permissions:
       contents: read
       packages: write
@@ -60,11 +60,11 @@ jobs:
 
   continuous-delivery:
     needs: test-backend
-    uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@master
+    uses: Ghostdog02/Lexiq/.github/workflows/ci-cd/continuous-delivery.yml@master
     permissions:
       packages: read
     with:
-      config-path: .github/workflows/continuous-delivery.yml
+      config-path: .github/workflows/ci-cd/continuous-delivery.yml
     secrets:
       HETZNER_PROD_PRIVATE_SSH_KEY: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
       HETZNER_PROD_HOST: ${{ secrets.HETZNER_PROD_HOST }}
