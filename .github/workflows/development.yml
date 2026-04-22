@@ -44,12 +44,12 @@ jobs:
 
       - name: Verify backend image exists
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/backend:${{ env.BRANCH }}
+          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ env.BRANCH }}
           echo "✅ Backend image successfully pulled from registry"
 
       - name: Verify frontend image exists
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/frontend:${{ env.BRANCH }}
+          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ env.BRANCH }}
           echo "✅ Frontend image successfully pulled from registry"
 
   test-backend:
