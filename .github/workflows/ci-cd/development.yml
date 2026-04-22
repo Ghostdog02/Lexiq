@@ -54,7 +54,7 @@ jobs:
 
   test-backend:
     needs: pull-and-test
-    uses: Ghostdog02/Lexiq/.github/workflows/test.yml@master
+    uses: Ghostdog02/Lexiq/.github/workflows/ci-cd/test.yml@master
     permissions:
       contents: read
 
