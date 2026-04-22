@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using Backend.Api.Dtos;
 using Backend.Database;
 using Backend.Database.Entities;
@@ -13,17 +12,19 @@ public class ExerciseProgressService(
     BackendDbContext context,
     LessonService lessonService,
     ExerciseService exerciseService,
-    UserManager<User> userManager
+    UserManager<User> userManager,
+    AchievementService achievementService
 )
 {
     private readonly BackendDbContext _context = context;
     private readonly LessonService _lessonService = lessonService;
     private readonly ExerciseService _exerciseService = exerciseService;
     private readonly UserManager<User> _userManager = userManager;
+    private readonly AchievementService _achievementService = achievementService;
 
     public const double DefaultCompletionThreshold = 0.70;
 
-    public async Task<SubmitAnswerResponse> SubmitAnswerAsync(
+    public async Task<ExerciseSubmitResult> SubmitAnswerAsync(
         string userId,
         string exerciseId,
         string answer
@@ -43,13 +44,28 @@ public class ExerciseProgressService(
         if (exercise.Lesson?.IsLocked == true && !canBypassLocks)
             throw new InvalidOperationException("Cannot submit answers for a locked lesson");
 
+        if (exercise.IsLocked && !canBypassLocks)
+            throw new InvalidOperationException("Cannot submit answers for a locked exercise");
+
         var isCorrect = ValidateAnswer(exercise, answer);
         var pointsEarned = isCorrect ? exercise.Points : 0;
+
+        // Check hearts (don't allow submission if hearts depleted, unless bypass)
+        if (!canBypassLocks && user != null && user.Hearts <= 0)
+            throw new InvalidOperationException("No hearts remaining. Cannot submit answer.");
+
+        // Decrement hearts on wrong answer (but not for admins/creators)
+        if (!isCorrect && !canBypassLocks && user != null)
+        {
+            user.Hearts = Math.Max(0, user.Hearts - 1);
+        }
 
         // Upsert progress
         var progress = await _context.UserExerciseProgress.FirstOrDefaultAsync(p =>
             p.UserId == userId && p.ExerciseId == exerciseId
         );
+
+        var wasAlreadyCompleted = progress?.IsCompleted == true;
 
         if (progress == null)
         {
@@ -71,7 +87,22 @@ public class ExerciseProgressService(
             progress.CompletedAt = isCorrect ? (progress.CompletedAt ?? DateTime.UtcNow) : null;
         }
 
+        // Update cached TotalPointsEarned only on first correct submission
+        if (isCorrect && !wasAlreadyCompleted && user != null)
+        {
+            user.TotalPointsEarned += pointsEarned;
+        }
+
         await _context.SaveChangesAsync();
+
+        // Unlock any newly earned achievements after XP is persisted
+        if (isCorrect && !wasAlreadyCompleted && user != null)
+        {
+            await _achievementService.CheckAndUnlockAchievementsAsync(
+                user.Id,
+                user.TotalPointsEarned
+            );
+        }
 
         // Unlock the next exercise if this one was completed successfully
         var nextExerciseUnlocked = false;
@@ -80,14 +111,23 @@ public class ExerciseProgressService(
             nextExerciseUnlocked = await _exerciseService.UnlockNextExerciseAsync(exerciseId);
         }
 
-        var fullProgress = await GetFullLessonProgressAsync(userId, exercise.LessonId);
+        var correctAnswer = isCorrect
+            ? null
+            : exercise switch
+            {
+                MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)
+                    ?.OptionText,
+                FillInBlankExercise fib => fib.CorrectAnswer,
+                TranslationExercise te => te.TargetText,
+                ListeningExercise le => le.CorrectAnswer,
+                _ => null,
+            };
 
-        return new SubmitAnswerResponse(
+        return new ExerciseSubmitResult(
             IsCorrect: isCorrect,
             PointsEarned: pointsEarned,
-            CorrectAnswer: isCorrect ? null : GetCorrectAnswer(exercise),
-            Explanation: exercise.Explanation,
-            LessonProgress: fullProgress.Summary
+            CorrectAnswer: correctAnswer,
+            Explanation: exercise.Explanation
         );
     }
 
@@ -99,14 +139,12 @@ public class ExerciseProgressService(
                 .FirstOrDefaultAsync(l => l.Id == lessonId)
             ?? throw new ArgumentException("Lesson not found");
 
-        var fullProgress = await GetFullLessonProgressAsync(userId, lessonId);
+        var fullProgress = await _lessonService.GetFullLessonProgressAsync(userId, lessonId);
         var meetsThreshold = fullProgress.Summary.MeetsCompletionThreshold;
 
-        var wasUnlocked = false;
-        if (meetsThreshold)
-        {
-            wasUnlocked = await _lessonService.UnlockNextLessonAsync(lessonId);
-        }
+        var unlockStatus = meetsThreshold
+            ? await _lessonService.UnlockNextLessonAsync(lessonId)
+            : UnlockStatus.NoNextLesson;
 
         var isLastInCourse = await _lessonService.IsLastLessonInCourseAsync(lessonId);
         var nextLesson = await _lessonService.GetNextLessonAsync(lessonId);
@@ -124,134 +162,11 @@ public class ExerciseProgressService(
                     nextLesson.Id,
                     nextLesson.Title,
                     nextLesson.CourseId,
-                    wasUnlocked,
+                    unlockStatus == UnlockStatus.Unlocked,
                     nextLesson.IsLocked
                 )
                 : null
         );
-    }
-
-    public async Task<LessonProgressResult> GetFullLessonProgressAsync(
-        string userId,
-        string lessonId
-    )
-    {
-        var data = await QueryExerciseProgressAsync(e => e.LessonId == lessonId, userId);
-
-        var summary = BuildProgressSummary(data);
-
-        var exerciseProgress = data.Where(d => d.Progress != null)
-            .ToDictionary(
-                d => d.ExerciseId,
-                d => new UserExerciseProgressDto(
-                    d.ExerciseId,
-                    d.Progress!.IsCompleted,
-                    d.Progress.PointsEarned,
-                    d.Progress.CompletedAt
-                )
-            );
-
-        return new LessonProgressResult(summary, exerciseProgress);
-    }
-
-    public async Task<Dictionary<string, LessonProgressSummary>> GetProgressForLessonsAsync(
-        string userId,
-        List<string> lessonIds
-    )
-    {
-        var data = await QueryExerciseProgressAsync(e => lessonIds.Contains(e.LessonId), userId);
-
-        return data.GroupBy(d => d.LessonId).ToDictionary(g => g.Key, g => BuildProgressSummary(g));
-    }
-
-    public async Task<List<SubmitAnswerResponse>> GetLessonSubmissionsAsync(
-        string userId,
-        string lessonId
-    )
-    {
-        var exercises = await _context
-            .Exercises.Where(e => e.LessonId == lessonId)
-            .Include(e => (e as MultipleChoiceExercise)!.Options)
-            .OrderBy(e => e.OrderIndex)
-            .ToListAsync();
-
-        var exerciseIds = exercises.Select(e => e.Id).ToList();
-
-        var progressByExercise = await _context
-            .UserExerciseProgress.Where(p =>
-                p.UserId == userId && exerciseIds.Contains(p.ExerciseId)
-            )
-            .ToDictionaryAsync(p => p.ExerciseId);
-
-        var fullProgress = await GetFullLessonProgressAsync(userId, lessonId);
-
-        return exercises.Select(exercise =>
-        {
-            var hasProgress = progressByExercise.TryGetValue(exercise.Id, out var progress);
-
-            return new SubmitAnswerResponse(
-                IsCorrect: hasProgress && progress!.IsCompleted,
-                PointsEarned: hasProgress ? progress!.PointsEarned : 0,
-                CorrectAnswer: hasProgress && !progress!.IsCompleted
-                    ? GetCorrectAnswer(exercise)
-                    : null,
-                Explanation: exercise.Explanation,
-                LessonProgress: fullProgress.Summary
-            );
-        }).ToList();
-    }
-
-    private async Task<List<ExerciseProgressRow>> QueryExerciseProgressAsync(
-        Expression<Func<Exercise, bool>> filter,
-        string userId
-    )
-    {
-        return await _context
-            .Exercises.Where(filter)
-            .GroupJoin(
-                _context.UserExerciseProgress.Where(p => p.UserId == userId),
-                exercise => exercise.Id,
-                progress => progress.ExerciseId,
-                (exercise, progressGroup) =>
-                    new ExerciseProgressRow
-                    {
-                        LessonId = exercise.LessonId,
-                        ExerciseId = exercise.Id,
-                        Points = exercise.Points,
-                        Progress = progressGroup.FirstOrDefault(),
-                    }
-            )
-            .ToListAsync();
-    }
-
-    private static LessonProgressSummary BuildProgressSummary(IEnumerable<ExerciseProgressRow> data)
-    {
-        var items = data.ToList();
-
-        if (items.Count == 0)
-            return new LessonProgressSummary(0, 0, 0, 0, 1.0, true);
-
-        var completedCount = items.Count(d => d.Progress?.IsCompleted == true);
-        var earnedXp = items.Sum(d => d.Progress?.PointsEarned ?? 0);
-        var totalPossibleXp = items.Sum(d => d.Points);
-        var completionPct = totalPossibleXp > 0 ? (double)earnedXp / totalPossibleXp : 1.0;
-
-        return new LessonProgressSummary(
-            CompletedExercises: completedCount,
-            TotalExercises: items.Count,
-            EarnedXp: earnedXp,
-            TotalPossibleXp: totalPossibleXp,
-            CompletionPercentage: Math.Round(completionPct, 2),
-            MeetsCompletionThreshold: completionPct >= DefaultCompletionThreshold
-        );
-    }
-
-    private class ExerciseProgressRow
-    {
-        public required string LessonId { get; init; }
-        public required string ExerciseId { get; init; }
-        public required int Points { get; init; }
-        public UserExerciseProgress? Progress { get; init; }
     }
 
     private static bool ValidateAnswer(Exercise exercise, string answer)
@@ -377,17 +292,5 @@ public class ExerciseProgressService(
         }
 
         return matrix[s2.Length, s1.Length];
-    }
-
-    private static string? GetCorrectAnswer(Exercise exercise)
-    {
-        return exercise switch
-        {
-            MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)?.OptionText,
-            FillInBlankExercise fib => fib.CorrectAnswer,
-            TranslationExercise te => te.TargetText,
-            ListeningExercise le => le.CorrectAnswer,
-            _ => null,
-        };
     }
 }

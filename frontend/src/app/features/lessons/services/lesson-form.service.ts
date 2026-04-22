@@ -66,7 +66,6 @@ export class LessonFormService {
   private createBaseExerciseControls() {
     return {
       title: this.fb.control(''),
-      instructions: this.fb.control<string>(''),
       estimatedDurationMinutes: this.fb.control<number>(1),
       question: this.fb.control('', {
         validators: Validators.required

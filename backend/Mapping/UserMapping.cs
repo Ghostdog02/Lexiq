@@ -30,6 +30,7 @@ public static class UserMapping
         return new User
         {
             UserName = CleanUsername(validPayload.Name),
+            Email = validPayload.Email,
             EmailConfirmed = true,
             NormalizedEmail = userManager.NormalizeEmail(validPayload.Email),
             NormalizedUserName = userManager.NormalizeEmail(validPayload.Name),

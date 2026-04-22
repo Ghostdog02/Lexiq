@@ -4,7 +4,13 @@ WORKDIR /src
 COPY *.sln ./
 COPY Backend.Api.csproj ./
 COPY Database/Backend.Database.csproj ./Database/
-COPY wwwroot ./
+
+RUN mkdir -p wwwroot/uploads
+RUN mkdir -p wwwroot/uploads/audio
+RUN mkdir -p wwwroot/uploads/documents
+RUN mkdir -p wwwroot/uploads/images
+RUN mkdir -p wwwroot/uploads/videos
+RUN mkdir -p wwwroot/uploads/files
 
 RUN dotnet restore ./Backend.Api.csproj
 

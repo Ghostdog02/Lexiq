@@ -1,10 +1,6 @@
-#mainAside{
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 100;
+#main-aside {
     border-right: 2px solid #3b4951;
-    padding: 1.5em 2.2em 1em 1.3em;
+    padding: 1.5em;
     height: 100vh;
     width: 18em;
     position: sticky;
@@ -38,7 +34,7 @@
   }
 }
 
-.sideBarLinks{
+.sidebar-links{
     display: flex;
     flex-direction: column;
     margin-top: 1.5em;
@@ -82,6 +78,13 @@
         .icon {
             font-size: var(--icon-size-md);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+            // Image icon sizing (SVG files via <img> tag)
+            &[width] {
+                width: 1.5rem;
+                height: 1.5rem;
+                flex-shrink: 0;
+            }
         }
 
         &:hover{

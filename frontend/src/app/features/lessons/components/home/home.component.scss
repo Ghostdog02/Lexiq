@@ -1,13 +1,8 @@
 @use '../../../../../styles.scss' as styles;
+@use '../../../../shared/mixins' as mixins;
+@use '../../../../shared/loading' as loading;
 
-@mixin glass-card {
-  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  position: relative;
-}
-
+@include loading.system;
 
 @mixin hover-lift {
   transition: all 200ms ease-in-out;
@@ -21,7 +16,7 @@
 }
 
 @mixin sidebar-button {
-  @include glass-card;
+  @include mixins.glass-card;
   @include hover-lift;
   color: var(--white);
   padding: 1.125rem 1.5rem;
@@ -33,71 +28,68 @@
   }
 }
 
-.learning-path-container {
-  @include styles.animated-background;
-  padding: 2rem clamp(1rem, 3vw, 3rem);
-  max-width: 1600px;
-  margin: 0 auto;
-}
-
 .home-grid {
   display: flex;
-  justify-content: center;
-  gap: clamp(2rem, 4vw, 4rem);
+  gap: 2rem;
 }
 
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1.55rem;
+  gap: 1rem;
   position: sticky;
-  align-self: flex-start;
-  top: 2rem;
-  flex: 0 0 clamp(280px, 25vw, 380px);
+  top: 1rem; 
+  align-self: flex-start;  
+  flex: 1 2 auto;
+  min-width: 25rem;
+  max-width: 30rem; 
 }
 
-.header-stats {
+.sidebar-row {
   display: flex;
   flex-direction: row;
-  gap: 0.75rem;
+  gap: 1rem;
+}
 
-  .stat-card {
-    @include glass-card;
-    @include hover-lift;
-    padding: 1.125rem 1.5rem;
+.stat-card {
+  @include mixins.glass-card;
+  @include hover-lift;
+  padding: 1.125rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: 0.875rem;
+  flex: 1;
+  min-width: 0; 
+
+  .stat-icon {
+    font-size: var(--icon-size-md);
+    margin: 0;
+    justify-self: flex-start;
+  }
+
+  .stat-content {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.875rem;
-    flex: 1;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
 
-    .stat-icon {
-      font-size: var(--icon-size-md);
-    }
+  .stat-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--white);
+  }
 
-    .stat-content {
-      display: flex;
-      flex-direction: column;
-      gap: 0.125rem;
-    }
-
-    .stat-value {
-      font-size: 1.6rem;
-      font-weight: 800;
-      color: var(--white);
-    }
-
-    .stat-label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--muted);
-      text-transform: uppercase;
-    }
+  .stat-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
   }
 }
 
 .daily-quests {
-  @include glass-card;
+  @include mixins.glass-card;
   @include hover-lift;
   padding: 1.5rem 1.75rem;
 
@@ -165,25 +157,20 @@
   }
 }
 
-.sidebar-buttons {
-  display: flex;
-  flex-direction: row;
-  gap: 1rem;
-}
-
-.path-wrapper {
-  flex: 1 1 auto;
-  max-width: 800px;
+.courses-container {
+  flex: 2 1 auto;
 }
 
 .add-unit-button {
   @include sidebar-button;
+  flex: 1;
+  min-width: 0;
 }
 
 .unit-header {
   text-align: center;
-  margin: 0 0 2rem;
-  padding: 2rem;
+  margin: 0 0 1rem;
+  padding: 1rem;
   background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -223,6 +210,7 @@
 .lessons-grid {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 2rem;
   padding: 2rem 0;
 }
@@ -369,7 +357,12 @@
   }
 }
 
+.lesson-info {
+  align-self: center;
+}
+
 .lesson-title {
+  margin: 0 0 1rem 0;
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--white);
@@ -414,7 +407,6 @@
   }
 }
 
-// Completed lessons get a green-tinted progress bar
 .lesson-node.completed .lesson-progress {
   .progress-fill {
     background: linear-gradient(90deg, var(--color-success-dark) 0%, var(--color-success) 100%);
@@ -444,6 +436,8 @@
 
 .jump-button {
   @include sidebar-button;
+  flex: 1;
+  min-width: 0;
 }
 
 /* Responsive layout */
@@ -462,7 +456,7 @@
     order: -1;
   }
 
-  .path-wrapper {
+  .courses-container {
     width: 100%;
     max-width: 800px;
   }

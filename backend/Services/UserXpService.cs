@@ -19,21 +19,19 @@ public class UserXpService(BackendDbContext context)
         if (!userExists)
             return null;
 
-        var progressData = await _context.UserExerciseProgress
-            .Where(p => p.UserId == userId)
+        var progressData = await _context
+            .UserExerciseProgress.Where(p => p.UserId == userId)
             .Select(p => new
             {
                 p.PointsEarned,
                 p.IsCompleted,
-                p.CompletedAt
+                p.CompletedAt,
             })
             .ToListAsync();
 
         var totalXp = progressData.Sum(p => p.PointsEarned);
         var completedCount = progressData.Count(p => p.IsCompleted);
-        var lastActivity = progressData
-            .Where(p => p.CompletedAt.HasValue)
-            .Max(p => p.CompletedAt);
+        var lastActivity = progressData.Where(p => p.CompletedAt.HasValue).Max(p => p.CompletedAt);
 
         return new UserXpDto(
             UserId: userId,

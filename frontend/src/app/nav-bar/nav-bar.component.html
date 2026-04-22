@@ -1,4 +1,4 @@
-<aside id="mainAside">
+<aside id="main-aside">
     @if (userIsAdmin) {
       <div class="admin-badge">
         <span class="crown-icon">👑</span>
@@ -6,8 +6,13 @@
       </div>
     }
 
-    <ul class="sideBarLinks">
-        <li><a routerLink="/"><span class="icon">🏠</span> Home</a></li>
+    <ul class="sidebar-links">
+        <li>
+          <a routerLink="/">
+            <img src="assets/icons/home-button.svg" class="icon" alt="Home" width="24" height="24">
+            Home
+          </a>
+        </li>
 
         <li><a routerLink="/leaderboard"><span class="icon">🏆</span> Leaderboard</a></li>
 

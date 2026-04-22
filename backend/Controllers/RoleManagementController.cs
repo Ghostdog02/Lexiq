@@ -1,4 +1,5 @@
 using Backend.Database.Entities.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,6 +7,7 @@ namespace Backend.Api.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Admin")]
 public class RoleManagementController(UserManager<User> userManager) : ControllerBase
 {
     private readonly UserManager<User> _userManager = userManager;

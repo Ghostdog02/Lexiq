@@ -13,4 +13,10 @@ public class User : IdentityUser
     public List<UserExerciseProgress> ExerciseProgress { get; set; } = [];
 
     public int TotalPointsEarned { get; set; }
+
+    public int Hearts { get; set; } = 3;
+
+    public DateTime LastHeartResetAt { get; set; } = DateTime.UtcNow;
+
+    public UserAvatar? Avatar { get; set; }
 }

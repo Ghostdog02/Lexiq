@@ -1,0 +1,761 @@
+# Backend Test Coverage Documentation
+
+**Last Updated**: 2026-03-27
+**Framework**: xUnit v3 + Testcontainers.MsSql
+**Test Project**: `backend/Tests/Backend.Tests.csproj`
+
+## Overview
+
+The Lexiq backend has **19 test classes** covering authentication, authorization, user/role management, user language enrollment, file upload security, CRUD operations (Language, Course), exercise validation (all 4 types), leaderboard, streaks, levels, and JWT generation. Tests use **Testcontainers** to spin up real SQL Server 2022 containers for integration tests, ensuring production-like behavior.
+
+---
+
+## Test Inventory
+
+### 1. **AuthControllerTests.cs** (6 tests) — HTTP-level cookie behavior
+
+**Type**: Integration (WebApplicationFactory + Testcontainers)
+**Coverage**: POST /api/auth/google-login and POST /api/auth/logout cookie mechanics
+
+| Test | Purpose |
+|------|---------|
+| `GoogleLogin_SetsAuthTokenCookie` | Verifies `Set-Cookie: AuthToken=...` header exists |
+| `GoogleLogin_CookieIsHttpOnly` | Verifies `httponly` flag is present |
+| `GoogleLogin_CookieExpiresInConfiguredHours` | Verifies cookie expires in 24h (JWT_EXPIRATION_HOURS) |
+| `GoogleLogin_CookieValueIsValidJwt` | Verifies JWT structure (3 base64url segments) |
+| `Logout_SetsExpiredAuthTokenCookie` | Verifies logout sets past expiry date |
+
+**Mocking**: `IGoogleAuthService` mocked with Moq (avoids real Google API calls)
+
+---
+
+### 2. **AuthorizationTests.cs** (92 tests across 8 categories) — Role-based access control
+
+**Type**: Integration (WebApplicationFactory + Testcontainers)
+**Coverage**: Every protected endpoint in the system
+
+#### Categories
+
+1. **Unauthenticated → 401** (20 tests)
+   - Verifies all `[Authorize]`-guarded endpoints reject requests with no JWT
+   - Includes special case for `PUT /api/user/avatar` with multipart form data
+   - Tests: GET/POST/PUT/DELETE on /api/course, /api/lesson, /api/exercise
+   - Additional: GET /api/user/xp, /api/auth/is-admin, POST /api/lesson/{id}/complete, POST /api/lesson/{id}/unlock
+
+2. **Student → 403 on role-restricted** (13 tests)
+   - Students cannot create/update/delete content
+   - Tests: POST/PUT/DELETE on /api/language, /api/course, /api/lesson, /api/exercise
+   - Unlock endpoint: POST /api/lesson/{id}/unlock
+
+3. **ContentCreator → 403 on Admin-only** (5 tests)
+   - ContentCreators can create content but cannot manage languages or manually unlock
+   - Tests: POST/PUT/DELETE /api/language, DELETE /api/course, POST /api/lesson/{id}/unlock
+
+4. **ContentCreator → not rejected on Admin/ContentCreator endpoints** (8 tests)
+   - ContentCreators can access `[Authorize(Roles = "Admin,ContentCreator")]` endpoints
+   - Tests: POST/PUT /api/course, POST/PUT/DELETE /api/lesson, POST/PUT/DELETE /api/exercise
+   - Verifies ContentCreator role satisfies dual-role authorization
+
+5. **Admin → not rejected** (13 tests)
+   - Admins can access all role-restricted endpoints
+   - Tests verify status is NOT 401 or 403 (may be 404/400 if resource doesn't exist)
+   - Full coverage of language, course, lesson, exercise CRUD operations
+
+6. **Public endpoints are not blocked** (7 tests)
+   - Unauthenticated users can access public endpoints
+   - Tests: GET /api/language, /api/leaderboard, /api/user/{id}/xp, /api/auth/auth-status
+   - **Note**: Some endpoints marked as public in old docs are actually `[Authorize]` in code (e.g., GET /api/user/{id}/avatar)
+
+7. **Missing auth on management controllers** (2 tests — security documentation)
+   - `UserManagementController` has no `[Authorize]` — accessible without token
+   - `RoleManagementController` has no `[Authorize]` — accessible without token
+   - **These tests document a security gap that should be fixed before production**
+
+8. **Expired JWT → 401** (13 tests)
+   - Expired tokens (minted 1 hour ago) are rejected
+   - Tests: GET/POST/PUT on /api/course, /api/lesson, /api/exercise
+   - Additional: GET /api/user/xp, /api/auth/is-admin
+
+**JWT Minting**: Tests mint their own JWTs with correct issuer/audience/signing key to test policy enforcement
+
+---
+
+### 3. **LoginUserTests.cs** (10 tests) — GoogleAuthService integration
+
+**Type**: Integration (Testcontainers + real UserManager/RoleManager)
+**Coverage**: `GoogleAuthService.LoginUser` — three code paths
+
+#### Code Paths Tested
+
+1. **New user** (4 tests)
+   - Creates user in database
+   - Assigns "Student" role
+   - Adds Google login (UserLoginInfo)
+   - Returns non-null User with correct email/username
+
+2. **Returning Google user** (2 tests)
+   - Finds existing user by Google `sub` (UserLoginInfo)
+   - Does not create duplicate
+   - Returns existing User entity
+
+3. **Email-match user** (3 tests)
+   - Finds existing user by email (no Google login yet)
+   - Adds Google login
+   - **Does not assign role** (preserves existing roles)
+
+4. **Edge cases** (3 tests)
+   - Role assignment failure throws `InvalidOperationException`
+   - Missing picture URL → login succeeds (avatar download skipped)
+   - Avatar download failure → login succeeds (exception caught)
+
+**Real Dependencies**: Uses real `UserManager`, `RoleManager`, `AvatarService` backed by Testcontainers DB
+
+---
+
+### 4. **GetLeaderboardTests.cs** (22 tests) — Leaderboard queries
+
+**Type**: Integration (Testcontainers)
+**Coverage**: `LeaderboardService.GetLeaderboardAsync` — three time frames
+
+#### AllTime Tests (10 tests)
+
+- Orders by `User.TotalPointsEarned` descending (cached XP aggregate)
+- Does NOT sum `UserExerciseProgress` rows (validates caching contract)
+- Limits to top 50 entries
+- Current user outside top 50 → fetched separately with correct rank
+- Current user in top 50 → marked `IsCurrentUser: true`
+- Level calculated from total XP (formula: `floor((1 + sqrt(1 + xp/25)) / 2)`)
+- Username fallback chain: `UserName ?? Email ?? "Unknown"`
+
+#### Weekly Tests (7 tests)
+
+- Only includes progress from last 7 days (`CompletedAt >= UtcNow.AddDays(-7)`)
+- Excludes users with no progress in window (even if high cached XP)
+- Sums multiple progress rows in window
+- Orders by window XP descending
+- Current user outside top 50 → correct rank
+
+#### Monthly Tests (2 tests)
+
+- Only includes progress from last 30 days
+- Excludes progress older than 30 days
+
+#### Rank Change Tests (3 tests)
+
+- New entry (not in previous period) → `Change: 0`
+- User moved up (rank 3 → rank 1) → `Change: +2`
+- User moved down (rank 1 → rank 3) → `Change: -2`
+
+#### Avatar Tests (2 tests)
+
+- User with avatar → `Avatar: "/api/user/{id}/avatar"`
+- User without avatar → `Avatar: null`
+
+#### Streak Tests (1 test)
+
+- Leaderboard entries include `CurrentStreak` and `LongestStreak` fields
+
+---
+
+### 5. **GetStreakTests.cs** (9 tests) — Streak calculation
+
+**Type**: Integration (Testcontainers)
+**Coverage**: `LeaderboardService.GetStreakAsync` — consecutive day counting
+
+#### Rules
+
+- Counts consecutive UTC calendar days with **at least one completed exercise**
+- **Grace period**: if no activity today, yesterday still counts as current streak
+- Current streak resets to 0 if most recent activity is 2+ days ago
+
+#### Test Scenarios
+
+- No progress → `(current: 0, longest: 0)`
+- Only uncompleted progress → `(0, 0)` (IsCompleted=false rows ignored)
+- Single completion today → `(1, 1)`
+- Single completion yesterday → `(1, 1)` (grace period)
+- Single completion 2 days ago → `(0, 1)` (streak broken)
+- 3 consecutive days ending today → `(3, 3)`
+- 3 consecutive days ending yesterday → `(3, 3)` (grace extends to whole run)
+- Gap in middle → correct current and longest (e.g. yesterday + [gap] + 5-6 days ago)
+
+---
+
+### 6. **CalculateLevelTests.cs** (10 tests) — Level formula
+
+**Type**: Pure unit (no DB, no fixture)
+**Coverage**: `LeaderboardService.CalculateLevel` — static formula validation
+
+#### Formula
+
+```
+level = floor((1 + sqrt(1 + totalXp / 25)) / 2)
+threshold(n) = 100 * n * (n - 1)
+```
+
+#### Thresholds
+
+| XP | Level |
+|----|-------|
+| 0 | 1 |
+| 200 | 2 |
+| 600 | 3 |
+| 1200 | 4 |
+| 2000 | 5 |
+| 3000 | 6 |
+| 4200 | 7 |
+
+#### Test Coverage
+
+- Zero or negative XP → Level 1
+- Boundary values (199 → 1, 200 → 2, 599 → 2, 600 → 3)
+- Large XP (1,000,000) → does not overflow
+
+---
+
+### 7. **JwtServiceTests.cs** (13 tests) — JWT generation
+
+**Type**: Pure unit (sets env vars, no DB)
+**Coverage**: `JwtService.GenerateToken` — JWT structure and validation
+
+#### Claims Tested
+
+- `sub` claim contains User.Id
+- `email` claim contains User.Email
+- `name` claim contains User.UserName
+- `jti` claim is present (unique token ID)
+- `ClaimTypes.Role` claims for each role (Admin, ContentCreator, etc.)
+- Empty roles → no role claims
+
+#### Validation Tests
+
+- Token expires in configured hours (JWT_EXPIRATION_HOURS, default 24)
+- Token can be validated with correct signing key
+- Token validation **fails** with wrong signing key
+- Constructor throws `InvalidOperationException` if JWT_SECRET not set
+- ExpirationHours defaults to 24 if env var not set
+
+---
+
+## Test Infrastructure
+
+### DatabaseFixture
+
+- Shared across test classes via `IClassFixture<DatabaseFixture>`
+- Starts SQL Server 2022 container once per test run
+- Runs EF Core migrations
+- Seeds permanent content hierarchy:
+  - System User (satisfies `Course.CreatedById` FK)
+  - Language: "Italian"
+  - Course (1)
+  - Lesson (1)
+  - **40 × Exercise** (`fixture.ExerciseIds[0..39]`) — 4 types:
+    - [0-9]: FillInBlank (10 exercises)
+    - [10-19]: MultipleChoice (10 exercises, 3 options each)
+    - [20-29]: Listening (10 exercises)
+    - [30-39]: Translation (10 exercises)
+- **Why 40 exercises across 4 types?**
+  - `UserExerciseProgress` PK is `(UserId, ExerciseId)` — streak tests need one distinct ExerciseId per calendar day
+  - 10 iterations per type enables comprehensive testing of type-specific validation logic
+
+### UserBuilder
+
+- Fluent builder for creating Identity-compliant User entities
+- Sets `NormalizedUserName`, `NormalizedEmail`, `SecurityStamp`, `ConcurrencyStamp`
+- Methods: `WithUserName`, `WithEmail`, `WithTotalPoints`, `WithNullUserName`, `WithNullEmail`
+
+### DbSeeder
+
+- `AddUserAsync`, `AddUsersAsync` — insert users
+- `AddProgressAsync` — insert UserExerciseProgress row
+- `AddConsecutiveDaysActivityAsync` — batch insert N consecutive days of progress
+- `AddAvatarAsync` — insert UserAvatar binary row
+- `ClearLeaderboardDataAsync` — deletes Users, UserExerciseProgress, UserAvatars (excludes system user)
+
+### ControllerTestBase
+
+- Base class for `WebApplicationFactory` tests
+- Provides `GoogleAuthMock` (Moq) to avoid real Google API calls
+- Sets required env vars: JWT_SECRET, JWT_EXPIRATION_HOURS, DATA_PROTECTION_KEYS_PATH, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+- Clears env vars in `DisposeAsync`
+
+---
+
+## E2E User Journey Tests
+
+### 8. **StudentExerciseProgressJourneyTests.cs** (7 tests) — Exercise completion workflows
+
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: Core student learning workflows
+
+| Test | Purpose |
+|------|---------|
+| `Student_CompletesFirstExercise_UnlocksNextExercise` | Sequential unlock after correct answer |
+| `Student_SubmitsWrongAnswer_CanRetryInfinitely` | Infinite retries allowed without penalty |
+| `Student_ResubmitsCorrectAnswer_DoesNotDoubleXp` | XP idempotency (no double-counting) |
+| `Student_CompletesLesson_UnlocksNextLesson` | 70% completion threshold triggers unlock |
+| `Student_CompletesPartialLesson_ProgressRestoresCorrectly` | Progress tracking persists |
+| `Student_SubmitsWrongAnswer_ProgressShowsIncorrect` | Wrong submissions create records |
+| `Student_Below70Percent_LessonNotCompleted` | Below-threshold completion rejected |
+
+---
+
+### 9. **StudentSessionPersistenceTests.cs** (6 tests) — Progress restoration
+
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: Session state persistence
+
+| Test | Purpose |
+|------|---------|
+| `Student_CompletesPartial_ReturnsLater_ProgressRestored` | 3/5 exercises persist across sessions |
+| `Student_CompletesLesson_ReturnsLater_AllExercisesStillComplete` | Full completion persists |
+| `Student_SubmitsWrongAnswer_ReturnsLater_StillShowsWrong` | Wrong answer state persists |
+| `Student_PartialProgress_ThirdExerciseStillLocked` | Lock state persists |
+| `MultipleSessionsConsistentState_XpDoesNotDuplicate` | XP consistent across sessions |
+
+---
+
+### 10. **ExerciseSubmissionSecurityTests.cs** (9 tests) — Security and edge cases
+
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: Lock enforcement, role-based access, MultipleChoice validation, endpoint shapes
+
+| Test | Purpose |
+|------|---------|
+| `Student_SubmitsWrongAnswer_DoesNotUnlockNextExercise` | Wrong answers keep next exercise locked |
+| `Student_SubmitsToLockedExercise_Returns403` | Lock enforcement for students |
+| `Admin_SubmitsToLockedExercise_Success` | Admin bypass works |
+| `ContentCreator_SubmitsToLockedExercise_Success` | ContentCreator bypass works |
+| `Student_SubmitsToNonexistentExercise_Returns404` | Invalid exercise IDs handled |
+| `Student_SubmitsToExerciseInLockedLesson_Returns403` | Lesson-level locks propagate |
+| `Student_SubmitsCorrectMultipleChoiceAnswer_Success` | Option ID validation (vs text) |
+| `GetLessonProgress_ReturnsCorrectStructure` | Progress endpoint shape validated |
+| `GetLessonSubmissions_ReturnsAllExercisesWithSubmissionState` | Submissions endpoint validated |
+
+---
+
+### 11. **LeaderboardAndStreaksTests.cs** (5 tests) — Gamification features
+
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: Leaderboard ranking, streak tracking, avatar integration
+
+| Test | Purpose |
+|------|---------|
+| `Student_EarnsXp_AppearsOnLeaderboard` | XP triggers leaderboard appearance |
+| `Student_Builds3DayStreak_StreakDisplayedCorrectly` | Streak calculation works |
+| `Student_Inactive2Days_StreakResets` | Streak reset after gap |
+| `Student_UploadsAvatar_ShowsOnLeaderboard` | Avatar integration |
+| `TwoStudents_CompeteForRank_OrderedByXp` | Multi-user ranking |
+
+---
+
+### 12. **AdminContentManagementJourneyTests.cs** (6 tests) — Content CRUD workflows
+
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: Admin/ContentCreator content management
+
+| Test | Purpose |
+|------|---------|
+| `Admin_CreatesLesson_StudentCanAccessAndSolve` | Full create → unlock → solve flow |
+| `Admin_UpdatesLesson_StudentSeesChanges` | Update propagation |
+| `Admin_DeletesLesson_StudentCannotAccess` | Delete cascade behavior |
+| `ContentCreator_CreatesLesson_LockedByDefault` | Default lock state |
+| `Admin_AddsExerciseToExistingLesson_StudentSeesNewExercise` | Dynamic exercise addition |
+| `Student_CannotCreateCourse_Returns403` | Role restriction enforcement |
+
+---
+
+## Service Integration Tests
+
+### 13. **LanguageCrudTests.cs** (12 tests) — Language CRUD operations
+
+**Type**: Integration (Testcontainers)
+**Coverage**: `LanguageService` create, read, update, delete operations
+
+| Test | Purpose |
+|------|---------|
+| `CreateLanguage_ValidDto_ReturnsCreatedLanguage` | Valid DTO creates language successfully |
+| `CreateLanguage_NullFlagIconUrl_CreatesSuccessfully` | Null optional fields handled |
+| `CreateLanguage_SetsCreatedAt` | Timestamp initialized properly |
+| `GetAllLanguages_ReturnsAllLanguagesWithCourses` | Eager loads Courses navigation |
+| `GetLanguageById_IncludesCourses` | GetById includes Courses |
+| `GetLanguageById_NonexistentId_ReturnsNull` | Returns null for missing language |
+| `UpdateLanguage_UpdatesFields` | Updates name and FlagIconUrl |
+| `UpdateLanguage_NonexistentLanguage_ReturnsNull` | Returns null for missing language |
+| `UpdateLanguage_NullFlagIconUrl_SetsToNull` | Null in DTO sets field to null |
+| `DeleteLanguage_ExistingLanguage_ReturnsTrue` | Successful delete |
+| `DeleteLanguage_NonexistentLanguage_ReturnsFalse` | Returns false for missing language |
+| `DeleteLanguage_WithCourses_CascadeDeletes` | Cascade deletes child Courses |
+
+---
+
+### 14. **CourseCrudTests.cs** (16 tests) — Course CRUD operations
+
+**Type**: Integration (Testcontainers)
+**Coverage**: `CourseService` create, read, update, delete, partial updates
+
+**Categories:**
+- DTO validation (invalid language, null fields, timestamps)
+- Read operations (ordering by OrderIndex, eager loading)
+- Update operations (partial updates, timestamp changes)
+- Delete operations (cascade deletes, non-existent handling)
+
+**Key Tests:**
+- `CreateCourseAsync_InvalidLanguageName_ThrowsArgumentException`
+- `UpdateCourse_PartialFields_OnlyUpdatesProvidedFields`
+- `DeleteCourse_WithLessons_CascadeDeletes`
+- `GetAllCourses_ReturnsCoursesOrderedByOrderIndex`
+
+---
+
+### 15. **ExerciseValidationTests.cs** (23 tests) — Exercise answer validation
+
+**Type**: Integration (Testcontainers)
+**Coverage**: All four exercise type validation rules
+
+#### FillInBlank (9 tests)
+- Case sensitivity on/off
+- Whitespace trimming on/off
+- AcceptedAnswers comma-separated parsing
+- AcceptedAnswers whitespace handling
+
+#### Translation (8 tests)
+- Exact match (100% similarity)
+- Levenshtein distance calculation
+- Threshold edge cases (70%, 80%, 90%)
+- Multiple character substitutions
+
+#### Listening (4 tests)
+- Case sensitivity on/off
+- Always trims whitespace
+- AcceptedAnswers parsing
+
+#### MultipleChoice (3 tests)
+- Correct option ID validation
+- Wrong option ID rejection
+- Invalid option ID handling
+
+---
+
+### 16. **FileUploadsServiceTests.cs** (57 tests) — File upload security and validation
+
+**Type**: Unit tests (mocked `IWebHostEnvironment`, temp directory isolation)
+**Coverage**: FileUploadsService security, validation, and file handling
+
+#### Security Tests (8 tests)
+- Path traversal protection via `Path.GetFileName()` stripping
+- Embedded dots (`..`) rejection in filenames
+- Slash and backslash handling
+- GUID filename generation prevents filename-based attacks
+- `GetFilePhysicalPath` path traversal protection
+- `GetFileByFilenameAsync` path traversal rejection
+
+#### Validation Tests (8 tests)
+- Null and empty file rejection
+- Invalid file type rejection
+- Size limit enforcement per category:
+  - Image: 5MB
+  - Document: 10MB
+  - Video: 50MB
+  - Audio: 10MB
+- Extension validation for image and document types
+- Error messages list allowed extensions
+
+#### File Type Tests (28 Theory tests)
+- All valid extensions for each category:
+  - **Image**: .jpg, .jpeg, .png, .gif, .webp, .svg, .bmp
+  - **Document**: .pdf, .doc, .docx, .txt
+  - **Video**: .mp4, .avi, .mov, .webm
+  - **Audio**: .mp3, .wav, .ogg, .m4a
+- File save verification
+- Case-insensitive extension matching
+
+#### Upload by URL Tests (4 tests)
+- Empty URL rejection
+- Invalid URL rejection
+- Unreachable URL handling (timeout)
+- Invalid file type rejection
+
+#### Physical Path Tests (9 tests)
+- File existence checks
+- Cross-folder search (`FindFilePhysicalPath`)
+- Invalid file type handling
+- `GetFileByFilenameAsync` with/without file type parameter
+
+**Key Patterns:**
+- Uses temp directory for test isolation (cleaned up in `DisposeAsync`)
+- Mocks `IFormFile` with `CopyToAsync` implementation
+- Tests organized by concern: security → validation → functional
+- 4-commit split for large test file (infrastructure, security, validation, functional)
+
+---
+
+### 17. **UserManagementControllerTests.cs** (22 tests) — User management operations
+
+**Type**: Integration (WebApplicationFactory + Testcontainers)
+**Coverage**: UserManagementController endpoints for admin user operations
+
+#### GET /api/userManagement (3 tests)
+- Admin can retrieve all users
+- Student returns 403 Forbidden
+- Unauthenticated returns 401 Unauthorized
+
+#### GET /api/userManagement/{id} (3 tests)
+- Admin retrieves user by ID
+- Returns 404 for nonexistent user
+- Student returns 403 Forbidden
+
+#### GET /api/userManagement/email/{email} (3 tests)
+- Admin retrieves user by email
+- Returns 404 for nonexistent email
+- Student returns 403 Forbidden
+
+#### POST /api/userManagement/assignRole (4 tests)
+- Admin assigns role to user without roles
+- Admin attempting role assignment to user with existing role returns NoContent (idempotent)
+- Returns 404 for nonexistent user
+- Student returns 403 Forbidden
+
+#### PUT /api/userManagement/{id} (3 tests)
+- Admin updates user details (FullName, Email, PhoneNumber, LastLoginDate)
+- Returns 404 for nonexistent user
+- Student returns 403 Forbidden
+
+#### PUT /api/userManagement/updateLoginDate/{id} (3 tests)
+- Admin updates LastLoginDate to current UTC time
+- Returns 404 for nonexistent user
+- Student returns 403 Forbidden
+
+#### DELETE /api/userManagement/{id} (3 tests)
+- Admin deletes user
+- Returns 404 for nonexistent user
+- Student returns 403 Forbidden
+
+**Key Patterns:**
+- Uses `UserManagementUpdateDto` for full user updates (5 fields)
+- Verification uses fresh `UserManager` scope to avoid stale data
+- All mutations restricted to Admin role
+
+---
+
+### 18. **RoleManagementControllerTests.cs** (7 tests) — Role management operations
+
+**Type**: Integration (WebApplicationFactory + Testcontainers)
+**Coverage**: RoleManagementController endpoint for retrieving user roles
+
+#### GET /api/roleManagement/{email} (7 tests)
+- Admin retrieves ContentCreator role for test user
+- Admin retrieves Admin role for admin user
+- Admin retrieves Student role for student user
+- Returns 404 for nonexistent email
+- Returns 404 for user with no role assigned
+- Student returns 403 Forbidden
+- Unauthenticated returns 401 Unauthorized
+
+**Key Patterns:**
+- Endpoint returns first role as JSON string (quoted)
+- Tests verify authorization before functionality
+- Covers edge case: user exists but has no role
+
+---
+
+### 19. **UserLanguageServiceTests.cs** (10 tests) — User language enrollment
+
+**Type**: Integration (Testcontainers)
+**Coverage**: UserLanguageService enrollment, unenrollment, and composite key behavior
+
+#### Test Coverage
+- Enrollment creates UserLanguage record with correct timestamp
+- Idempotent enrollment returns existing record without updating timestamp
+- Enrollment with invalid languageId returns null
+- Unenrollment deletes record and returns true
+- Unenrollment of non-existent enrollment returns false
+- GetUserLanguagesAsync includes Language navigation property (eager loading)
+- GetUserLanguagesAsync returns empty list for users with no enrollments
+- GetUserLanguagesAsync returns all enrollments for multi-language users
+- Composite key uniqueness enforced by database (tests DbUpdateException)
+- Timestamp validation on enrollment
+
+**Key Patterns:**
+- Uses `DbSeeder.ClearLeaderboardDataAsync()` for test isolation
+- Composite key testing requires `_ctx.ChangeTracker.Clear()` to bypass EF Core's identity map
+- Tests idempotency by comparing timestamps (duplicate enrollment preserves original timestamp)
+- Tests database-level constraints separate from application-level validation
+
+---
+
+### 20. **AvatarServiceTests.cs** (30 tests) — Avatar validation, storage, and retrieval
+
+**Type**: Integration (Testcontainers) + Unit (static validation methods)
+**Coverage**: AvatarService validation, upsert, retrieval, batch checks, Google download
+
+#### Test Categories
+
+**Static Validation (11 tests):**
+- ValidateAvatarFile with all valid extensions (.jpg, .jpeg, .png, .gif, .webp)
+- Empty file rejection
+- Size limit enforcement (1MB max)
+- Unsupported extension rejection (.bmp, .svg, .tiff, .pdf)
+- Exact size limit boundary test
+
+**Content Type Mapping (7 tests):**
+- GetContentType for all valid extensions
+- Case-insensitive extension matching
+- Unknown extension falls back to image/jpeg
+
+**Upsert Operations (2 tests):**
+- UpsertAvatarAsync creates new UserAvatar record
+- UpsertAvatarAsync updates existing avatar (no duplicates)
+
+**Retrieval (2 tests):**
+- GetAvatarAsync returns binary data and content type
+- GetAvatarAsync returns null for users without avatar
+
+**Existence Checks (2 tests):**
+- HasAvatarAsync returns true/false correctly
+- No avatar returns false
+
+**Batch Operations (3 tests):**
+- GetUsersWithAvatarsAsync returns only users with avatars
+- Empty list returns empty set
+- No avatars returns empty set
+
+**Google Download (2 tests):**
+- DownloadAvatarAsync handles invalid URLs gracefully
+- DownloadAvatarAsync handles unreachable URLs without throwing
+
+**Key Patterns:**
+- Mocks IHttpClientFactory for DownloadAvatarAsync tests
+- Uses NullLogger for service construction
+- Tests both create and update paths for upsert behavior
+- Verifies no duplicate records created on update
+
+---
+
+### 21. **UserAvatarUploadTests.cs** (15 tests) — Avatar upload and retrieval endpoints
+
+**Type**: E2E (WebApplicationFactory + Testcontainers)
+**Coverage**: UserController avatar endpoints (PUT, GET)
+
+#### PUT /api/user/avatar (9 tests)
+- Valid image creates new avatar
+- Valid image updates existing avatar (upsert behavior)
+- Exceeds size limit returns 400
+- Invalid file type (.bmp) returns 400
+- Empty file returns 400
+- No auth token returns 401
+- All allowed file types (.jpg, .jpeg, .png, .gif, .webp) return 200
+
+#### GET /api/user/{userId}/avatar (6 tests)
+- Existing avatar returns 200 with binary data
+- Response includes correct Content-Type header
+- Cache-Control header set to public, max-age=86400 (24h)
+- No avatar returns 404
+- Nonexistent user returns 404
+- No auth token returns 401
+
+**Key Patterns:**
+- Creates multipart/form-data content for file uploads
+- Verifies full upload → retrieve cycle
+- Tests upsert behavior by uploading twice
+- Validates binary data equality
+- Uses minimal JPEG magic number (0xFF 0xD8) for test images
+
+---
+
+### 22. **AchievementServiceTests.cs** (17 tests) — Achievement unlocking and XP threshold logic
+
+**Type**: Integration (Testcontainers)
+**Coverage**: AchievementService XP-based unlocking, idempotency, GetUserAchievementsAsync
+
+#### Test Coverage
+- CheckAndUnlockAchievements with zero XP returns no achievements
+- Below lowest threshold (99 XP) returns no achievements
+- Exactly at threshold (100 XP) unlocks that achievement
+- Above threshold (1200 XP) unlocks all qualifying achievements (100, 500, 1000)
+- Called twice with same XP is idempotent (no duplicate UserAchievement records)
+- Incremental XP increase only unlocks new achievements (not already unlocked)
+- High XP (10000) unlocks all achievements
+- Multiple users do not cross-contaminate (user-scoped achievements)
+- GetUserAchievements with no unlocks returns all definitions with IsUnlocked=false
+- GetUserAchievements with some unlocked merges unlock status correctly
+- GetUserAchievements with all unlocked returns all with IsUnlocked=true
+- GetUserAchievements ordered by OrderIndex returns in correct sequence
+- GetUserAchievements for non-existent user returns all definitions unlocked=false
+- UnlockedAt timestamp is persisted correctly
+
+**Key Patterns:**
+- Seeds achievements with known XP thresholds (100, 500, 1000, 2500)
+- Tests idempotency by calling CheckAndUnlockAchievementsAsync twice
+- Verifies composite key uniqueness prevents duplicates
+- Tests both unlocking logic and GetUserAchievementsAsync merging
+
+---
+
+### 23. **ProfileServiceTests.cs** (13 tests) — Multi-service aggregation into user profile
+
+**Type**: Integration (Testcontainers)
+**Coverage**: ProfileService aggregation from User, StreakService, LeaderboardService, AvatarService, AchievementService
+
+#### Test Coverage
+- GetUserProfile for non-existent user returns null
+- Existing user with no activity returns basic profile (zero streaks, null avatar)
+- User with streak returns streak data (CurrentStreak, LongestStreak)
+- User with longest streak in past returns correct current vs longest streaks
+- User with avatar returns avatar URL `/api/user/{id}/avatar`
+- User without avatar returns null avatar URL
+- User with achievements returns unlocked achievements correctly
+- Level calculation matches LeaderboardService.CalculateLevel formula
+- JoinDate returns User.RegistrationDate
+- Complete aggregation combines all services (avatar, streak, achievements, level, XP)
+- User with null UserName falls back to "Unknown"
+- Multiple users return isolated profile data (no cross-contamination)
+- Achievements ordered by OrderIndex return in correct sequence
+
+**Key Patterns:**
+- Aggregates data from 5 services into single UserProfileDto
+- Uses real AvatarService, StreakService, AchievementService via Testcontainers
+- Tests avatar URL construction vs null handling
+- Verifies achievement unlock status merging
+- Tests complete multi-service integration scenario
+
+---
+
+## Coverage Gaps (Updated 2026-03-27)
+
+**No coverage gaps** — all business logic, authentication, authorization, CRUD operations, and E2E workflows are covered.
+
+---
+
+## Recommendations
+
+1. **Secure management controllers** — add `[Authorize(Roles = "Admin")]` to UserManagement and RoleManagement controllers (⚠️ **tests exist but controllers lack authorization attributes**)
+
+---
+
+## Running Tests
+
+```bash
+# All tests (requires Docker)
+cd backend
+dotnet test Tests/Backend.Tests.csproj --logger "console;verbosity=normal"
+
+# Specific test class
+dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~GetLeaderboardTests"
+
+# Unit tests only (no Docker)
+dotnet test Tests/Backend.Tests.csproj --filter "FullyQualifiedName~CalculateLevelTests|JwtServiceTests"
+```
+
+---
+
+## Test Statistics
+
+- **Total test classes**: 23
+- **Total test methods**: ~417 (exact count depends on Theory inline data rows)
+- **E2E tests**: 5 classes, 33 tests (full user journeys)
+- **Integration tests**: 15 classes (10 service tests + 3 auth/leaderboard tests + 2 controller tests)
+- **Unit tests**: 2 classes (pure, no DB) + 1 service unit test (FileUploadsService with mocked dependencies)
+- **Authorization tests**: 92 tests across 8 categories (complete endpoint coverage for all roles)
+- **Controller tests**: 3 classes, 44 tests (UserManagement: 22, RoleManagement: 7, UserAvatarUpload: 15)
+- **Coverage**: Auth flow, **Complete authorization matrix**, **User/role management** (CRUD, role assignment, authorization enforcement), **File upload security** (path traversal, sanitization, size/type validation, GUID protection), **User language enrollment** (enroll, unenroll, composite key enforcement), **Avatar upload and retrieval** (validation, upsert, binary storage, batch checks, Google download), **Language CRUD** (create, read, update, delete, cascade), **Course CRUD** (DTO validation, partial updates, cascade deletes), Exercise validation (**all 4 types** - FillInBlank, Translation, Listening, MultipleChoice), Answer validation (case sensitivity, whitespace, AcceptedAnswers, Levenshtein fuzzy matching), Leaderboard queries, Streak calculation, Level calculation, JWT generation, Progress restoration, Admin bypass, Lock enforcement, **Achievement unlocking** (XP threshold logic, idempotency, multi-user isolation), **Profile assembly** (multi-service aggregation from User/Streak/Leaderboard/Avatar/Achievement services)
