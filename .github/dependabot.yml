@@ -1,0 +1,51 @@
+version: 2
+updates:
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 6
+    groups:
+      docker-frontend:
+        update-types: ["minor", "patch", "major"]
+
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 6
+    groups:
+      docker-backend:
+        update-types: ["minor", "patch", "major"]
+
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 6
+    groups:
+      npm-all:
+        update-types: ["minor", "patch", "major"]
+
+  - package-ecosystem: "nuget"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 6
+    groups:
+      nuget-all:
+        update-types: ["minor", "patch", "major"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 6
+    groups:
+      actions-all:
+        update-types: ["minor", "patch", "major"]
