@@ -309,8 +309,17 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
       return this.isOptionSelected(optionId) ? 'selected' : '';
     }
 
-    if (isCorrect) return 'correct';
-    if (this.isOptionSelected(optionId) && !isCorrect) return 'incorrect';
+    const isUserSelection = this.isOptionSelected(optionId);
+    const submissionCorrect = this.currentSubmission.isCorrect;
+
+    if (isUserSelection) {
+      return submissionCorrect ? 'correct' : 'incorrect';
+    }
+
+    if (!submissionCorrect && isCorrect) {
+      return 'correct';
+    }
+
     return '';
   }
 
@@ -377,5 +386,12 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
       after: text.substring(index + placeholder.length),
       hasBlank: true
     };
+  }
+
+  /**
+   * Convert exercise type enum to readable label.
+   */
+  getExerciseTypeLabel(type: ExerciseType): string {
+    return type.replace(/([A-Z])/g, ' $1').trim();
   }
 }
