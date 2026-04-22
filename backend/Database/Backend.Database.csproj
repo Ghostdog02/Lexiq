@@ -30,6 +30,7 @@
     <Folder Include="Migrations\" />
   </ItemGroup>
   <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="9.0.15" />
     <None Include="..\appsettings.json">
       <Link>appsettings.json</Link>
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
