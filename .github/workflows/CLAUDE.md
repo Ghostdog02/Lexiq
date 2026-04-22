@@ -33,13 +33,14 @@ TAG=latest docker compose -f docker-compose.prod.yml up --build
 
 ## CI/CD Pipeline
 
-Five workflows in `.github/workflows/`:
+Six workflows in `.github/workflows/`:
 
 1. **build-and-push-docker.yml** — Builds and pushes Docker images to GHCR
-2. **development.yml** — Orchestrates the full CI/CD workflow
-3. **continuous-delivery.yml** — Deploys to Hetzner production server
-4. **codeql.yml** — Security scanning with GitHub Advanced Security (runs on push/PR/schedule)
-5. **infrastructure-update.yml** — Weekly OS + infrastructure image updates (Sundays 02:00 UTC)
+2. **test.yml** — Runs backend tests sequentially (unit → integration → E2E)
+3. **development.yml** — Orchestrates the full CI/CD workflow
+4. **continuous-delivery.yml** — Deploys to Hetzner production server
+5. **codeql.yml** — Security scanning with GitHub Advanced Security (runs on push/PR/schedule)
+6. **infrastructure-update.yml** — Weekly OS + infrastructure image updates (Sundays 02:00 UTC)
 
 ### Manually Triggering Workflows
 
@@ -69,10 +70,17 @@ gh run watch
 
 ### Deployment Flow
 
-- Triggered on push to `master` or `fix/refactor`
-- Builds both frontend and backend Docker images
-- Pushes to GitHub Container Registry (ghcr.io)
-- SSHs into Hetzner server and runs `scripts/deploy.sh`
+Triggered on push to `master`:
+
+1. **build-and-push-docker** — Builds frontend and backend Docker images, pushes to GHCR
+2. **pull-and-test** — Verifies images exist in registry (pulls both images)
+3. **test-backend** — Runs backend tests in sequence:
+   - **test-unit** — Pure unit tests, no Docker (~10-30s)
+   - **test-integration** — Service and controller tests with Testcontainers (~2-4min)
+   - **test-e2e** — Full journey tests with WebApplicationFactory (~1-2min)
+4. **continuous-delivery** — SSHs into Hetzner server and runs `scripts/deploy.sh`
+
+Pipeline stops at first failure (fail-fast). Test results uploaded as artifacts (30-day retention).
 
 ### Deployment Script (`scripts/deploy.sh`)
 
@@ -200,9 +208,40 @@ Backend loads secrets from `/run/secrets/backend_env` in production.
 - `infrastructure-update.yml` renewal step uses `--deploy-hook` to re-apply permissions after each actual renewal
 - Symptom: `BIO_new_file() failed (Permission denied)` on `nginx -s reload`
 
-## Known Limitations
+### Backend Test Pipeline (`test.yml`)
 
-- The `pull-and-test` CI job does not actually run tests — it only authenticates to GHCR
+Reusable workflow that runs backend tests in sequential order with fail-fast strategy:
+
+**Test Categories:**
+- **Unit tests** (`backend/Tests/Unit/`) — Pure logic tests, no database, no Docker
+  - CalculateLevelTests, JwtServiceTests, FileUploadsServiceTests
+  - Runtime: ~10-30 seconds
+  - Filter: `--filter "FullyQualifiedName~Unit"`
+
+- **Integration tests** (`backend/Tests/Integration/Services/`, `Integration/Controllers/`) — Testcontainers + SQL Server
+  - Service tests: Leaderboard, Streak, CRUD operations, Avatar, Achievements, Profile
+  - Controller tests: Auth, Authorization, User/Role management
+  - Runtime: ~2-4 minutes
+  - Filter: `--filter "FullyQualifiedName~Integration.Services|FullyQualifiedName~Integration.Controllers"`
+
+- **E2E tests** (`backend/Tests/Integration/E2E/`) — Full user journey tests with WebApplicationFactory
+  - StudentExerciseProgressJourneyTests, ExerciseSubmissionSecurityTests, LeaderboardAndStreaksTests, AdminContentManagementJourneyTests
+  - Runtime: ~1-2 minutes
+  - Filter: `--filter "FullyQualifiedName~Integration.E2E"`
+
+**Artifacts:**
+- Test results uploaded as `.trx` files (30-day retention)
+- Available for download from GitHub Actions run summary
+
+**Manual triggering:**
+```bash
+# Run tests without full deployment
+gh workflow run test.yml
+
+# View test results
+gh run list --workflow=test.yml
+gh run view <run-id>
+```
 
 ## Maintenance Tasks
 
