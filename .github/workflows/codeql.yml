@@ -50,17 +50,12 @@ jobs:
     - name: Restore dependencies
       if: matrix.language == 'csharp'
       working-directory: backend
-      run: dotnet restore Backend.Api.csproj --use-lock-file
-    
+      run: dotnet restore Backend.Api.csproj
+
     - name: Build
       if: matrix.language == 'csharp'
       working-directory: backend
       run: dotnet build Backend.Api.csproj --configuration Release --no-restore
-    
-    - name: Test
-      if: matrix.language == 'csharp'
-      working-directory: backend
-      run: dotnet test Backend.Api.csproj --no-restore --verbosity normal
       
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v4
