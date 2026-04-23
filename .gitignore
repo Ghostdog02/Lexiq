@@ -578,3 +578,14 @@ FodyWeavers.xsd
 
 # Claude config files
 settings.local.json
+
+# Report Coverage directory
+report/
+coverage.xml
+index.htm
+
+# Rtk files
+.rtk/
+
+# Git worktree files in claude
+.claude/worktrees/

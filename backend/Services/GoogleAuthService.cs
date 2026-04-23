@@ -13,11 +13,13 @@ public interface IGoogleAuthService
 
 public class GoogleAuthService(
     UserManager<User> userManager,
-    ILogger<GoogleAuthService> logger
+    ILogger<GoogleAuthService> logger,
+    AvatarService avatarService
 ) : IGoogleAuthService
 {
     private readonly UserManager<User> _userManager = userManager;
     private readonly ILogger<GoogleAuthService> _logger = logger;
+    private readonly AvatarService _avatarService = avatarService;
 
     public async Task<GoogleJsonWebSignature.Payload?> ValidateGoogleTokenAsync(string idToken)
     {
@@ -71,12 +73,22 @@ public class GoogleAuthService(
                         "Role assignment failed: {Errors}",
                         string.Join(", ", roleResult.Errors.Select(e => e.Description))
                     );
+
                     return null;
                 }
             }
 
             var loginInfo = new UserLoginInfo("Google", payload.Subject, "Google");
             await _userManager.AddLoginAsync(user, loginInfo);
+
+            if (!string.IsNullOrEmpty(payload.Picture))
+            {
+                var (data, contentType) = await _avatarService.DownloadAvatarAsync(payload.Picture);
+                if (data != null)
+                {
+                    await _avatarService.UpsertAvatarAsync(user.Id, data, contentType!);
+                }
+            }
         }
 
         return user;

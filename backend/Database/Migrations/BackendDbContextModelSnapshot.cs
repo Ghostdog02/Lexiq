@@ -235,6 +235,37 @@ namespace Backend.Database.Migrations
                     b.ToTable("UserExerciseProgress");
                 });
 
+            modelBuilder.Entity("Backend.Database.Entities.Users.Achievement", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<int>("XpRequired")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Achievements");
+                });
+
             modelBuilder.Entity("Backend.Database.Entities.Users.User", b =>
                 {
                     b.Property<string>("Id")
@@ -253,6 +284,12 @@ namespace Backend.Database.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
+
+                    b.Property<int>("Hearts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("LastHeartResetAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("LastLoginDate")
                         .HasColumnType("datetime2");
@@ -307,6 +344,43 @@ namespace Backend.Database.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("Users", (string)null);
+                });
+
+            modelBuilder.Entity("Backend.Database.Entities.Users.UserAchievement", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("AchievementId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("UnlockedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("UserId", "AchievementId");
+
+                    b.HasIndex("AchievementId");
+
+                    b.ToTable("UserAchievements");
+                });
+
+            modelBuilder.Entity("Backend.Database.Entities.Users.UserAvatar", b =>
+                {
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UserAvatars");
                 });
 
             modelBuilder.Entity("Backend.Database.Entities.Users.UserLanguage", b =>
@@ -633,6 +707,36 @@ namespace Backend.Database.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Backend.Database.Entities.Users.UserAchievement", b =>
+                {
+                    b.HasOne("Backend.Database.Entities.Users.Achievement", "Achievement")
+                        .WithMany("UserAchievements")
+                        .HasForeignKey("AchievementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Database.Entities.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Achievement");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Backend.Database.Entities.Users.UserAvatar", b =>
+                {
+                    b.HasOne("Backend.Database.Entities.Users.User", "User")
+                        .WithOne("Avatar")
+                        .HasForeignKey("Backend.Database.Entities.Users.UserAvatar", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Backend.Database.Entities.Users.UserLanguage", b =>
                 {
                     b.HasOne("Backend.Database.Entities.Language", "Language")
@@ -725,8 +829,15 @@ namespace Backend.Database.Migrations
                     b.Navigation("Exercises");
                 });
 
+            modelBuilder.Entity("Backend.Database.Entities.Users.Achievement", b =>
+                {
+                    b.Navigation("UserAchievements");
+                });
+
             modelBuilder.Entity("Backend.Database.Entities.Users.User", b =>
                 {
+                    b.Navigation("Avatar");
+
                     b.Navigation("ExerciseProgress");
 
                     b.Navigation("UserLanguages");

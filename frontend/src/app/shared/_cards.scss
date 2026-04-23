@@ -1,15 +1,9 @@
-/// Shared card system for the Lexiq design system.
-///
-/// Usage:
-///   @use 'path/to/shared/cards' as cards;
-///   @include cards.system;
-
 @mixin system {
   .card {
     background: linear-gradient(145deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%);
     border: 1px solid var(--border);
     border-radius: 1.5rem;
-    padding: 2.5rem;
+    padding: 1.5rem;
     position: relative;
     backdrop-filter: blur(1.25rem);
     -webkit-backdrop-filter: blur(1.25rem);

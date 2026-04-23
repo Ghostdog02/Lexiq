@@ -1,40 +1,75 @@
+@use 'app/shared/toastr';
+
+/* Global CSS Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+
 :root {
   --background-color: #192023;
-  --primary-color: #dbe5eb;
+  --primary-color: #e8f0f5;     // Brighter primary text
   --font-family: "Bricolage Grotesque", sans-serif;
 
   --panel: #1e2732;
-  --accent: #7c5cff;
-  --accent-light: #9178ff;
-  --accent-dark: #5a3ce6;
-  --muted: #8b98a5;
-  --text-secondary: #b8c4cf;
+  --accent: #8b6eff;            // Brighter, more saturated purple
+  --accent-rgb: 139, 110, 255;
+  --accent-light: #a48fff;      // Lighter, more vibrant
+  --accent-dark: #6b4ee6;       // Deeper contrast
+  --muted: #9aa5b1;             // Slightly brighter muted
+  --muted-rgb: 154, 165, 177;
+  --text-secondary: #c5d1dc;    // Brighter secondary text
   --white: #ffffff;
 
-  /* Glass Effects */
-  --glass: rgba(255,255,255,0.04);
-  --glass-hover: rgba(255,255,255,0.08);
-  --border: rgba(255,255,255,0.08);
+  /* Background RGB channels (for rgba() usage) */
+  --bg-rgb: 26, 36, 41;
 
-  --radius: 16px;
-  --radius-sm: 100px;
+  /* Glass Effects - more refined, less glossy */
+  --glass: rgba(255,255,255,0.05);     // Slightly more visible
+  --glass-hover: rgba(255,255,255,0.09);
+  --border: rgba(255,255,255,0.12);     // More defined borders
+  --border-highlight: rgba(255,255,255,0.24); // Higher contrast highlights
+
+  --radius: 1rem;
+  --radius-sm: 6.25rem;
 
   --shadow: 0 20px 60px rgba(0,0,0,0.5);
   --shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
 
-  --icon-size-md: 1.7rem;
+  --icon-size-md: 1.5rem;
   --icon-size-lg: 2.3rem;
 
   --color-success: #22c55e;
   --color-success-dark: #16a34a;
   --color-success-rgb: 34, 197, 94;
 
-  --color-warning: #ffc107;
-  --color-warning-dark: #ffa000;
-  --color-warning-rgb: 255, 193, 7;
+  --color-correct: #00d97e;           // Vibrant neon green
+  --color-correct-rgb: 0, 217, 126;
+  --color-correct-light: #00ff99;     // Brighter correct for feedback text
 
-  --color-error: #ef4444;
-  --color-error-rgb: 239, 68, 68;
+  --color-warning: #ffd700;           // True gold
+  --color-warning-dark: #ffa000;
+  --color-warning-rgb: 255, 215, 0;
+
+  --color-xp: #ffd700;                // XP / points highlight (true gold)
+  --color-xp-rgb: 255, 215, 0;
+
+  --color-error: #df1919;             // Deep saturated red
+  --color-error-rgb: 223, 25, 25;
+  --color-error-light: #ff3333;       // Brighter error for feedback text
+}
+
+// Force dark OS palette for native select popups globally
+select {
+  color-scheme: dark;
+  option {
+    background: var(--panel);
+    color: var(--white);
+  }
 }
 
 @mixin animated-background {

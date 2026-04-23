@@ -1,0 +1,116 @@
+name: "Backend Tests"
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+jobs:
+  test-unit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore NuGet packages
+        working-directory: ./backend
+        run: dotnet restore Tests/Backend.Tests.csproj
+
+      - name: Run unit tests (no Docker)
+        working-directory: ./backend
+        run: |
+          echo "🔬 Running unit tests (fast, no containers)..."
+          dotnet test Tests/Backend.Tests.csproj \
+            --filter "FullyQualifiedName~Unit" \
+            --logger "console;verbosity=normal" \
+            --logger "trx;LogFileName=unit-test-results.trx" \
+            --no-restore
+
+      - name: Upload unit test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: backend/Tests/TestResults/unit-test-results.trx
+          retention-days: 30
+
+  test-integration:
+    needs: test-unit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore NuGet packages
+        working-directory: ./backend
+        run: dotnet restore Tests/Backend.Tests.csproj
+
+      - name: Run integration tests (Testcontainers)
+        working-directory: ./backend
+        run: |
+          echo "🧪 Running integration tests (Testcontainers + SQL Server)..."
+          dotnet test Tests/Backend.Tests.csproj \
+            --filter "FullyQualifiedName~Integration.Services|FullyQualifiedName~Integration.Controllers" \
+            --logger "console;verbosity=normal" \
+            --logger "trx;LogFileName=integration-test-results.trx" \
+            --no-restore
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: backend/Tests/TestResults/integration-test-results.trx
+          retention-days: 30
+
+  test-e2e:
+    needs: test-integration
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore NuGet packages
+        working-directory: ./backend
+        run: dotnet restore Tests/Backend.Tests.csproj
+
+      - name: Run E2E tests (WebApplicationFactory)
+        working-directory: ./backend
+        run: |
+          echo "🎭 Running E2E journey tests (full application stack)..."
+          dotnet test Tests/Backend.Tests.csproj \
+            --filter "FullyQualifiedName~Integration.E2E" \
+            --logger "console;verbosity=normal" \
+            --logger "trx;LogFileName=e2e-test-results.trx" \
+            --no-restore
+
+      - name: Upload E2E test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: backend/Tests/TestResults/e2e-test-results.trx
+          retention-days: 30
