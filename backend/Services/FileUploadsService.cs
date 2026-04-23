@@ -3,9 +3,13 @@ using FileInfo = Backend.Api.Models.FileInfo;
 
 namespace Backend.Api.Services
 {
-    public class FileUploadsService(IWebHostEnvironment environment) : IFileUploadsService
+    public class FileUploadsService(
+        IWebHostEnvironment environment,
+        ILogger<FileUploadsService> logger
+    ) : IFileUploadsService
     {
         private readonly IWebHostEnvironment _environment = environment;
+        private readonly ILogger<FileUploadsService> _logger = logger;
         private readonly Dictionary<string, FileTypeConfig> _fileTypeConfigs =
             InitializeFileTypeConfigs();
 
@@ -155,7 +159,15 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
-                return FileUploadResult.Failure($"Upload failed: {ex.Message}");
+                _logger.LogError(
+                    ex,
+                    "File upload failed for type {FileType}, filename {FileName}",
+                    fileType,
+                    file.FileName
+                );
+                return FileUploadResult.Failure(
+                    "Upload failed. Please check the file and try again."
+                );
             }
         }
 
@@ -228,7 +240,15 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
-                return FileUploadResult.Failure($"Upload failed: {ex.Message}");
+                _logger.LogError(
+                    ex,
+                    "File upload from URL failed for type {FileType}, URL {Url}",
+                    fileType,
+                    url
+                );
+                return FileUploadResult.Failure(
+                    "Upload from URL failed. Please check the URL and try again."
+                );
             }
         }
 
@@ -282,10 +302,11 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error retrieving files of type {FileType}", fileType);
                 return new FileListResult
                 {
                     IsSuccess = false,
-                    Message = $"Error retrieving files: {ex.Message}",
+                    Message = "Error retrieving files. Please try again later.",
                 };
             }
         }
@@ -320,10 +341,11 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error retrieving all files");
                 return new FileListResult
                 {
                     IsSuccess = false,
-                    Message = $"Error retrieving files: {ex.Message}",
+                    Message = "Error retrieving files. Please try again later.",
                 };
             }
         }
@@ -400,7 +422,13 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
-                return FileUploadResult.Failure($"Error retrieving file: {ex.Message}");
+                _logger.LogError(
+                    ex,
+                    "Error retrieving file {FileName} of type {FileType}",
+                    filename,
+                    fileType ?? "unknown"
+                );
+                return FileUploadResult.Failure("Error retrieving file. Please try again later.");
             }
         }
 
