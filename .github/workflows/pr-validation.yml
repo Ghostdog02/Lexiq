@@ -52,8 +52,14 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
-  auto-approve-and-merge:
+  run-tests:
     needs: [build-frontend, build-backend]
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+
+  auto-approve-and-merge:
+    needs: [run-tests]
     runs-on: ubuntu-latest
     # Only approve PRs from same repository (not forks) and trusted users
     if: |
@@ -66,14 +72,15 @@ jobs:
       contents: write
 
     steps:
-      - name: Approve PR
+      - name: Approve PR (Dependabot only)
+        if: github.event.pull_request.user.login == 'dependabot[bot]'
         run: gh pr review --approve "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_PAT }}
 
       - name: Enable auto-merge with squash
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.AUTO_MERGE_PAT }}

@@ -1,22 +1,16 @@
-name: "CI/CD - Docker Compose Deployment"
+name: "Release"
 
 on:
   workflow_dispatch:
   push:
     branches:
       - master
-  workflow_run:
-    workflows: ["PR Validation"]
-    types: [completed]
-    branches: [master]
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
   build-and-push-docker:
-    # Run on push/workflow_dispatch, or on workflow_run only if PR Validation succeeded
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     uses: Ghostdog02/Lexiq/.github/workflows/build-and-push-docker.yml@master
     with:
       config-path: .github/workflows/build-and-push-docker.yml
@@ -58,14 +52,8 @@ jobs:
           docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ env.BRANCH }}
           echo "✅ Frontend image successfully pulled from registry"
 
-  test-backend:
-    needs: pull-and-test
-    uses: Ghostdog02/Lexiq/.github/workflows/test.yml@master
-    permissions:
-      contents: read
-
   continuous-delivery:
-    needs: test-backend
+    needs: pull-and-test
     uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@master
     permissions:
       packages: read
