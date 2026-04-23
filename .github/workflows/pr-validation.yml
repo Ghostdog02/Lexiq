@@ -52,8 +52,14 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,mode=max,scope=backend
 
-  auto-approve-and-merge:
+  run-tests:
     needs: [build-frontend, build-backend]
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+
+  auto-approve-and-merge:
+    needs: [run-tests]
     runs-on: ubuntu-latest
     # Only approve PRs from same repository (not forks) and trusted users
     if: |

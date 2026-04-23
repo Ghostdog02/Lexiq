@@ -37,7 +37,7 @@ Six workflows in `.github/workflows/`:
 
 1. **build-and-push-docker.yml** — Builds and pushes Docker images to GHCR
 2. **test.yml** — Runs backend tests sequentially (unit → integration → E2E)
-3. **development.yml** — Orchestrates the full CI/CD workflow
+3. **release.yml** — Orchestrates the production release pipeline (build → verify → deploy)
 4. **continuous-delivery.yml** — Deploys to Hetzner production server
 5. **codeql.yml** — Security scanning with GitHub Advanced Security (runs on push/PR/schedule)
 6. **infrastructure-update.yml** — Weekly OS + infrastructure image updates (Sundays 02:00 UTC)
@@ -247,7 +247,7 @@ gh run view <run-id>
 
 **Workflow branch pin updates**: When merging feature branches to the main branch, update workflow `uses:` references to ensure they point to the correct branch:
 
-1. **Check `development.yml`**:
+1. **Check `release.yml`**:
    ```yaml
    continuous-delivery:
      needs: [build-frontend, build-backend, pull-and-test]
