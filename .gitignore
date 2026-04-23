@@ -349,6 +349,8 @@ BenchmarkDotNet.Artifacts/
 
 # .NET Core
 
+*.csproj.lscache
+
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt
 
