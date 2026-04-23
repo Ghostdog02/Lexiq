@@ -1,4 +1,4 @@
-name: "CI/CD - Docker Compose Deployment"
+name: "Release"
 
 on:
   workflow_dispatch:
@@ -11,9 +11,9 @@ env:
 
 jobs:
   build-and-push-docker:
-    uses: Ghostdog02/Lexiq/.github/workflows/ci-cd/build-and-push-docker.yml@master
+    uses: Ghostdog02/Lexiq/.github/workflows/build-and-push-docker.yml@master
     with:
-      config-path: .github/workflows/ci-cd/build-and-push-docker.yml
+      config-path: .github/workflows/build-and-push-docker.yml
     permissions:
       contents: read
       packages: write
@@ -36,7 +36,7 @@ jobs:
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3.7.0
+        uses: docker/login-action@v4.1.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -44,27 +44,21 @@ jobs:
 
       - name: Verify backend image exists
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/backend:${{ env.BRANCH }}
+          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-backend:${{ env.BRANCH }}
           echo "✅ Backend image successfully pulled from registry"
 
       - name: Verify frontend image exists
         run: |
-          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}/frontend:${{ env.BRANCH }}
+          docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ env.BRANCH }}
           echo "✅ Frontend image successfully pulled from registry"
 
-  test-backend:
-    needs: pull-and-test
-    uses: Ghostdog02/Lexiq/.github/workflows/ci-cd/test.yml@master
-    permissions:
-      contents: read
-
   continuous-delivery:
-    needs: test-backend
-    uses: Ghostdog02/Lexiq/.github/workflows/ci-cd/continuous-delivery.yml@master
+    needs: pull-and-test
+    uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@master
     permissions:
       packages: read
     with:
-      config-path: .github/workflows/ci-cd/continuous-delivery.yml
+      config-path: .github/workflows/continuous-delivery.yml
     secrets:
       HETZNER_PROD_PRIVATE_SSH_KEY: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
       HETZNER_PROD_HOST: ${{ secrets.HETZNER_PROD_HOST }}
