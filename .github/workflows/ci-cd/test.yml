@@ -12,12 +12,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
+
+      - name: Restore NuGet packages
+        working-directory: ./backend
+        run: dotnet restore Tests/Backend.Tests.csproj
 
       - name: Run unit tests (no Docker)
         working-directory: ./backend
@@ -45,12 +49,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
+
+      - name: Restore NuGet packages
+        working-directory: ./backend
+        run: dotnet restore Tests/Backend.Tests.csproj
 
       - name: Run integration tests (Testcontainers)
         working-directory: ./backend
@@ -78,12 +86,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
+
+      - name: Restore NuGet packages
+        working-directory: ./backend
+        run: dotnet restore Tests/Backend.Tests.csproj
 
       - name: Run E2E tests (WebApplicationFactory)
         working-directory: ./backend
