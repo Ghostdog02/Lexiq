@@ -148,6 +148,12 @@ This applies to services, controllers, and middleware. DTOs and entities use `re
   - `DbUpdateConcurrencyException` → 409 Conflict
   - `DbUpdateException` → 500 Internal Server Error
   - Generic `Exception` → 500 Internal Server Error
+- **Security & Sanitization**:
+  - `SanitizePath()` removes control characters from request paths to prevent log injection attacks
+  - `SanitizeExceptionMessage()` strips filesystem paths and connection strings before sending to clients
+  - `SanitizeForLogging()` removes control characters and limits length for all logged content
+  - All exception messages are sanitized before logging and before being sent to clients
+  - Prevents information disclosure to authenticated but untrusted users (anyone with Google account)
 - See [`/docs/backend/api/error-handling.md`](../../docs/backend/api/error-handling.md) for comprehensive documentation
 
 ### Authentication (JWT-in-Cookie)
@@ -364,6 +370,11 @@ var ctx = await _context.Lessons
 - **CORS headers**: Enabled for cross-origin resource access
 - **Cache-Control**: 1-year max-age for uploaded files
 - Upload endpoints: `POST /api/uploads/{fileType}`, `POST /api/uploads/any`, `GET /api/uploads/{fileType}/{filename}`, `GET /api/uploads/list/{fileType}`
+- **Error handling pattern**:
+  - All exceptions caught and converted to `FileUploadResult.Failure()` with generic messages
+  - Full exception details logged via `ILogger` with context (filename, type, URL)
+  - Never expose raw exception messages to clients (prevents information disclosure)
+  - Pattern: catch → log full exception → return generic error message
 
 ## Authorization Roles
 
