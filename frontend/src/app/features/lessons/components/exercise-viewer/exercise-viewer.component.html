@@ -47,7 +47,9 @@
 
     <!-- Question section -->
     @if (currentExercise.question) {
-      <div class="exercise-question">{{ currentExercise.question }}</div>
+      <div class="exercise-question-container">
+        <h2 class="exercise-question">{{ currentExercise.question }}</h2>
+      </div>
     }
 
     <!-- Exercise content based on type -->
@@ -56,18 +58,23 @@
       <!-- Multiple Choice -->
       @case (ExerciseType.MultipleChoice) {
         <div class="multiple-choice">
+          <div class="keyboard-hint">Use ↑↓ arrow keys to navigate • Press Enter to submit</div>
           <div class="options-list">
             @for (option of currentMultipleChoice?.options; track option.id; let i = $index) {
-              <button type="button" class="option-btn" [class]="getOptionClass(option.id, option.isCorrect)"
-                [disabled]="isCurrentSubmitted || isCurrentLocked" (click)="selectMultipleChoiceOption(option.id)"
-                [attr.aria-pressed]="isOptionSelected(option.id)">
+              <button type="button" class="option-btn"
+                [class]="getOptionClass(option.id, option.isCorrect)"
+                [class.focused]="isOptionFocused(i)"
+                [disabled]="isCurrentSubmitted || isCurrentLocked"
+                (click)="selectMultipleChoiceOption(option.id)"
+                [attr.aria-pressed]="isOptionSelected(option.id)"
+                [attr.data-index]="i">
                 <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E', 'F'][i] }}</span>
                 <span class="option-text">{{ option.optionText }}</span>
                 @if (currentSubmission) {
                   @if (option.isCorrect) {
-                    <span class="result-icon correct">&#x2713;</span>
+                    <span class="result-icon correct">✓</span>
                   } @else if (isOptionSelected(option.id)) {
-                    <span class="result-icon incorrect">&#x2717;</span>
+                    <span class="result-icon incorrect">✕</span>
                   }
                 }
               </button>
