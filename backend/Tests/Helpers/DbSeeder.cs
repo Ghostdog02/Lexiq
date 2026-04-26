@@ -139,7 +139,7 @@ public static class DbSeeder
                 Id = exerciseId,
                 LessonId = lessonId,
                 Title = $"MultipleChoice {orderIndex}",
-                Instructions = "Select the correct answer",
+                Question = "Select the correct answer",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = points,
                 OrderIndex = orderIndex,

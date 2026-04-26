@@ -15,7 +15,7 @@ public enum DifficultyLevel
 public enum ExerciseType
 {
     MultipleChoice,
-    FillInTheBlank,
+    FillInBlank,
     Listening,
     Translation,
 }
@@ -33,7 +33,7 @@ public abstract class Exercise
     public required string Title { get; set; }
 
     [MaxLength(1000)]
-    public string? Instructions { get; set; }
+    public string? Question { get; set; }
 
     [Range(5, 20)]
     public int? EstimatedDurationMinutes { get; set; }

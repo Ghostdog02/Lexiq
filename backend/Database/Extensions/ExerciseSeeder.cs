@@ -54,7 +54,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "What does 'Ciao' mean?",
-                Instructions = "Select the correct English translation.",
+                Question = "Select the correct English translation.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -94,7 +94,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Complete the sentence",
-                Instructions = "Fill in the blank: Mi ____ Marco. (My name is Marco.)",
+                Question = "Fill in the blank: Mi ____ Marco. (My name is Marco.)",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -110,7 +110,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Translate to Italian",
-                Instructions = "How do you say 'Good evening' in Italian?",
+                Question = "How do you say 'Good evening' in Italian?",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
@@ -126,7 +126,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Listen and write",
-                Instructions = "Listen to the greeting and write what you hear.",
+                Question = "Listen to the greeting and write what you hear.",
                 EstimatedDurationMinutes = 8,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
@@ -149,7 +149,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Which number is 'cinque'?",
-                Instructions = "Select the correct number.",
+                Question = "Select the correct number.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -188,7 +188,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Write the number",
-                Instructions = "The number 10 in Italian is ____.",
+                Question = "The number 10 in Italian is ____.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -204,7 +204,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Translate the number",
-                Instructions = "Translate 'tre' to English.",
+                Question = "Translate 'tre' to English.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -227,7 +227,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "What color is 'verde'?",
-                Instructions = "Pick the correct color.",
+                Question = "Pick the correct color.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -266,7 +266,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Black in Italian",
-                Instructions = "The Italian word for black is ____.",
+                Question = "The Italian word for black is ____.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -282,7 +282,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Translate the color",
-                Instructions = "Translate 'bianco' to English.",
+                Question = "Translate 'bianco' to English.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -305,7 +305,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "What does 'il pane' mean?",
-                Instructions = "Select the correct translation.",
+                Question = "Select the correct translation.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -344,7 +344,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Order politely",
-                Instructions = "Complete: Un caffe, ____. (A coffee, please.)",
+                Question = "Complete: Un caffe, ____. (A coffee, please.)",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -360,7 +360,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Translate the food word",
-                Instructions = "What is 'l'acqua' in English?",
+                Question = "What is 'l'acqua' in English?",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -376,7 +376,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Listen and identify",
-                Instructions = "Listen and type the food word you hear.",
+                Question = "Listen and type the food word you hear.",
                 EstimatedDurationMinutes = 8,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
@@ -399,7 +399,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "What does 'destra' mean?",
-                Instructions = "Choose the correct direction.",
+                Question = "Choose the correct direction.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -438,7 +438,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Give directions",
-                Instructions = "Complete: La stazione e a ____. (The station is on the left.)",
+                Question = "Complete: La stazione e a ____. (The station is on the left.)",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -454,7 +454,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Translate the question",
-                Instructions = "Translate 'Where is the hotel?' to Italian.",
+                Question = "Translate 'Where is the hotel?' to Italian.",
                 EstimatedDurationMinutes = 7,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
@@ -470,7 +470,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Listen and write",
-                Instructions = "Write down the direction you hear.",
+                Question = "Write down the direction you hear.",
                 EstimatedDurationMinutes = 8,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
@@ -493,7 +493,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "'Io parlo' - who is speaking?",
-                Instructions = "Which pronoun does 'io' refer to?",
+                Question = "Which pronoun does 'io' refer to?",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -532,7 +532,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Conjugate for 'noi'",
-                Instructions = "Complete: Noi parl____. (We speak.)",
+                Question = "Complete: Noi parl____. (We speak.)",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Intermediate,
                 Points = 15,
@@ -548,7 +548,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Translate the sentence",
-                Instructions = "Translate 'She speaks Italian' to Italian.",
+                Question = "Translate 'She speaks Italian' to Italian.",
                 EstimatedDurationMinutes = 7,
                 DifficultyLevel = DifficultyLevel.Intermediate,
                 Points = 15,
@@ -564,7 +564,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Hear the conjugation",
-                Instructions = "Listen and type the verb form you hear.",
+                Question = "Listen and type the verb form you hear.",
                 EstimatedDurationMinutes = 8,
                 DifficultyLevel = DifficultyLevel.Intermediate,
                 Points = 15,
@@ -587,7 +587,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Which day is 'venerdi'?",
-                Instructions = "Select the day of the week.",
+                Question = "Select the day of the week.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -626,7 +626,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Sunday in Italian",
-                Instructions = "Sunday in Italian is ____.",
+                Question = "Sunday in Italian is ____.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -642,7 +642,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "What time is it?",
-                Instructions = "Translate 'It is three o'clock' to Italian.",
+                Question = "Translate 'It is three o'clock' to Italian.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -665,7 +665,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "What does 'Dove' mean?",
-                Instructions = "Select the correct question word.",
+                Question = "Select the correct question word.",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -704,7 +704,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "I'm fine",
-                Instructions = "Complete: ____ bene, grazie! (I'm fine, thank you!)",
+                Question = "Complete: ____ bene, grazie! (I'm fine, thank you!)",
                 EstimatedDurationMinutes = 5,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
@@ -720,7 +720,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Translate the question",
-                Instructions = "Translate 'Where are you from?' to Italian.",
+                Question = "Translate 'Where are you from?' to Italian.",
                 EstimatedDurationMinutes = 7,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
@@ -736,7 +736,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Title = "Listen to the response",
-                Instructions = "Listen and type the response you hear.",
+                Question = "Listen and type the response you hear.",
                 EstimatedDurationMinutes = 8,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,

@@ -229,7 +229,7 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         CreateExerciseDto exerciseDto = new CreateFillInBlankExerciseDto(
             LessonId: Fixture.LessonId,
             Title: "New Fill-in-Blank",
-            Instructions: "Complete the sentence",
+            Question: "Complete the sentence",
             EstimatedDurationMinutes: 5,
             DifficultyLevel: DifficultyLevel.Intermediate,
             Points: 20,
@@ -270,7 +270,7 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         CreateExerciseDto exerciseDto = new CreateFillInBlankExerciseDto(
             LessonId: Fixture.LessonId,
             Title: "Creator Exercise",
-            Instructions: null,
+            Question: null,
             EstimatedDurationMinutes: null,
             DifficultyLevel: DifficultyLevel.Beginner,
             Points: 10,
@@ -307,7 +307,7 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         CreateExerciseDto exerciseDto = new CreateFillInBlankExerciseDto(
             LessonId: Fixture.LessonId,
             Title: "Student Exercise",
-            Instructions: null,
+            Question: null,
             EstimatedDurationMinutes: null,
             DifficultyLevel: DifficultyLevel.Beginner,
             Points: 10,
@@ -348,7 +348,7 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         var exerciseId = _exerciseIds[0]; // FillInBlank
         var updateDto = new UpdateExerciseDto(
             Title: "Updated Title",
-            Instructions: "Updated instructions",
+            Question: "Updated instructions",
             EstimatedDurationMinutes: 10,
             DifficultyLevel: DifficultyLevel.Advanced,
             Points: 30,
@@ -383,7 +383,7 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         var exerciseId = _exerciseIds[1]; // MultipleChoice
         var updateDto = new UpdateExerciseDto(
             Title: "Creator Updated",
-            Instructions: null,
+            Question: null,
             EstimatedDurationMinutes: null,
             DifficultyLevel: null,
             Points: null,
@@ -410,7 +410,7 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         var exerciseId = _exerciseIds[0];
         var updateDto = new UpdateExerciseDto(
             Title: "Student Update Attempt",
-            Instructions: null,
+            Question: null,
             EstimatedDurationMinutes: null,
             DifficultyLevel: null,
             Points: null,
@@ -437,7 +437,7 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         var nonexistentId = Guid.NewGuid().ToString();
         var updateDto = new UpdateExerciseDto(
             Title: "Won't work",
-            Instructions: null,
+            Question: null,
             EstimatedDurationMinutes: null,
             DifficultyLevel: null,
             Points: null,

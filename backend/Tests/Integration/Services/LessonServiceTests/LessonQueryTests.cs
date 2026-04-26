@@ -160,7 +160,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
             Id = exerciseId,
             LessonId = lessonId,
             Title = "MC Exercise",
-            Instructions = "What is the answer?",
+            Question = "What is the answer?",
             DifficultyLevel = DifficultyLevel.Beginner,
             Points = 10,
             OrderIndex = 0,

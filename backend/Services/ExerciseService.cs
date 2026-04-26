@@ -47,7 +47,7 @@ public class ExerciseService(BackendDbContext context)
             {
                 LessonId = lessonId,
                 Title = mcDto.Title,
-                Instructions = mcDto.Instructions,
+                Question = mcDto.Question,
                 EstimatedDurationMinutes = mcDto.EstimatedDurationMinutes,
                 DifficultyLevel = mcDto.DifficultyLevel,
                 Points = mcDto.Points,
@@ -66,7 +66,7 @@ public class ExerciseService(BackendDbContext context)
             {
                 LessonId = lessonId,
                 Title = fibDto.Title,
-                Instructions = fibDto.Instructions,
+                Question = fibDto.Question,
                 EstimatedDurationMinutes = fibDto.EstimatedDurationMinutes,
                 DifficultyLevel = fibDto.DifficultyLevel,
                 Points = fibDto.Points,
@@ -82,7 +82,7 @@ public class ExerciseService(BackendDbContext context)
             {
                 LessonId = lessonId,
                 Title = lDto.Title,
-                Instructions = lDto.Instructions,
+                Question = lDto.Question,
                 EstimatedDurationMinutes = lDto.EstimatedDurationMinutes,
                 DifficultyLevel = lDto.DifficultyLevel,
                 Points = lDto.Points,
@@ -98,7 +98,7 @@ public class ExerciseService(BackendDbContext context)
             {
                 LessonId = lessonId,
                 Title = tDto.Title,
-                Instructions = tDto.Instructions,
+                Question = tDto.Question,
                 EstimatedDurationMinutes = tDto.EstimatedDurationMinutes,
                 DifficultyLevel = tDto.DifficultyLevel,
                 Points = tDto.Points,
@@ -126,8 +126,8 @@ public class ExerciseService(BackendDbContext context)
         if (dto.Title != null)
             exercise.Title = dto.Title;
 
-        if (dto.Instructions != null)
-            exercise.Instructions = dto.Instructions;
+        if (dto.Question != null)
+            exercise.Question = dto.Question;
 
         if (dto.EstimatedDurationMinutes.HasValue)
             exercise.EstimatedDurationMinutes = dto.EstimatedDurationMinutes.Value;

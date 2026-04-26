@@ -78,7 +78,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
                 new CreateFillInBlankExerciseDto(
                     LessonId: null,
                     Title: "Test Exercise 1",
-                    Instructions: "Fill in",
+                    Question: "Fill in",
                     EstimatedDurationMinutes: 5,
                     DifficultyLevel: DifficultyLevel.Beginner,
                     Points: 10,
@@ -349,7 +349,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
                 new CreateFillInBlankExerciseDto(
                     LessonId: null,
                     Title: "Exercise 1",
-                    Instructions: null,
+                    Question: null,
                     EstimatedDurationMinutes: 5,
                     DifficultyLevel: DifficultyLevel.Beginner,
                     Points: 10,
@@ -384,7 +384,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         CreateExerciseDto addExerciseDto = new CreateFillInBlankExerciseDto(
             LessonId: createdLesson.LessonId,
             Title: "Exercise 2",
-            Instructions: null,
+            Question: null,
             EstimatedDurationMinutes: 5,
             DifficultyLevel: DifficultyLevel.Beginner,
             Points: 10,

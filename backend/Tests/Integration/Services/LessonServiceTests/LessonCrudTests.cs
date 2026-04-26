@@ -128,7 +128,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
             new CreateFillInBlankExerciseDto(
                 LessonId: null,
                 Title: "Exercise 1",
-                Instructions: null,
+                Question: null,
                 EstimatedDurationMinutes: null,
                 DifficultyLevel: DifficultyLevel.Beginner,
                 Points: 10,
@@ -143,7 +143,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
             new CreateFillInBlankExerciseDto(
                 LessonId: null,
                 Title: "Exercise 2",
-                Instructions: null,
+                Question: null,
                 EstimatedDurationMinutes: null,
                 DifficultyLevel: DifficultyLevel.Intermediate,
                 Points: 15,
