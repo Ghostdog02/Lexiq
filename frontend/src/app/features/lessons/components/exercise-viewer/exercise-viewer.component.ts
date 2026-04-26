@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, NonNullableFormBuilder } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, fromEvent, filter } from 'rxjs';
 import {
   AnyExercise,
   ExerciseType,
@@ -56,6 +56,9 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   isSubmitting = false;
   hearts: number = 0;
 
+  // Keyboard navigation state for multiple choice
+  focusedOptionIndex = 0;
+
   // Audio player state
   audioElement: HTMLAudioElement | null = null;
   isPlaying = false;
@@ -70,6 +73,9 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     this.authService.getAdminStatusListener()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((isAdmin) => this.isAdmin = isAdmin);
+
+    // Set up keyboard navigation for multiple choice
+    this.setupKeyboardNavigation();
 
     // Fetch user hearts
     await this.fetchHearts();
@@ -119,6 +125,44 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
       this.audioElement.pause();
       this.audioElement = null;
     }
+  }
+
+  /**
+   * Set up keyboard navigation for multiple choice exercises using RxJS.
+   * Handles ArrowUp/ArrowDown to navigate options and Enter to submit.
+   */
+  private setupKeyboardNavigation() {
+    fromEvent<KeyboardEvent>(document, 'keydown')
+      .pipe(
+        filter(() => this.currentExercise?.type === ExerciseType.MultipleChoice),
+        filter(() => !this.isCurrentSubmitted && !this.isCurrentLocked),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((event) => {
+        const optionsCount = this.currentMultipleChoice?.options?.length || 0;
+        if (optionsCount === 0) return;
+
+        switch (event.key) {
+          case 'ArrowDown':
+            event.preventDefault();
+            this.focusedOptionIndex = (this.focusedOptionIndex + 1) % optionsCount;
+            this.selectMultipleChoiceOption(this.currentMultipleChoice!.options[this.focusedOptionIndex].id);
+            break;
+
+          case 'ArrowUp':
+            event.preventDefault();
+            this.focusedOptionIndex = (this.focusedOptionIndex - 1 + optionsCount) % optionsCount;
+            this.selectMultipleChoiceOption(this.currentMultipleChoice!.options[this.focusedOptionIndex].id);
+            break;
+
+          case 'Enter':
+            event.preventDefault();
+            if (this.state.currentAnswer) {
+              this.submitAnswer();
+            }
+            break;
+        }
+      });
   }
 
   /**
@@ -235,6 +279,13 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   selectMultipleChoiceOption(optionId: string) {
     if (!this.isCurrentSubmitted && !this.isCurrentLocked) {
       this.state.updateAnswer(this.state.currentExerciseId!, optionId);
+
+      // Update focused index to match the selected option
+      const options = this.currentMultipleChoice?.options || [];
+      const index = options.findIndex(opt => opt.id === optionId);
+      if (index !== -1) {
+        this.focusedOptionIndex = index;
+      }
     }
   }
 
@@ -302,6 +353,12 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   isOptionSelected(optionId: string): boolean {
     return this.state.currentAnswer === optionId;
+  }
+
+  isOptionFocused(index: number): boolean {
+    return this.focusedOptionIndex === index &&
+           this.currentExercise?.type === ExerciseType.MultipleChoice &&
+           !this.isCurrentSubmitted;
   }
 
   getOptionClass(optionId: string, isCorrect: boolean): string {
