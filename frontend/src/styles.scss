@@ -30,15 +30,24 @@ body {
 
   /* Glass Effects - more refined, less glossy */
   --glass: rgba(255,255,255,0.05);     // Slightly more visible
+  --glass-soft: rgba(255,255,255,0.04);  // Softer glass
+  --glass-medium: rgba(255,255,255,0.06); // Medium glass
   --glass-hover: rgba(255,255,255,0.09);
   --border: rgba(255,255,255,0.12);     // More defined borders
+  --border-light: rgba(255,255,255,0.10); // Lighter border
+  --border-medium: rgba(255,255,255,0.15); // Medium border
   --border-highlight: rgba(255,255,255,0.24); // Higher contrast highlights
+
+  /* Shadow variations */
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-strong: 0 8px 24px rgba(0, 0, 0, 0.25);
+  --shadow: 0 20px 60px rgba(0,0,0,0.5);
+  --shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
 
   --radius: 1rem;
   --radius-sm: 6.25rem;
-
-  --shadow: 0 20px 60px rgba(0,0,0,0.5);
-  --shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
+  --radius-lg: 0.875rem;  // Larger rounded corners for buttons
 
   --icon-size-md: 1.5rem;
   --icon-size-lg: 2.3rem;
@@ -47,9 +56,14 @@ body {
   --color-success-dark: #16a34a;
   --color-success-rgb: 34, 197, 94;
 
-  --color-correct: #00d97e;           // Vibrant neon green
-  --color-correct-rgb: 0, 217, 126;
-  --color-correct-light: #00ff99;     // Brighter correct for feedback text
+  --color-correct: #58cc02;           // Duolingo vibrant green
+  --color-correct-rgb: 88, 204, 2;
+  --color-correct-light: #89e219;     // Lighter green for highlights
+  --color-correct-dark: #4f8057;      // Darker green for shadows
+
+  --color-selected: #1cb0f6;          // Duolingo bright blue for selections
+  --color-selected-rgb: 28, 176, 246;
+  --color-selected-light: #58d3ff;    // Lighter blue for highlights
 
   --color-warning: #ffd700;           // True gold
   --color-warning-dark: #ffa000;
@@ -58,9 +72,10 @@ body {
   --color-xp: #ffd700;                // XP / points highlight (true gold)
   --color-xp-rgb: 255, 215, 0;
 
-  --color-error: #df1919;             // Deep saturated red
-  --color-error-rgb: 223, 25, 25;
-  --color-error-light: #ff3333;       // Brighter error for feedback text
+  --color-error: #ff4b4b;             // Duolingo vibrant red
+  --color-error-rgb: 255, 75, 75;
+  --color-error-light: #ffb5b5;       // Lighter red for text
+  --color-error-dark: #9c5446;        // Darker red for shadows
 }
 
 // Force dark OS palette for native select popups globally
@@ -117,4 +132,74 @@ select {
       background: rgba(var(--color-accent-rgb), 0.5);
     }
   }
+}
+
+// Gamified animations for exercise interactions
+@keyframes questionSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes optionSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes letterBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+@keyframes letterCorrectBounce {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.2) rotate(-5deg); }
+  50% { transform: scale(1.1) rotate(5deg); }
+  75% { transform: scale(1.15) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes correctShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes incorrectShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+  20%, 40%, 60%, 80% { transform: translateX(8px); }
+}
+
+@keyframes focusPulse {
+  0%, 100% { box-shadow: 0 0 0 0.25rem rgba(124, 92, 255, 0.25), 0 8px 24px rgba(124, 92, 255, 0.3); }
+  50% { box-shadow: 0 0 0 0.5rem rgba(124, 92, 255, 0.35), 0 8px 32px rgba(124, 92, 255, 0.4); }
+}
+
+@keyframes iconPop {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); opacity: 1; }
 }
