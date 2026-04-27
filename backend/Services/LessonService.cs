@@ -225,7 +225,11 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .Lessons.Include(l => l.Course)
             .ThenInclude(c => c.Language)
             .Include(l => l.Exercises)
-            .ThenInclude(e => (e as MultipleChoiceExercise)!.Options)
+            .ThenInclude(e => (e as ListeningExercise)!.Options)
+            .Include(l => l.Exercises)
+            .ThenInclude(e => (e as ImageChoiceExercise)!.Options)
+            .Include(l => l.Exercises)
+            .ThenInclude(e => (e as AudioMatchingExercise)!.Pairs)
             .FirstOrDefaultAsync(l => l.Id == lessonId);
     }
 
@@ -242,7 +246,9 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     {
         return await _context
             .Exercises.Where(e => e.LessonId == lessonId)
-            .Include(e => (e as MultipleChoiceExercise)!.Options)
+            .Include(e => (e as ListeningExercise)!.Options)
+            .Include(e => (e as ImageChoiceExercise)!.Options)
+            .Include(e => (e as AudioMatchingExercise)!.Pairs)
             .OrderBy(e => e.OrderIndex)
             .ToListAsync();
     }
@@ -287,7 +293,9 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     {
         var exercises = await _context
             .Exercises.Where(e => e.LessonId == lessonId)
-            .Include(e => (e as MultipleChoiceExercise)!.Options)
+            .Include(e => (e as ListeningExercise)!.Options)
+            .Include(e => (e as ImageChoiceExercise)!.Options)
+            .Include(e => (e as AudioMatchingExercise)!.Pairs)
             .OrderBy(e => e.OrderIndex)
             .ToListAsync();
 
@@ -376,10 +384,11 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     {
         return exercise switch
         {
-            MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)?.OptionText,
             FillInBlankExercise fib => fib.CorrectAnswer,
-            TranslationExercise te => te.TargetText,
-            ListeningExercise le => le.CorrectAnswer,
+            ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)?.OptionText,
+            TrueFalseExercise tf => tf.CorrectAnswer ? "True" : "False",
+            ImageChoiceExercise ic => ic.Options.FirstOrDefault(o => o.IsCorrect)?.AltText,
+            AudioMatchingExercise => null,
             _ => null,
         };
     }

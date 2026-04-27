@@ -32,7 +32,10 @@ public class ExerciseProgressService(
     {
         var exercise =
             await _context
-                .Exercises.Include(e => (e as MultipleChoiceExercise)!.Options)
+                .Exercises
+                .Include(e => (e as ListeningExercise)!.Options)
+                .Include(e => (e as ImageChoiceExercise)!.Options)
+                .Include(e => (e as AudioMatchingExercise)!.Pairs)
                 .Include(e => e.Lesson)
                 .FirstOrDefaultAsync(e => e.Id == exerciseId)
             ?? throw new ArgumentException("Exercise not found");
@@ -115,11 +118,11 @@ public class ExerciseProgressService(
             ? null
             : exercise switch
             {
-                MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)
-                    ?.OptionText,
                 FillInBlankExercise fib => fib.CorrectAnswer,
-                TranslationExercise te => te.TargetText,
-                ListeningExercise le => le.CorrectAnswer,
+                ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)?.OptionText,
+                TrueFalseExercise tf => tf.CorrectAnswer ? "True" : "False",
+                ImageChoiceExercise ic => ic.Options.FirstOrDefault(o => o.IsCorrect)?.AltText,
+                AudioMatchingExercise => null,
                 _ => null,
             };
 
@@ -173,18 +176,19 @@ public class ExerciseProgressService(
     {
         return exercise switch
         {
-            MultipleChoiceExercise mce => ValidateMultipleChoice(mce, answer),
             FillInBlankExercise fib => ValidateFillInBlank(fib, answer),
-            TranslationExercise te => ValidateTranslation(te, answer),
-            ListeningExercise le => ValidateListening(le, answer),
+            ListeningExercise le => ValidateListeningOption(le, answer),
+            TrueFalseExercise tf => ValidateTrueFalse(tf, answer),
+            ImageChoiceExercise ic => ValidateImageChoice(ic, answer),
+            AudioMatchingExercise am => ValidateAudioMatching(am, answer),
             _ => false,
         };
     }
 
-    private static bool ValidateMultipleChoice(MultipleChoiceExercise exercise, string answer)
+    private static bool ValidateListeningOption(ListeningExercise exercise, string answer)
     {
-        var selectedOption = exercise.Options.FirstOrDefault(o => o.Id == answer);
-        return selectedOption?.IsCorrect ?? false;
+        var selected = exercise.Options.FirstOrDefault(o => o.Id == answer);
+        return selected?.IsCorrect ?? false;
     }
 
     private static bool ValidateFillInBlank(FillInBlankExercise exercise, string answer)
@@ -198,27 +202,40 @@ public class ExerciseProgressService(
         );
     }
 
-    private static bool ValidateTranslation(TranslationExercise exercise, string answer)
+    private static bool ValidateTrueFalse(TrueFalseExercise exercise, string answer)
     {
-        var userInput = answer.Trim().ToLowerInvariant();
-        var target = exercise.TargetText.Trim().ToLowerInvariant();
-
-        if (userInput.Length == 0 && target.Length == 0)
-            return true;
-
-        var similarity = CalculateSimilarity(userInput, target);
-        return similarity >= exercise.MatchingThreshold;
+        if (!bool.TryParse(answer, out var userAnswer))
+            return false;
+        return userAnswer == exercise.CorrectAnswer;
     }
 
-    private static bool ValidateListening(ListeningExercise exercise, string answer)
+    private static bool ValidateImageChoice(ImageChoiceExercise exercise, string answer)
     {
-        return ValidateTextAnswer(
-            answer,
-            exercise.CorrectAnswer,
-            exercise.AcceptedAnswers,
-            exercise.CaseSensitive,
-            trimWhitespace: true
-        );
+        var selected = exercise.Options.FirstOrDefault(o => o.Id == answer);
+        return selected?.IsCorrect ?? false;
+    }
+
+    private static bool ValidateAudioMatching(AudioMatchingExercise exercise, string answer)
+    {
+        // answer format: "pairId1:imageUrl1,pairId2:imageUrl2,..."
+        var submissions = answer.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        if (submissions.Length != exercise.Pairs.Count)
+            return false;
+
+        var pairMap = exercise.Pairs.ToDictionary(p => p.Id, p => p.ImageUrl);
+        foreach (var submission in submissions)
+        {
+            var parts = submission.Split(':', 2);
+            if (parts.Length != 2)
+                return false;
+            var pairId = parts[0].Trim();
+            var selectedImageUrl = parts[1].Trim();
+            if (!pairMap.TryGetValue(pairId, out var correctImageUrl))
+                return false;
+            if (!string.Equals(selectedImageUrl, correctImageUrl, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+        return true;
     }
 
     private static bool ValidateTextAnswer(
