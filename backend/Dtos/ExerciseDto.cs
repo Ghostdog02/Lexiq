@@ -4,12 +4,13 @@ using Backend.Database.Entities.Exercises;
 namespace Backend.Api.Dtos;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(MultipleChoiceExerciseDto), typeDiscriminator: "MultipleChoice")]
 [JsonDerivedType(typeof(FillInBlankExerciseDto), typeDiscriminator: "FillInBlank")]
 [JsonDerivedType(typeof(ListeningExerciseDto), typeDiscriminator: "Listening")]
-[JsonDerivedType(typeof(TranslationExerciseDto), typeDiscriminator: "Translation")]
+[JsonDerivedType(typeof(TrueFalseExerciseDto), typeDiscriminator: "TrueFalse")]
+[JsonDerivedType(typeof(ImageChoiceExerciseDto), typeDiscriminator: "ImageChoice")]
+[JsonDerivedType(typeof(AudioMatchingExerciseDto), typeDiscriminator: "AudioMatching")]
 public abstract record ExerciseDto(
-    string Id,
+    string ExerciseId,
     string LessonId,
     string Title,
     string? Question,
@@ -22,36 +23,8 @@ public abstract record ExerciseDto(
     UserExerciseProgressDto? UserProgress
 );
 
-public record MultipleChoiceExerciseDto(
-    string Id,
-    string LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
-    DifficultyLevel DifficultyLevel,
-    int Points,
-    int OrderIndex,
-    string? Explanation,
-    bool IsLocked,
-    UserExerciseProgressDto? UserProgress,
-    List<ExerciseOptionDto> Options
-)
-    : ExerciseDto(
-        Id,
-        LessonId,
-        Title,
-        Question,
-        EstimatedDurationMinutes,
-        DifficultyLevel,
-        Points,
-        OrderIndex,
-        Explanation,
-        IsLocked,
-        UserProgress
-    );
-
 public record FillInBlankExerciseDto(
-    string Id,
+    string ExerciseId,
     string LessonId,
     string Title,
     string? Question,
@@ -66,7 +39,8 @@ public record FillInBlankExerciseDto(
     string CorrectAnswer,
     string? AcceptedAnswers,
     bool CaseSensitive,
-    bool TrimWhitespace
+    bool TrimWhitespace,
+    string WordBank
 )
     : ExerciseDto(
         Id,
@@ -83,7 +57,7 @@ public record FillInBlankExerciseDto(
     );
 
 public record ListeningExerciseDto(
-    string Id,
+    string ExerciseId,
     string LessonId,
     string Title,
     string? Question,
@@ -95,10 +69,8 @@ public record ListeningExerciseDto(
     bool IsLocked,
     UserExerciseProgressDto? UserProgress,
     string AudioUrl,
-    string CorrectAnswer,
-    string? AcceptedAnswers,
-    bool CaseSensitive,
-    int MaxReplays
+    int MaxReplays,
+    List<ExerciseOptionDto> Options
 )
     : ExerciseDto(
         Id,
@@ -114,8 +86,8 @@ public record ListeningExerciseDto(
         UserProgress
     );
 
-public record TranslationExerciseDto(
-    string Id,
+public record TrueFalseExerciseDto(
+    string ExerciseId,
     string LessonId,
     string Title,
     string? Question,
@@ -126,11 +98,9 @@ public record TranslationExerciseDto(
     string? Explanation,
     bool IsLocked,
     UserExerciseProgressDto? UserProgress,
-    string SourceText,
-    string TargetText,
-    string SourceLanguageCode,
-    string TargetLanguageCode,
-    double MatchingThreshold
+    string Statement,
+    bool CorrectAnswer,
+    string? ImageUrl
 )
     : ExerciseDto(
         Id,
@@ -146,36 +116,24 @@ public record TranslationExerciseDto(
         UserProgress
     );
 
-public record ExerciseOptionDto(string Id, string OptionText, bool IsCorrect, int OrderIndex);
+public record ImageOptionDto(string ImageOptionId, string ImageUrl, string AltText, bool IsCorrect, int OrderIndex);
 
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(CreateMultipleChoiceExerciseDto), typeDiscriminator: "MultipleChoice")]
-[JsonDerivedType(typeof(CreateFillInBlankExerciseDto), typeDiscriminator: "FillInBlank")]
-[JsonDerivedType(typeof(CreateListeningExerciseDto), typeDiscriminator: "Listening")]
-[JsonDerivedType(typeof(CreateTranslationExerciseDto), typeDiscriminator: "Translation")]
-public abstract record CreateExerciseDto(
-    string? LessonId, 
+public record ImageChoiceExerciseDto(
+    string ExerciseId,
+    string LessonId,
     string Title,
     string? Question,
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex, 
-    string? Explanation
-);
-
-public record CreateMultipleChoiceExerciseDto(
-    string? LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
-    DifficultyLevel DifficultyLevel,
-    int Points,
-    int? OrderIndex, // Optional - auto-calculated if null
+    int OrderIndex,
     string? Explanation,
-    List<CreateExerciseOptionDto> Options
+    bool IsLocked,
+    UserExerciseProgressDto? UserProgress,
+    List<ImageOptionDto> Options
 )
-    : CreateExerciseDto(
+    : ExerciseDto(
+        Id,
         LessonId,
         Title,
         Question,
@@ -183,8 +141,59 @@ public record CreateMultipleChoiceExerciseDto(
         DifficultyLevel,
         Points,
         OrderIndex,
-        Explanation
+        Explanation,
+        IsLocked,
+        UserProgress
     );
+
+public record AudioMatchPairDto(string AudioMatchPairId, string AudioUrl, string ImageUrl, int OrderIndex);
+
+public record AudioMatchingExerciseDto(
+    string ExerciseId,
+    string LessonId,
+    string Title,
+    string? Question,
+    int? EstimatedDurationMinutes,
+    DifficultyLevel DifficultyLevel,
+    int Points,
+    int OrderIndex,
+    string? Explanation,
+    bool IsLocked,
+    UserExerciseProgressDto? UserProgress,
+    List<AudioMatchPairDto> Pairs
+)
+    : ExerciseDto(
+        Id,
+        LessonId,
+        Title,
+        Question,
+        EstimatedDurationMinutes,
+        DifficultyLevel,
+        Points,
+        OrderIndex,
+        Explanation,
+        IsLocked,
+        UserProgress
+    );
+
+public record ExerciseOptionDto(string ExerciseOptionId, string OptionText, bool IsCorrect, int OrderIndex);
+
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(CreateFillInBlankExerciseDto), typeDiscriminator: "FillInBlank")]
+[JsonDerivedType(typeof(CreateListeningExerciseDto), typeDiscriminator: "Listening")]
+[JsonDerivedType(typeof(CreateTrueFalseExerciseDto), typeDiscriminator: "TrueFalse")]
+[JsonDerivedType(typeof(CreateImageChoiceExerciseDto), typeDiscriminator: "ImageChoice")]
+[JsonDerivedType(typeof(CreateAudioMatchingExerciseDto), typeDiscriminator: "AudioMatching")]
+public abstract record CreateExerciseDto(
+    string? LessonId,
+    string Title,
+    string? Question,
+    int? EstimatedDurationMinutes,
+    DifficultyLevel DifficultyLevel,
+    int Points,
+    int? OrderIndex,
+    string? Explanation
+);
 
 public record CreateFillInBlankExerciseDto(
     string? LessonId,
@@ -193,13 +202,14 @@ public record CreateFillInBlankExerciseDto(
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex, 
+    int? OrderIndex,
     string? Explanation,
     string Text,
     string CorrectAnswer,
     string? AcceptedAnswers,
     bool CaseSensitive,
-    bool TrimWhitespace
+    bool TrimWhitespace,
+    string WordBank
 )
     : CreateExerciseDto(
         LessonId,
@@ -219,13 +229,11 @@ public record CreateListeningExerciseDto(
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex, // Optional - auto-calculated if null
+    int? OrderIndex,
     string? Explanation,
     string AudioUrl,
-    string CorrectAnswer,
-    string? AcceptedAnswers,
-    bool CaseSensitive,
-    int MaxReplays
+    int MaxReplays,
+    List<CreateExerciseOptionDto> Options
 )
     : CreateExerciseDto(
         LessonId,
@@ -238,20 +246,66 @@ public record CreateListeningExerciseDto(
         Explanation
     );
 
-public record CreateTranslationExerciseDto(
+public record CreateTrueFalseExerciseDto(
     string? LessonId,
     string Title,
     string? Question,
     int? EstimatedDurationMinutes,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex, 
+    int? OrderIndex,
     string? Explanation,
-    string SourceText,
-    string TargetText,
-    string SourceLanguageCode,
-    string TargetLanguageCode,
-    double MatchingThreshold
+    string Statement,
+    bool CorrectAnswer,
+    string? ImageUrl
+)
+    : CreateExerciseDto(
+        LessonId,
+        Title,
+        Question,
+        EstimatedDurationMinutes,
+        DifficultyLevel,
+        Points,
+        OrderIndex,
+        Explanation
+    );
+
+public record CreateImageOptionDto(string ImageUrl, string AltText, bool IsCorrect, int OrderIndex);
+
+public record CreateImageChoiceExerciseDto(
+    string? LessonId,
+    string Title,
+    string? Question,
+    int? EstimatedDurationMinutes,
+    DifficultyLevel DifficultyLevel,
+    int Points,
+    int? OrderIndex,
+    string? Explanation,
+    List<CreateImageOptionDto> Options
+)
+    : CreateExerciseDto(
+        LessonId,
+        Title,
+        Question,
+        EstimatedDurationMinutes,
+        DifficultyLevel,
+        Points,
+        OrderIndex,
+        Explanation
+    );
+
+public record CreateAudioMatchPairDto(string AudioUrl, string ImageUrl, int OrderIndex);
+
+public record CreateAudioMatchingExerciseDto(
+    string? LessonId,
+    string Title,
+    string? Question,
+    int? EstimatedDurationMinutes,
+    DifficultyLevel DifficultyLevel,
+    int Points,
+    int? OrderIndex,
+    string? Explanation,
+    List<CreateAudioMatchPairDto> Pairs
 )
     : CreateExerciseDto(
         LessonId,

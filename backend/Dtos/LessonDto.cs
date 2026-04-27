@@ -3,7 +3,7 @@ namespace Backend.Api.Dtos;
 public record LessonDto(
     string LessonId,
     string CourseId,
-    string CourseName,
+    string CourseTitle,
     string Title,
     string? Description,
     int? EstimatedDurationMinutes,
