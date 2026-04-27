@@ -106,11 +106,12 @@ public static class DbSeeder
                 Id = exerciseId,
                 LessonId = lessonId,
                 Title = $"FillInBlank {orderIndex}",
-                Text = "Fill in the blank: _",
+                Text = "Fill in the blank: ____",
                 CorrectAnswer = "answer",
                 AcceptedAnswers = "ans",
                 CaseSensitive = false,
                 TrimWhitespace = true,
+                WordBank = "answer,wrong1,wrong2,wrong3",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = points,
                 OrderIndex = orderIndex,
@@ -122,9 +123,10 @@ public static class DbSeeder
     }
 
     /// <summary>
-    /// Creates a MultipleChoice exercise with "answer" as the correct option text.
+    /// Creates a Listening exercise with options. The correct option has OptionText "answer".
+    /// Returns (exerciseId, correctOptionId) so tests can submit the correct option ID.
     /// </summary>
-    public static async Task<string> CreateMultipleChoiceExerciseAsync(
+    public static async Task<(string ExerciseId, string CorrectOptionId)> CreateListeningExerciseWithOptionsAsync(
         BackendDbContext ctx,
         string lessonId,
         int orderIndex,
@@ -133,52 +135,33 @@ public static class DbSeeder
     )
     {
         var exerciseId = Guid.NewGuid().ToString();
+        var correctOptionId = Guid.NewGuid().ToString();
         ctx.Exercises.Add(
-            new MultipleChoiceExercise
+            new ListeningExercise
             {
                 Id = exerciseId,
                 LessonId = lessonId,
-                Title = $"MultipleChoice {orderIndex}",
-                Question = "Select the correct answer",
+                Title = $"Listening {orderIndex}",
+                AudioUrl = $"https://example.com/audio{orderIndex}.mp3",
+                MaxReplays = 3,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = points,
                 OrderIndex = orderIndex,
                 IsLocked = isLocked,
-                Options = new List<ExerciseOption>
-                {
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = exerciseId,
-                        OptionText = "wrong1",
-                        IsCorrect = false,
-                        OrderIndex = 0,
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = exerciseId,
-                        OptionText = "answer",
-                        IsCorrect = true,
-                        OrderIndex = 1,
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = exerciseId,
-                        OptionText = "wrong2",
-                        IsCorrect = false,
-                        OrderIndex = 2,
-                    },
-                },
+                Options =
+                [
+                    new ExerciseOption { Id = Guid.NewGuid().ToString(), ExerciseId = exerciseId, OptionText = "wrong1", IsCorrect = false, OrderIndex = 0 },
+                    new ExerciseOption { Id = correctOptionId, ExerciseId = exerciseId, OptionText = "answer", IsCorrect = true, OrderIndex = 1 },
+                    new ExerciseOption { Id = Guid.NewGuid().ToString(), ExerciseId = exerciseId, OptionText = "wrong2", IsCorrect = false, OrderIndex = 2 },
+                ],
             }
         );
         await ctx.SaveChangesAsync();
-        return exerciseId;
+        return (exerciseId, correctOptionId);
     }
 
     /// <summary>
-    /// Creates a Listening exercise with "answer" accepted.
+    /// Creates a Listening exercise (simplified — use CreateListeningExerciseWithOptionsAsync when you need to submit answers).
     /// </summary>
     public static async Task<string> CreateListeningExerciseAsync(
         BackendDbContext ctx,
@@ -188,33 +171,14 @@ public static class DbSeeder
         int points = 10
     )
     {
-        var exerciseId = Guid.NewGuid().ToString();
-        ctx.Exercises.Add(
-            new ListeningExercise
-            {
-                Id = exerciseId,
-                LessonId = lessonId,
-                Title = $"Listening {orderIndex}",
-                AudioUrl = $"https://example.com/audio{orderIndex}.mp3",
-                CorrectAnswer = "answer",
-                AcceptedAnswers = "ans",
-                CaseSensitive = false,
-                MaxReplays = 3,
-                DifficultyLevel = DifficultyLevel.Beginner,
-                Points = points,
-                OrderIndex = orderIndex,
-                IsLocked = isLocked,
-            }
-        );
-        
-        await ctx.SaveChangesAsync();
+        var (exerciseId, _) = await CreateListeningExerciseWithOptionsAsync(ctx, lessonId, orderIndex, isLocked, points);
         return exerciseId;
     }
 
     /// <summary>
-    /// Creates a Translation exercise with "answer" as the target text.
+    /// Creates a TrueFalse exercise. Correct answer is true; submit "true" to pass.
     /// </summary>
-    public static async Task<string> CreateTranslationExerciseAsync(
+    public static async Task<string> CreateTrueFalseExerciseAsync(
         BackendDbContext ctx,
         string lessonId,
         int orderIndex,
@@ -224,16 +188,13 @@ public static class DbSeeder
     {
         var exerciseId = Guid.NewGuid().ToString();
         ctx.Exercises.Add(
-            new TranslationExercise
+            new TrueFalseExercise
             {
                 Id = exerciseId,
                 LessonId = lessonId,
-                Title = $"Translation {orderIndex}",
-                SourceText = "Test",
-                TargetText = "answer",
-                SourceLanguageCode = "en",
-                TargetLanguageCode = "it",
-                MatchingThreshold = 0.85,
+                Title = $"TrueFalse {orderIndex}",
+                Statement = "Rome is the capital of Italy.",
+                CorrectAnswer = true,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = points,
                 OrderIndex = orderIndex,
