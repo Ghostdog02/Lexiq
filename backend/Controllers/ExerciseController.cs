@@ -141,11 +141,11 @@ public class ExerciseController(
     {
         return exercise switch
         {
-            MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)
-                ?.OptionText,
             FillInBlankExercise fib => fib.CorrectAnswer,
-            TranslationExercise te => te.TargetText,
-            ListeningExercise le => le.CorrectAnswer,
+            ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)?.OptionText,
+            TrueFalseExercise tf => tf.CorrectAnswer ? "True" : "False",
+            ImageChoiceExercise ic => ic.Options.FirstOrDefault(o => o.IsCorrect)?.AltText,
+            AudioMatchingExercise => null,
             _ => null,
         };
     }
