@@ -88,7 +88,8 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
                     CorrectAnswer: "answer",
                     AcceptedAnswers: null,
                     CaseSensitive: false,
-                    TrimWhitespace: true
+                    TrimWhitespace: true,
+                    WordBank: "answer,wrong1,wrong2,wrong3"
                 ),
             ]
         );

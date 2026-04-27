@@ -70,7 +70,7 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
                 isLocked: false,
                 points: 10
             ),
-            await DbSeeder.CreateMultipleChoiceExerciseAsync(
+            await DbSeeder.CreateListeningExerciseAsync(
                 ctx,
                 Fixture.LessonId,
                 orderIndex: 1,
@@ -84,7 +84,7 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
                 isLocked: false,
                 points: 20
             ),
-            await DbSeeder.CreateTranslationExerciseAsync(
+            await DbSeeder.CreateTrueFalseExerciseAsync(
                 ctx,
                 Fixture.LessonId,
                 orderIndex: 3,
@@ -239,7 +239,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
             CorrectAnswer: "Rome",
             AcceptedAnswers: "Roma",
             CaseSensitive: false,
-            TrimWhitespace: true
+            TrimWhitespace: true,
+            WordBank: "Rome,Paris,Berlin,Madrid"
         );
 
         // Act
@@ -280,7 +281,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
             CorrectAnswer: "answer",
             AcceptedAnswers: null,
             CaseSensitive: false,
-            TrimWhitespace: true
+            TrimWhitespace: true,
+            WordBank: "answer,wrong1,wrong2"
         );
 
         // Act
@@ -317,7 +319,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
             CorrectAnswer: "answer",
             AcceptedAnswers: null,
             CaseSensitive: false,
-            TrimWhitespace: true
+            TrimWhitespace: true,
+            WordBank: "answer,wrong1,wrong2"
         );
 
         // Act
@@ -573,10 +576,10 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task GetCorrectAnswer_MultipleChoice_ReturnsCorrectOptionText()
+    public async Task GetCorrectAnswer_Listening_ReturnsCorrectOptionText()
     {
         // Arrange
-        var exerciseId = _exerciseIds[1]; // MultipleChoiceExercise
+        var exerciseId = _exerciseIds[1]; // ListeningExercise (index 1)
 
         // Act
         var response = await _studentClient.GetAsync(
@@ -595,15 +598,15 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
             .Should()
             .Be(
                 "answer",
-                because: "MultipleChoice seed data sets option at index 1 (IsCorrect=true) with OptionText='answer'"
+                because: "Listening exercise seed data sets the correct option OptionText to 'answer'"
             );
     }
 
     [Fact]
-    public async Task GetCorrectAnswer_Listening_ReturnsCorrectAnswer()
+    public async Task GetCorrectAnswer_TrueFalse_ReturnsTrueOrFalse()
     {
         // Arrange
-        var exerciseId = _exerciseIds[2]; // ListeningExercise
+        var exerciseId = _exerciseIds[3]; // TrueFalseExercise
 
         // Act
         var response = await _studentClient.GetAsync(
@@ -620,31 +623,7 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         result.Should().NotBeNull();
         result!.CorrectAnswer
             .Should()
-            .Be("answer", because: "ListeningExercise seed data sets CorrectAnswer to 'answer'");
-    }
-
-    [Fact]
-    public async Task GetCorrectAnswer_Translation_ReturnsTargetText()
-    {
-        // Arrange
-        var exerciseId = _exerciseIds[3]; // TranslationExercise
-
-        // Act
-        var response = await _studentClient.GetAsync(
-            $"/api/exercises/{exerciseId}/correct-answer",
-            TestContext.Current.CancellationToken
-        );
-
-        // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        var result = await response.Content.ReadFromJsonAsync<CorrectAnswerDto>(
-            cancellationToken: TestContext.Current.CancellationToken
-        );
-        result.Should().NotBeNull();
-        result!.CorrectAnswer
-            .Should()
-            .Be("answer", because: "TranslationExercise seed data sets TargetText to 'answer'");
+            .Be("True", because: "TrueFalse seed data sets CorrectAnswer = true");
     }
 
     [Fact]
@@ -731,17 +710,18 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task GetCorrectAnswer_MultipleChoiceWithNoCorrectOption_ReturnsNull()
+    public async Task GetCorrectAnswer_ListeningWithNoCorrectOption_ReturnsNull()
     {
-        // Arrange - Create a broken MultipleChoice exercise with no correct option
+        // Arrange - Create a broken Listening exercise with no correct option
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-        var brokenExercise = new MultipleChoiceExercise
+        var brokenExercise = new ListeningExercise
         {
             Id = Guid.NewGuid().ToString(),
             LessonId = Fixture.LessonId,
-            Title = "Broken MC Exercise",
+            Title = "Broken Listening Exercise",
+            AudioUrl = "/static/uploads/audio/placeholder.mp3",
             Points = 10,
             OrderIndex = 99,
             DifficultyLevel = DifficultyLevel.Beginner,
