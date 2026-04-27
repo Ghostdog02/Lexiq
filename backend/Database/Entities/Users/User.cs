@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
 
 namespace Backend.Database.Entities.Users;
 
@@ -18,5 +19,6 @@ public class User : IdentityUser
 
     public DateTime LastHeartResetAt { get; set; } = DateTime.UtcNow;
 
-    public UserAvatar? Avatar { get; set; }
+    [Required]
+    public required UserAvatar Avatar { get; set; }
 }
