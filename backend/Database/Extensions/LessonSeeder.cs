@@ -18,7 +18,7 @@ public static class LessonSeeder
 
         if (existingLessons.Count > 0)
         {
-            return existingLessons.Select(l => l.Id).ToList();
+            return existingLessons.Select(l => l.LessonId).ToList();
         }
 
         var definitions = GetLessonDefinitions();
@@ -40,7 +40,7 @@ public static class LessonSeeder
             };
 
             context.Lessons.Add(lesson);
-            lessonIds.Add(lesson.Id);
+            lessonIds.Add(lesson.LessonId);
         }
 
         await context.SaveChangesAsync();
