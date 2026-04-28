@@ -1,40 +1,61 @@
 namespace Backend.Api.Dtos;
 
-public record LessonDto(
-    string LessonId,
-    string CourseId,
-    string CourseTitle,
-    string Title,
-    string? Description,
-    int? EstimatedDurationMinutes,
-    int OrderIndex,
-    string LessonContent, // Editor.js JSON content
-    bool IsLocked,
-    List<ExerciseDto> Exercises,
-    int? CompletedExercises = null,
-    int? EarnedXp = null,
-    int? TotalPossibleXp = null,
-    bool? IsCompleted = null
-);
+public record LessonDto
+{
+    public required string LessonId { get; init; }
 
-public record CreateLessonDto(
-    string CourseId,
-    string Title,
-    string? Description,
-    int? EstimatedDurationMinutes,
-    int? OrderIndex, // Optional - auto-calculated if null
-    string Content, // Editor.js JSON content
-    List<CreateExerciseDto>? Exercises = null
-);
+    public required string CourseId { get; init; }
 
-public record UpdateLessonDto(
-    string? CourseId,
-    string? Title,
-    string? Description,
-    int? EstimatedDurationMinutes,
-    int? OrderIndex,
-    string? LessonContent // Editor.js JSON content
-);
+    public required string CourseTitle { get; init; }
+
+    public required string Title { get; init; }
+
+    public int? EstimatedDurationMinutes { get; init; }
+
+    public required int OrderIndex { get; init; }
+
+    public required string LessonContent { get; init; }
+
+    public required bool IsLocked { get; init; }
+
+    public required List<ExerciseDto> Exercises { get; init; }
+
+    public int? CompletedExercises { get; init; }
+
+    public int? EarnedXp { get; init; }
+
+    public int? TotalPossibleXp { get; init; }
+
+    public bool? IsCompleted { get; init; }
+}
+
+public record CreateLessonDto
+{
+    public required string CourseId { get; init; }
+
+    public required string Title { get; init; }
+
+    public int? EstimatedDurationMinutes { get; init; }
+
+    public int? OrderIndex { get; init; }
+
+    public required string Content { get; init; }
+
+    public List<CreateExerciseDto>? Exercises { get; init; }
+}
+
+public record UpdateLessonDto
+{
+    public string? CourseId { get; init; }
+
+    public string? Title { get; init; }
+
+    public int? EstimatedDurationMinutes { get; init; }
+
+    public int? OrderIndex { get; init; }
+
+    public string? LessonContent { get; init; }
+}
 
 public enum UnlockStatus
 {

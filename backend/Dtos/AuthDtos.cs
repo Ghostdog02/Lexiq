@@ -1,7 +1,20 @@
 namespace Backend.Api.Dtos;
 
-public record GoogleLoginRequestDto(string IdToken);
+public record GoogleLoginRequestDto
+{
+    public required string IdToken { get; init; }
+}
 
-public record AuthStatusResponseDto(string Message, bool IsLogged);
+public record AuthStatusResponseDto
+{
+    public required string Message { get; init; }
 
-public record IsAdminResponseDto(bool IsAdmin, List<string> Roles);
+    public required bool IsLogged { get; init; }
+}
+
+public record IsAdminResponseDto
+{
+    public required bool IsAdmin { get; init; }
+
+    public required List<string> Roles { get; init; }
+}
