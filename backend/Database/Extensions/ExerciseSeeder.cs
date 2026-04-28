@@ -7,7 +7,7 @@ public static class ExerciseSeeder
 {
     private const string AudioPlaceholder = "/static/uploads/audio/placeholder.mp3";
 
-    public static async Task SeedAsync(BackendDbContext context, List<string> lessonIds)
+    public static async Task SeedAsync(BackendDbContext context, List<string> lessonIds, string createdById)
     {
         if (await context.Exercises.AnyAsync(e => lessonIds.Contains(e.LessonId)))
             return;
@@ -16,7 +16,7 @@ public static class ExerciseSeeder
 
         for (int i = 0; i < lessonIds.Count; i++)
         {
-            var lessonExercises = BuildExercisesForLesson(lessonIds[i], i);
+            var lessonExercises = BuildExercisesForLesson(lessonIds[i], i, createdById);
             exercises.AddRange(lessonExercises);
         }
 
@@ -24,81 +24,75 @@ public static class ExerciseSeeder
         await context.SaveChangesAsync();
     }
 
-    private static List<Exercise> BuildExercisesForLesson(string lessonId, int lessonIndex) =>
+    private static List<Exercise> BuildExercisesForLesson(string lessonId, int lessonIndex, string createdById) =>
         lessonIndex switch
         {
-            0 => BuildGreetingsExercises(lessonId),
-            1 => BuildNumbersExercises(lessonId),
-            2 => BuildColorsExercises(lessonId),
-            3 => BuildFoodExercises(lessonId),
-            4 => BuildTravelExercises(lessonId),
-            5 => BuildVerbsExercises(lessonId),
-            6 => BuildTimeExercises(lessonId),
-            7 => BuildConversationExercises(lessonId),
+            0 => BuildGreetingsExercises(lessonId, createdById),
+            1 => BuildNumbersExercises(lessonId, createdById),
+            2 => BuildColorsExercises(lessonId, createdById),
+            3 => BuildFoodExercises(lessonId, createdById),
+            4 => BuildTravelExercises(lessonId, createdById),
+            5 => BuildVerbsExercises(lessonId, createdById),
+            6 => BuildTimeExercises(lessonId, createdById),
+            7 => BuildConversationExercises(lessonId, createdById),
             _ => [],
         };
 
     // ══════════════════════════════════════════════════════════════════
     // Lesson 0: Greetings and Introductions
     // ══════════════════════════════════════════════════════════════════
-    private static List<Exercise> BuildGreetingsExercises(string lessonId) =>
+    private static List<Exercise> BuildGreetingsExercises(string lessonId, string createdById) =>
         [
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "What does 'Ciao' mean?",
-                Question = "Select the correct English translation.",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "What does 'Ciao' mean? Select the correct English translation.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 0,
                 IsLocked = false,
-                Explanation = "'Ciao' is an informal greeting used for both hello and goodbye in Italian.",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "Hello / Goodbye", IsCorrect = true, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "Thank you", IsCorrect = false, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "Good evening", IsCorrect = false, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "Please", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "Hello / Goodbye", IsCorrect = true, Explanation = "'Ciao' is an informal greeting used for both hello and goodbye in Italian." },
+                    new ExerciseOption { OptionText = "Thank you", IsCorrect = false, Explanation = "'Thank you' in Italian is 'Grazie'." },
+                    new ExerciseOption { OptionText = "Good evening", IsCorrect = false, Explanation = "'Good evening' in Italian is 'Buonasera'." },
+                    new ExerciseOption { OptionText = "Please", IsCorrect = false, Explanation = "'Please' in Italian is 'Per favore'." },
                 ],
             },
             new FillInBlankExercise
             {
                 LessonId = lessonId,
-                Title = "Complete the sentence",
-                Question = "Fill in the blank: Mi ____ Marco. (My name is Marco.)",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "Fill in the blank: Mi ____ Marco. (My name is Marco.)",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 1,
-                Explanation = "'Mi chiamo' means 'My name is' or literally 'I call myself'.",
                 Text = "Mi ____ Marco.",
-                CorrectAnswer = "chiamo",
-                AcceptedAnswers = null,
-                CaseSensitive = false,
-                TrimWhitespace = true,
-                WordBank = "chiamo,sono,ho,parlo,vengo",
+                Options =
+                [
+                    new ExerciseOption { OptionText = "chiamo", IsCorrect = true, Explanation = "'Mi chiamo' means 'My name is' or literally 'I call myself'." },
+                    new ExerciseOption { OptionText = "sono", IsCorrect = false, Explanation = "'Sono' means 'I am' but is not used for introducing names." },
+                    new ExerciseOption { OptionText = "ho", IsCorrect = false, Explanation = "'Ho' means 'I have'." },
+                    new ExerciseOption { OptionText = "parlo", IsCorrect = false, Explanation = "'Parlo' means 'I speak'." },
+                    new ExerciseOption { OptionText = "vengo", IsCorrect = false, Explanation = "'Vengo' means 'I come'." },
+                ],
             },
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "Hear the greeting",
-                Question = "Listen and select the greeting you hear.",
-                EstimatedDurationMinutes = 8,
+                CreatedById = createdById,
+                Instructions = "Listen and select the greeting you hear.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
-                OrderIndex = 2,
-                Explanation = "'Buongiorno' is used from morning until early afternoon.",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "Buongiorno", IsCorrect = true, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "Buonasera", IsCorrect = false, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "Buonanotte", IsCorrect = false, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "Ciao", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "Buongiorno", IsCorrect = true, Explanation = "'Buongiorno' is used from morning until early afternoon." },
+                    new ExerciseOption { OptionText = "Buonasera", IsCorrect = false, Explanation = "'Buonasera' is used in the evening." },
+                    new ExerciseOption { OptionText = "Buonanotte", IsCorrect = false, Explanation = "'Buonanotte' means 'Good night' and is used before sleeping." },
+                    new ExerciseOption { OptionText = "Ciao", IsCorrect = false, Explanation = "'Ciao' is an informal greeting." },
                 ],
             },
         ];
@@ -106,154 +100,144 @@ public static class ExerciseSeeder
     // ══════════════════════════════════════════════════════════════════
     // Lesson 1: Numbers 1 to 20
     // ══════════════════════════════════════════════════════════════════
-    private static List<Exercise> BuildNumbersExercises(string lessonId) =>
+    private static List<Exercise> BuildNumbersExercises(string lessonId, string createdById) =>
         [
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "Which number is 'cinque'?",
-                Question = "Select the correct number.",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "Which number is 'cinque'? Select the correct number.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 0,
                 IsLocked = false,
-                Explanation = "'Cinque' is the Italian word for 5.",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "3", IsCorrect = false, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "5", IsCorrect = true, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "7", IsCorrect = false, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "9", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "3", IsCorrect = false, Explanation = "'Tre' is the Italian word for 3." },
+                    new ExerciseOption { OptionText = "5", IsCorrect = true, Explanation = "'Cinque' is the Italian word for 5." },
+                    new ExerciseOption { OptionText = "7", IsCorrect = false, Explanation = "'Sette' is the Italian word for 7." },
+                    new ExerciseOption { OptionText = "9", IsCorrect = false, Explanation = "'Nove' is the Italian word for 9." },
                 ],
             },
             new FillInBlankExercise
             {
                 LessonId = lessonId,
-                Title = "Write the number",
-                Question = "The number 10 in Italian is ____.",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "The number 10 in Italian is ____.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 1,
-                Explanation = "'Dieci' is 10 in Italian.",
                 Text = "The number 10 in Italian is ____.",
-                CorrectAnswer = "dieci",
-                AcceptedAnswers = null,
-                CaseSensitive = false,
-                TrimWhitespace = true,
-                WordBank = "dieci,sette,otto,nove,undici",
+                Options =
+                [
+                    new ExerciseOption { OptionText = "dieci", IsCorrect = true, Explanation = "'Dieci' is 10 in Italian." },
+                    new ExerciseOption { OptionText = "sette", IsCorrect = false, Explanation = "'Sette' is 7 in Italian." },
+                    new ExerciseOption { OptionText = "otto", IsCorrect = false, Explanation = "'Otto' is 8 in Italian." },
+                    new ExerciseOption { OptionText = "nove", IsCorrect = false, Explanation = "'Nove' is 9 in Italian." },
+                    new ExerciseOption { OptionText = "undici", IsCorrect = false, Explanation = "'Undici' is 11 in Italian." },
+                ],
             },
         ];
 
     // ══════════════════════════════════════════════════════════════════
     // Lesson 2: Colors and Descriptions
     // ══════════════════════════════════════════════════════════════════
-    private static List<Exercise> BuildColorsExercises(string lessonId) =>
+    private static List<Exercise> BuildColorsExercises(string lessonId, string createdById) =>
         [
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "What color is 'verde'?",
-                Question = "Pick the correct color.",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "What color is 'verde'? Pick the correct color.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 0,
                 IsLocked = false,
-                Explanation = "'Verde' means green in Italian.",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "Red", IsCorrect = false, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "Blue", IsCorrect = false, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "Green", IsCorrect = true, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "Yellow", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "Red", IsCorrect = false, Explanation = "'Rosso' means red in Italian." },
+                    new ExerciseOption { OptionText = "Blue", IsCorrect = false, Explanation = "'Blu' means blue in Italian." },
+                    new ExerciseOption { OptionText = "Green", IsCorrect = true, Explanation = "'Verde' means green in Italian." },
+                    new ExerciseOption { OptionText = "Yellow", IsCorrect = false, Explanation = "'Giallo' means yellow in Italian." },
                 ],
             },
             new FillInBlankExercise
             {
                 LessonId = lessonId,
-                Title = "Black in Italian",
-                Question = "The Italian word for black is ____.",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "The Italian word for black is ____.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 1,
-                Explanation = "'Nero' is black in Italian (masculine form).",
                 Text = "The Italian word for black is ____.",
-                CorrectAnswer = "nero",
-                AcceptedAnswers = "nera",
-                CaseSensitive = false,
-                TrimWhitespace = true,
-                WordBank = "nero,bianco,rosso,blu,giallo",
+                Options =
+                [
+                    new ExerciseOption { OptionText = "nero", IsCorrect = true, Explanation = "'Nero' is black in Italian (masculine form)." },
+                    new ExerciseOption { OptionText = "nera", IsCorrect = true, Explanation = "'Nera' is black in Italian (feminine form)." },
+                    new ExerciseOption { OptionText = "bianco", IsCorrect = false, Explanation = "'Bianco' means white in Italian." },
+                    new ExerciseOption { OptionText = "rosso", IsCorrect = false, Explanation = "'Rosso' means red in Italian." },
+                    new ExerciseOption { OptionText = "blu", IsCorrect = false, Explanation = "'Blu' means blue in Italian." },
+                    new ExerciseOption { OptionText = "giallo", IsCorrect = false, Explanation = "'Giallo' means yellow in Italian." },
+                ],
             },
         ];
 
     // ══════════════════════════════════════════════════════════════════
     // Lesson 3: Food and Ordering
     // ══════════════════════════════════════════════════════════════════
-    private static List<Exercise> BuildFoodExercises(string lessonId) =>
+    private static List<Exercise> BuildFoodExercises(string lessonId, string createdById) =>
         [
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "What does 'il pane' mean?",
-                Question = "Select the correct translation.",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "What does 'il pane' mean? Select the correct translation.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 0,
                 IsLocked = false,
-                Explanation = "'Il pane' is Italian for bread.",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "Cheese", IsCorrect = false, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "Bread", IsCorrect = true, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "Coffee", IsCorrect = false, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "Water", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "Cheese", IsCorrect = false, Explanation = "'Formaggio' is Italian for cheese." },
+                    new ExerciseOption { OptionText = "Bread", IsCorrect = true, Explanation = "'Il pane' is Italian for bread." },
+                    new ExerciseOption { OptionText = "Coffee", IsCorrect = false, Explanation = "'Caffe' is Italian for coffee." },
+                    new ExerciseOption { OptionText = "Water", IsCorrect = false, Explanation = "'Acqua' is Italian for water." },
                 ],
             },
             new FillInBlankExercise
             {
                 LessonId = lessonId,
-                Title = "Order politely",
-                Question = "Complete: Un caffe, ____. (A coffee, please.)",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "Complete: Un caffe, ____. (A coffee, please.)",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 1,
-                Explanation = "'Per favore' means 'please' and is essential for polite ordering.",
                 Text = "Un caffe, ____.",
-                CorrectAnswer = "per favore",
-                AcceptedAnswers = "perfavore",
-                CaseSensitive = false,
-                TrimWhitespace = true,
-                WordBank = "per favore,grazie,prego,scusi,arrivederci",
+                Options =
+                [
+                    new ExerciseOption { OptionText = "per favore", IsCorrect = true, Explanation = "'Per favore' means 'please' and is essential for polite ordering." },
+                    new ExerciseOption { OptionText = "perfavore", IsCorrect = true, Explanation = "Alternative spelling of 'per favore' (please)." },
+                    new ExerciseOption { OptionText = "grazie", IsCorrect = false, Explanation = "'Grazie' means 'thank you', not 'please'." },
+                    new ExerciseOption { OptionText = "prego", IsCorrect = false, Explanation = "'Prego' means 'you're welcome' or 'go ahead'." },
+                    new ExerciseOption { OptionText = "scusi", IsCorrect = false, Explanation = "'Scusi' means 'excuse me'." },
+                    new ExerciseOption { OptionText = "arrivederci", IsCorrect = false, Explanation = "'Arrivederci' means 'goodbye'." },
+                ],
             },
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "Hear the food word",
-                Question = "Listen and select the food word you hear.",
-                EstimatedDurationMinutes = 8,
+                CreatedById = createdById,
+                Instructions = "Listen and select the food word you hear.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
-                OrderIndex = 2,
-                Explanation = "The word spoken is 'formaggio' (cheese).",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "formaggio", IsCorrect = true, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "pane", IsCorrect = false, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "acqua", IsCorrect = false, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "caffe", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "formaggio", IsCorrect = true, Explanation = "The word spoken is 'formaggio' (cheese)." },
+                    new ExerciseOption { OptionText = "pane", IsCorrect = false, Explanation = "'Pane' means bread." },
+                    new ExerciseOption { OptionText = "acqua", IsCorrect = false, Explanation = "'Acqua' means water." },
+                    new ExerciseOption { OptionText = "caffe", IsCorrect = false, Explanation = "'Caffe' means coffee." },
                 ],
             },
         ];
@@ -261,64 +245,58 @@ public static class ExerciseSeeder
     // ══════════════════════════════════════════════════════════════════
     // Lesson 4: Travel and Directions
     // ══════════════════════════════════════════════════════════════════
-    private static List<Exercise> BuildTravelExercises(string lessonId) =>
+    private static List<Exercise> BuildTravelExercises(string lessonId, string createdById) =>
         [
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "What does 'destra' mean?",
-                Question = "Choose the correct direction.",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "What does 'destra' mean? Choose the correct direction.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 0,
                 IsLocked = false,
-                Explanation = "'Destra' means right. 'Sinistra' means left.",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "Left", IsCorrect = false, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "Right", IsCorrect = true, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "Straight", IsCorrect = false, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "Behind", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "Left", IsCorrect = false, Explanation = "'Sinistra' means left in Italian." },
+                    new ExerciseOption { OptionText = "Right", IsCorrect = true, Explanation = "'Destra' means right. 'Sinistra' means left." },
+                    new ExerciseOption { OptionText = "Straight", IsCorrect = false, Explanation = "'Dritto' means straight in Italian." },
+                    new ExerciseOption { OptionText = "Behind", IsCorrect = false, Explanation = "'Dietro' means behind in Italian." },
                 ],
             },
             new FillInBlankExercise
             {
                 LessonId = lessonId,
-                Title = "Give directions",
-                Question = "Complete: La stazione e a ____. (The station is on the left.)",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "Complete: La stazione e a ____. (The station is on the left.)",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 1,
-                Explanation = "'A sinistra' means 'on the left'.",
                 Text = "La stazione e a ____.",
-                CorrectAnswer = "sinistra",
-                AcceptedAnswers = null,
-                CaseSensitive = false,
-                TrimWhitespace = true,
-                WordBank = "sinistra,destra,dritto,dietro,davanti",
+                Options =
+                [
+                    new ExerciseOption { OptionText = "sinistra", IsCorrect = true, Explanation = "'A sinistra' means 'on the left'." },
+                    new ExerciseOption { OptionText = "destra", IsCorrect = false, Explanation = "'A destra' means 'on the right'." },
+                    new ExerciseOption { OptionText = "dritto", IsCorrect = false, Explanation = "'Dritto' means 'straight'." },
+                    new ExerciseOption { OptionText = "dietro", IsCorrect = false, Explanation = "'Dietro' means 'behind'." },
+                    new ExerciseOption { OptionText = "davanti", IsCorrect = false, Explanation = "'Davanti' means 'in front'." },
+                ],
             },
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "Listen for the farewell",
-                Question = "Listen and select what you hear.",
-                EstimatedDurationMinutes = 8,
+                CreatedById = createdById,
+                Instructions = "Listen and select what you hear.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
-                OrderIndex = 2,
-                Explanation = "'Arrivederci' is the formal goodbye.",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "Arrivederci", IsCorrect = true, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "Ciao", IsCorrect = false, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "Buonasera", IsCorrect = false, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "Prego", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "Arrivederci", IsCorrect = true, Explanation = "'Arrivederci' is the formal goodbye." },
+                    new ExerciseOption { OptionText = "Ciao", IsCorrect = false, Explanation = "'Ciao' is an informal greeting/goodbye." },
+                    new ExerciseOption { OptionText = "Buonasera", IsCorrect = false, Explanation = "'Buonasera' means 'Good evening'." },
+                    new ExerciseOption { OptionText = "Prego", IsCorrect = false, Explanation = "'Prego' means 'you're welcome' or 'go ahead'." },
                 ],
             },
         ];
@@ -326,64 +304,59 @@ public static class ExerciseSeeder
     // ══════════════════════════════════════════════════════════════════
     // Lesson 5: Present Tense Verbs
     // ══════════════════════════════════════════════════════════════════
-    private static List<Exercise> BuildVerbsExercises(string lessonId) =>
+    private static List<Exercise> BuildVerbsExercises(string lessonId, string createdById) =>
         [
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "'Io parlo' - who is speaking?",
-                Question = "Which pronoun does 'io' refer to?",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "'Io parlo' - which pronoun does 'io' refer to?",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 0,
                 IsLocked = false,
-                Explanation = "'Io' is the first-person singular pronoun: I.",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "You", IsCorrect = false, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "I", IsCorrect = true, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "We", IsCorrect = false, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "They", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "You", IsCorrect = false, Explanation = "'Tu' is the pronoun for 'you' (informal)." },
+                    new ExerciseOption { OptionText = "I", IsCorrect = true, Explanation = "'Io' is the first-person singular pronoun: I." },
+                    new ExerciseOption { OptionText = "We", IsCorrect = false, Explanation = "'Noi' is the pronoun for 'we'." },
+                    new ExerciseOption { OptionText = "They", IsCorrect = false, Explanation = "'Loro' is the pronoun for 'they'." },
                 ],
             },
             new FillInBlankExercise
             {
                 LessonId = lessonId,
-                Title = "Conjugate for 'noi'",
-                Question = "Complete: Noi parl____. (We speak.)",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "Complete: Noi parl____. (We speak.)",
                 DifficultyLevel = DifficultyLevel.Intermediate,
                 Points = 15,
-                OrderIndex = 1,
-                Explanation = "The 'noi' form of 'parlare' is 'parliamo'.",
                 Text = "Noi parl____.",
-                CorrectAnswer = "iamo",
-                AcceptedAnswers = "parliamo",
-                CaseSensitive = false,
-                TrimWhitespace = true,
-                WordBank = "iamo,o,i,ano,ete",
+                Options =
+                [
+                    new ExerciseOption { OptionText = "iamo", IsCorrect = true, Explanation = "The 'noi' form of 'parlare' is 'parliamo'." },
+                    new ExerciseOption { OptionText = "parliamo", IsCorrect = true, Explanation = "The full conjugation for 'we speak' is 'parliamo'." },
+                    new ExerciseOption { OptionText = "o", IsCorrect = false, Explanation = "'O' is the ending for 'io' (I), not 'noi' (we)." },
+                    new ExerciseOption { OptionText = "i", IsCorrect = false, Explanation = "'I' is the ending for 'tu' (you), not 'noi' (we)." },
+                    new ExerciseOption { OptionText = "ano", IsCorrect = false, Explanation = "'Ano' is the ending for 'loro' (they), not 'noi' (we)." },
+                    new ExerciseOption { OptionText = "ete", IsCorrect = false, Explanation = "'Ete' is the ending for 'voi' (you plural), not 'noi' (we)." },
+                ],
             },
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "Hear the conjugation",
-                Question = "Listen and select the verb form you hear.",
-                EstimatedDurationMinutes = 8,
+                CreatedById = createdById,
+                Instructions = "Listen and select the verb form you hear.",
                 DifficultyLevel = DifficultyLevel.Intermediate,
                 Points = 15,
-                OrderIndex = 2,
-                Explanation = "The spoken word is 'parlano' (they speak).",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "parlano", IsCorrect = true, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "parliamo", IsCorrect = false, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "parli", IsCorrect = false, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "parlo", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "parlano", IsCorrect = true, Explanation = "The spoken word is 'parlano' (they speak)." },
+                    new ExerciseOption { OptionText = "parliamo", IsCorrect = false, Explanation = "'Parliamo' means 'we speak'." },
+                    new ExerciseOption { OptionText = "parli", IsCorrect = false, Explanation = "'Parli' means 'you speak' (informal)." },
+                    new ExerciseOption { OptionText = "parlo", IsCorrect = false, Explanation = "'Parlo' means 'I speak'." },
                 ],
             },
         ];
@@ -391,109 +364,100 @@ public static class ExerciseSeeder
     // ══════════════════════════════════════════════════════════════════
     // Lesson 6: Days and Time
     // ══════════════════════════════════════════════════════════════════
-    private static List<Exercise> BuildTimeExercises(string lessonId) =>
+    private static List<Exercise> BuildTimeExercises(string lessonId, string createdById) =>
         [
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "Which day is 'venerdi'?",
-                Question = "Select the day of the week.",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "Which day is 'venerdi'? Select the day of the week.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 0,
                 IsLocked = false,
-                Explanation = "'Venerdi' is Friday.",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "Wednesday", IsCorrect = false, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "Thursday", IsCorrect = false, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "Friday", IsCorrect = true, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "Saturday", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "Wednesday", IsCorrect = false, Explanation = "'Mercoledi' is Wednesday in Italian." },
+                    new ExerciseOption { OptionText = "Thursday", IsCorrect = false, Explanation = "'Giovedi' is Thursday in Italian." },
+                    new ExerciseOption { OptionText = "Friday", IsCorrect = true, Explanation = "'Venerdi' is Friday." },
+                    new ExerciseOption { OptionText = "Saturday", IsCorrect = false, Explanation = "'Sabato' is Saturday in Italian." },
                 ],
             },
             new FillInBlankExercise
             {
                 LessonId = lessonId,
-                Title = "Sunday in Italian",
-                Question = "Sunday in Italian is ____.",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "Sunday in Italian is ____.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 1,
-                Explanation = "'Domenica' is Sunday - the only day that's feminine!",
                 Text = "Sunday in Italian is ____.",
-                CorrectAnswer = "domenica",
-                AcceptedAnswers = null,
-                CaseSensitive = false,
-                TrimWhitespace = true,
-                WordBank = "domenica,lunedi,martedi,sabato,venerdi",
+                Options =
+                [
+                    new ExerciseOption { OptionText = "domenica", IsCorrect = true, Explanation = "'Domenica' is Sunday - the only day that's feminine!" },
+                    new ExerciseOption { OptionText = "lunedi", IsCorrect = false, Explanation = "'Lunedi' is Monday in Italian." },
+                    new ExerciseOption { OptionText = "martedi", IsCorrect = false, Explanation = "'Martedi' is Tuesday in Italian." },
+                    new ExerciseOption { OptionText = "sabato", IsCorrect = false, Explanation = "'Sabato' is Saturday in Italian." },
+                    new ExerciseOption { OptionText = "venerdi", IsCorrect = false, Explanation = "'Venerdi' is Friday in Italian." },
+                ],
             },
         ];
 
     // ══════════════════════════════════════════════════════════════════
     // Lesson 7: First Conversations
     // ══════════════════════════════════════════════════════════════════
-    private static List<Exercise> BuildConversationExercises(string lessonId) =>
+    private static List<Exercise> BuildConversationExercises(string lessonId, string createdById) =>
         [
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "What does 'Dove' mean?",
-                Question = "Select the correct question word.",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "What does 'Dove' mean? Select the correct question word.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 0,
                 IsLocked = false,
-                Explanation = "'Dove' means 'Where' in Italian.",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "What", IsCorrect = false, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "When", IsCorrect = false, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "Where", IsCorrect = true, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "Why", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "What", IsCorrect = false, Explanation = "'Cosa' or 'Che cosa' means 'What' in Italian." },
+                    new ExerciseOption { OptionText = "When", IsCorrect = false, Explanation = "'Quando' means 'When' in Italian." },
+                    new ExerciseOption { OptionText = "Where", IsCorrect = true, Explanation = "'Dove' means 'Where' in Italian." },
+                    new ExerciseOption { OptionText = "Why", IsCorrect = false, Explanation = "'Perche' means 'Why' in Italian." },
                 ],
             },
             new FillInBlankExercise
             {
                 LessonId = lessonId,
-                Title = "I'm fine",
-                Question = "Complete: ____ bene, grazie! (I'm fine, thank you!)",
-                EstimatedDurationMinutes = 5,
+                CreatedById = createdById,
+                Instructions = "Complete: ____ bene, grazie! (I'm fine, thank you!)",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 1,
-                Explanation = "'Sto bene' means 'I'm fine'. 'Sto' is from the verb 'stare'.",
                 Text = "____ bene, grazie!",
-                CorrectAnswer = "Sto",
-                AcceptedAnswers = null,
-                CaseSensitive = false,
-                TrimWhitespace = true,
-                WordBank = "Sto,Sono,Ho,Vado,Vengo",
+                Options =
+                [
+                    new ExerciseOption { OptionText = "Sto", IsCorrect = true, Explanation = "'Sto bene' means 'I'm fine'. 'Sto' is from the verb 'stare'." },
+                    new ExerciseOption { OptionText = "Sono", IsCorrect = false, Explanation = "'Sono' means 'I am' but 'stare' is used for temporary states like feeling well." },
+                    new ExerciseOption { OptionText = "Ho", IsCorrect = false, Explanation = "'Ho' means 'I have'." },
+                    new ExerciseOption { OptionText = "Vado", IsCorrect = false, Explanation = "'Vado' means 'I go'." },
+                    new ExerciseOption { OptionText = "Vengo", IsCorrect = false, Explanation = "'Vengo' means 'I come'." },
+                ],
             },
             new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = "Listen to the response",
-                Question = "Listen and select what you hear.",
-                EstimatedDurationMinutes = 8,
+                CreatedById = createdById,
+                Instructions = "Listen and select what you hear.",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
-                OrderIndex = 2,
-                Explanation = "'Sto bene, grazie' is the standard response to 'Come stai?'",
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =
                 [
-                    new ExerciseOption { OptionText = "Sto bene, grazie", IsCorrect = true, OrderIndex = 0 },
-                    new ExerciseOption { OptionText = "Mi chiamo Marco", IsCorrect = false, OrderIndex = 1 },
-                    new ExerciseOption { OptionText = "Sono di Roma", IsCorrect = false, OrderIndex = 2 },
-                    new ExerciseOption { OptionText = "Non capisco", IsCorrect = false, OrderIndex = 3 },
+                    new ExerciseOption { OptionText = "Sto bene, grazie", IsCorrect = true, Explanation = "'Sto bene, grazie' is the standard response to 'Come stai?'" },
+                    new ExerciseOption { OptionText = "Mi chiamo Marco", IsCorrect = false, Explanation = "'Mi chiamo Marco' means 'My name is Marco'." },
+                    new ExerciseOption { OptionText = "Sono di Roma", IsCorrect = false, Explanation = "'Sono di Roma' means 'I'm from Rome'." },
+                    new ExerciseOption { OptionText = "Non capisco", IsCorrect = false, Explanation = "'Non capisco' means 'I don't understand'." },
                 ],
             },
         ];

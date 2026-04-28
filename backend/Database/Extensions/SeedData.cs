@@ -93,7 +93,7 @@ public class SeedData
         var languageId = await LanguageSeeder.SeedAsync(context);
         var courseId = await CourseSeeder.SeedAsync(context, languageId, adminUserId);
         var lessonIds = await LessonSeeder.SeedAsync(context, courseId);
-        await ExerciseSeeder.SeedAsync(context, lessonIds);
+        await ExerciseSeeder.SeedAsync(context, lessonIds, adminUserId);
         await AchievementSeeder.SeedAsync(context);
     }
 
