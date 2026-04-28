@@ -32,7 +32,7 @@ public class Course
 
     [Required]
     [MaxLength(450)]
-    public required string CreatedById { get; set; }
+    public string CreatedById { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

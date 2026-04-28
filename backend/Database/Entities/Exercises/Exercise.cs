@@ -40,7 +40,7 @@ public abstract class Exercise
 
     [Required]
     [MaxLength(450)]
-    public required string CreatedById { get; set; }
+    public string CreatedById { get; set; } = string.Empty;
 
     [Required]
     public DifficultyLevel DifficultyLevel { get; set; }
@@ -55,13 +55,11 @@ public abstract class Exercise
     [DataType(DataType.DateTime)]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    [Required]
     [ForeignKey(nameof(LessonId))]
-    public required Lesson Lesson { get; set; }
+    public Lesson? Lesson { get; set; }
 
-    [Required]
     [ForeignKey(nameof(CreatedById))]
-    public required User CreatedBy { get; set; }
+    public User? CreatedBy { get; set; }
 
     public List<UserExerciseProgress> ExerciseProgress { get; set; } = [];
 }

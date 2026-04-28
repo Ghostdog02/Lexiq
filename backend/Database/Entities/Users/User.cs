@@ -19,6 +19,5 @@ public class User : IdentityUser
 
     public DateTime LastHeartResetAt { get; set; } = DateTime.UtcNow;
 
-    [Required]
-    public required UserAvatar Avatar { get; set; }
+    public UserAvatar? Avatar { get; set; }
 }
