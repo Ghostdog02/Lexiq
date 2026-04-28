@@ -1,158 +1,211 @@
 using Backend.Api.Dtos;
 using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
-using Backend.Database.Entities.Users;
+using Riok.Mapperly.Abstractions;
 
 namespace Backend.Api.Mapping;
 
-public static class ContentMappingExtensions
+[Mapper]
+public partial class ContentMapping
 {
-    public static LanguageDto ToDto(this Language entity)
-    {
-        return new LanguageDto(entity.Name, entity.FlagIconUrl, entity.Courses.Count);
-    }
+    // Language mappings
+    [MapperIgnoreSource(nameof(Language.LanguageId))]
+    [MapperIgnoreSource(nameof(Language.CreatedAt))]
+    [MapperIgnoreSource(nameof(Language.UserLanguages))]
+    [MapProperty(
+        nameof(Language.Courses),
+        nameof(LanguageDto.CourseCount),
+        Use = nameof(CountCourses)
+    )]
+    public partial LanguageDto MapToDto(Language entity);
 
-    public static CourseDto ToDto(this Course entity)
-    {
-        return new CourseDto(
-            entity.Id,
-            entity.Title,
-            entity.Language?.Name ?? string.Empty,
-            entity.Description,
-            entity.EstimatedDurationHours,
-            entity.OrderIndex,
-            entity.Lessons.Count
-        );
-    }
+    [MapperIgnoreTarget(nameof(Language.LanguageId))]
+    [MapperIgnoreTarget(nameof(Language.CreatedAt))]
+    [MapperIgnoreTarget(nameof(Language.Courses))]
+    [MapperIgnoreTarget(nameof(Language.UserLanguages))]
+    public partial Language MapToEntity(CreateLanguageDto dto);
 
-    public static LessonDto ToDto(
-        this Lesson entity,
-        LessonProgressSummary? progress = null,
-        Dictionary<string, UserExerciseProgressDto>? exerciseProgress = null
-    )
-    {
-        return new LessonDto(
-            entity.Id,
-            entity.CourseId,
-            entity.Course?.Title ?? string.Empty,
-            entity.Title,
-            entity.Description,
-            entity.EstimatedDurationMinutes,
-            entity.OrderIndex,
-            entity.LessonContent,
-            entity.IsLocked,
-            entity.Exercises.Select(e => e.ToDto(exerciseProgress)).ToList(),
-            CompletedExercises: progress?.CompletedExercises,
-            EarnedXp: progress?.EarnedXp,
-            TotalPossibleXp: progress?.TotalPossibleXp,
-            IsCompleted: progress?.MeetsCompletionThreshold
-        );
-    }
+    // Course mappings
+    [MapperIgnoreSource(nameof(Course.LanguageId))]
+    [MapperIgnoreSource(nameof(Course.CreatedById))]
+    [MapperIgnoreSource(nameof(Course.CreatedAt))]
+    [MapperIgnoreSource(nameof(Course.UpdatedAt))]
+    [MapperIgnoreSource(nameof(Course.CreatedBy))]
+    [MapProperty(nameof(Course.Language.LanguageName), nameof(CourseDto.LanguageName))]
+    [MapProperty(nameof(Course.Lessons), nameof(CourseDto.LessonCount), Use = nameof(CountLessons))]
+    public partial CourseDto MapToDto(Course entity);
 
-    public static ExerciseDto ToDto(
-        this Exercise entity,
-        Dictionary<string, UserExerciseProgressDto>? userProgress = null
-    )
-    {
-        var progress = userProgress?.GetValueOrDefault(entity.Id);
+    [MapperIgnoreSource(nameof(CreateCourseDto.LanguageName))]
+    [MapperIgnoreTarget(nameof(Course.CourseId))]
+    [MapperIgnoreTarget(nameof(Course.LanguageId))]
+    [MapperIgnoreTarget(nameof(Course.CreatedById))]
+    [MapperIgnoreTarget(nameof(Course.CreatedAt))]
+    [MapperIgnoreTarget(nameof(Course.UpdatedAt))]
+    [MapperIgnoreTarget(nameof(Course.Language))]
+    [MapperIgnoreTarget(nameof(Course.Lessons))]
+    [MapperIgnoreTarget(nameof(Course.CreatedBy))]
+    public partial Course MapToEntity(CreateCourseDto dto);
 
+    // Lesson mappings
+    [MapperIgnoreSource(nameof(Lesson.CreatedAt))]
+    [MapProperty(nameof(Lesson.Course.Title), nameof(LessonDto.CourseTitle))]
+    [MapperIgnoreTarget(nameof(LessonDto.CompletedExercises))]
+    [MapperIgnoreTarget(nameof(LessonDto.EarnedXp))]
+    [MapperIgnoreTarget(nameof(LessonDto.TotalPossibleXp))]
+    [MapperIgnoreTarget(nameof(LessonDto.IsCompleted))]
+    public partial LessonDto MapToDto(Lesson entity);
+
+    [MapProperty(nameof(CreateLessonDto.Content), nameof(Lesson.LessonContent))]
+    [MapperIgnoreSource(nameof(CreateLessonDto.CourseId))]
+    [MapperIgnoreSource(nameof(CreateLessonDto.OrderIndex))]
+    [MapperIgnoreSource(nameof(CreateLessonDto.Exercises))]
+    [MapperIgnoreTarget(nameof(Lesson.LessonId))]
+    [MapperIgnoreTarget(nameof(Lesson.CourseId))]
+    [MapperIgnoreTarget(nameof(Lesson.OrderIndex))]
+    [MapperIgnoreTarget(nameof(Lesson.IsLocked))]
+    [MapperIgnoreTarget(nameof(Lesson.CreatedAt))]
+    [MapperIgnoreTarget(nameof(Lesson.Course))]
+    [MapperIgnoreTarget(nameof(Lesson.Exercises))]
+    public partial Lesson MapToEntity(CreateLessonDto dto);
+
+    // Exercise polymorphic mapping - manual dispatch
+    public ExerciseDto MapToDto(Exercise entity)
+    {
         return entity switch
         {
-            FillInBlankExercise fib => new FillInBlankExerciseDto(
-                fib.Id,
-                fib.LessonId,
-                fib.Title,
-                fib.Question,
-                fib.EstimatedDurationMinutes,
-                fib.DifficultyLevel,
-                fib.Points,
-                fib.OrderIndex,
-                fib.Explanation,
-                fib.IsLocked,
-                progress,
-                fib.Text,
-                fib.CorrectAnswer,
-                fib.AcceptedAnswers,
-                fib.CaseSensitive,
-                fib.TrimWhitespace,
-                fib.WordBank
-            ),
-            ListeningExercise le => new ListeningExerciseDto(
-                le.Id,
-                le.LessonId,
-                le.Title,
-                le.Question,
-                le.EstimatedDurationMinutes,
-                le.DifficultyLevel,
-                le.Points,
-                le.OrderIndex,
-                le.Explanation,
-                le.IsLocked,
-                progress,
-                le.AudioUrl,
-                le.MaxReplays,
-                le.Options.Select(o => new ExerciseOptionDto(o.Id, o.OptionText, o.IsCorrect, o.OrderIndex)).ToList()
-            ),
-            TrueFalseExercise tf => new TrueFalseExerciseDto(
-                tf.Id,
-                tf.LessonId,
-                tf.Title,
-                tf.Question,
-                tf.EstimatedDurationMinutes,
-                tf.DifficultyLevel,
-                tf.Points,
-                tf.OrderIndex,
-                tf.Explanation,
-                tf.IsLocked,
-                progress,
-                tf.Statement,
-                tf.CorrectAnswer,
-                tf.ImageUrl
-            ),
-            ImageChoiceExercise ic => new ImageChoiceExerciseDto(
-                ic.Id,
-                ic.LessonId,
-                ic.Title,
-                ic.Question,
-                ic.EstimatedDurationMinutes,
-                ic.DifficultyLevel,
-                ic.Points,
-                ic.OrderIndex,
-                ic.Explanation,
-                ic.IsLocked,
-                progress,
-                ic.Options.Select(o => new ImageOptionDto(o.Id, o.ImageUrl, o.AltText, o.IsCorrect, o.OrderIndex)).ToList()
-            ),
-            AudioMatchingExercise am => new AudioMatchingExerciseDto(
-                am.Id,
-                am.LessonId,
-                am.Title,
-                am.Question,
-                am.EstimatedDurationMinutes,
-                am.DifficultyLevel,
-                am.Points,
-                am.OrderIndex,
-                am.Explanation,
-                am.IsLocked,
-                progress,
-                am.Pairs.Select(p => new AudioMatchPairDto(p.Id, p.AudioUrl, p.ImageUrl, p.OrderIndex)).ToList()
-            ),
-            _ => throw new NotImplementedException(
-                $"Mapping for exercise type {entity.GetType().Name} is not implemented"
+            FillInBlankExercise fib => MapToDto(fib),
+            ListeningExercise le => MapToDto(le),
+            TrueFalseExercise tf => MapToDto(tf),
+            ImageChoiceExercise ic => MapToDto(ic),
+            AudioMatchingExercise am => MapToDto(am),
+            _ => throw new NotSupportedException(
+                $"Exercise type {entity.GetType().Name} is not supported"
             ),
         };
     }
 
-    public static UserLanguageDto ToDto(this UserLanguage entity)
-    {
-        return new UserLanguageDto(
-            entity.UserId,
-            entity.LanguageId,
-            entity.Language?.Name ?? string.Empty,
-            entity.Language?.FlagIconUrl,
-            entity.EnrolledAt,
-            0,
-            0
-        );
-    }
+    // Exercise type-specific mappings
+    [MapperIgnoreSource(nameof(FillInBlankExercise.CreatedById))]
+    [MapperIgnoreSource(nameof(FillInBlankExercise.Lesson))]
+    [MapperIgnoreSource(nameof(FillInBlankExercise.CreatedBy))]
+    [MapperIgnoreSource(nameof(FillInBlankExercise.ExerciseProgress))]
+    [MapperIgnoreTarget(nameof(FillInBlankExerciseDto.UserProgress))]
+    public partial FillInBlankExerciseDto MapToDto(FillInBlankExercise entity);
+
+    [MapperIgnoreSource(nameof(ListeningExercise.CreatedById))]
+    [MapperIgnoreSource(nameof(ListeningExercise.Lesson))]
+    [MapperIgnoreSource(nameof(ListeningExercise.CreatedBy))]
+    [MapperIgnoreSource(nameof(ListeningExercise.ExerciseProgress))]
+    [MapperIgnoreTarget(nameof(ListeningExerciseDto.UserProgress))]
+    public partial ListeningExerciseDto MapToDto(ListeningExercise entity);
+
+    [MapperIgnoreSource(nameof(TrueFalseExercise.CreatedById))]
+    [MapperIgnoreSource(nameof(TrueFalseExercise.Lesson))]
+    [MapperIgnoreSource(nameof(TrueFalseExercise.CreatedBy))]
+    [MapperIgnoreSource(nameof(TrueFalseExercise.ExerciseProgress))]
+    [MapperIgnoreTarget(nameof(TrueFalseExerciseDto.UserProgress))]
+    public partial TrueFalseExerciseDto MapToDto(TrueFalseExercise entity);
+
+    [MapperIgnoreSource(nameof(ImageChoiceExercise.CreatedById))]
+    [MapperIgnoreSource(nameof(ImageChoiceExercise.Lesson))]
+    [MapperIgnoreSource(nameof(ImageChoiceExercise.CreatedBy))]
+    [MapperIgnoreSource(nameof(ImageChoiceExercise.ExerciseProgress))]
+    [MapperIgnoreTarget(nameof(ImageChoiceExerciseDto.UserProgress))]
+    public partial ImageChoiceExerciseDto MapToDto(ImageChoiceExercise entity);
+
+    [MapperIgnoreSource(nameof(AudioMatchingExercise.CreatedById))]
+    [MapperIgnoreSource(nameof(AudioMatchingExercise.Lesson))]
+    [MapperIgnoreSource(nameof(AudioMatchingExercise.CreatedBy))]
+    [MapperIgnoreSource(nameof(AudioMatchingExercise.ExerciseProgress))]
+    [MapperIgnoreTarget(nameof(AudioMatchingExerciseDto.UserProgress))]
+    public partial AudioMatchingExerciseDto MapToDto(AudioMatchingExercise entity);
+
+    // Exercise creation mappings - ignore auto-generated fields
+    [MapperIgnoreSource(nameof(CreateFillInBlankExerciseDto.LessonId))]
+    [MapperIgnoreTarget(nameof(FillInBlankExercise.ExerciseId))]
+    [MapperIgnoreTarget(nameof(FillInBlankExercise.LessonId))]
+    [MapperIgnoreTarget(nameof(FillInBlankExercise.CreatedById))]
+    [MapperIgnoreTarget(nameof(FillInBlankExercise.IsLocked))]
+    [MapperIgnoreTarget(nameof(FillInBlankExercise.CreatedAt))]
+    [MapperIgnoreTarget(nameof(FillInBlankExercise.Lesson))]
+    [MapperIgnoreTarget(nameof(FillInBlankExercise.CreatedBy))]
+    [MapperIgnoreTarget(nameof(FillInBlankExercise.ExerciseProgress))]
+    public partial FillInBlankExercise MapToEntity(CreateFillInBlankExerciseDto dto);
+
+    [MapperIgnoreSource(nameof(CreateListeningExerciseDto.LessonId))]
+    [MapperIgnoreTarget(nameof(ListeningExercise.ExerciseId))]
+    [MapperIgnoreTarget(nameof(ListeningExercise.LessonId))]
+    [MapperIgnoreTarget(nameof(ListeningExercise.CreatedById))]
+    [MapperIgnoreTarget(nameof(ListeningExercise.IsLocked))]
+    [MapperIgnoreTarget(nameof(ListeningExercise.CreatedAt))]
+    [MapperIgnoreTarget(nameof(ListeningExercise.Lesson))]
+    [MapperIgnoreTarget(nameof(ListeningExercise.CreatedBy))]
+    [MapperIgnoreTarget(nameof(ListeningExercise.ExerciseProgress))]
+    public partial ListeningExercise MapToEntity(CreateListeningExerciseDto dto);
+
+    [MapperIgnoreSource(nameof(CreateTrueFalseExerciseDto.LessonId))]
+    [MapperIgnoreTarget(nameof(TrueFalseExercise.ExerciseId))]
+    [MapperIgnoreTarget(nameof(TrueFalseExercise.LessonId))]
+    [MapperIgnoreTarget(nameof(TrueFalseExercise.CreatedById))]
+    [MapperIgnoreTarget(nameof(TrueFalseExercise.IsLocked))]
+    [MapperIgnoreTarget(nameof(TrueFalseExercise.CreatedAt))]
+    [MapperIgnoreTarget(nameof(TrueFalseExercise.Lesson))]
+    [MapperIgnoreTarget(nameof(TrueFalseExercise.CreatedBy))]
+    [MapperIgnoreTarget(nameof(TrueFalseExercise.ExerciseProgress))]
+    public partial TrueFalseExercise MapToEntity(CreateTrueFalseExerciseDto dto);
+
+    [MapperIgnoreSource(nameof(CreateImageChoiceExerciseDto.LessonId))]
+    [MapperIgnoreTarget(nameof(ImageChoiceExercise.ExerciseId))]
+    [MapperIgnoreTarget(nameof(ImageChoiceExercise.LessonId))]
+    [MapperIgnoreTarget(nameof(ImageChoiceExercise.CreatedById))]
+    [MapperIgnoreTarget(nameof(ImageChoiceExercise.IsLocked))]
+    [MapperIgnoreTarget(nameof(ImageChoiceExercise.CreatedAt))]
+    [MapperIgnoreTarget(nameof(ImageChoiceExercise.Lesson))]
+    [MapperIgnoreTarget(nameof(ImageChoiceExercise.CreatedBy))]
+    [MapperIgnoreTarget(nameof(ImageChoiceExercise.ExerciseProgress))]
+    public partial ImageChoiceExercise MapToEntity(CreateImageChoiceExerciseDto dto);
+
+    [MapperIgnoreSource(nameof(CreateAudioMatchingExerciseDto.LessonId))]
+    [MapperIgnoreTarget(nameof(AudioMatchingExercise.ExerciseId))]
+    [MapperIgnoreTarget(nameof(AudioMatchingExercise.LessonId))]
+    [MapperIgnoreTarget(nameof(AudioMatchingExercise.CreatedById))]
+    [MapperIgnoreTarget(nameof(AudioMatchingExercise.IsLocked))]
+    [MapperIgnoreTarget(nameof(AudioMatchingExercise.CreatedAt))]
+    [MapperIgnoreTarget(nameof(AudioMatchingExercise.Lesson))]
+    [MapperIgnoreTarget(nameof(AudioMatchingExercise.CreatedBy))]
+    [MapperIgnoreTarget(nameof(AudioMatchingExercise.ExerciseProgress))]
+    public partial AudioMatchingExercise MapToEntity(CreateAudioMatchingExerciseDto dto);
+
+    // Child entity mappings
+    [MapperIgnoreSource(nameof(ExerciseOption.ExerciseId))]
+    [MapperIgnoreSource(nameof(ExerciseOption.Exercise))]
+    public partial ExerciseOptionDto MapToDto(ExerciseOption entity);
+
+    [MapperIgnoreSource(nameof(ImageOption.ImageChoiceExerciseId))]
+    [MapperIgnoreSource(nameof(ImageOption.Exercise))]
+    public partial ImageOptionDto MapToDto(ImageOption entity);
+
+    [MapperIgnoreSource(nameof(AudioMatchPair.AudioMatchingExerciseId))]
+    [MapperIgnoreSource(nameof(AudioMatchPair.Exercise))]
+    public partial AudioMatchPairDto MapToDto(AudioMatchPair entity);
+
+    [MapperIgnoreTarget(nameof(ExerciseOption.ExerciseOptionId))]
+    [MapperIgnoreTarget(nameof(ExerciseOption.ExerciseId))]
+    [MapperIgnoreTarget(nameof(ExerciseOption.Exercise))]
+    public partial ExerciseOption MapToEntity(CreateExerciseOptionDto dto);
+
+    [MapperIgnoreTarget(nameof(ImageOption.ImageOptionId))]
+    [MapperIgnoreTarget(nameof(ImageOption.ImageChoiceExerciseId))]
+    [MapperIgnoreTarget(nameof(ImageOption.Exercise))]
+    public partial ImageOption MapToEntity(CreateImageOptionDto dto);
+
+    [MapperIgnoreTarget(nameof(AudioMatchPair.AudioMatchPairId))]
+    [MapperIgnoreTarget(nameof(AudioMatchPair.AudioMatchingExerciseId))]
+    [MapperIgnoreTarget(nameof(AudioMatchPair.Exercise))]
+    public partial AudioMatchPair MapToEntity(CreateAudioMatchPairDto dto);
+
+    // Helper methods for collection counts
+    private int CountCourses(ICollection<Course> courses) => courses.Count;
+
+    private int CountLessons(ICollection<Lesson> lessons) => lessons.Count;
 }

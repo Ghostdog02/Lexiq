@@ -1,4 +1,5 @@
 using System.Text;
+using Backend.Api.Mapping;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities.Users;
@@ -79,6 +80,8 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+        services.AddScoped<ContentMapping>();
+        services.AddScoped<UserMapping>();
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();
         services.AddScoped<CourseService>();
         services.AddScoped<LessonService>();

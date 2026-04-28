@@ -2,32 +2,33 @@ using Backend.Api.Dtos;
 using Backend.Database.Entities.Users;
 using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
+using Riok.Mapperly.Abstractions;
 
 namespace Backend.Api.Mapping;
 
-public static class UserMapping
+#pragma warning disable RMG020 // User inherits IdentityUser — many source properties intentionally unmapped
+[Mapper]
+public partial class UserMapping
 {
-    public static UserDetailsDto MapUserToDto(this User user)
-    {
-        return new UserDetailsDto(
-            user.Email!,
-            user.LastLoginDate,
-            user.UserName!,
-            user.RegistrationDate
-        );
-    }
+    [MapProperty(nameof(User.UserName), nameof(UserDetailsDto.FullName))]
+    public partial UserDetailsDto MapToDto(User user);
 
-    public static IQueryable<UserDetailsDto> MapUsersToDtos(this IQueryable<User> users)
-    {
-        return users.Select(user => user.MapUserToDto());
-    }
+    public partial GoogleLoginDto MapToGoogleLoginDto(User user);
+}
+#pragma warning restore RMG020
 
+public static class UserMappingExtensions
+{
+    // IQueryable projection — must stay as a LINQ expression for EF Core SQL translation
+    public static IQueryable<UserDetailsDto> MapUsersToDtos(this IQueryable<User> users) =>
+        users.Select(u => new UserDetailsDto(u.Email!, u.LastLoginDate, u.UserName!, u.RegistrationDate));
+
+    // Requires UserManager + custom logic — cannot be expressed as a pure Mapperly mapping
     public static User MapGooglePayloadToUser(
         this UserManager<User> userManager,
         GoogleJsonWebSignature.Payload validPayload
-    )
-    {
-        return new User
+    ) =>
+        new()
         {
             UserName = CleanUsername(validPayload.Name),
             Email = validPayload.Email,
@@ -36,16 +37,10 @@ public static class UserMapping
             NormalizedUserName = userManager.NormalizeEmail(validPayload.Name),
             RegistrationDate = DateTime.UtcNow,
         };
-    }
 
     private static string CleanUsername(string username)
     {
         char[] charToRemove = ['-', ' ', '_', '*', '&'];
         return new string(username.Where(c => !charToRemove.Contains(c)).ToArray());
-    }
-
-    public static GoogleLoginDto ToGoogleLoginDto(this User user)
-    {
-        return new GoogleLoginDto(user.Email!, user.UserName!);
     }
 }
