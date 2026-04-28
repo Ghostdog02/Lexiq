@@ -13,11 +13,15 @@ namespace Backend.Api.Controllers;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize(Roles = "Admin")]
-public class UserManagementController(BackendDbContext context, UserManager<User> userManager)
-    : ControllerBase
+public class UserManagementController(
+    BackendDbContext context,
+    UserManager<User> userManager,
+    UserMapping userMapper
+) : ControllerBase
 {
     private readonly BackendDbContext _context = context;
     private readonly UserManager<User> _userManager = userManager;
+    private readonly UserMapping _userMapper = userMapper;
 
     [HttpGet]
     public async Task<ActionResult<List<UserDetailsDto>>> GetAll()
@@ -38,7 +42,7 @@ public class UserManagementController(BackendDbContext context, UserManager<User
         if (user == null)
             return NotFound($"User with ID {id} not found.");
 
-        return Ok(user.MapUserToDto());
+        return Ok(_userMapper.MapToDto(user));
     }
 
     [HttpGet("email/{email}")]
@@ -49,7 +53,7 @@ public class UserManagementController(BackendDbContext context, UserManager<User
         if (user == null)
             return NotFound($"User with email {email} not found.");
 
-        return Ok(user.MapUserToDto());
+        return Ok(_userMapper.MapToDto(user));
     }
 
     [HttpPost("assignRole")]

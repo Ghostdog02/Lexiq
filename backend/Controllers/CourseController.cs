@@ -10,15 +10,16 @@ namespace Backend.Api.Controllers;
 [Route("api/[controller]s")]
 [ApiController]
 [Authorize]
-public class CourseController(CourseService courseService) : ControllerBase
+public class CourseController(CourseService courseService, ContentMapping mapper) : ControllerBase
 {
     private readonly CourseService _courseService = courseService;
+    private readonly ContentMapping _mapper = mapper;
 
     [HttpGet]
     public async Task<ActionResult<List<CourseDto>>> GetCourses()
     {
         var courses = await _courseService.GetAllCoursesAsync();
-        return Ok(courses.Select(c => c.ToDto()));
+        return Ok(courses.Select(c => _mapper.MapToDto(c)));
     }
 
     [HttpGet("{id}")]
@@ -29,7 +30,7 @@ public class CourseController(CourseService courseService) : ControllerBase
         if (course == null)
             return NotFound();
 
-        return Ok(course.ToDto());
+        return Ok(_mapper.MapToDto(course));
     }
 
     [HttpPost]
@@ -41,7 +42,7 @@ public class CourseController(CourseService courseService) : ControllerBase
             return Unauthorized();
 
         var course = await _courseService.CreateCourseAsync(dto, user.Id);
-        return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, course.ToDto());
+        return CreatedAtAction(nameof(GetCourse), new { id = course.CourseId }, _mapper.MapToDto(course));
     }
 
     [HttpPut("{id}")]
@@ -52,7 +53,7 @@ public class CourseController(CourseService courseService) : ControllerBase
         if (course == null)
             return NotFound();
 
-        return Ok(course.ToDto());
+        return Ok(_mapper.MapToDto(course));
     }
 
     [HttpDelete("{id}")]

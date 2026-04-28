@@ -14,12 +14,14 @@ namespace Backend.Api.Controllers;
 public class AuthController(
     IGoogleAuthService googleAuthService,
     IJwtService jwtService,
-    UserManager<User> userManager
+    UserManager<User> userManager,
+    UserMapping userMapper
 ) : ControllerBase
 {
     private readonly IGoogleAuthService _googleAuthService = googleAuthService;
     private readonly IJwtService _jwtService = jwtService;
     private readonly UserManager<User> _userManager = userManager;
+    private readonly UserMapping _userMapper = userMapper;
 
     [HttpPost("google-login")]
     public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDto request)
@@ -40,7 +42,7 @@ public class AuthController(
 
         SetAuthCookie(token, DateTime.UtcNow.AddHours(_jwtService.ExpirationHours));
 
-        return Ok(new { message = "Login successful", user = user.ToGoogleLoginDto() });
+        return Ok(new { message = "Login successful", user = _userMapper.MapToGoogleLoginDto(user) });
     }
 
     [HttpPost("logout")]
@@ -57,12 +59,11 @@ public class AuthController(
     {
         var isAuthenticated = HttpContext.User.Identity?.IsAuthenticated ?? false;
 
-        return Ok(
-            new AuthStatusResponseDto(
-                Message: isAuthenticated ? "Authenticated" : "Not authenticated",
-                IsLogged: isAuthenticated
-            )
-        );
+        return Ok(new AuthStatusResponseDto
+        {
+            Message = isAuthenticated ? "Authenticated" : "Not authenticated",
+            IsLogged = isAuthenticated
+        });
     }
 
     /// <summary>
@@ -79,7 +80,11 @@ public class AuthController(
         var roles = await _userManager.GetRolesAsync(user);
         var canBypassLocks = roles.Contains("Admin") || roles.Contains("ContentCreator");
 
-        return Ok(new IsAdminResponseDto(canBypassLocks, roles.ToList()));
+        return Ok(new IsAdminResponseDto
+        {
+            IsAdmin = canBypassLocks,
+            Roles = roles.ToList()
+        });
     }
 
     private void SetAuthCookie(string token, DateTime expires)

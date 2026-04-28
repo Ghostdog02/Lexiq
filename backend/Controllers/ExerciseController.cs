@@ -16,12 +16,14 @@ namespace Backend.Api.Controllers;
 public class ExerciseController(
     ExerciseService exerciseService,
     ExerciseProgressService progressService,
-    UserManager<User> userManager
+    UserManager<User> userManager,
+    ContentMapping mapper
 ) : ControllerBase
 {
     private readonly ExerciseService _exerciseService = exerciseService;
     private readonly ExerciseProgressService _progressService = progressService;
     private readonly UserManager<User> _userManager = userManager;
+    private readonly ContentMapping _mapper = mapper;
 
     [HttpGet("{id}")]
     public async Task<ActionResult<ExerciseDto>> GetExercise(string id)
@@ -39,7 +41,7 @@ public class ExerciseController(
                 new { message = "Exercise is locked. Complete previous exercises to unlock." }
             );
 
-        return OkPolymorphic<ExerciseDto>(exercise.ToDto());
+        return OkPolymorphic<ExerciseDto>(_mapper.MapToDto(exercise));
     }
 
     [HttpPost]
@@ -49,8 +51,8 @@ public class ExerciseController(
         var exercise = await _exerciseService.CreateExerciseAsync(dto);
         var result = CreatedAtAction(
             nameof(GetExercise),
-            new { id = exercise.Id },
-            exercise.ToDto()
+            new { id = exercise.ExerciseId },
+            _mapper.MapToDto(exercise)
         );
         result.DeclaredType = typeof(ExerciseDto);
         return result;
@@ -64,7 +66,7 @@ public class ExerciseController(
         if (exercise == null)
             return NotFound();
 
-        return OkPolymorphic<ExerciseDto>(exercise.ToDto());
+        return OkPolymorphic<ExerciseDto>(_mapper.MapToDto(exercise));
     }
 
     /// <summary>
@@ -131,7 +133,7 @@ public class ExerciseController(
 
         var correctAnswer = GetCorrectAnswerForExercise(exercise);
 
-        return Ok(new CorrectAnswerDto(correctAnswer));
+        return Ok(new CorrectAnswerDto { CorrectAnswer = correctAnswer });
     }
 
     /// <summary>

@@ -60,7 +60,7 @@ public class UploadsController(FileUploadsService fileUploadService) : Controlle
         var path = _fileUploadService.GetFilePhysicalPath(filename, fileType);
 
         if (path == null)
-            return NotFound(new ErrorResponseDto(0, $"{fileType} not found."));
+            return NotFound(new ErrorResponseDto { Success = 0, Message = $"{fileType} not found." });
 
         var provider = new FileExtensionContentTypeProvider();
         if (!provider.TryGetContentType(path, out var contentType))
@@ -83,7 +83,7 @@ public class UploadsController(FileUploadsService fileUploadService) : Controlle
         var path = _fileUploadService.FindFilePhysicalPath(filename);
 
         if (path == null)
-            return NotFound(new ErrorResponseDto(0, "File not found."));
+            return NotFound(new ErrorResponseDto { Success = 0, Message = "File not found." });
 
         var provider = new FileExtensionContentTypeProvider();
         if (!provider.TryGetContentType(path, out var contentType))
@@ -131,24 +131,27 @@ public class UploadsController(FileUploadsService fileUploadService) : Controlle
     private IActionResult BuildListResponse(FileListResult result)
     {
         if (!result.IsSuccess)
-            return BadRequest(new ErrorResponseDto(0, result.Message));
+            return BadRequest(new ErrorResponseDto { Success = 0, Message = result.Message });
 
-        var response = new FileListResponseDto(
-            Success: 1,
-            Data: result.Files.Select(f => new FileItemDto(
-                f.Url,
-                f.Name,
-                f.Size,
-                f.Extension,
-                f.Title
-            )),
-            Pagination: new PaginationDto(
-                result.Page,
-                result.PageSize,
-                result.TotalCount,
-                result.TotalPages
-            )
-        );
+        var response = new FileListResponseDto
+        {
+            Success = 1,
+            Data = result.Files.Select(f => new FileItemDto
+            {
+                Url = f.Url,
+                Name = f.Name,
+                Size = f.Size,
+                Extension = f.Extension,
+                Title = f.Title
+            }),
+            Pagination = new PaginationDto
+            {
+                Page = result.Page,
+                PageSize = result.PageSize,
+                TotalCount = result.TotalCount,
+                TotalPages = result.TotalPages
+            }
+        };
 
         return Ok(response);
     }
@@ -156,7 +159,7 @@ public class UploadsController(FileUploadsService fileUploadService) : Controlle
     private IActionResult BuildEditorJsFileResponse(FileUploadResult result)
     {
         if (!result.IsSuccess)
-            return BadRequest(new ErrorResponseDto(0, result.Message));
+            return BadRequest(new ErrorResponseDto { Success = 0, Message = result.Message });
 
         return Ok(
             new EditorJsFileUploadResponse

@@ -8,15 +8,16 @@ namespace Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class LanguageController(LanguageService languageService) : ControllerBase
+public class LanguageController(LanguageService languageService, ContentMapping mapper) : ControllerBase
 {
     private readonly LanguageService _languageService = languageService;
+    private readonly ContentMapping _mapper = mapper;
 
     [HttpGet]
     public async Task<ActionResult<List<LanguageDto>>> GetAllLanguages()
     {
         var languages = await _languageService.GetAllLanguagesAsync();
-        return Ok(languages.Select(l => l.ToDto()));
+        return Ok(languages.Select(l => _mapper.MapToDto(l)));
     }
 
     [HttpGet("{id}")]
@@ -26,7 +27,7 @@ public class LanguageController(LanguageService languageService) : ControllerBas
         if (language == null)
             return NotFound();
 
-        return Ok(language.ToDto());
+        return Ok(_mapper.MapToDto(language));
     }
 
     [HttpPost]
@@ -34,7 +35,7 @@ public class LanguageController(LanguageService languageService) : ControllerBas
     public async Task<ActionResult<LanguageDto>> CreateLanguage(CreateLanguageDto dto)
     {
         var language = await _languageService.CreateLanguageAsync(dto);
-        return CreatedAtAction(nameof(GetLanguage), new { id = language.Id }, language.ToDto());
+        return CreatedAtAction(nameof(GetLanguage), new { id = language.LanguageId }, _mapper.MapToDto(language));
     }
 
     [HttpPut("{id}")]
@@ -45,7 +46,7 @@ public class LanguageController(LanguageService languageService) : ControllerBas
         if (language == null)
             return NotFound();
 
-        return Ok(language.ToDto());
+        return Ok(_mapper.MapToDto(language));
     }
 
     [HttpDelete("{id}")]
