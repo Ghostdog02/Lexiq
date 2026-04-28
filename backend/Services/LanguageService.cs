@@ -1,13 +1,15 @@
 using Backend.Api.Dtos;
+using Backend.Api.Mapping;
 using Backend.Database;
 using Backend.Database.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class LanguageService(BackendDbContext context)
+public class LanguageService(BackendDbContext context, ContentMapping mapper)
 {
     private readonly BackendDbContext _context = context;
+    private readonly ContentMapping _mapper = mapper;
 
     public async Task<List<Language>> GetAllLanguagesAsync()
     {
@@ -23,12 +25,8 @@ public class LanguageService(BackendDbContext context)
 
     public async Task<Language> CreateLanguageAsync(CreateLanguageDto dto)
     {
-        var language = new Language
-        {
-            Name = dto.Name,
-            FlagIconUrl = dto.FlagIconUrl,
-            CreatedAt = DateTime.UtcNow,
-        };
+        var language = _mapper.MapToEntity(dto);
+        language.CreatedAt = DateTime.UtcNow;
 
         _context.Languages.Add(language);
         await _context.SaveChangesAsync();

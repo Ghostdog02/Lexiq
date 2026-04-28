@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Backend.Api.Dtos;
+using Backend.Api.Mapping;
 using Backend.Database;
 using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
@@ -8,9 +9,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class LessonService(BackendDbContext context, ExerciseService exerciseService)
+public class LessonService(
+    BackendDbContext context,
+    ContentMapping mapper,
+    ExerciseService exerciseService
+)
 {
     private readonly BackendDbContext _context = context;
+    private readonly ContentMapping _mapper = mapper;
     private readonly ExerciseService _exerciseService = exerciseService;
 
     /// <summary>

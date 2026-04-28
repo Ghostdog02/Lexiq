@@ -1,13 +1,15 @@
 using Backend.Api.Dtos;
+using Backend.Api.Mapping;
 using Backend.Database;
 using Backend.Database.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class CourseService(BackendDbContext context)
+public class CourseService(BackendDbContext context, ContentMapping mapper)
 {
     private readonly BackendDbContext _context = context;
+    private readonly ContentMapping _mapper = mapper;
 
     public async Task<List<Course>> GetAllCoursesAsync()
     {
@@ -31,17 +33,11 @@ public class CourseService(BackendDbContext context)
             await _context.Languages.FirstOrDefaultAsync(l => l.Name == dto.LanguageName)
             ?? throw new ArgumentException($"Language '{dto.LanguageName}' not found.");
 
-        var course = new Course
-        {
-            LanguageId = language.Id,
-            Title = dto.Title,
-            Description = dto.Description,
-            EstimatedDurationHours = dto.EstimatedDurationHours,
-            OrderIndex = dto.OrderIndex,
-            CreatedById = createdById,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow,
-        };
+        var course = _mapper.MapToEntity(dto);
+        course.LanguageId = language.Id;
+        course.CreatedById = createdById;
+        course.CreatedAt = DateTime.UtcNow;
+        course.UpdatedAt = DateTime.UtcNow;
 
         _context.Courses.Add(course);
         await _context.SaveChangesAsync();

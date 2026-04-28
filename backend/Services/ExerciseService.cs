@@ -1,13 +1,15 @@
 using Backend.Api.Dtos;
+using Backend.Api.Mapping;
 using Backend.Database;
 using Backend.Database.Entities.Exercises;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class ExerciseService(BackendDbContext context)
+public class ExerciseService(BackendDbContext context, ContentMapping mapper)
 {
     private readonly BackendDbContext _context = context;
+    private readonly ContentMapping _mapper = mapper;
 
     public async Task<List<Exercise>> GetExercisesByLessonIdAsync(string lessonId)
     {
@@ -35,16 +37,14 @@ public class ExerciseService(BackendDbContext context)
         if (string.IsNullOrEmpty(dto.LessonId))
             throw new ArgumentException("LessonId is required when creating an exercise directly.");
 
-        int orderIndex = dto.OrderIndex ?? await GetNextOrderIndexForLessonAsync(dto.LessonId);
-
-        var exercise = MapToEntity(dto, dto.LessonId, orderIndex);
+        var exercise = MapToEntity(dto, dto.LessonId);
 
         _context.Exercises.Add(exercise);
         await _context.SaveChangesAsync();
         return exercise;
     }
 
-    public Exercise MapToEntity(CreateExerciseDto dto, string lessonId, int orderIndex)
+    public Exercise MapToEntity(CreateExerciseDto dto, string lessonId)
     {
         Exercise exercise = dto switch
         {
