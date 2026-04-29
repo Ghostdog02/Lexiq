@@ -27,7 +27,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     public async Task<Lesson?> GetNextLessonAsync(string currentLessonId)
     {
         var ctx = await _context
-            .Lessons.Where(l => l.Id == currentLessonId)
+            .Lessons.Where(l => l.LessonId == currentLessonId)
             .Select(l => new LessonCourseContext(
                 l.CourseId,
                 l.OrderIndex,
@@ -53,7 +53,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
                 c.LanguageId == ctx.LanguageId && c.OrderIndex > ctx.CourseOrderIndex
             )
             .OrderBy(c => c.OrderIndex)
-            .Select(c => c.Id)
+            .Select(c => c.CourseId)
             .FirstOrDefaultAsync();
 
         if (nextCourseId == null)
@@ -78,7 +78,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         nextLesson.IsLocked = false;
         await _context.SaveChangesAsync();
 
-        await _exerciseService.UnlockFirstExerciseInLessonAsync(nextLesson.Id);
+        await _exerciseService.UnlockFirstExerciseInLessonAsync(nextLesson.LessonId);
 
         return UnlockStatus.Unlocked;
     }
@@ -106,7 +106,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
 
     public async Task<List<Lesson>?> GetLessonsByCourseAsync(string courseId)
     {
-        var courseExists = await _context.Courses.AnyAsync(c => c.Id == courseId);
+        var courseExists = await _context.Courses.AnyAsync(c => c.CourseId == courseId);
         if (!courseExists)
             return null;
 
@@ -144,10 +144,9 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
 
         var lesson = new Lesson
         {
-            CourseId = course.Id,
+            CourseId = course.CourseId,
             Title = dto.Title,
-            Description = dto.Description,
-            EstimatedDurationMinutes = dto.EstimatedDurationMinutes,
+            EstimatedDurationMinutes = dto.EstimatedDurationMinutes ?? 30,
             OrderIndex = orderIndex,
             LessonContent = dto.Content,
             IsLocked = true,
@@ -163,9 +162,9 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
                 var exerciseDto = dto.Exercises[i];
                 var exercise = _exerciseService.MapToEntity(
                     exerciseDto,
-                    lesson.Id,
-                    exerciseDto.OrderIndex ?? i
+                    lesson.LessonId
                 );
+                exercise.CreatedAt = DateTime.UtcNow.AddSeconds(i); // Maintain order via CreatedAt
                 exercise.IsLocked = i != 0; // First exercise unlocked, rest locked
                 lesson.Exercises.Add(exercise);
             }
@@ -192,14 +191,8 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         if (dto.Title != null)
             lesson.Title = dto.Title;
 
-        if (dto.Description != null)
-            lesson.Description = dto.Description;
-
         if (dto.EstimatedDurationMinutes.HasValue)
             lesson.EstimatedDurationMinutes = dto.EstimatedDurationMinutes.Value;
-
-        if (dto.OrderIndex.HasValue)
-            lesson.OrderIndex = dto.OrderIndex.Value;
 
         if (dto.LessonContent != null)
             lesson.LessonContent = dto.LessonContent; // Update Editor.js content
@@ -225,8 +218,14 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .Lessons.Include(l => l.Course)
             .ThenInclude(c => c.Language)
             .Include(l => l.Exercises)
-            .ThenInclude(e => (e as MultipleChoiceExercise)!.Options)
-            .FirstOrDefaultAsync(l => l.Id == lessonId);
+            .ThenInclude(e => (e as FillInBlankExercise)!.Options)
+            .Include(l => l.Exercises)
+            .ThenInclude(e => (e as ListeningExercise)!.Options)
+            .Include(l => l.Exercises)
+            .ThenInclude(e => (e as ImageChoiceExercise)!.Options)
+            .Include(l => l.Exercises)
+            .ThenInclude(e => (e as AudioMatchingExercise)!.Pairs)
+            .FirstOrDefaultAsync(l => l.LessonId == lessonId);
     }
 
     private async Task<int> GetNextOrderIndexForCourseAsync(string courseId)
@@ -242,8 +241,10 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     {
         return await _context
             .Exercises.Where(e => e.LessonId == lessonId)
-            .Include(e => (e as MultipleChoiceExercise)!.Options)
-            .OrderBy(e => e.OrderIndex)
+            .Include(e => (e as FillInBlankExercise)!.Options)
+            .Include(e => (e as ListeningExercise)!.Options)
+            .Include(e => (e as ImageChoiceExercise)!.Options)
+            .Include(e => (e as AudioMatchingExercise)!.Pairs)
             .ToListAsync();
     }
 
@@ -287,11 +288,13 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     {
         var exercises = await _context
             .Exercises.Where(e => e.LessonId == lessonId)
-            .Include(e => (e as MultipleChoiceExercise)!.Options)
-            .OrderBy(e => e.OrderIndex)
+            .Include(e => (e as FillInBlankExercise)!.Options)
+            .Include(e => (e as ListeningExercise)!.Options)
+            .Include(e => (e as ImageChoiceExercise)!.Options)
+            .Include(e => (e as AudioMatchingExercise)!.Pairs)
             .ToListAsync();
 
-        var exerciseIds = exercises.Select(e => e.Id).ToList();
+        var exerciseIds = exercises.Select(e => e.ExerciseId).ToList();
 
         var progressByExercise = await _context
             .UserExerciseProgress.Where(p =>
@@ -304,7 +307,13 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         return exercises
             .Select(exercise =>
             {
-                var hasProgress = progressByExercise.TryGetValue(exercise.Id, out var progress);
+                var hasProgress = progressByExercise.TryGetValue(exercise.ExerciseId, out var progress);
+
+                var explanation = exercise switch
+                {
+                    TrueFalseExercise tf => tf.Explanation,
+                    _ => null
+                };
 
                 return new SubmitAnswerResponse(
                     IsCorrect: hasProgress && progress!.IsCompleted,
@@ -312,7 +321,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
                     CorrectAnswer: hasProgress && !progress!.IsCompleted
                         ? GetCorrectAnswer(exercise)
                         : null,
-                    Explanation: exercise.Explanation,
+                    Explanation: explanation,
                     LessonProgress: fullProgress.Summary
                 );
             })
@@ -328,13 +337,13 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .Exercises.Where(filter)
             .GroupJoin(
                 _context.UserExerciseProgress.Where(p => p.UserId == userId),
-                exercise => exercise.Id,
+                exercise => exercise.ExerciseId,
                 progress => progress.ExerciseId,
                 (exercise, progressGroup) =>
                     new ExerciseProgressRow
                     {
                         LessonId = exercise.LessonId,
-                        ExerciseId = exercise.Id,
+                        ExerciseId = exercise.ExerciseId,
                         Points = exercise.Points,
                         Progress = progressGroup.FirstOrDefault(),
                     }
@@ -376,10 +385,14 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     {
         return exercise switch
         {
-            MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)?.OptionText,
-            FillInBlankExercise fib => fib.CorrectAnswer,
-            TranslationExercise te => te.TargetText,
-            ListeningExercise le => le.CorrectAnswer,
+            FillInBlankExercise fib => fib.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ExerciseOptionId,
+            ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ExerciseOptionId,
+            TrueFalseExercise tf => tf.CorrectAnswer.ToString().ToLowerInvariant(),
+            ImageChoiceExercise ice => ice.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ImageOptionId,
+            AudioMatchingExercise => "See explanation for correct pairings",
             _ => null,
         };
     }

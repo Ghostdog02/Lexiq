@@ -22,21 +22,21 @@ public class CourseService(BackendDbContext context)
         return await _context
             .Courses.Include(c => c.Language)
             .Include(c => c.Lessons)
-            .FirstOrDefaultAsync(c => c.Id == id);
+            .FirstOrDefaultAsync(c => c.CourseId == id);
     }
 
     public async Task<Course> CreateCourseAsync(CreateCourseDto dto, string createdById)
     {
         var language =
-            await _context.Languages.FirstOrDefaultAsync(l => l.Name == dto.LanguageName)
+            await _context.Languages.FirstOrDefaultAsync(l => l.LanguageName == dto.LanguageName)
             ?? throw new ArgumentException($"Language '{dto.LanguageName}' not found.");
 
         var course = new Course
         {
-            LanguageId = language.Id,
+            LanguageId = language.LanguageId,
             Title = dto.Title,
-            Description = dto.Description,
-            EstimatedDurationHours = dto.EstimatedDurationHours,
+            Description = dto.Description ?? string.Empty,
+            EstimatedDurationHours = dto.EstimatedDurationHours ?? 0,
             OrderIndex = dto.OrderIndex,
             CreatedById = createdById,
             CreatedAt = DateTime.UtcNow,
