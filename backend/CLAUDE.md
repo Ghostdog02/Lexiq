@@ -1,652 +1,196 @@
 # Backend CLAUDE.md
 
-ASP.NET Core 10.0 Web API with Entity Framework Core and SQL Server 2022.
+ASP.NET Core 10.0 Web API + EF Core + SQL Server 2022.
 
-## API Documentation
+> Cross-cutting bug patterns: [`.claude/rules/common-gotchas.md`](../.claude/rules/common-gotchas.md).
+> Debugging playbooks: [`.claude/rules/troubleshooting.md`](../.claude/rules/troubleshooting.md).
+> Entity model: [`Database/ENTITIES_DOCUMENTATION.md`](Database/ENTITIES_DOCUMENTATION.md) — read it before touching entities, migrations, or DbContext config. Don't grep entity files.
 
-Comprehensive API reference documentation available in [`/docs/backend/api/`](../docs/backend/api/):
-- **[Error Handling](../docs/backend/api/error-handling.md)** — Error response format, HTTP status codes, exception mapping
-- **[Authentication & Authorization](../docs/backend/api/authentication.md)** — JWT authentication, Google OAuth, role-based access control
-- **[API Overview](../docs/backend/api/README.md)** — Endpoints, request/response examples, common patterns
-
-## Development Commands
+## Commands (from `backend/`)
 
 ```bash
-# Restore dependencies
 dotnet restore
-
-# Build the project
 dotnet build Backend.sln
-
-# Run the development server (listens on port 8080)
-dotnet run
-
-# Run with watch mode (auto-reload on changes)
+dotnet run                                              # :8080
 dotnet watch run
 
-# Create a new EF Core migration
-dotnet ef migrations add <MigrationName> --project Database/Backend.Database.csproj
-
-# Apply migrations to database
-dotnet ef database update --project Database/Backend.Database.csproj
-
-# Remove last migration
-dotnet ef migrations remove --project Database/Backend.Database.csproj
+dotnet ef migrations add <Name>     --project Database/Backend.Database.csproj
+dotnet ef database update           --project Database/Backend.Database.csproj
+dotnet ef migrations remove         --project Database/Backend.Database.csproj
 ```
 
-## Project Structure
+## Layout
 
 ```
 backend/
-├── Controllers/          # API endpoints
-│   ├── AuthController.cs              # Google OAuth login, logout, auth-status
-│   ├── LeaderboardController.cs       # Leaderboard rankings (GET /api/leaderboard)
-│   ├── CourseController.cs            # Course CRUD
-│   ├── LessonController.cs           # Lesson CRUD
-│   ├── ExerciseController.cs         # Exercise CRUD (polymorphic types)
-│   ├── LanguageController.cs         # Language management
-│   ├── UserLanguageController.cs     # User ↔ Language enrollment
-│   ├── UserManagementController.cs   # User CRUD (admin)
-│   ├── RoleManagementController.cs   # Role management (admin)
-│   ├── UploadsController.cs          # File/image uploads
-│   └── UserController.cs            # User profile operations (avatar upload)
+├── Controllers/       # API endpoints
 ├── Database/
-│   ├── BackendDbContext.cs        # EF Core DbContext
-│   ├── Entities/                  # Database models (Users/, Exercises/ subdirs)
-│   ├── Migrations/                # EF Core migrations
-│   └── Extensions/                # Seeders & migration helpers
-├── Services/
-│   ├── GoogleAuthService.cs       # Google token validation & user creation
-│   ├── JwtService.cs              # JWT generation (HS256, cookie-set by AuthController)
-│   ├── CourseService.cs           # Course business logic
-│   ├── LessonService.cs          # Lesson business logic
-│   ├── ExerciseService.cs        # Exercise business logic
-│   ├── ExerciseProgressService.cs # Answer validation, progress tracking, sequential unlocking, unified progress queries
-│   ├── LeaderboardService.cs    # Leaderboard queries, streak/level calculation
-│   ├── AvatarService.cs        # Avatar download (Google), upsert, retrieval, validation
-│   ├── UserService.cs           # Avatar upload orchestration
-│   ├── LanguageService.cs        # Language business logic
-│   ├── UserLanguageService.cs    # Enrollment logic
-│   ├── FileUploadsService.cs     # File upload handling
-│   └── UserExtensions.cs         # User utility methods
-├── Models/              # Request/response models (EditorJSModel, FileModel)
-├── Dtos/                # Data Transfer Objects
-├── Mapping/             # DTO ↔ Entity mappings
-├── Middleware/
-│   ├── ErrorHandlingMiddleware.cs  # Global exception handler, returns standardized HTTP errors
-│   └── UserContextMiddleware.cs    # Loads User entity from JWT claims
-├── Extensions/          # Service collection & app builder extensions
-└── Program.cs          # Application entry point
+│   ├── BackendDbContext.cs
+│   ├── Entities/      # Users/, Exercises/ subfolders
+│   ├── Migrations/
+│   └── Extensions/    # seeders, migration helpers
+├── Services/          # business logic — direct DbContext, no repository pattern
+├── Dtos/              # records — never inline in controllers
+├── Mapping/           # ToDto() extensions
+├── Middleware/        # ErrorHandlingMiddleware, UserContextMiddleware
+├── Extensions/        # ServiceCollectionExtensions, WebApplicationExtensions
+└── Program.cs
 ```
 
-## Key Patterns
+API reference docs: [`/docs/backend/api/`](../docs/backend/api/) (error handling, auth, endpoint catalog).
 
-### JSON Polymorphism for Exercise DTOs
-- Type discriminator MUST be first property in JSON: `{ "type": "MultipleChoice", ...rest }`
-- Frontend mapping: `return { type: ExerciseType.X, ...base }` NOT `{ ...base, type: ... }`
-- System.Text.Json fails with "must specify a type discriminator" if type is not first
-- **Controller serialization**: `Ok(dto)` passes `object` to the serializer, which uses the runtime type (no discriminator). Use `OkPolymorphic<ExerciseDto>(dto)` — a private helper that sets `DeclaredType` on `OkObjectResult` to force serialization through the base type. For `CreatedAtAction`, set `result.DeclaredType = typeof(ExerciseDto)` after creation.
+## Conventions (must-follow)
 
-### Enum Serialization
-- Add `[JsonConverter(typeof(JsonStringEnumConverter))]` to enums for string serialization
-- Frontend sends "Beginner", backend receives DifficultyLevel.Beginner (not 0)
-- Required for: DifficultyLevel, ExerciseType, LessonStatus, TimeFrame
-- **Always use enums for discrete value sets** — never use raw strings for values like time frames, status codes, or categories
+- **Primary constructors** — every service / controller / middleware uses C# 12 primary constructor syntax. DTOs and entities are records.
+- **Async all the way.** All service methods return `Task` / `Task<T>`.
+- **No repository pattern** — services hold `BackendDbContext` directly.
+- **Service registration** — every service goes in `AddApplicationServices` (DI graph validation crashes startup if missed).
+- **Operation result enums over `bool`** when failure has multiple distinct reasons (e.g. `UnlockStatus`).
+- **Never** the null-forgiving `!` operator. Throw `ArgumentNullException.ThrowIfNull` / `InvalidOperationException` / `KeyNotFoundException`.
+- **DTOs** — record types in `Dtos/`. No anonymous objects in `Ok()`. Group related DTOs (`AuthDtos.cs`, `UploadDtos.cs`).
+- **Mapping** — `entity.ToDto()` extension methods in `Mapping/`.
+- **Auth attributes** — `[Authorize(Roles = "Admin,ContentCreator")]` on mutations. Default authenticated; opt out with `[AllowAnonymous]`.
+- **User context** — always `HttpContext.GetCurrentUser()` (full entity from `UserContextMiddleware`). Never `User.FindFirstValue()`.
+- **Error handling** — controllers throw, `ErrorHandlingMiddleware` maps to HTTP. No try/catch in controllers (except where you must convert to a result type before reaching the middleware).
 
-### IFormFile Model Binding
-- `<Nullable>enable</Nullable>` + `[ApiController]` makes non-nullable `IFormFile` implicitly `[Required]`
-- FormData field name MUST match the parameter name (e.g. `IFormFile file` → field `"file"`)
-- Mismatch returns 400 ProblemDetails **before** controller action runs — no breakpoint will hit
-- `SanitizeFilename` and other validators that throw must be inside try-catch to avoid raw 500s
+### EF Core query rules
 
-### Service Registration
-- Organized via extension methods in `Extensions/ServiceCollectionExtensions.cs`
-- Each feature has its own extension method (AddCorsPolicy, AddDatabaseContext, AddApplicationServices, etc.)
-- Services are registered as Scoped for per-request lifecycle
-- No repository pattern — services directly access DbContext
-- **Always register new services in `AddApplicationServices`** — forgetting to register a service will not cause a compile error, but causes the app (and `WebApplicationFactory` tests) to throw `InvalidOperationException` at startup due to DI graph validation (`ValidateOnBuild` is on by default in .NET 8+)
+- `.Include()` / `.ThenInclude()` for full graphs.
+- For polymorphic children: `.ThenInclude(e => (e as MultipleChoiceExercise)!.Options)`.
+- Project to a `private record` when only scalar FKs are needed (cheaper than `Include`).
+- `.OrderBy(e => e.OrderIndex)` for every collection.
+- `GroupJoin` for left-join in a single round-trip (see `ExerciseProgressService`).
+- Anonymous `new { }` for intermediate `Join`/`GroupBy`; named record only in terminal `.Select()` before `.ToListAsync()`. See [`.claude/rules/common-gotchas.md`](../.claude/rules/common-gotchas.md) for why.
 
-### Primary Constructor Convention
-All service and middleware classes **must** use C# 12 primary constructor syntax — no separate constructor body:
+### Progress & unlocking
 
-```csharp
-// CORRECT — primary constructor
-public class MyService(BackendDbContext context, OtherService other)
-{
-    private readonly BackendDbContext _context = context;
-    private readonly OtherService _other = other;
-}
+- **Upsert pattern**: `FirstOrDefaultAsync` → create if null else update (see `ExerciseProgressService.SubmitAnswerAsync`).
+- **Auto OrderIndex**: `MaxAsync(e => (int?)e.OrderIndex) ?? -1 + 1`.
+- **Idempotent unlocks** — every unlock checks `IsLocked` before mutation.
+- **Cascade unlocks** — `LessonService.UnlockNextLessonAsync` calls `ExerciseService.UnlockFirstExerciseInLessonAsync`.
+- **Dual lock validation** in `SubmitAnswerAsync` — check both `lesson.IsLocked` and `exercise.IsLocked`. Admin / ContentCreator bypass via `UserExtensions.CanBypassLocksAsync`.
+- **Add children to parent collection**, not DbContext: `lesson.Exercises.Add(...)` — otherwise navigation properties stay empty and DTOs render incorrectly.
 
-// WRONG — separate constructor
-public class MyService
-{
-    private readonly BackendDbContext _context;
-    public MyService(BackendDbContext context) { _context = context; }
-}
-```
+### Performance
 
-This applies to services, controllers, and middleware. DTOs and entities use `record` positional parameters instead.
+- `GetFullLessonProgressAsync` is expensive (~6 DB ops). Call at lesson load, lesson-complete, and dedicated progress endpoints only — **never** inside `SubmitAnswerAsync`.
+- `GetProgressForLessonsAsync(userId, lessonIds)` for list pages — avoids N+1.
+- DTO-per-context: `ExerciseSubmitResult` (no aggregates) vs `SubmitAnswerResponse` (includes `LessonProgressSummary`).
+- Avatars stored as `varbinary(max)` in `UserAvatars` (1:1 with Users) — never load bytes in list queries; leaderboard batch-checks existence and serves via `/api/user/{id}/avatar`.
 
-### Middleware Configuration
-- Configured in `Extensions/WebApplicationExtensions.cs`
-
-### ErrorHandlingMiddleware
-- Registered **first** in the pipeline to catch exceptions from all downstream middleware/controllers
-- Maps .NET exceptions to appropriate HTTP status codes (400, 401, 403, 404, 409, 500)
-- Returns standardized JSON error responses: `{ message, statusCode, detail }`
-- Stack traces (`detail`) only included in Development environment (hidden in Production)
-- Logs all exceptions with appropriate severity levels (Info/Warning/Error)
-- Controllers do NOT need try-catch blocks — middleware handles all exceptions globally
-- Exception → HTTP status mapping:
-  - `ArgumentException` with "not found" → 404 Not Found
-  - `ArgumentException` (other) → 400 Bad Request
-  - `ArgumentNullException` → 400 Bad Request
-  - `InvalidOperationException` with "locked"/"cannot" → 403 Forbidden
-  - `InvalidOperationException` (other) → 400 Bad Request
-  - `KeyNotFoundException` → 404 Not Found
-  - `UnauthorizedAccessException` → 401 Unauthorized
-  - `DbUpdateConcurrencyException` → 409 Conflict
-  - `DbUpdateException` → 500 Internal Server Error
-  - Generic `Exception` → 500 Internal Server Error
-- **Security & Sanitization**:
-  - `SanitizePath()` removes control characters from request paths to prevent log injection attacks
-  - `SanitizeExceptionMessage()` strips filesystem paths and connection strings before sending to clients
-  - `SanitizeForLogging()` removes control characters and limits length for all logged content
-  - All exception messages are sanitized before logging and before being sent to clients
-  - Prevents information disclosure to authenticated but untrusted users (anyone with Google account)
-- See [`/docs/backend/api/error-handling.md`](../../docs/backend/api/error-handling.md) for comprehensive documentation
-
-### Authentication (JWT-in-Cookie)
-- `JwtService` signs a JWT (HS256); default expiry **24h** (env: `JWT_EXPIRATION_HOURS`)
-- `AuthController` sets it as an HttpOnly, SameSite=Lax cookie named `AuthToken`
-- `AddJwtAuthentication()` extracts the token from that cookie via `OnMessageReceived`
-- Google OAuth via `GoogleJsonWebSignature.ValidateAsync()`
-- SameSite=Lax; `Secure` flag set automatically when the request is HTTPS
-- All controllers require authentication unless explicitly marked with `[AllowAnonymous]`
-- CORS configured for frontend origin (environment variable: `ANGULAR_PORT`)
-- Production HTTPS terminated at nginx (certbot manages the cert); backend speaks plain HTTP internally
-
-### UserContextMiddleware
-- Registered after `UseAuthentication()` but before `UseAuthorization()` in the pipeline
-- Extracts user ID from `ClaimTypes.NameIdentifier` (NOT `JwtRegisteredClaimNames.Sub` — ASP.NET Core maps `sub` → `NameIdentifier`)
-- Stores user in `HttpContext.Items["CurrentUser"]` for controller access
-- Access via `HttpContext.GetCurrentUser()` extension method (namespace: `Backend.Api.Middleware`)
-- Eager loads `UserLanguages` and related `Language` entities
-
-### Database Initialization
-- Happens in `Program.cs` via `InitializeDatabaseAsync()`
-- Auto-migration with retry logic (10 attempts, 3-second delays) for Docker startup
-- Seed data initialization after migration
-- Connection string built from environment variables (DB_SERVER, DB_NAME, DB_USER_ID, DB_PASSWORD)
-- Development: `TrustServerCertificate=True, Encrypt=False`
-- Production: `TrustServerCertificate=True, Encrypt=True`
-
-### Data Protection Keys
-- Persisted to Docker named volume (`backend-dataprotection`) via `PersistKeysToFileSystem` in `ServiceCollectionExtensions.cs`
-- Path configurable via `DATA_PROTECTION_KEYS_PATH` env var (default `/app/dataprotection-keys`)
-- Keys are intentionally **not encrypted at rest** — Google OAuth-only app has no password reset/antiforgery flows; accepted trade-off
-- **Do NOT encrypt with the LE cert** — cert rotates every 90 days, invalidating all persisted keys and logging everyone out
-- The unencrypted-at-rest warning is suppressed at `Error` level in `appsettings.json` (intentional, not a bug)
-
-## Database Schema
-
-> **⚠️ Do not search for entity files manually.**
-> All entities, properties, relationships, constraints, and business rules are documented in
-> [`Database/ENTITIES_DOCUMENTATION.md`](Database/ENTITIES_DOCUMENTATION.md).
-> Read that file before touching any entity, migration, or DbContext configuration.
-
-Built with ASP.NET Core Identity.
-
-**Content Hierarchy:**
-```
-Language (1) → Course (M) → Lesson (M) → Exercise (M)
-                                             ↓ (Abstract base)
-                                             ├─ MultipleChoice
-                                             ├─ FillInBlank
-                                             ├─ Listening
-                                             └─ Translation
-```
-
-**Identity Tables:**
-- `Users` — Extended from `IdentityUser` with RegistrationDate, LastLoginDate, TotalPointsEarned (materialized XP aggregate)
-- `UserAvatars` — 1:1 with Users (shared PK: UserId). Stores avatar as `varbinary(max)` binary + ContentType. Separate table to avoid loading bytes on every request via UserContextMiddleware.
-- `Roles` — Standard Identity roles (Admin, ContentCreator, User)
-- `UserRoles`, `UserLogins`, `UserClaims`, `RoleClaims`, `UserTokens` — Identity infrastructure
-
-**Key Patterns:**
-- **UUID Primary Keys**: All entities use `Guid.NewGuid().ToString()` for IDs
-- **OrderIndex**: All content entities have OrderIndex for custom sequencing
-- **IsLocked flags**: Lesson and Exercise entities have IsLocked (default true) for progression control
-- **Composite Keys**: UserLanguage uses (UserId, LanguageId); UserExerciseProgress uses (UserId, ExerciseId)
-- **Table-Per-Hierarchy**: Exercise uses TPH with discriminator for subtypes
-- **Timestamps**: CreatedAt/UpdatedAt for audit trails
-
-## DTO Mapping Pattern
-
-Extension methods for clean mapping between entities and DTOs:
-
-```csharp
-// In Mapping/ContentMapping.cs
-public static CourseDto ToDto(this Course entity) => new(
-    entity.Id,
-    entity.Title,
-    // ... map properties
-);
-
-// Usage in services/controllers
-var courseDto = course.ToDto();
-```
-
-### DTO Conventions
-- Use `record` types for all DTOs (immutable, positional parameters)
-- No inline classes in controllers — always define DTOs in `Dtos/` folder
-- No anonymous objects in `Ok()` responses — use typed DTOs
-- Group related DTOs in one file (e.g., `AuthDtos.cs`, `UploadDtos.cs`)
-
-## Polymorphic DTOs
-
-Exercise types use .NET 8+ JSON polymorphism for type discrimination:
+## Polymorphic exercise DTOs
 
 ```csharp
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(MultipleChoiceExerciseDto), "MultipleChoice")]
 [JsonDerivedType(typeof(FillInBlankExerciseDto), "FillInBlank")]
-// ... other types
+[JsonDerivedType(typeof(ListeningExerciseDto), "Listening")]
+[JsonDerivedType(typeof(TranslationExerciseDto), "Translation")]
 public abstract record ExerciseDto(...);
 ```
 
-## Service Layer Guidelines
+Discriminator MUST be the **first** JSON property. `Ok(dto)` loses the discriminator — use `OkPolymorphic<ExerciseDto>(dto)` (sets `DeclaredType` on `OkObjectResult`). For `CreatedAtAction`, set `result.DeclaredType = typeof(ExerciseDto)` after creation.
 
-### Core Patterns
+## Enums
 
-- **Async all the way**: All service methods must be async
-- **No repository pattern**: Services directly access DbContext
-- **Service dependency chain**: ExerciseService → LessonService → ExerciseProgressService (avoid circular dependencies)
-- **Operation result enums over bool**: Service methods that can fail for distinct reasons return an enum rather than `bool` — e.g. `UnlockStatus` (`Unlocked` / `AlreadyUnlocked` / `NoNextLesson`) instead of a bare `bool`. This preserves the failure reason at the call site without relying on comments.
-- **Nullable LessonId in CreateExerciseDto**: Optional when nested inside CreateLessonDto (parent assigns ID), required for standalone creation. Standalone path validates: `if (string.IsNullOrEmpty(dto.LessonId)) throw ArgumentException`
+`[JsonConverter(typeof(JsonStringEnumConverter))]` on every enum exposed via API: `DifficultyLevel`, `ExerciseType`, `LessonStatus`, `TimeFrame`. Always use enums for discrete value sets — never raw strings between layers.
 
-### EF Core Query Patterns
+## IFormFile binding
 
-- **Include chains**: Use `.Include()` and `.ThenInclude()` for eager loading related entities when full entity data is needed
-- **Prefer LINQ projections over Include for navigation queries**: When a method only needs a few scalar FK values from related entities, project with `.Select()` into a `private record` instead of loading full entity graphs. Example: `LessonCourseContext` in `LessonService.GetNextLessonAsync` projects `CourseId`, `OrderIndex`, `LanguageId`, `CourseOrderIndex` — avoids materialising `Course` and `Language` entirely.
-- **Eager load child collections for polymorphic types**: Use `.ThenInclude(e => (e as ChildType)!.ChildCollection)`
-  - Example: `.Include(l => l.Exercises).ThenInclude(e => (e as MultipleChoiceExercise)!.Options)`
-  - EF Core handles cast gracefully for non-matching types (TPH pattern)
-- **OrderBy**: Always order collections by `OrderIndex` for consistent sequencing
-- **GroupJoin for left-join queries**: Use EF Core `GroupJoin` to left-join exercises with user progress in a single database round-trip (see `ExerciseProgressService`)
+With `<Nullable>enable</Nullable>` + `[ApiController]`, non-nullable `IFormFile` is implicitly `[Required]`. The FormData field name MUST match the parameter name. Mismatch returns 400 ProblemDetails before the action runs (no breakpoint hits). Wrap throwing validators (e.g. `SanitizeFilename`) in try/catch.
 
-### Null Handling & Error Handling
+## Error handling middleware
 
-- **Null handling**: Use null-coalescing operators for optional relationships
-- **Never use the null-forgiving operator (`!`)** — always perform an explicit null check and throw the appropriate exception instead:
-  - `ArgumentNullException.ThrowIfNull(arg)` — for method/constructor parameters
-  - `InvalidOperationException` — for unexpected missing state (e.g. entity not found when it must exist)
-  - `KeyNotFoundException` — for missing dictionary/lookup entries by key
-  - Null-forgiving silences the compiler warning without actually handling the failure; a `NullReferenceException` at runtime is far harder to diagnose than an explicit throw with a clear message
-  ```csharp
-  // WRONG
-  var lesson = await _context.Lessons.FindAsync(id);
-  return lesson!.Title;
+Registered first in the pipeline. Maps exceptions to HTTP statuses, sanitizes paths and messages, returns `{ message, statusCode, detail }`. `detail` (stack trace) only in Development. Full mapping table: [`/docs/backend/api/error-handling.md`](../docs/backend/api/error-handling.md).
 
-  // CORRECT
-  var lesson = await _context.Lessons.FindAsync(id)
-      ?? throw new InvalidOperationException($"Lesson {id} not found.");
-  return lesson.Title;
-  ```
+## Auth pipeline
 
-### Progress & Unlocking
+- `AddJwtAuthentication()` reads the cookie via `OnMessageReceived`.
+- `UserContextMiddleware` runs **after** `UseAuthentication()`, **before** `UseAuthorization()`. Loads User + `UserLanguages` + `Language` and stashes in `HttpContext.Items["CurrentUser"]`.
+- `Secure` flag on the cookie is auto-set when the request is HTTPS. nginx terminates TLS; backend is plain HTTP internally.
 
-- **Upsert pattern**: `FirstOrDefaultAsync` → create if null, update if exists (see `ExerciseProgressService.SubmitAnswerAsync`)
-- **Auto-increment OrderIndex**: When `OrderIndex` is null in DTOs, calculate as `MaxAsync(e => (int?)e.OrderIndex) ?? -1 + 1` in parent entity
-- **Idempotent unlocks**: All unlock methods check `IsLocked` before modifying (safe to call multiple times)
-- **Cascade unlocking**: `LessonService.UnlockNextLessonAsync()` calls `ExerciseService.UnlockFirstExerciseInLessonAsync()`
+## Database init
 
-### Authorization & Security
+`Program.cs` → `InitializeDatabaseAsync` → `MigrateDbAsync` (10 retries, exponential backoff 3s/6s/12s, fresh DbContext per attempt; fails fast on `InvalidOperationException`) → seed data.
 
-- **Admin bypass pattern**: Use `UserExtensions.CanBypassLocksAsync(user, userManager)` to check if user can bypass locks (Admin or ContentCreator role)
-- **Dual lock validation**: `ExerciseProgressService.SubmitAnswerAsync` checks BOTH `lesson.IsLocked` and `exercise.IsLocked` before allowing submission:
-  - Lesson lock = entire lesson is blocked (not started yet)
-  - Exercise lock = sequential progression enforcement (must complete previous exercises first)
-  - Both throw `InvalidOperationException` → controller returns 403 Forbidden
-  - Admin and ContentCreator roles bypass both checks via `CanBypassLocksAsync`
+Connection string is built from env vars (`DB_SERVER`, `DB_NAME`, `DB_USER_ID`, `DB_PASSWORD`). Dev: `TrustServerCertificate=True, Encrypt=False`. Prod: `Encrypt=True`.
 
-### Navigation Property Population
+## Data Protection
 
-**EF Core does not auto-populate navigation properties when adding entities to DbContext:**
-- Adding entities to `_context.SomeCollection.Add(entity)` only tracks them — it does NOT populate parent navigation properties
-- When returning entities from service methods that will be mapped to DTOs, ensure navigation collections are populated
-- **Pattern**: Add child entities to the parent's navigation collection, not directly to DbContext:
+Keys persisted to `/app/dataprotection-keys` (Docker volume `backend-dataprotection`). Override path with `DATA_PROTECTION_KEYS_PATH`. Keys are intentionally **not encrypted at rest** (Google-OAuth-only app, no antiforgery flow). **Do NOT encrypt with the LE cert** — 90-day rotation invalidates all keys.
 
-```csharp
-// WRONG — exercises not in lesson.Exercises after SaveChangesAsync
-_context.Exercises.Add(exercise);
+## Authorization roles
 
-// CORRECT — EF Core tracks via parent's collection and populates navigation property
-lesson.Exercises.Add(exercise);
-```
+`Admin` (full access) · `ContentCreator` (create/edit content) · `User` (default).
 
-**Why it matters:** If a service method returns an entity and the controller calls `.ToDto()`, the mapping will iterate navigation properties. Empty collections cause incorrect DTOs even though data was saved to the database.
-
-**Example:** `LessonService.CreateLessonAsync` adds exercises to `lesson.Exercises`, not `_context.Exercises`, so `lesson.ToDto()` includes the created exercises in the response.
-
-### Performance & Optimization
-
-- **Unified progress fetching**: `GetFullLessonProgressAsync` returns both `LessonProgressSummary` and per-exercise progress dict in one query via `LessonProgressResult`. Avoid calling separate methods for summary vs. exercise-level progress.
-- **Batch progress for lists**: Use `GetProgressForLessonsAsync(userId, lessonIds)` when loading progress for multiple lessons — avoids N+1 queries in controller loops
-- **`GetFullLessonProgressAsync` is expensive — avoid in hot paths**: Issues a GroupJoin across all exercises in the lesson (~6 DB operations). Call it at lesson load, lesson-complete, and dedicated progress endpoints only — **never inside `SubmitAnswerAsync`**
-- **DTO-per-context pattern**: Create separate DTOs when endpoints return different data shapes — e.g. `ExerciseSubmitResult` (submit endpoint — no lesson-wide aggregates) vs. `SubmitAnswerResponse` (submissions-restore endpoint — includes `LessonProgressSummary`). Keeps payloads minimal and types honest.
-- **Submission endpoints return all items**: `GetLessonSubmissionsAsync` returns `SubmitAnswerResponse` for EVERY exercise in lesson, not just attempted ones. Frontend must filter appropriately.
-- **Avatar binary storage**: Avatars stored as `varbinary(max)` in a separate `UserAvatars` table (not on `User` entity) to avoid loading bytes via `UserContextMiddleware` on every request. `AvatarService` handles download (Google), upsert, and retrieval. Leaderboard queries batch-check `UserAvatars` for existence and construct serving URLs (`/api/user/{id}/avatar`) — never load binary data in list queries.
-
-### User Context & Authentication
-
-- **User from JWT**: All controllers use `HttpContext.GetCurrentUser()` exclusively (returns full User entity, not just ID)
-  - Do NOT use `User.FindFirstValue()` — UserContextMiddleware pre-loads the user entity before controllers execute
-
-Include chain example (`LessonService.GetLessonWithDetailsAsync` — full entity needed):
-```csharp
-return await _context.Lessons
-    .Include(l => l.Course)
-        .ThenInclude(c => c.Language)
-    .Include(l => l.Exercises)
-        .ThenInclude(e => (e as MultipleChoiceExercise)!.Options)
-    .FirstOrDefaultAsync(l => l.Id == lessonId);
-```
-
-Projection record example (`LessonService.GetNextLessonAsync` — only scalar FKs needed):
-```csharp
-private record LessonCourseContext(string CourseId, int LessonOrderIndex, string LanguageId, int CourseOrderIndex);
-
-var ctx = await _context.Lessons
-    .Where(l => l.Id == currentLessonId)
-    .Select(l => new LessonCourseContext(l.CourseId, l.OrderIndex, l.Course.LanguageId, l.Course.OrderIndex))
-    .FirstOrDefaultAsync();
-```
-
-## File Upload Handling
-
-- **Static files** served at `/static/uploads`
-- **Max file size**: 100MB (configured in ServiceCollectionExtensions)
-- **CORS headers**: Enabled for cross-origin resource access
-- **Cache-Control**: 1-year max-age for uploaded files
-- Upload endpoints: `POST /api/uploads/{fileType}`, `POST /api/uploads/any`, `GET /api/uploads/{fileType}/{filename}`, `GET /api/uploads/list/{fileType}`
-- **Error handling pattern**:
-  - All exceptions caught and converted to `FileUploadResult.Failure()` with generic messages
-  - Full exception details logged via `ILogger` with context (filename, type, URL)
-  - Never expose raw exception messages to clients (prevents information disclosure)
-  - Pattern: catch → log full exception → return generic error message
-
-## Authorization Roles
-
-Three roles configured in the system:
-- **Admin**: Full system access
-- **ContentCreator**: Can create/edit courses, lessons, exercises
-- **User**: Basic authenticated user
-
-Apply roles via attributes:
-```csharp
-[Authorize(Roles = "Admin,ContentCreator")]
-public async Task<IActionResult> CreateCourse(CreateCourseDto dto) { }
-```
-
-## Port Configuration
-
-- Backend listens on **port 8080** (non-privileged, .NET 8+ default via `ASPNETCORE_HTTP_PORTS`)
-- The `dotnet/aspnet` base image sets `ASPNETCORE_HTTP_PORTS=8080` — no code or env var needed
-- **Do NOT set `ASPNETCORE_URLS`** in docker-compose or `.env` — it overrides `ASPNETCORE_HTTP_PORTS` and logs a warning: `Overriding HTTP_PORTS '8080'`
-- `ConfigureHttpPort()` was removed as redundant — ASP.NET Core reads port config natively
-
-## Data Protection Keys
-
-- Keys persisted to `/app/dataprotection-keys` via `AddDataProtectionKeys()` extension
-- Docker volume `backend-dataprotection` mounted at that path (survives container recreation)
-- Keys are **not encrypted at rest** — acceptable because JWT auth is independent of Data Protection
-- Do NOT use LE cert for key encryption: certs rotate every 90 days, making old keys unreadable
-- Warning suppressed in `appsettings.json`: `XmlKeyManager` log level set to `Error`
-
-## EF Core Shadow FK Gotcha
-
-- `.WithMany()` without a navigation property reference creates a shadow FK (e.g. `ExerciseId1`)
-- Always use `.WithMany(e => e.NavigationProperty)` in fluent configuration
-- Example fix: `.WithMany()` → `.WithMany(e => e.ExerciseProgress)` in `BackendDbContext`
-
-## EF Core GroupBy with Navigation Properties Gotcha
-
-- **Never access navigation properties inside a `GroupBy` key** (e.g. `p.User.UserName`)
-- EF Core emits an implicit JOIN wrapping rows in `TransparentIdentifier<TOuter, TInner>` — the subsequent `Sum`/aggregation fails to translate to SQL
-- **Fix**: Use explicit `.Join()` to flatten into an anonymous type first, then `GroupBy` over scalar columns
-- Pattern: `.Where(...)` → `.Join(users, ...)` → `.GroupBy(p => new { p.Id, p.UserName, p.Email })` → `.Select(g => new { ..., TotalXp = g.Sum(...) })`
-- See `LeaderboardService.GetTimeWindowedLeaderboardAsync` and `GetTimeFilteredLeaderboardAsync`
-
-## EF Core OrderBy After GroupBy Projection Into Named Record Type Gotcha
-
-- **Never apply `OrderBy`/`OrderByDescending` directly on a named record/class type** produced by a `GroupBy.Select()`
-- EF Core tracks anonymous type properties through the query pipeline, but treats named types (C# `record`, `class`) as **terminal projections** — it loses the mapping between the property (e.g. `e.TotalXp`) and the underlying SQL expression (e.g. `SUM(PointsEarned)`)
-- Symptom: EF Core inserts `g.AsQueryable().Sum(e => e.Outer.PointsEarned)` in the expression tree → `InvalidOperationException: The LINQ expression could not be translated`
-- **Fix**: Use an intermediate anonymous type for the `Select` so `OrderBy` can resolve expressions, then do the terminal projection into the named type after `Take`:
-
-```csharp
-// WRONG — OrderBy on named record type loses SUM mapping
-.Select(g => new RawLeaderboardEntry(g.Key.Id, g.Key.UserName ?? ..., g.Sum(x => x.PointsEarned)))
-.OrderByDescending(e => e.TotalXp)  // ← fails: can't translate e.TotalXp
-
-// CORRECT — OrderBy on anonymous type, terminal record projection after Take
-.Select(g => new { Id = g.Key.Id, UserName = g.Key.UserName, Email = g.Key.Email, TotalXp = g.Sum(x => x.PointsEarned) })
-.OrderByDescending(e => e.TotalXp)   // ← works: anonymous type preserves SUM mapping
-.Take(MaxLeaderboardEntries)
-.Select(e => new RawLeaderboardEntry(e.Id, e.UserName ?? e.Email ?? "Unknown", e.TotalXp))
-```
-
-- See `LeaderboardService.GetTimeFilteredLeaderboardAsync` and `GetTimeWindowedLeaderboardAsync`
-
-## EF Core 10 PendingModelChangesWarning
-
-- Thrown as an **error** by default in EF Core 10 during `MigrateAsync()` if model hash doesn't match snapshot
-- Suppressed via `ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning))` in `AddDatabaseContext()`
-- Migration class names MUST match file names and `[Migration]` attribute — mismatches break migration ID resolution
-
-## Database Migration Retry
-
-- `DatabaseExtensions.MigrateDbAsync()` retries with exponential backoff (3s, 6s, 12s...)
-- Creates fresh DbContext scope per retry to avoid dirty state
-- Fails fast on non-transient errors (`InvalidOperationException`) — no point retrying config issues
-
-## Environment Variables
-
-Backend env vars are in `backend/.env` (mapped as Docker secret `backend_env`):
+## Environment variables (`backend/.env`, mapped as Docker secret `backend_env`)
 
 ```
 DB_SERVER=db
 DB_NAME=LexiqDb
 DB_USER_ID=sa
-DB_PASSWORD=<your-password>
-GOOGLE_CLIENT_ID=<google-oauth-client-id>
-GOOGLE_CLIENT_SECRET=<google-oauth-client-secret>
+DB_PASSWORD=<...>
+GOOGLE_CLIENT_ID=<...>
+GOOGLE_CLIENT_SECRET=<...>
 
-# JWT (JWT_SECRET is required — startup throws if missing)
-JWT_SECRET=<hs256-signing-key>
-JWT_ISSUER=lexiq-api            # default if unset
-JWT_AUDIENCE=lexiq-frontend     # default if unset
-JWT_EXPIRATION_HOURS=24         # default if unset
+JWT_SECRET=<...>            # required — startup throws if missing
+JWT_ISSUER=lexiq-api
+JWT_AUDIENCE=lexiq-frontend
+JWT_EXPIRATION_HOURS=24
 
-# Production only
 ASPNETCORE_ENVIRONMENT=production
 ```
 
-Backend loads secrets from `/run/secrets/backend_env` in production (Docker secrets).
+In production the backend reads from `/run/secrets/backend_env`.
 
-## Common Workflows
+## Port
 
-### Adding a New Database Entity
+Listens on `:8080`. Don't set `ASPNETCORE_URLS` — base image sets `ASPNETCORE_HTTP_PORTS=8080` natively.
 
-1. Create entity class in `Database/Entities/`
-2. Add DbSet to `BackendDbContext.cs`
-3. Configure relationships in `OnModelCreating()` if needed
-4. Create migration: `dotnet ef migrations add AddEntityName --project Database/Backend.Database.csproj`
-5. Apply migration: `dotnet ef database update --project Database/Backend.Database.csproj`
+## File uploads
 
-### Adding a New API Endpoint
+- Static files served at `/static/uploads`. Max 100 MB. CORS enabled. 1-year cache.
+- Endpoints: `POST /api/uploads/{fileType}`, `POST /api/uploads/any`, `GET /api/uploads/{fileType}/{filename}`, `GET /api/uploads/list/{fileType}`.
+- All exceptions caught → `FileUploadResult.Failure()` with a generic message; full detail logged via `ILogger`. Never expose raw exception messages.
 
-1. Create DTOs in `Dtos/`
-   - Read DTOs (e.g., `CourseDto`) for output
-   - Create DTOs (e.g., `CreateCourseDto`) for input
-   - Update DTOs (e.g., `UpdateCourseDto`) for partial updates
-   - Use `record` types for DTOs when possible
-2. Create mappings in `Mapping/`
-   - Extension methods: `ToDto()` for entity → DTO
-   - Map methods: `MapToEntity()` for DTO → entity
-3. Create service in `Services/`
-   - Constructor inject `BackendDbContext`
-   - All methods should be async (return `Task` or `Task<T>`)
-   - Register in `Extensions/ServiceCollectionExtensions.cs` as Scoped
-4. Create or update controller in `Controllers/`
-   - Use `[ApiController]` and `[Route("api/[controller]")]`
-   - Constructor inject required services
-   - Apply `[Authorize(Roles = "...")]` for protected endpoints
-   - Use `[AllowAnonymous]` for public endpoints
+## API endpoints
 
-### Testing Exercise Unlocking System
+| Controller | Base route | Auth |
+|------------|-----------|------|
+| `AuthController` | `/api/auth` | Mixed — `POST /google-login`, `POST /logout`, `GET /auth-status`, `GET /is-admin` |
+| `CourseController` | `/api/courses` | Public read; Admin/Creator mutations |
+| `LessonController` | `/api/lessons` | Public read; Admin/Creator mutations |
+| `ExerciseController` | `/api/exercises` | Mutations Admin/Creator; `POST /{id}/submit` any user |
+| `LanguageController` | `/api/languages` | Public read; Admin write |
+| `UserLanguageController` | `/api/userLanguages` | Authenticated |
+| `UserManagementController` | `/api/userManagement` | Admin only |
+| `UploadsController` | `/api/uploads` | Authenticated |
+| `LeaderboardController` | `/api/leaderboard?timeFrame=Weekly\|Monthly\|AllTime` | Public (includes self if authed) |
+| `UserController` | `/api/user` | `GET /{userId}/avatar` public; `PUT /avatar` auth |
 
-1. Login via Google OAuth to create user account
-2. First lesson's first exercise should be unlocked (seed data)
-3. Submit correct answer: `POST /api/exercises/{id}/submit` → next exercise unlocks
-4. Submit wrong answer: can retry infinitely, no unlock
-5. Complete 70%+ of lesson exercises → lesson completion triggers next lesson unlock
-6. Admin manual unlock: `POST /api/lessons/{id}/unlock` → unlocks lesson + first exercise
+## Workflows
 
-## API Endpoints
+### Add an entity
 
-| Controller | Base Route | Key Endpoints | Auth Required |
-|-----------|-----------|---------------|---------------|
-| AuthController | `/api/auth` | `POST /google-login`, `POST /logout`, `GET /auth-status`, `GET /is-admin` | Mixed |
-| CourseController | `/api/courses` | `GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Admin/Creator for mutations |
-| LessonController | `/api/lessons` | `GET /`, `GET /{id}`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Admin/Creator for mutations |
-| ExerciseController | `/api/exercises` | `GET /lesson/{lessonId}`, `POST /`, `PUT /{id}`, `DELETE /{id}`, `POST /{id}/submit` | Admin/Creator for mutations; submit for any user |
-| LanguageController | `/api/languages` | `GET /`, `POST /`, `PUT /{id}`, `DELETE /{id}` | Public read, Admin write |
-| UserLanguageController | `/api/userLanguages` | `GET /user/{userId}`, `POST /enroll`, `DELETE /unenroll` | Yes |
-| UserManagementController | `/api/userManagement` | `GET /users`, `GET /users/{id}`, `POST /roles`, etc. | Admin only |
-| UploadsController | `/api/uploads` | `POST /{fileType}`, `GET /{fileType}/{filename}`, `GET /list/{fileType}` | Yes |
-| LeaderboardController | `/api/leaderboard` | `GET /?timeFrame=Weekly\|Monthly\|AllTime` | No (includes current user if authenticated) |
-| UserController | `/api/user` | `GET /{userId}/avatar`, `PUT /avatar` | GET public, PUT auth |
+1. Class in `Database/Entities/`.
+2. `DbSet<T>` in `BackendDbContext`.
+3. Fluent config in `OnModelCreating` if needed.
+4. `dotnet ef migrations add <Name>` → review `Database/Migrations/` → `dotnet ef database update`.
+5. Update [`Database/ENTITIES_DOCUMENTATION.md`](Database/ENTITIES_DOCUMENTATION.md). Commit migration + entity, then docs separately.
 
-## Known Limitations
+### Add an endpoint
 
-- No validation layer on backend DTOs (validation done in entity layer)
-- `ExerciseProgressService` validates answers server-side — frontend sends answer strings (option IDs for MC, text for others)
-- Lesson completion requires 70% XP threshold (`ExerciseProgressService.DefaultCompletionThreshold`)
-- `UserExerciseProgress.ExerciseId` FK uses `DeleteBehavior.NoAction` (SQL Server multiple cascade path constraint)
-- `Lesson.status` is NOT returned by the API — frontend derives it from `isLocked`, `isCompleted`, `completedExercises` fields
-- **Exercise unlocking**: Hybrid strategy — first exercise unlocks with lesson, rest unlock sequentially on completion (infinite retries allowed)
-- **EF Core shadow FK gotcha**: `.WithMany()` without passing the navigation property creates a duplicate shadow FK (e.g. `ExerciseId1`). Always pass the inverse nav explicitly: `.WithMany(e => e.ExerciseProgress)`. See `BackendDbContext.cs` UserExerciseProgress configuration.
+1. DTOs in `Dtos/` (Read / Create / Update — `record` types).
+2. Mapping in `Mapping/` (`ToDto()`).
+3. Service method in `Services/`. Register in `ServiceCollectionExtensions.cs` as Scoped.
+4. Controller action with appropriate `[Authorize]` attribute.
+5. Verify via Swagger at `http://localhost:8080/swagger`.
+6. Update the API endpoints table above. Commit code, then docs.
 
-## OpenAPI Configuration Gotchas
+## Known limitations
 
-### Collection Expression Syntax Error with Tags
-
-**Error:**
-```csharp
-document.Tags = [...];  // CS9174: Cannot initialize type 'ISet<OpenApiTag>' with collection expression
-```
-
-**Solution:**
-```csharp
-document.Tags = new HashSet<OpenApiTag> { ... };  // Must use HashSet, not collection expression
-```
-
-OpenAPI document properties expect specific collection types (`ISet`, `IList`, etc.) that aren't compatible with C# 12 collection expressions.
-
-### OpenApiSecurityScheme vs OpenApiSecuritySchemeReference
-
-**Error:**
-```csharp
-document.Security = [
-    new OpenApiSecurityRequirement {
-        [new OpenApiSecurityScheme { ... }] = []  // CS1503: Cannot convert to OpenApiSecuritySchemeReference
-    }
-];
-```
-
-**Cause:** `OpenApiSecurityRequirement` dictionary expects `OpenApiSecuritySchemeReference` as the key, not `OpenApiSecurityScheme`.
-
-**Solution:**
-```csharp
-document.Security = [
-    new OpenApiSecurityRequirement {
-        [new OpenApiSecuritySchemeReference("CookieAuth") {
-            Description = "JWT token in HttpOnly cookie"
-        }] = []
-    }
-];
-```
-
-The `referenceId` parameter must match a key defined in `document.Components.SecuritySchemes`.
-
-### OpenApiSecurityScheme Available Properties
-
-`OpenApiSecurityScheme` in Microsoft.OpenApi 2.3.0 has these properties:
-- `Type` (SecuritySchemeType)
-- `Description` (string)
-- `Name` (string)
-- `Scheme` (string)
-- `BearerFormat` (string)
-- `Flows` (OpenApiOAuthFlows)
-- `OpenIdConnectUrl` (Uri)
-- `Extensions` (IDictionary)
-
-**Does NOT have:**
-- ~~`Reference`~~ — use `OpenApiSecuritySchemeReference` instead
-- ~~`In`~~ — only available on `OpenApiSecuritySchemeReference`
-
-### OpenApiSecuritySchemeReference Constructor
-
-**Signature:**
-```csharp
-new OpenApiSecuritySchemeReference(
-    string referenceId,              // Required - must match Components.SecuritySchemes key
-    OpenApiDocument? hostDocument,   // Optional
-    string? externalResource         // Optional
-)
-```
-
-**Usage:**
-```csharp
-// Define the scheme in Components
-document.Components.SecuritySchemes["CookieAuth"] = new OpenApiSecurityScheme {
-    Type = SecuritySchemeType.ApiKey,
-    Name = "AuthToken",
-    Description = "JWT in HttpOnly cookie"
-};
-
-// Reference it in Security requirement
-document.Security = [
-    new OpenApiSecurityRequirement {
-        [new OpenApiSecuritySchemeReference("CookieAuth")] = []
-    }
-];
-```
-
-## Common Debugging Scenarios
-
-### 401 Unauthorized Errors
-
-1. **Common causes**:
-   - **Stale JWT after DB reset**: Clear browser cookies and re-login
-   - **Missing AuthToken cookie**: Check browser DevTools → Application → Cookies
-   - **User not found in DB**: JWT has old user ID from before database reset
-   - **CORS misconfiguration**: Cookie not sent with cross-origin requests
-
-4. **JWT Claim Mapping Gotcha**:
-   - ASP.NET Core JWT middleware maps `sub` → `ClaimTypes.NameIdentifier` by default
-   - Always use `ClaimTypes.NameIdentifier` to extract user ID, NOT `JwtRegisteredClaimNames.Sub`
-
-5. **HttpContext.GetCurrentUser() Not Found**:
-   - The extension method is in `Backend.Api.Middleware` namespace
-   - Add `using Backend.Api.Middleware;` to controllers
-
-### Exercise Progress Not Restoring
-
-1. Check `restorePreviousProgress()` logic in frontend exercise-viewer component
-2. Backend returns `SubmitAnswerResponse` for ALL exercises (attempted or not)
-3. "Never attempted" vs "attempted incorrectly" have same values: `pointsEarned: 0, isCorrect: false`
-4. **Fix**: Check discriminator field — `correctAnswer !== null` indicates actual attempt
-5. Pattern: `const wasAttempted = response.isCorrect || response.correctAnswer !== null`
+- No DTO validation layer — validation happens in entities.
+- `Lesson.status` is **not** returned by the API; frontend derives it from `isLocked`, `isCompleted`, `completedExercises`.
+- Lesson completion threshold: 70% XP (`ExerciseProgressService.DefaultCompletionThreshold`).
+- `UserExerciseProgress.ExerciseId` FK uses `DeleteBehavior.NoAction` (SQL Server multiple-cascade-path constraint).
+- Exercise unlocking: hybrid — first exercise unlocks with the lesson; rest unlock sequentially on completion (infinite retries).

@@ -1,301 +1,187 @@
 # CI/CD & Deployment CLAUDE.md
 
-GitHub Actions CI/CD pipeline with Docker Compose and Hetzner deployment.
+GitHub Actions + Docker Compose + Hetzner deployment.
 
-## Docker Commands
+> Cross-cutting bug patterns: [`/.claude/rules/common-gotchas.md`](../../.claude/rules/common-gotchas.md).
+> Debugging playbooks: [`/.claude/rules/troubleshooting.md`](../../.claude/rules/troubleshooting.md).
 
-From repository root:
+## Local commands (from repo root)
 
 ```bash
-# Start all services locally (development)
-docker compose up
-
-# Start in detached mode
-docker compose up -d
-
-# Build images before starting
+docker compose up                        # dev
 docker compose up --build
-
-# Stop all services
+docker compose up -d
 docker compose down
+docker compose logs <service>            # backend | frontend | db | certbot
 
-# View container logs
-docker compose logs
-
-# View specific service logs
-docker compose logs backend
-docker compose logs frontend
-docker compose logs db
-
-# Build for production (uses docker-compose.prod.yml)
+# Production-mode local build
 TAG=latest docker compose -f docker-compose.prod.yml up --build
 ```
 
-## CI/CD Pipeline
+Local secrets required:
 
-Six workflows in `.github/workflows/`:
+- `backend/Database/password.txt` — `db_password` Docker secret
+- `backend/.env` — `backend_env` Docker secret
 
-1. **build-and-push-docker.yml** — Builds and pushes Docker images to GHCR
-2. **test.yml** — Runs backend tests sequentially (unit → integration → E2E)
-3. **release.yml** — Orchestrates the production release pipeline (build → verify → deploy)
-4. **continuous-delivery.yml** — Deploys to Hetzner production server
-5. **codeql.yml** — Security scanning with GitHub Advanced Security (runs on push/PR/schedule)
-6. **infrastructure-update.yml** — Weekly OS + infrastructure image updates (Sundays 02:00 UTC)
+## Workflows
 
-### Manually Triggering Workflows
+| File | Purpose |
+|------|---------|
+| `build-and-push-docker.yml` | Builds & pushes frontend / backend images to GHCR |
+| `test.yml` | Runs backend tests (unit → integration → E2E, fail-fast) |
+| `release.yml` | Orchestrates production release: build → verify → deploy |
+| `continuous-delivery.yml` | SSHes to Hetzner and runs `scripts/deploy.sh` |
+| `pr-validation.yml` | Build checks on PRs |
+| `codeql.yml` | GitHub Advanced Security scans (push / PR / schedule) |
+| `infrastructure-update.yml` | Weekly OS + image refresh — Sundays 02:00 UTC |
 
-**Via GitHub UI:**
-1. Navigate to **Actions** tab in repository
-2. Select workflow from left sidebar (e.g., "Infrastructure Update")
-3. Click **Run workflow** button
-4. Select branch and fill in any required inputs
-5. Click **Run workflow** to trigger
+All support `workflow_dispatch`. Trigger via UI or:
 
-**Via GitHub CLI (`gh`):**
 ```bash
-# Trigger infrastructure update workflow
-gh workflow run infrastructure-update.yml
-
-# Trigger with specific branch
 gh workflow run infrastructure-update.yml --ref master
-
-# View workflow runs
 gh run list --workflow=infrastructure-update.yml
-
-# Watch a running workflow
 gh run watch
 ```
 
-**Note:** Only workflows with `workflow_dispatch:` trigger can be manually run. All Lexiq workflows support manual triggering.
+## Deploy flow (push to `master`)
 
-### Deployment Flow
+1. **build-and-push-docker** — frontend + backend → GHCR.
+2. **pull-and-test** — verifies images exist (pulls both).
+3. **test-backend** — sequential: unit (~10–30s) → integration (~2–4min) → E2E (~1–2min). Fail-fast.
+4. **continuous-delivery** — SSH → Hetzner → `scripts/deploy.sh`.
 
-Triggered on push to `master`:
+`.trx` test artifacts uploaded with 30-day retention.
 
-1. **build-and-push-docker** — Builds frontend and backend Docker images, pushes to GHCR
-2. **pull-and-test** — Verifies images exist in registry (pulls both images)
-3. **test-backend** — Runs backend tests in sequence:
-   - **test-unit** — Pure unit tests, no Docker (~10-30s)
-   - **test-integration** — Service and controller tests with Testcontainers (~2-4min)
-   - **test-e2e** — Full journey tests with WebApplicationFactory (~1-2min)
-4. **continuous-delivery** — SSHs into Hetzner server and runs `scripts/deploy.sh`
+## `scripts/deploy.sh`
 
-Pipeline stops at first failure (fail-fast). Test results uploaded as artifacts (30-day retention).
+- Reads env from `/tmp/.deploy.env` (passed by CD).
+- `docker login` to GHCR with the GitHub token.
+- Pulls latest images → **in-place** `docker compose up -d --wait`. **No** `docker compose down` — keeps DB warm, avoids the 30s SQL Server cold-start cascade.
+- **Do NOT add `apt update` / `apt upgrade`** — host package management has no place here. It used to cost 60–120s/run.
+- `mask_ips()` redacts IPv4 from logs.
+- Logs to `/var/log/lexiq/deployment/`.
+- Exit codes: `1` file not found · `3` auth/pull failed · `4` container start failed.
 
-### Deployment Script (`scripts/deploy.sh`)
+## SSH efficiency in CD
 
-- Loads environment variables from `/tmp/.deploy.env` (passed by CD workflow)
-- Authenticates to GHCR using GitHub token
-- Pulls latest images then does an **in-place `docker compose up -d --wait`** — no `docker compose down`. This keeps the DB container running across deploys, avoiding SQL Server's 30s cold-start and the full health-check cascade (db → backend → frontend) on every push.
-- **Do NOT add `apt update`/`apt upgrade`** to this script. OS package management has no place in a container deployment and was historically the biggest time sink (60-120s/run). Schedule host updates out-of-band.
-- **Security**: Masks IPv4 addresses in logs via `mask_ips()` function to prevent infrastructure details from leaking
-- Logs to `/var/log/lexiq/deployment/` with GitHub Actions annotations
-- Exit codes: 1 (file not found), 3 (auth/pull failed), 4 (container start failed)
+Three connections per run, no more:
 
-### `continuous-delivery.yml` SSH Efficiency
+1. **SCP** — `scripts/deploy.sh`, `scripts/verify-deployment.sh`, `docker-compose.prod.yml` to `/tmp/deploy_assets_<run_id>/`.
+2. **SSH deploy + verify** — runs both scripts in one connection; compose file `cp`'d into the production directory inside the same step.
+3. **SSH cleanup** (`always`) — removes temp assets, prunes dangling images.
 
-The CD job minimises SSH handshakes to 3 per run:
-1. **SCP** — transfers `scripts/deploy.sh`, `scripts/verify-deployment.sh`, and `docker-compose.prod.yml` in one connection to `/tmp/deploy_assets_<run_id>/`
-2. **SSH deploy+verify** — runs `deploy.sh` then `verify-deployment.sh` in a single connection; the compose file is `cp`'d to the production directory inside this step
-3. **SSH cleanup** (`always`) — removes temp assets and prunes dangling images
+## Build cache
 
-### `build-and-push-docker.yml` Layer Cache
+`docker/setup-buildx-action` is **required** — without it the GHA cache driver silently does nothing. `cache-from` / `cache-to` use `type=gha` with `scope=frontend` and `scope=backend` (isolated). BuildKit auto-invalidates the install layer when `package.json` / `package-lock.json` / `*.csproj` change. `no-cache` is `false` everywhere except `infrastructure-update.yml`.
 
-Both build jobs use `docker/setup-buildx-action` (required for BuildKit) and `cache-from/cache-to` with `type=gha`:
-- **`scope=frontend`** and **`scope=backend`** keep the two caches isolated in the GHA store
-- Every push uses the layer cache unconditionally — `npm ci` and `dotnet restore` layers are served from cache on routine pushes
-- When `package.json`, `package-lock.json`, or `*.csproj` change, BuildKit automatically invalidates the install layer (no explicit `no-cache` needed)
-- `no-cache` is a boolean input (default `false`) — only the weekly infrastructure run passes `no-cache: true` to pull fresh base images
-- **Do NOT remove `setup-buildx-action`** — without it the GHA cache driver is unavailable and `cache-from/cache-to` silently does nothing
+## `infrastructure-update.yml`
 
-### `infrastructure-update.yml`
+Sundays 02:00 UTC (also `workflow_dispatch`). Three sequential jobs:
 
-Runs every Sunday at 02:00 UTC (also `workflow_dispatch`). Three jobs in sequence:
-1. **`update-infrastructure`** — OS `apt-get upgrade` + `docker compose pull db certbot` + recreate containers + prune
-2. **`rebuild-app-images`** — calls `build-and-push-docker.yml` with `no-cache: true` to pull fresh base images (`node:*-alpine`, `nginx-unprivileged`, `dotnet/aspnet`) and push updated app images to GHCR
-3. **`deploy-fresh-images`** — calls `continuous-delivery.yml` to roll out the freshly built images to production
+1. **`update-infrastructure`** — `apt-get upgrade` + `docker compose pull db certbot` + recreate + prune.
+2. **`rebuild-app-images`** — calls `build-and-push-docker.yml` with `no-cache: true` to refresh base images (`node:*-alpine`, `nginx-unprivileged`, `dotnet/aspnet`).
+3. **`deploy-fresh-images`** — calls `continuous-delivery.yml`.
 
-This is the only place `no-cache: true` is used — base image security patches land weekly as part of the maintenance window, not on every push.
+Only place `no-cache: true` is used. Base-image security patches land here weekly, not on every push.
 
-## Testing Deployment Locally
+## Services
 
-1. Ensure secrets files exist:
-   - `backend/Database/password.txt`   # DB password (Docker secret: `db_password`)
-   - `backend/.env`                    # Backend env vars (Docker secret: `backend_env`)
-2. Run: `docker compose up --build`
-3. Access frontend at http://localhost:4200
-4. Access backend API at http://localhost:8080
-5. Access Swagger docs at http://localhost:8080/swagger
+| Service | Image | Notes |
+|---------|-------|-------|
+| `db` | `mssql/server:2022-latest` | Health-checked |
+| `backend` | `aspnet:10.0-alpine` (~120 MB) | Plain HTTP :8080 internally |
+| `frontend` | `nginx-unprivileged:stable-alpine` | TLS terminator, runs as non-root |
+| `certbot` | LE renewal sidecar | One-shot permission fix on startup |
 
-## Infrastructure Details
+### Backend Alpine ICU requirement
 
-### Docker Services
+```dockerfile
+RUN apk add icu-libs
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false
+```
 
-- **db**: SQL Server 2022 with health checks (`mcr.microsoft.com/mssql/server:2022-latest`)
-- **backend**: ASP.NET Core 10.0 API (port 8080) — Alpine-based image (`aspnet:10.0-alpine`, ~120 MB runtime)
-- **frontend**: Angular 21 + nginx (port 4200) — Alpine-based image (`nginx-unprivileged:stable-alpine`)
-- **certbot**: Let's Encrypt renewal sidecar
+**Do NOT remove either.** Without `icu-libs`, .NET silently falls back to invariant culture for non-ASCII strings — Bulgarian and Italian sort/compare results become incorrect.
 
-### Backend Alpine Image Notes
+### Log suppression (production)
 
-The backend uses `dotnet/sdk:10.0-alpine` (build) and `dotnet/aspnet:10.0-alpine` (runtime). Alpine uses musl libc which does not bundle ICU. Two things are required for correct behaviour with Bulgarian and Italian text:
-- `apk add icu-libs` installed in the final image
-- `ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false` set in the Dockerfile
-
-**Do NOT remove either of these.** Without `icu-libs`, .NET string operations on non-ASCII characters silently fall back to invariant culture and produce incorrect sort/compare results.
-
-### Log Suppression
-
-All services use json-file logging with rotation (`max-size: "10m"`, `max-file: "3"`) in `docker-compose.prod.yml`.
-
-Backend ASP.NET Core verbosity is suppressed via environment variables — only warnings and errors surface in `docker compose logs`:
 ```yaml
 Logging__LogLevel__Default: Warning
 Logging__LogLevel__Microsoft.AspNetCore: Warning
 Logging__LogLevel__Microsoft.EntityFrameworkCore: Warning
 ```
-Override per-namespace as needed (e.g. set a specific namespace to `Debug` temporarily for troubleshooting).
 
-### Health Checks
+JSON-file driver, `max-size: "10m"`, `max-file: "3"`. Set a namespace to `Debug` temporarily for troubleshooting.
 
-- Backend health: `wget -q -O /dev/null -T 10 http://localhost:8080/health`
-- Frontend health: `wget -q -O /dev/null -T 10 http://localhost:80/`
-- Database health: `docker compose exec db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P <password> -Q "SELECT 1" -C`
+### Health checks
 
-**BusyBox wget gotcha**: Alpine images use BusyBox wget, NOT GNU wget. Only these flags work: `-q`, `-O`, `-T`, `-c`, `-S`, `-P`, `-U`, `-Y`. GNU-only flags (`--spider`, `--no-verbose`, `--tries`) silently fail with exit 1, making containers permanently unhealthy.
-
-**Health check output not in logs**: Docker health checks run in a separate exec — output does NOT appear in `docker compose logs`. Use `docker inspect --format='{{json .State.Health}}' <container>` to see health check results and error messages.
-
-### Docker Secrets
-
-- `db_password` — from `backend/Database/password.txt`
-- `backend_env` — from `backend/.env`
-
-Backend loads secrets from `/run/secrets/backend_env` in production.
-
-### Production Deployment
-
-- Docker health checks configured for all services
-- Production deployment uses nginx in frontend container
-- Images pushed to GitHub Container Registry (ghcr.io)
-- SSH deployment to Hetzner server via `scripts/deploy.sh`
-- Production HTTPS terminated at **nginx** (certbot manages Let's Encrypt certs)
-
-### SSL / Let's Encrypt Bootstrap
-
-- **Named volumes vs host paths**: `letsencrypt-certs` is a Docker named volume — unrelated to the host's `/etc/letsencrypt/`. Never write SSL files to host paths; always use `docker compose run` so writes land in the correct volume.
-- **`certbot --webroot` never writes `options-ssl-nginx.conf`** — only the `--nginx` plugin does. `init-letsencrypt.sh` must explicitly download this file into the volume via `docker compose run certbot`.
-- **HTTP-first bootstrap**: On fresh deploy, `docker-entrypoint.sh` detects missing certs and starts nginx with `nginx.acme-only.conf` (HTTP-only, port 80, serves ACME challenges). After `init-letsencrypt.sh` issues certs it switches to `nginx.prod.conf` via `nginx -s reload` — no container restart needed.
-- **`init-letsencrypt.sh` uses `--force-renewal`** — re-running on a live server burns Let's Encrypt quota (5 issuances per domain per 7 days). Do not re-run unless certs are corrupt/missing.
-- **`init-letsencrypt.sh` is a one-time manual script** — run once on a new server. Subsequent CD deployments start HTTPS directly because certs persist in the named volume across `docker compose down/up`.
-- **Staging mode**: `STAGING=1 scripts/init-letsencrypt.sh` to test cert issuance without hitting Let's Encrypt rate limits.
-- **CRITICAL — separate certs per domain group**: `init-letsencrypt.sh` must issue **two separate** certbot certs:
-  - Frontend: `-d lexiqlanguage.eu -d www.lexiqlanguage.eu` → stored at `live/lexiqlanguage.eu/`
-  - API: `-d api.lexiqlanguage.eu` alone → stored at `live/api.lexiqlanguage.eu/`
-  Running all three in one command creates a SAN cert under `live/lexiqlanguage.eu/` only. `live/api.lexiqlanguage.eu/` never gets created, so `docker-entrypoint.sh` falls back to acme-only mode and nginx.prod.conf fails to reload.
-
-### Compose File Naming
-
-- CI copies `docker-compose.prod.yml` → `docker-compose.yml` on the server (line 67 of continuous-delivery.yml)
-- All server-side scripts (`deploy.sh`, `init-letsencrypt.sh`) must reference `docker-compose.yml`, not `docker-compose.prod.yml`
-- `init-letsencrypt.sh` resolves the path relative to its own location via `SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"`
-
-### Cert Permissions for nginx-unprivileged
-
-- Frontend uses `nginxinc/nginx-unprivileged` (runs as `nginx` user, not root)
-- Certbot creates `archive/` with `0700` — nginx can't follow `live/` → `archive/` symlinks
-- `init-letsencrypt.sh` step 3.5 runs `chmod 755` on archive dirs and `644` on cert files after issuance
-- `infrastructure-update.yml` renewal step uses `--deploy-hook` to re-apply permissions after each actual renewal
-- Symptom: `BIO_new_file() failed (Permission denied)` on `nginx -s reload`
-
-### Backend Test Pipeline (`test.yml`)
-
-Reusable workflow that runs backend tests in sequential order with fail-fast strategy:
-
-**Test Categories:**
-- **Unit tests** (`backend/Tests/Unit/`) — Pure logic tests, no database, no Docker
-  - CalculateLevelTests, JwtServiceTests, FileUploadsServiceTests
-  - Runtime: ~10-30 seconds
-  - Filter: `--filter "FullyQualifiedName~Unit"`
-
-- **Integration tests** (`backend/Tests/Integration/Services/`, `Integration/Controllers/`) — Testcontainers + SQL Server
-  - Service tests: Leaderboard, Streak, CRUD operations, Avatar, Achievements, Profile
-  - Controller tests: Auth, Authorization, User/Role management
-  - Runtime: ~2-4 minutes
-  - Filter: `--filter "FullyQualifiedName~Integration.Services|FullyQualifiedName~Integration.Controllers"`
-
-- **E2E tests** (`backend/Tests/Integration/E2E/`) — Full user journey tests with WebApplicationFactory
-  - StudentExerciseProgressJourneyTests, ExerciseSubmissionSecurityTests, LeaderboardAndStreaksTests, AdminContentManagementJourneyTests
-  - Runtime: ~1-2 minutes
-  - Filter: `--filter "FullyQualifiedName~Integration.E2E"`
-
-**Artifacts:**
-- Test results uploaded as `.trx` files (30-day retention)
-- Available for download from GitHub Actions run summary
-
-**Manual triggering:**
 ```bash
-# Run tests without full deployment
-gh workflow run test.yml
+# Backend
+wget -q -O /dev/null -T 10 http://localhost:8080/health
+# Frontend
+wget -q -O /dev/null -T 10 http://localhost:80/
+# Database
+docker compose exec db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P <pass> -Q "SELECT 1" -C
+```
 
-# View test results
+BusyBox `wget` flags only — see [`common-gotchas.md`](../../.claude/rules/common-gotchas.md). Healthcheck output is NOT in `docker compose logs` — use `docker inspect --format='{{json .State.Health}}' <container>`.
+
+### Docker secrets
+
+- `db_password` ← `backend/Database/password.txt`
+- `backend_env` ← `backend/.env` (loaded from `/run/secrets/backend_env` in production)
+
+## Production HTTPS / Let's Encrypt
+
+- `letsencrypt-certs` is a Docker named volume — unrelated to host `/etc/letsencrypt/`. Always write via `docker compose run`.
+- `certbot --webroot` does NOT write `options-ssl-nginx.conf` (only `--nginx` plugin does). `init-letsencrypt.sh` downloads it explicitly into the volume.
+- HTTP-first bootstrap: missing certs → frontend `docker-entrypoint.sh` starts nginx with `nginx.acme-only.conf` (HTTP-only, ACME challenges). After `init-letsencrypt.sh` issues certs, switches to `nginx.prod.conf` via `nginx -s reload` — no container restart.
+- `init-letsencrypt.sh` is **one-time**, manual. Subsequent CD runs use HTTPS directly because certs persist in the named volume across `down/up`.
+- Re-running burns LE quota (5 issuances per domain per 7 days). Don't.
+- Staging mode: `STAGING=1 scripts/init-letsencrypt.sh`.
+- **Two separate cert issuances** are mandatory:
+  - Frontend: `-d lexiqlanguage.eu -d www.lexiqlanguage.eu` → `live/lexiqlanguage.eu/`
+  - API: `-d api.lexiqlanguage.eu` (alone) → `live/api.lexiqlanguage.eu/`
+  Combining all three into one command creates a single SAN cert under `live/lexiqlanguage.eu/`; the API cert directory is never created and `nginx.prod.conf` reload fails.
+
+### Compose-file naming
+
+- CI copies `docker-compose.prod.yml` → `docker-compose.yml` on the server (`continuous-delivery.yml` line 67).
+- All server scripts (`deploy.sh`, `init-letsencrypt.sh`) reference `docker-compose.yml`, NOT `docker-compose.prod.yml`.
+- `init-letsencrypt.sh` resolves its own dir: `SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"`.
+
+### Cert permissions for nginx-unprivileged
+
+- `nginxinc/nginx-unprivileged` runs as non-root.
+- Certbot creates `archive/` with `0700` — nginx can't follow `live/` → `archive/` symlinks.
+- `init-letsencrypt.sh` step 3.5 `chmod 755` on archive dirs and `644` on cert files after issuance.
+- `infrastructure-update.yml` renewal uses `--deploy-hook` to re-apply permissions after each renewal.
+- Symptom of breakage: `BIO_new_file() failed (Permission denied)` on `nginx -s reload`.
+
+## Backend test pipeline (`test.yml`)
+
+Sequential, fail-fast.
+
+- **Unit** (`Tests/Unit/`) — pure logic, no DB. `--filter "FullyQualifiedName~Unit"`.
+- **Integration** (`Tests/Integration/Services/` + `Integration/Controllers/`) — Testcontainers + SQL Server. `--filter "FullyQualifiedName~Integration.Services|FullyQualifiedName~Integration.Controllers"`.
+- **E2E** (`Tests/Integration/E2E/`) — `WebApplicationFactory`. `--filter "FullyQualifiedName~Integration.E2E"`.
+
+```bash
+gh workflow run test.yml
 gh run list --workflow=test.yml
 gh run view <run-id>
 ```
 
-## Maintenance Tasks
+## Maintenance: workflow branch pins
 
-**Workflow branch pin updates**: When merging feature branches to the main branch, update workflow `uses:` references to ensure they point to the correct branch:
+When merging a feature branch back to `master`, update `uses:` references:
 
-1. **Check `release.yml`**:
-   ```yaml
-   continuous-delivery:
-     needs: [build-frontend, build-backend, pull-and-test]
-     uses: ./.github/workflows/continuous-delivery.yml@<BRANCH>
-   ```
+```yaml
+# release.yml
+uses: ./.github/workflows/continuous-delivery.yml@<BRANCH>
 
-2. **Check `infrastructure-update.yml`**:
-   ```yaml
-   rebuild-app-images:
-     uses: ./.github/workflows/build-and-push-docker.yml@<BRANCH>
+# infrastructure-update.yml
+uses: ./.github/workflows/build-and-push-docker.yml@<BRANCH>
+uses: ./.github/workflows/continuous-delivery.yml@<BRANCH>
+```
 
-   deploy-fresh-images:
-     uses: ./.github/workflows/continuous-delivery.yml@<BRANCH>
-   ```
-
-3. **After merging to `master`**: Change all `@fix/refactor` → `@master`
-
-**Why**: Workflow file references (`uses: ./.github/workflows/...@branch`) pin to specific branches. Stale references can cause CI failures or deploy outdated code.
-
-## Common Debugging Scenarios
-
-### Docker Container Issues
-
-**Container fails to start:**
-1. Check container logs: `docker compose logs <service-name>`
-2. Verify secrets files exist: `backend/Database/password.txt`, `backend/.env`
-3. Check port conflicts: `sudo lsof -i :8080` (backend), `sudo lsof -i :4200` (frontend)
-4. Ensure database is ready: Backend retries 10 times (3s delay) waiting for SQL Server
-
-**Health check failures:**
-- Backend health: `wget -q -O /dev/null -T 10 http://localhost:8080/health`
-- Frontend health: `wget -q -O /dev/null -T 10 http://localhost:80/`
-- Database health: `docker compose exec db /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P <password> -Q "SELECT 1" -C`
-- **Debug output**: `docker inspect --format='{{json .State.Health}}' <container>` (health check output is NOT in `docker compose logs`)
-
-**Volume/permission issues:**
-- SQL Server data: Ensure `~/mssql-data` directory has correct permissions
-- Upload directory: Check `backend/static/uploads` is writable by container user
-- Log directory: Verify `/var/log/lexiq` exists on production server
-
-### Mixed Content (frontend requests HTTP from HTTPS page)
-
-- **Cause**: `BACKEND_API_URL` GitHub repo variable set to an absolute `http://` URL baked into the Angular bundle at build time
-- **Fix**: Set `BACKEND_API_URL` to `/api` (relative path) — it inherits the page scheme and nginx proxies it to backend
-- **Where**: GitHub repo → Settings → Secrets and variables → Actions → Variables → `BACKEND_API_URL`
-
-### Frontend Falls Back to ACME-Only Mode Despite Valid Certs
-
-- **Cause**: Race condition — frontend checks cert readability before certbot finishes `chmod 755` on `archive/`
-- **Fix already applied**: `depends_on: certbot: condition: service_completed_successfully` in `docker-compose.prod.yml`
-- Certbot uses `restart: no` — one-shot permission-fix job that exits 0, then frontend starts
+After merge: change all `@fix/refactor` → `@master`. Stale references either fail CI or deploy outdated workflow logic.

@@ -9,12 +9,13 @@ gamified exercise types with spaced repetition.
 
 | Topic | Decision |
 |-------|----------|
-| Word bank for FillInBlank | Content creators provide manually (required field) |
+| Word bank for FillInBlank | **CHANGED**: Uses `List<ExerciseOption>` (not comma-separated string) — content creators provide options list like Listening |
 | MultipleChoice → Listening | Absorb MC design into Listening (even without audio) |
 | SM-2 spaced repetition | Full algorithm — EaseFactor, Interval, Repetitions, NextReviewDate, LastReviewedAt |
 | New type priority | AudioMatching → TrueFalse → ImageChoice |
 | Migrated data | Hard delete — no backwards compatibility |
 | AudioMatching | Images only matched to audio clips (not words) |
+| Primary key naming | New entities use `<EntityName>Id` pattern (ExerciseId, ImageOptionId, etc.) |
 
 ## Types Removed
 
@@ -25,8 +26,8 @@ gamified exercise types with spaced repetition.
 
 | Type | Changes |
 |------|---------|
-| FillInBlank | Added `WordBank` (required, comma-separated), drag-and-drop word tiles in UI |
-| Listening | Removed CorrectAnswer/AcceptedAnswers/CaseSensitive fields; now uses `Options` (like old MC) |
+| FillInBlank | **CHANGED**: Now uses `List<ExerciseOption>` (not WordBank string) — provides word bank as structured options, drag-and-drop word tiles in UI |
+| Listening | Removed CorrectAnswer/AcceptedAnswers/CaseSensitive fields; now uses `List<ExerciseOption>` (like old MC) |
 
 ## Types Added
 
@@ -57,8 +58,8 @@ gamified exercise types with spaced repetition.
 ### Backend Entity Changes
 
 **Modified entities:**
-- `FillInBlankExercise` — added `WordBank` (required, `string`)
-- `ListeningExercise` — removed text-answer fields; added `List<ExerciseOption> Options`
+- `FillInBlankExercise` — removed text-answer fields (CorrectAnswer, AcceptedAnswers, CaseSensitive, TrimWhitespace); added `List<ExerciseOption> Options`
+- `ListeningExercise` — removed text-answer fields (CorrectAnswer, AcceptedAnswers, CaseSensitive); added `List<ExerciseOption> Options`
 
 **New entities:**
 - `TrueFalseExercise` — Statement, CorrectAnswer (bool), optional ImageUrl
@@ -89,17 +90,18 @@ gamified exercise types with spaced repetition.
 ### Backend DTO Changes
 
 **Removed:** `MultipleChoiceExerciseDto`, `TranslationExerciseDto`, `CreateMultipleChoiceExerciseDto`, `CreateTranslationExerciseDto`  
-**Added:** `TrueFalseExerciseDto`, `ImageChoiceExerciseDto`, `AudioMatchingExerciseDto`, `ImageOptionDto`, `AudioMatchPairDto` + Create variants  
-**Modified:** `ListeningExerciseDto` (options list), `FillInBlankExerciseDto` (WordBank)
+**Added:** `TrueFalseExerciseDto`, `ImageChoiceExerciseDto`, `AudioMatchingExerciseDto`, `ImageOptionDto`, `AudioMatchPairDto`, `ExerciseOptionDto` + Create variants  
+**Modified:** `ListeningExerciseDto` (options list), `FillInBlankExerciseDto` (options list, removed text-answer fields)
 
 ### EF Migration Needed
 
 One migration covering:
-- New columns: `FillInBlankExercise.WordBank`
-- New SM-2 columns on `UserExerciseProgress`
+- New SM-2 columns on `UserExerciseProgress`: `EaseFactor`, `Interval`, `Repetitions`, `NextReviewDate`, `LastReviewedAt`
 - New tables: `TrueFalseExercises`, `ImageChoiceExercises`, `ImageOptions`, `AudioMatchingExercises`, `AudioMatchPairs`
+- Removed columns from `FillInBlankExercise`: `CorrectAnswer`, `AcceptedAnswers`, `CaseSensitive`, `TrimWhitespace`
 - Removed columns from `ListeningExercise`: `CorrectAnswer`, `AcceptedAnswers`, `CaseSensitive`
 - Removed tables: `MultipleChoiceExercises`, `TranslationExercises`
+- `ExerciseOption` now shared by both `FillInBlankExercise` and `ListeningExercise` (polymorphic FK to Exercise base)
 
 ---
 

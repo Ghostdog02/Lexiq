@@ -1,713 +1,160 @@
 # Frontend CLAUDE.md
 
-Angular 21 single-page application with standalone components.
+Angular 21 SPA, standalone components.
 
-## Development Commands
+> Cross-cutting bug patterns: [`.claude/rules/common-gotchas.md`](../.claude/rules/common-gotchas.md).
+> Debugging playbooks: [`.claude/rules/troubleshooting.md`](../.claude/rules/troubleshooting.md).
+> Visual catalog (colors, mixins, button styles, checklist): [`/docs/frontend/design-system.md`](../docs/frontend/design-system.md). Open it when you're building UI.
+
+## Commands (from `frontend/`)
 
 ```bash
-# Install dependencies
 npm install
-
-# Start development server (http://localhost:4200)
-npm start
-# or
-ng serve
-
-# Build for production
+npm start                 # http://localhost:4200
 npm run build
-# or
-ng build
-
-# Build with watch mode
 npm run watch
-
-# Run unit tests with Karma
 npm test
-# or
-ng test
-
-# Generate new component/service/etc
 ng generate component <name>
-ng generate service <name>
+ng generate service   <name>
 ```
 
-## Project Structure
+## Layout
 
 ```
 frontend/src/app/
-├── auth/
-│   ├── auth.service.ts              # Auth state (BehaviorSubject), login/logout
-│   └── google-login/                # Google OAuth login component
+├── auth/                # AuthService (BehaviorSubject), Google login
 ├── features/
-│   ├── lessons/
-│   │   ├── components/
-│   │   │   ├── home/                # Main dashboard (route: /)
-│   │   │   ├── lesson-editor/       # Create/edit lessons (route: /create-lesson, lazy)
-│   │   │   └── lesson-viewer/       # View lesson content (route: /lesson/:id, lazy)
-│   │   ├── models/                  # course.interface, lesson.interface, exercise.interface
-│   │   └── services/                # lesson.service, lesson-form.service
-│   └── users/
-│       ├── components/
-│       │   ├── leaderboard/         # User rankings
-│       │   └── profile/             # User profile & achievements
-│       ├── models/                  # leaderboard.interface, user.model
-│       └── services/               # leaderboard.service
-├── help/                            # Help & FAQ (component + service)
-├── nav-bar/                         # Navigation sidebar
-├── not-found/                       # 404 page (lazy loaded)
+│   ├── lessons/         # home, lesson-editor (lazy), lesson-viewer (lazy)
+│   └── users/           # leaderboard, profile
+├── help/
+├── nav-bar/
+├── not-found/           # lazy
 ├── shared/
-│   ├── _buttons.scss               # Shared button mixin (@include buttons.system)
-│   ├── _cards.scss                 # Shared card mixin (@include cards.system)
-│   ├── _mixins.scss                # Shared visual mixins: glass-card (import as `@use '...shared/mixins' as mixins;`)
-│   ├── _state-feedback.scss        # State-based feedback styling (correct/incorrect/warning) with gradients and glows
-│   ├── components/
-│   │   └── editor/                  # EditorJS ControlValueAccessor wrapper + dark theme
+│   ├── _buttons.scss        # buttons.system
+│   ├── _cards.scss          # cards.system
+│   ├── _mixins.scss         # glass-card
+│   ├── _state-feedback.scss # correct/incorrect/warning
+│   ├── components/editor/   # EditorJS ControlValueAccessor
 │   └── services/
-├── app.routes.ts                    # Route definitions
-└── app.config.ts                    # App configuration & providers
+├── app.routes.ts
+└── app.config.ts
 ```
 
-## Key Patterns
+## Conventions (must-follow)
 
-- Uses **standalone components** (no NgModule) — Angular 21+ approach
-- **Routing** is defined in `app.routes.ts`
-- **Lazy loading** for dynamic routes (lesson/:id, create-lesson, 404)
-- **Environment variables** via `@ngx-env/builder` (prefix: `NG_` or `BACKEND_`)
-- **State management**: Service-based with RxJS Observables (no Redux/NgRx)
-  - AuthService uses BehaviorSubject for auth state
-  - LessonService uses Subject for event broadcasting
-- **Dependency injection**: Always use `inject()` function — do NOT use constructor injection
-- **Subscription cleanup** via `takeUntilDestroyed(DestroyRef)` operator
-- **Component styles**: Always use SCSS (configured in `angular.json`)
-- **Bootstrap 5** is included but should be used minimally (prefer custom design system)
-- **ngx-toastr v20** is installed — providers: `provideAnimationsAsync()` + `provideToastr()` in `app.config.ts`; base CSS imported via `angular.json` styles; custom theme in `src/app/shared/_toastr.scss`
+- **Standalone components only** — no `NgModule`.
+- **`inject()`** — never constructor injection.
+- **Lazy load** dynamic routes (`lesson/:id`, `create-lesson`, `**`).
+- **Subscriptions** — `takeUntilDestroyed(this.destroyRef)`.
+- **State** — service-based with RxJS Observables. `AuthService` uses `BehaviorSubject`. `LessonService` uses `Subject` for events. No NgRx.
+- **HTTP** — always `withCredentials: true`. Convert to promise with `firstValueFrom()`.
+- **Forms** — Reactive Forms with typed `FormGroup<T>`. Factory services for complex forms (e.g. `lesson-form.service.ts`). `NonNullableFormBuilder`.
+- **Functional `CanActivateFn`** — class-based `CanActivate` is deprecated. `inject()` works inside functional guards. `returnUrl`: pass `state.url`, validate with `startsWith('/')` to block open redirects. Stack guards: `canActivate: [authGuard, contentGuard]`.
+- **Roles** — `isAdmin` is strictly Admin role. `isContentCreator` is separate. Both come from the `roles: string[]` array in `/api/auth/is-admin` (the boolean `isAdmin` field in the DTO is ignored).
+- **Env vars** via `@ngx-env/builder` — prefix `NG_` or `BACKEND_`. `BACKEND_API_URL=/api` (relative — nginx proxies).
+- **ngx-toastr v20** — `provideAnimationsAsync()` + `provideToastr()` in `app.config.ts`. Theme in `shared/_toastr.scss`, scoped to `.toast-auth`.
 
-## Environment Variables
+### Performance anti-patterns
 
-Frontend env vars are passed as **build arguments** in `docker-compose.yml`, not via a secrets file:
+- ❌ Methods in template bindings — re-runs on every CD cycle. Pre-compute in `ngOnInit`. `[innerHTML]="parsedContent"` not `[innerHTML]="parseContent(lesson.content)"`.
+- ❌ `transition: all` — enumerate properties.
+- ✅ `Promise.all` for independent page-load fetches.
+- ✅ Pass parent-fetched data as `@Input` instead of refetching in child `ngOnInit`.
 
-```
-NG_GOOGLE_CLIENT_ID=<google-oauth-client-id>
-BACKEND_API_URL=/api            # proxied through nginx; not a direct backend URL
-```
+### Service init
 
-## Angular Patterns & Best Practices
-
-### Authentication Flow
-
-1. User clicks Google sign-in; frontend receives a Google ID token
-2. `AuthService.loginUserWithGoogle()` POSTs the token to `/api/auth/google-login`
-3. Backend validates via Google, creates/fetches user, generates a JWT via `JwtService`
-4. JWT is set as an HttpOnly cookie (`AuthToken`) in the response — nothing stored in localStorage
-5. `AuthService` emits `true` via its `BehaviorSubject` auth state
-6. Components subscribe to `getAuthStatusListener()` for reactive updates
-
-### Auth Guards
-
-- Use functional `CanActivateFn` — class-based `CanActivate` is deprecated in Angular 14+
-- Guards are **synchronous** — `APP_INITIALIZER` resolves auth state before routing starts, so `authService.getIsAuth()` is reliable with no async needed
-- `inject()` works inside `CanActivateFn` — Angular establishes an injection context for functional guards (e.g. `inject(ToastrService)`)
-- `returnUrl` pattern: pass `state.url` as query param to `/google-login`; validate with `startsWith('/')` in `loginUserWithGoogle()` to prevent open redirect attacks
-- Guards live in `src/app/auth/guards/`
-- **Role-based guards**: `authGuard` checks authentication only; `contentGuard` checks `Admin || ContentCreator` for content creation routes — stack them: `canActivate: [authGuard, contentGuard]`
-- **`isAdmin` is strictly Admin role only** — `isContentCreator` is a separate field; both set from `roles: string[]` in the `/api/auth/is-admin` response (the `isAdmin` boolean in that DTO is ignored in favour of the array)
-
-### HTTP Requests
-
-- Always include `withCredentials: true` for cookie-based auth
-- Use `firstValueFrom()` to convert Observables to Promises
-- Handle errors with try-catch blocks
+Services have no lifecycle hooks. Use `APP_INITIALIZER`:
 
 ```typescript
-async login(token: string): Promise<void> {
-  const response = await firstValueFrom(
-    this.httpClient.post<GoogleLoginDto>(
-      `${this.apiUrl}/google-login`,
-      { idToken: token },
-      { withCredentials: true }
-    )
-  );
-}
-```
-
-### Reactive Forms with Type Safety
-
-Complex forms use typed FormGroups for compile-time safety:
-
-```typescript
-// Define form structure
-export interface LessonFormControls {
-  title: FormControl<string>;
-  description: FormControl<string>;
-  exercises: FormArray<FormGroup<ExerciseFormControls>>;
-}
-
-// Create typed FormGroup
-type LessonForm = FormGroup<LessonFormControls>;
-```
-
-**Form Factory Pattern** (see `lesson-form.service.ts`):
-- Factory methods create typed forms
-- Separate factory methods per form type
-- NonNullableFormBuilder ensures non-null values
-
-### SCSS Linter Auto-Formatting
-
-- A linter auto-formats `.scss` files on write — after using the Write tool on a SCSS file, always re-read before any follow-up Edit or you'll get "file modified since read" errors
-- Safe pattern: Write full file → if follow-up edits needed, Read first → then Edit
-
-### Performance Anti-Patterns
-
-- **Never call methods in template bindings** — Angular re-executes them on every change detection cycle (every click, scroll, timer, XHR). Pre-compute the result as a component property instead:
-  - ❌ `[innerHTML]="parseContent(lesson.content)"`
-  - ✅ Compute `this.parsedContent = ...` once in `ngOnInit`/load method, bind with `[innerHTML]="parsedContent"`
-- **Avoid `transition: all`** — forces the browser to watch every CSS property per animation frame; enumerate only the properties that actually change (e.g. `background, color, transform, border-color`)
-- **`Promise.all` for independent page-load fetches** — when two HTTP calls don't depend on each other, fire them in parallel: `const [a, b] = await Promise.all([service.getX(), service.getY()])` halves perceived load time vs. sequential awaits
-- **Pass pre-fetched data as `@Input` instead of re-fetching in child `ngOnInit`** — if a parent already fetches data at load time, pass it down as an input so the child component is instantaneous; avoids a redundant HTTP round-trip on every mount
-
-### Subscription Management
-
-Always clean up subscriptions using `takeUntilDestroyed()`:
-
-```typescript
-private destroyRef = inject(DestroyRef);
-
-ngOnInit() {
-  this.authService.getAuthStatusListener()
-    .pipe(takeUntilDestroyed(this.destroyRef))
-    .subscribe(isAuthenticated => {
-      // Handle auth status
-    });
-}
-```
-
-### Service Initialization Pattern
-
-Services don't have lifecycle hooks — use APP_INITIALIZER for startup logic:
-
-```typescript
-// In app.config.ts
 function initializeAuth(authService: AuthService) {
   return () => authService.initializeAuthState();
 }
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    {
-      provide: APP_INITIALIZER,
-      useFactory: initializeAuth,
-      deps: [AuthService],
-      multi: true
-    }
+    { provide: APP_INITIALIZER, useFactory: initializeAuth, deps: [AuthService], multi: true }
   ]
 };
 ```
 
-### Import Paths
+`APP_INITIALIZER` resolves auth state before routing → guards can be **synchronous** and `authService.getIsAuth()` is reliable.
 
-- Auth service from features: `import { AuthService } from '../../../../auth/auth.service';`
-- Services are at app root, features are nested deeper — count `../` levels carefully
+## Auth flow
 
-### Form Restoration from Backend
+1. Google sign-in → frontend gets ID token.
+2. `AuthService.loginUserWithGoogle()` POSTs to `/api/auth/google-login`.
+3. Backend validates → JWT in HttpOnly `AuthToken` cookie. **Nothing in localStorage.**
+4. `AuthService` emits `true` via `BehaviorSubject`.
+5. Components subscribe to `getAuthStatusListener()` for reactive updates.
 
-When restoring component state from previous submissions:
-- Backend may return data for ALL items (not just completed ones)
-- Distinguish "never attempted" from "attempted incorrectly" by checking discriminator fields
-- Example: `wasAttempted = response.isCorrect || response.correctAnswer !== null`
-- Don't skip restoration based solely on success/failure flags
+## Form ↔ API mapping
 
-### Editor.js Integration
+Form names diverge from backend DTOs:
 
-**Upload Gotchas**:
-- When `uploader.uploadByFile` is provided, Editor.js ignores `field` and `endpoints` config entirely
-- The custom uploader's FormData field name must match the backend `IFormFile` parameter name (`"file"`)
-- Files are **lazily uploaded** — `uploadByFile` returns a `blob:` URL immediately (no request); actual upload happens in `uploadPendingFiles(contentJson)` called by `LessonEditorComponent.onSubmit()`
-- `URL.revokeObjectURL()` called on all pending blob URLs in `ngOnDestroy()` to prevent memory leaks
-- File type is communicated via URL route (`/uploads/image`), NOT the FormData field name
+- `exerciseType` (form) ↔ `type` (DTO discriminator).
+- `question` (FillInBlank form) ↔ `text` (DTO).
+- No `orderIndex` in form; backend auto-calculates from array index.
 
-**Performance Optimization**:
-- Editor onChange fires on ALL interactions (focus, mouse moves, selection changes)
-- Debounce with 300ms timeout + content comparison to prevent excessive saves
-- Track `lastSavedBlocks` (`JSON.stringify(content.blocks)`) — do NOT compare full `save()` output; EditorJS always generates a fresh `time` timestamp making full-string comparison always differ
-- Clear timeout on `ngOnDestroy()` to prevent memory leaks
+Architecture in `exercise.interface.ts`:
 
-The rich text editor implements `ControlValueAccessor` for seamless Reactive Forms integration:
+- `ExerciseFormValue` — discriminated union keyed on `exerciseType`.
+- `CreateExerciseDto` — discriminated union keyed on `type`.
+- `CreateExerciseBase` — shared base.
+- Mapping in `LessonService.mapFormToCreateDto()` (exhaustive switch).
+- `buildLessonPayload()` in `lesson-editor` calls `getRawValue()` per form.
 
-```typescript
-@Component({
-  providers: [{
-    provide: NG_VALUE_ACCESSOR,
-    useExisting: forwardRef(() => EditorComponent),
-    multi: true
-  }]
-})
-export class EditorComponent implements ControlValueAccessor {
-  writeValue(value: string): void { }
-  registerOnChange(fn: any): void { }
-  registerOnTouched(fn: any): void { }
-}
-```
+When restoring from backend submissions: backend returns a response for **every** exercise; distinguish "never attempted" from "attempted incorrectly" via `correctAnswer !== null` (see [`troubleshooting.md`](../.claude/rules/troubleshooting.md)).
 
-**Styling**:
-- Editor component uses external `styleUrl` (not inline `styles`)
-- Dark theme (`::ng-deep` overrides with `!important`) lives in `editor.component.scss`
-- Container styles (glass background, border, focus state) also in `editor.component.scss`
-- Consuming components (e.g. lesson-editor) should NOT add Editor.js `::ng-deep` overrides
+## Editor.js
 
-Content is stored as JSON in Editor.js format.
-
-### Component Organization
-
-```
-feature/
-├── feature.component.ts      # Main component (standalone)
-├── feature.component.html    # Template
-├── feature.component.scss    # Styles (SCSS)
-├── feature.service.ts        # Backend communication
-├── feature.interface.ts      # TypeScript interfaces
-└── feature-form.service.ts   # Form factory (if complex forms)
-```
-
-### Form → API Mapping Pattern
-
-**Form controls use different property names than backend DTOs:**
-- Form: `exerciseType` → Backend: `type` (JSON polymorphic discriminator)
-- Form: `question` (FillInBlank) → Backend: `text`
-- Form: no `orderIndex` → Backend: auto-calculated from array index
-
-**Architecture:** Typed discriminated unions in `exercise.interface.ts`:
-- `ExerciseFormValue` — union of 4 form value types keyed on `exerciseType`
-- `CreateExerciseDto` — union of 4 backend DTO types keyed on `type`
-- `CreateExerciseBase` — shared base fields (lessonId, title, points, etc.)
-- Mapping done in `LessonService.mapFormToCreateDto()` with exhaustive switch
-- `buildLessonPayload()` in lesson-editor just calls `getRawValue()` on each form
-
-## Adding a New Component/Feature
-
-1. Create component folder with files:
-   - `component-name.component.ts` (standalone: true)
-   - `component-name.component.html`
-   - `component-name.component.scss`
-   - `component-name.service.ts` (if backend communication needed)
-   - `component-name.interface.ts` (for type definitions)
-2. Add route to `app.routes.ts`
-   - Use lazy loading for dynamic routes: `loadComponent: () => import(...)`
-3. Update navigation in `nav-bar` component if needed
-4. Follow design system guidelines (see Design System section below)
-5. For services:
-   - Use `providedIn: 'root'` for singleton services
-   - Inject dependencies via `inject()` function
-   - Use HttpClient with `withCredentials: true` for authenticated requests
-6. For forms:
-   - Use Reactive Forms with typed FormGroups
-   - Create factory services for complex forms (see `lesson-form.service.ts`)
-   - Implement ControlValueAccessor for custom form controls
+- Implements `ControlValueAccessor` for Reactive Forms.
+- `uploadByFile` returns `blob:` immediately; actual upload runs later in `uploadPendingFiles(contentJson)` from `LessonEditorComponent.onSubmit()`.
+- Custom uploader's FormData field name MUST equal backend `IFormFile` parameter name (`"file"`).
+- File type travels via URL route (`/uploads/image`), NOT FormData field name.
+- Editor `onChange` fires on every interaction. Debounce 300ms + diff `JSON.stringify(content.blocks)` (NOT full `save()` — `time` always changes). Clear timeout in `ngOnDestroy()`. Revoke pending blob URLs in `ngOnDestroy()`.
+- Dark theme + container styles live in `editor.component.scss` (`::ng-deep` overrides with `!important`). Consuming components MUST NOT add their own Editor.js overrides.
 
 ## Routes
 
-| Path | Component | Lazy Loaded | Description |
-|------|-----------|-------------|-------------|
-| `/` | HomeComponent | No | Main dashboard with learning path |
-| `/google-login` | GoogleLoginComponent | No | OAuth login page |
-| `/create-lesson` | LessonEditorComponent | Yes | Lesson creation form with Editor.js |
-| `/lesson/:id` | LessonViewerComponent | Yes | Display lesson content |
-| `/profile` | ProfileComponent | No | User profile and achievements |
-| `/leaderboard` | LeaderboardComponent | No | User rankings |
-| `/help` | HelpComponent | No | Help and FAQ |
-| `/**` | NotFoundComponent | Yes | 404 page |
+| Path | Component | Lazy |
+|------|-----------|:----:|
+| `/` | HomeComponent | — |
+| `/google-login` | GoogleLoginComponent | — |
+| `/create-lesson` | LessonEditorComponent | ✓ |
+| `/lesson/:id` | LessonViewerComponent | ✓ |
+| `/profile` | ProfileComponent | — |
+| `/leaderboard` | LeaderboardComponent | — |
+| `/help` | HelpComponent | — |
+| `/**` | NotFoundComponent | ✓ |
 
-## Design System
+## Component layout convention
 
-**CRITICAL: All new components and pages MUST follow these design guidelines for visual consistency.**
-
-### CSS Conventions
-
-- **No `!important`** — increase specificity instead (exception: Editor.js overrides via `::ng-deep`)
-- **Use `rem` units** for new styles, not `px` — base is 16px
-- **SCSS selector scope**: Nesting `.child {}` inside `.parent {}` compiles to `.parent .child` — it does NOT apply when `.child` appears under a different parent. Define utility classes (e.g. `.icon`) separately in each context they're used.
-- **Reuse CSS variables** from `src/styles.scss` (colors, radii, shadows, glass effects) — **never hardcode color values** (e.g., use `var(--accent)` not `#7c5cff`)
-- **Use TypeScript enums** for discrete value sets (time frames, statuses, categories) — never pass raw string literals between components
-- **Reuse mixins** from `styles.scss` via `@use`: `@use '../path/styles.scss' as styles;` then `@include styles.animated-background`
-- **Never use `@import`** for Sass — always use `@use` with a namespace (Dart Sass 3.0 requirement)
-- **`@use` in `styles.scss` must come before `:root {}` and all other rules** — Dart Sass enforces this; violating it causes build errors in every component that imports `styles.scss`
-- **Component styles**: Always use SCSS, use `@use` for `styles.scss` only when mixins are needed
-- **Shared button mixin**: `@use 'path/to/shared/buttons' as buttons;` then `@include buttons.system;` — provides `.btn` with variants (primary, secondary, small, icon-only, link-btn, success, large, no-exercises-btn)
-- **Shared card mixin**: `@use 'path/to/shared/cards' as cards;` then `@include cards.system;` — provides `.card` glass morphism pattern with inner glow border and responsive breakpoint
-- **`glass-card` mixin** (glassmorphic base): `@use 'path/to/shared/mixins' as mixins;` then `@include mixins.glass-card;` — applies background gradient, border, shadow, `backdrop-filter: blur(10px)`, and inner glow `::before`; does NOT include `transition` (callers own animation behaviour)
-- **State feedback mixins**: `@use 'path/to/shared/state-feedback' as state;` — provides consistent correct/incorrect/warning visual treatment with gradients, glows, and overlays (see below)
-- **Never put `transition` inside visual/appearance mixins** — mixins set how something looks; the calling rule defines how it animates (avoids accidentally overriding or duplicating transition declarations)
-- **Shared toastr theme**: Lives in `src/app/shared/_toastr.scss`, imported at the top of `styles.scss` — scoped to `.toast-auth` class
-- **Editor.js dark theme**: Lives in `shared/components/editor/editor.component.scss` with `::ng-deep` — consuming components should NOT duplicate these overrides
-- **Fixing `!important`**: Nest overrides inside parent class for equal specificity + source-order win; `:has()` pseudo-class provides high specificity naturally
-
-### State Feedback Mixins (`shared/_state-feedback.scss`)
-
-For consistent correct/incorrect/warning visual treatment across components. Import with `@use 'path/to/shared/state-feedback' as state;`
-
-**Available mixins:**
-```scss
-// Full feedback box treatment (gradient + overlay + glow)
-@include state.state-feedback(var(--color-correct-rgb), 'top right');
-
-// Gradient background only (customizable opacity)
-@include state.state-gradient-background($color-rgb, $opacity-start: 0.15, $opacity-end: 0.1, $border-opacity: 0.4, $glow-intensity: 0.15);
-
-// Radial gradient overlay via ::before
-@include state.radial-overlay($color-rgb, $position: 'top right', $opacity: 0.15, $radius: 0.875rem);
-
-// Colored box-shadow glow
-@include state.state-glow($color-rgb, $intensity: 0.2, $spread: 1rem);
-
-// Lighter treatment for option buttons
-@include state.option-state($color-rgb, $opacity: 0.12);
+```
+feature/
+├── feature.component.ts        # standalone: true
+├── feature.component.html
+├── feature.component.scss
+├── feature.service.ts          # if backend
+├── feature.interface.ts
+└── feature-form.service.ts     # if complex forms
 ```
 
-**Example usage:**
-```scss
-.feedback.correct {
-  @include state.state-feedback(var(--color-correct-rgb), 'top right');
-  @include state.state-gradient-background(var(--color-correct-rgb), 0.18, 0.12);
-}
+## Design system
 
-.option.incorrect {
-  @include state.option-state(var(--color-error-rgb));
-}
-```
+Quick rules — full catalog in [`/docs/frontend/design-system.md`](../docs/frontend/design-system.md):
 
-### Color Palette (CSS Custom Properties)
+- **No hardcoded hex/rgba** — use CSS vars (`var(--accent)`; `rgba(var(--accent-rgb), 0.4)`).
+- **`rem` units only.** Base is 16px.
+- **No `!important`** — increase specificity (Editor.js `::ng-deep` is the documented exception).
+- **`@use` only**, never `@import`. `@use 'shared/styles' as styles;` then `@include styles.animated-background`.
+- **`transition: all` is banned.**
+- **No `transition` inside visual mixins** — caller owns animation.
+- **Reuse mixins**: `buttons.system`, `cards.system`, `mixins.glass-card`, `state-feedback.*`.
+- **A linter auto-formats `.scss` on write** — re-`Read` before any follow-up `Edit` or you'll hit "file modified since read".
 
-Use CSS variables defined in `src/styles.scss`:
+## Known limitations
 
-```scss
-// Backgrounds
---bg-dark: #0f1419;      // Darkest background
---bg: #1a2429;           // Main background
---panel: #1e2732;        // Panel/card backgrounds
-
-// Accent Colors
---accent: #7c5cff;       // Primary purple accent
---accent-rgb: 124, 92, 255; // RGB channels for rgba() usage: rgba(var(--accent-rgb), 0.4)
---accent-light: #9178ff; // Lighter purple (hover states, links)
---accent-dark: #5a3ce6;  // Darker purple (gradients, shadows)
-
-// Admin/Privilege Colors
---admin-gold: #ffc107;  // Golden accent for admin badges/overrides
---admin-gold-dark: #ffa000; // Darker gold for borders/shadows
-
-// Text Colors
---white: #ffffff;        // Primary text
---text-secondary: #b8c4cf; // Secondary text
---muted: #8b98a5;        // Muted/tertiary text
-
-// Glass Effects
---glass: rgba(255,255,255,0.04);   // Subtle glass overlay
---glass-hover: rgba(255,255,255,0.08); // Glass hover state
---border: rgba(255,255,255,0.08);  // Subtle borders
-```
-
-### Typography
-
-- **Font Family**: `"Bricolage Grotesque", sans-serif` (loaded from Google Fonts)
-- **Primary Text**: `var(--white)` with font weights 600-800
-- **Secondary Text**: `var(--text-secondary)` with font weight 500
-- **Muted Text**: `var(--muted)` for disclaimers, terms, etc.
-
-**Heading Styles:**
-```scss
-.title {
-  font-size: 31px;
-  font-weight: 800;
-  letter-spacing: -0.3px;
-  background: linear-gradient(135deg, var(--white) 0%, rgba(255,255,255,0.9) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.subtitle {
-  color: var(--text-secondary);
-  font-size: 18px;
-  font-weight: 500;
-}
-```
-
-### Border Radius
-
-- **Cards/Panels**: `var(--radius)` = `16px`
-- **Buttons/Pills**: `var(--radius-sm)` = `100px` (fully rounded)
-
-### Shadows
-
-```scss
---shadow: 0 20px 60px rgba(0,0,0,0.5);  // Default shadow for cards
---shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);  // Purple glow on hover
-```
-
-### Glass Morphism Pattern
-
-**All cards and panels should use glassmorphic design:**
-
-```scss
-.card {
-  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
-  border-radius: var(--radius);
-  padding: 38px 40px;
-  box-shadow: var(--shadow);
-  border: 1px solid var(--border);
-  backdrop-filter: blur(10px);
-  position: relative;
-
-  // Inner glow border effect
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: var(--radius);
-    padding: 1px;
-    background: linear-gradient(135deg, rgba(124, 92, 255, 0.2), transparent 50%, rgba(145, 120, 255, 0.1));
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
-}
-```
-
-### Button Styles
-
-**Primary Button (Call-to-Action):**
-```scss
-.btn.primary {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-  box-shadow: 0 8px 24px rgba(124, 92, 255, 0.25), 0 16px 48px rgba(90, 60, 230, 0.15);
-  border-radius: var(--radius-sm);
-  padding: 14px 18px;
-  height: 50px;
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--white);
-  border: 1px solid rgba(255,255,255,0.1);
-  cursor: pointer;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(124, 92, 255, 0.35), 0 20px 60px rgba(90, 60, 230, 0.25);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-}
-```
-
-**OAuth/Secondary Buttons:**
-```scss
-.btn.oauth {
-  background: var(--glass);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 14px 18px;
-  height: 50px;
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--white);
-  cursor: pointer;
-  transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    background: var(--glass-hover);
-    border-color: rgba(255,255,255,0.12);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-  }
-}
-```
-
-### Hover Effects
-
-**Standard hover interaction:**
-```scss
-transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
-
-&:hover {
-  transform: translateY(-2px);  // Subtle lift
-  box-shadow: var(--shadow-hover);  // Purple glow
-}
-
-&:active {
-  transform: translateY(0);  // Press down effect
-}
-```
-
-### Links
-
-```scss
-.link {
-  color: var(--accent-light);
-  text-decoration: none;
-  transition: color 150ms ease;
-  border-bottom: 1px solid transparent;
-
-  &:hover {
-    color: var(--accent-light);
-    border-bottom-color: var(--accent-light);
-  }
-}
-```
-
-### Sidebar/Navigation Pattern
-
-**Example from nav-bar component:**
-```scss
-#mainAside {
-  border-right: 2px solid #3b4951;
-  padding: 1.5em 2.2em 1em 1.3em;
-  height: 100vh;
-  width: 18em;
-
-  .sideBarLinks {
-    list-style: none;
-
-    li {
-      a {
-        text-transform: uppercase;
-        padding: .8em 1em;
-        color: var(--primary-color);
-        font-weight: 700;
-        letter-spacing: .08px;
-        text-decoration: none;
-      }
-
-      &:hover {
-        background-color: #3b4951;
-        border-radius: 5%;
-      }
-    }
-  }
-}
-```
-
-### Responsive Breakpoints
-
-```scss
-// Tablet
-@media (max-width: 1024px) {
-  // Switch to single column, adjust padding
-}
-
-// Mobile
-@media (max-width: 480px) {
-  // Reduce font sizes, tighter padding
-}
-```
-
-### Animations
-
-**Background pulse effect:**
-```scss
-&::before {
-  content: '';
-  position: absolute;
-  background: radial-gradient(circle, rgba(124, 92, 255, 0.1) 0%, transparent 40%);
-  animation: pulse 8s ease-in-out infinite;
-}
-```
-
-### Accessibility
-
-- All interactive elements must have `aria-label` attributes
-- Use semantic HTML (`<aside>`, `<nav>`, `<main>`, etc.)
-- Focus states: `outline: 2px solid var(--accent); outline-offset: 3px;`
-- Use `role` attributes where appropriate
-
-### Layout Patterns
-
-**Split-screen auth pattern (google-login component):**
-```scss
-.page {
-  display: grid;
-  grid-template-columns: 1fr 520px;  // Logo side | Form side
-  min-height: 100vh;
-  background: var(--bg);
-}
-```
-
-### Component Styling Checklist
-
-When creating new components, ensure:
-- [ ] Uses CSS custom properties from `:root`
-- [ ] Follows glassmorphism pattern for cards/panels
-- [ ] Buttons use defined `.btn.primary` or `.btn.oauth` styles
-- [ ] Hover effects include `transform: translateY(-2px)` and purple shadow
-- [ ] Border radius uses `var(--radius)` (16px) or `var(--radius-sm)` (100px) — never hardcode
-- [ ] Typography uses `var(--font-family)` and correct font weights
-- [ ] Links use accent-light color with underline on hover
-- [ ] Responsive breakpoints at 1024px and 480px
-- [ ] Accessibility attributes present (aria-label, role, etc.)
-- [ ] Focus states defined with purple accent outline
-- [ ] **All sizes in `rem`**, not `px` — base is 16px (e.g. `24px` → `1.5rem`)
-- [ ] **No hardcoded hex/rgba colors** — use CSS vars; for rgba tints use `rgba(var(--accent-rgb), 0.15)` pattern
-- [ ] **Extract repeated easing** as a Sass `$_ease` variable at the top of the file
-- [ ] **`transition: all` is banned** — enumerate only the properties that actually animate
-
-### Design Token Reference
-
-Tokens in `src/styles.scss` `:root` — use these instead of raw values:
-
-| Token | Value | Use for |
-|-------|-------|---------|
-| `--color-correct` | `#10b981` | Correct answer states (border, icon, text) |
-| `--color-correct-rgb` | `16, 185, 129` | `rgba(var(--color-correct-rgb), 0.15)` tints |
-| `--color-correct-light` | `#34d399` | Feedback text on correct state |
-| `--color-error-light` | `#f87171` | Feedback text on incorrect state |
-| `--color-xp` | `#fbbf24` | XP/points highlights |
-| `--color-xp-rgb` | `251, 191, 36` | XP rgba tints |
-| `--muted-rgb` | `139, 152, 165` | `rgba(var(--muted-rgb), 0.1)` for muted-tinted backgrounds |
-| `--bg-rgb` | `26, 36, 41` | `rgba(var(--bg-rgb), 0.95)` for overlays on the page background |
-| `--border-highlight` | `rgba(255,255,255,0.2)` | Bright border on hover/active states |
-
-## Known Limitations
-
-- Help service returns mock data (not yet integrated with backend)
-- **Frontend/Backend property name mismatches cause silent failures** in Angular templates
-  - `@switch` statements won't match if property name is wrong
-  - Template expressions return undefined without error
-  - Always verify API response matches TypeScript interface property names
-- `Exercise` interface in `exercise.interface.ts` must include `isLocked: boolean` — backend `ExerciseDto` returns it, exercise-viewer depends on it
-- **`submitExerciseAnswer` returns `SubmitAnswerResponse`, not `ExerciseSubmitResult`** — the backend submit endpoint always includes `lessonProgress` in the response body; type the service call and the `submissionResults` map as `SubmitAnswerResponse` to avoid TS2322 mismatches on `currentSubmission` and `getSubmission()` getters
-
-## Common Debugging Scenarios
-
-### 400 Bad Request on POST/PUT
-
-If you get 400 errors with no details:
-1. **Check ModelState is enabled**: Ensure backend `SuppressModelStateInvalidFilter` is NOT set to true
-2. **Check Network tab**: Response body shows which field failed validation
-3. **Common causes**:
-   - Enum sent as string but backend expects int (add JsonStringEnumConverter to backend enum)
-   - Type discriminator missing or not first property (JSON polymorphism)
-   - Required field is null or empty
-
-### Cookie Not Being Sent
-
-If cookies aren't being sent from frontend to backend:
-
-1. **Verify proxy configuration**: Frontend nginx should proxy `/api` to backend
-2. **Check CORS**: Must have `AllowCredentials()` with specific origin (not wildcard)
-3. **Frontend requests**: Must include `withCredentials: true` in HTTP requests
-4. **Cookie settings**: `SameSite=Lax` works with proxy (same-origin), otherwise needs `SameSite=None` + `Secure=true`
-
-### Frontend/Backend Interface Mismatch
-
-If data loads in API but not in UI:
-
-1. **Check API response in Network tab** — Copy full JSON response
-2. **Compare property names** — Backend may use different names than frontend interfaces
-3. **Common mismatches**:
-   - Backend: `type: "MultipleChoice"` → Frontend expects: `exerciseType`
-   - Backend: `text: "..."` (FillInBlank) → Frontend expects: `question`
-   - Backend: `difficultyLevel: 0` (number) → Frontend expects: `DifficultyLevel` enum
-4. **Fix**: Update frontend interfaces to match API response structure
-5. **Symptom**: `@switch` statements won't match, template expressions return undefined without errors
+- Help service returns mock data (not yet backend-integrated).
+- Frontend/backend property-name mismatches fail **silently** — `@switch` doesn't match, expressions return `undefined` with no error. Always verify the API response matches your interface.
+- `Exercise` interface MUST include `isLocked: boolean` — `exercise-viewer` depends on it.
+- `submitExerciseAnswer` returns `SubmitAnswerResponse` (includes `lessonProgress`), **not** `ExerciseSubmitResult`. Type the call and the `submissionResults` map accordingly to avoid TS2322 on `currentSubmission`.
