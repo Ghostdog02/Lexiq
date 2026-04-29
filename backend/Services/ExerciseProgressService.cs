@@ -32,9 +32,13 @@ public class ExerciseProgressService(
     {
         var exercise =
             await _context
-                .Exercises.Include(e => (e as MultipleChoiceExercise)!.Options)
+                .Exercises
+                .Include(e => (e as FillInBlankExercise)!.Options)
+                .Include(e => (e as ListeningExercise)!.Options)
+                .Include(e => (e as ImageChoiceExercise)!.Options)
+                .Include(e => (e as AudioMatchingExercise)!.Pairs)
                 .Include(e => e.Lesson)
-                .FirstOrDefaultAsync(e => e.Id == exerciseId)
+                .FirstOrDefaultAsync(e => e.ExerciseId == exerciseId)
             ?? throw new ArgumentException("Exercise not found");
 
         // Check if user can bypass locks (Admin or ContentCreator)
@@ -76,6 +80,8 @@ public class ExerciseProgressService(
                 IsCompleted = isCorrect,
                 PointsEarned = pointsEarned,
                 CompletedAt = isCorrect ? DateTime.UtcNow : null,
+                User = null!,
+                Exercise = null!,
             };
 
             _context.UserExerciseProgress.Add(progress);
@@ -115,19 +121,28 @@ public class ExerciseProgressService(
             ? null
             : exercise switch
             {
-                MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)
-                    ?.OptionText,
-                FillInBlankExercise fib => fib.CorrectAnswer,
-                TranslationExercise te => te.TargetText,
-                ListeningExercise le => le.CorrectAnswer,
+                FillInBlankExercise fib => fib.Options.FirstOrDefault(o => o.IsCorrect)
+                    ?.ExerciseOptionId,
+                ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)
+                    ?.ExerciseOptionId,
+                TrueFalseExercise tf => tf.CorrectAnswer.ToString().ToLowerInvariant(),
+                ImageChoiceExercise ice => ice.Options.FirstOrDefault(o => o.IsCorrect)
+                    ?.ImageOptionId,
+                AudioMatchingExercise => "See explanation for correct pairings",
                 _ => null,
             };
+
+        var explanation = exercise switch
+        {
+            TrueFalseExercise tf => tf.Explanation,
+            _ => null
+        };
 
         return new ExerciseSubmitResult(
             IsCorrect: isCorrect,
             PointsEarned: pointsEarned,
             CorrectAnswer: correctAnswer,
-            Explanation: exercise.Explanation
+            Explanation: explanation
         );
     }
 
@@ -136,7 +151,7 @@ public class ExerciseProgressService(
         var lesson =
             await _context
                 .Lessons.Include(l => l.Exercises)
-                .FirstOrDefaultAsync(l => l.Id == lessonId)
+                .FirstOrDefaultAsync(l => l.LessonId == lessonId)
             ?? throw new ArgumentException("Lesson not found");
 
         var fullProgress = await _lessonService.GetFullLessonProgressAsync(userId, lessonId);
@@ -159,7 +174,7 @@ public class ExerciseProgressService(
             IsLastInCourse: isLastInCourse,
             NextLesson: nextLesson != null
                 ? new NextLessonInfo(
-                    nextLesson.Id,
+                    nextLesson.LessonId,
                     nextLesson.Title,
                     nextLesson.CourseId,
                     unlockStatus == UnlockStatus.Unlocked,
@@ -173,124 +188,63 @@ public class ExerciseProgressService(
     {
         return exercise switch
         {
-            MultipleChoiceExercise mce => ValidateMultipleChoice(mce, answer),
-            FillInBlankExercise fib => ValidateFillInBlank(fib, answer),
-            TranslationExercise te => ValidateTranslation(te, answer),
-            ListeningExercise le => ValidateListening(le, answer),
+            FillInBlankExercise fib => ValidateOptionBased(fib.Options, answer),
+            ListeningExercise le => ValidateOptionBased(le.Options, answer),
+            TrueFalseExercise tf => ValidateTrueFalse(tf, answer),
+            ImageChoiceExercise ice => ValidateImageChoice(ice, answer),
+            AudioMatchingExercise ame => ValidateAudioMatching(ame, answer),
             _ => false,
         };
     }
 
-    private static bool ValidateMultipleChoice(MultipleChoiceExercise exercise, string answer)
+    private static bool ValidateOptionBased(List<ExerciseOption> options, string answer)
     {
-        var selectedOption = exercise.Options.FirstOrDefault(o => o.Id == answer);
+        var selectedOption = options.FirstOrDefault(o => o.ExerciseOptionId == answer);
         return selectedOption?.IsCorrect ?? false;
     }
 
-    private static bool ValidateFillInBlank(FillInBlankExercise exercise, string answer)
+    private static bool ValidateTrueFalse(TrueFalseExercise exercise, string answer)
     {
-        return ValidateTextAnswer(
-            answer,
-            exercise.CorrectAnswer,
-            exercise.AcceptedAnswers,
-            exercise.CaseSensitive,
-            exercise.TrimWhitespace
-        );
+        if (!bool.TryParse(answer, out var userAnswer))
+            return false;
+
+        return userAnswer == exercise.CorrectAnswer;
     }
 
-    private static bool ValidateTranslation(TranslationExercise exercise, string answer)
+    private static bool ValidateImageChoice(ImageChoiceExercise exercise, string answer)
     {
-        var userInput = answer.Trim().ToLowerInvariant();
-        var target = exercise.TargetText.Trim().ToLowerInvariant();
-
-        if (userInput.Length == 0 && target.Length == 0)
-            return true;
-
-        var similarity = CalculateSimilarity(userInput, target);
-        return similarity >= exercise.MatchingThreshold;
+        var selectedOption = exercise.Options.FirstOrDefault(o => o.ImageOptionId == answer);
+        return selectedOption?.IsCorrect ?? false;
     }
 
-    private static bool ValidateListening(ListeningExercise exercise, string answer)
+    private static bool ValidateAudioMatching(AudioMatchingExercise exercise, string answer)
     {
-        return ValidateTextAnswer(
-            answer,
-            exercise.CorrectAnswer,
-            exercise.AcceptedAnswers,
-            exercise.CaseSensitive,
-            trimWhitespace: true
-        );
-    }
-
-    private static bool ValidateTextAnswer(
-        string answer,
-        string correctAnswer,
-        string? acceptedAnswers,
-        bool caseSensitive,
-        bool trimWhitespace
-    )
-    {
-        var userInput = trimWhitespace ? answer.Trim() : answer;
-        var expected = trimWhitespace ? correctAnswer.Trim() : correctAnswer;
-
-        if (!caseSensitive)
+        // Expected format: "pairId1:imageUrl1,pairId2:imageUrl2,..."
+        try
         {
-            userInput = userInput.ToLowerInvariant();
-            expected = expected.ToLowerInvariant();
-        }
-
-        if (userInput == expected)
-            return true;
-
-        if (!string.IsNullOrEmpty(acceptedAnswers))
-        {
-            var alternatives = acceptedAnswers
+            var userPairs = answer
                 .Split(',')
-                .Select(a =>
+                .Select(p =>
                 {
-                    var alt = trimWhitespace ? a.Trim() : a;
-                    return caseSensitive ? alt : alt.ToLowerInvariant();
-                });
+                    var parts = p.Split(':');
+                    return parts.Length == 2 ? (pairId: parts[0], imageUrl: parts[1]) : default;
+                })
+                .Where(p => p != default)
+                .ToList();
 
-            return alternatives.Contains(userInput);
+            if (userPairs.Count != exercise.Pairs.Count)
+                return false;
+
+            // Check all user pairs match the exercise pairs
+            return userPairs.All(up =>
+                exercise.Pairs.Any(ep =>
+                    ep.AudioMatchPairId == up.pairId && ep.ImageUrl == up.imageUrl
+                )
+            );
         }
-
-        return false;
-    }
-
-    private static double CalculateSimilarity(string s1, string s2)
-    {
-        var longer = s1.Length >= s2.Length ? s1 : s2;
-        var shorter = s1.Length >= s2.Length ? s2 : s1;
-
-        if (longer.Length == 0)
-            return 1.0;
-
-        var distance = LevenshteinDistance(longer, shorter);
-        return (double)(longer.Length - distance) / longer.Length;
-    }
-
-    private static int LevenshteinDistance(string s1, string s2)
-    {
-        var matrix = new int[s2.Length + 1, s1.Length + 1];
-
-        for (var i = 0; i <= s2.Length; i++)
-            matrix[i, 0] = i;
-
-        for (var j = 0; j <= s1.Length; j++)
-            matrix[0, j] = j;
-
-        for (var i = 1; i <= s2.Length; i++)
+        catch
         {
-            for (var j = 1; j <= s1.Length; j++)
-            {
-                var cost = s2[i - 1] == s1[j - 1] ? 0 : 1;
-                matrix[i, j] = Math.Min(
-                    Math.Min(matrix[i - 1, j] + 1, matrix[i, j - 1] + 1),
-                    matrix[i - 1, j - 1] + cost
-                );
-            }
+            return false;
         }
-
-        return matrix[s2.Length, s1.Length];
     }
 }

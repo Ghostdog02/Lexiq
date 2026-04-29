@@ -13,16 +13,22 @@ public class ExerciseService(BackendDbContext context)
     {
         return await _context
             .Exercises.Where(e => e.LessonId == lessonId)
-            .Include(e => (e as MultipleChoiceExercise)!.Options)
-            .OrderBy(e => e.OrderIndex)
+            .Include(e => (e as FillInBlankExercise)!.Options)
+            .Include(e => (e as ListeningExercise)!.Options)
+            .Include(e => (e as ImageChoiceExercise)!.Options)
+            .Include(e => (e as AudioMatchingExercise)!.Pairs)
             .ToListAsync();
     }
 
     public async Task<Exercise?> GetExerciseByIdAsync(string id)
     {
         return await _context
-            .Exercises.Include(e => (e as MultipleChoiceExercise)!.Options)
-            .FirstOrDefaultAsync(e => e.Id == id);
+            .Exercises
+            .Include(e => (e as FillInBlankExercise)!.Options)
+            .Include(e => (e as ListeningExercise)!.Options)
+            .Include(e => (e as ImageChoiceExercise)!.Options)
+            .Include(e => (e as AudioMatchingExercise)!.Pairs)
+            .FirstOrDefaultAsync(e => e.ExerciseId == id);
     }
 
     public async Task<Exercise> CreateExerciseAsync(CreateExerciseDto dto)
@@ -30,85 +36,91 @@ public class ExerciseService(BackendDbContext context)
         if (string.IsNullOrEmpty(dto.LessonId))
             throw new ArgumentException("LessonId is required when creating an exercise directly.");
 
-        int orderIndex = dto.OrderIndex ?? await GetNextOrderIndexForLessonAsync(dto.LessonId);
-
-        var exercise = MapToEntity(dto, dto.LessonId, orderIndex);
+        var exercise = MapToEntity(dto, dto.LessonId);
 
         _context.Exercises.Add(exercise);
         await _context.SaveChangesAsync();
         return exercise;
     }
 
-    public Exercise MapToEntity(CreateExerciseDto dto, string lessonId, int orderIndex)
+    public Exercise MapToEntity(CreateExerciseDto dto, string lessonId)
     {
         Exercise exercise = dto switch
         {
-            CreateMultipleChoiceExerciseDto mcDto => new MultipleChoiceExercise
+            CreateFillInBlankExerciseDto fibDto => new FillInBlankExercise
             {
                 LessonId = lessonId,
-                Title = mcDto.Title,
-                Question = mcDto.Question,
-                EstimatedDurationMinutes = mcDto.EstimatedDurationMinutes,
-                DifficultyLevel = mcDto.DifficultyLevel,
-                Points = mcDto.Points,
-                OrderIndex = orderIndex,
-                Explanation = mcDto.Explanation,
-                Options = mcDto
+                Instructions = fibDto.Title,
+                DifficultyLevel = fibDto.DifficultyLevel,
+                Points = fibDto.Points,
+                Text = fibDto.Text,
+                Options = fibDto
                     .Options.Select(o => new ExerciseOption
                     {
                         OptionText = o.OptionText,
                         IsCorrect = o.IsCorrect,
-                        OrderIndex = o.OrderIndex,
+                        Explanation = o.Explanation,
                     })
                     .ToList(),
-            },
-            CreateFillInBlankExerciseDto fibDto => new FillInBlankExercise
-            {
-                LessonId = lessonId,
-                Title = fibDto.Title,
-                Question = fibDto.Question,
-                EstimatedDurationMinutes = fibDto.EstimatedDurationMinutes,
-                DifficultyLevel = fibDto.DifficultyLevel,
-                Points = fibDto.Points,
-                OrderIndex = orderIndex,
-                Explanation = fibDto.Explanation,
-                Text = fibDto.Text,
-                CorrectAnswer = fibDto.CorrectAnswer,
-                AcceptedAnswers = fibDto.AcceptedAnswers,
-                CaseSensitive = fibDto.CaseSensitive,
-                TrimWhitespace = fibDto.TrimWhitespace,
             },
             CreateListeningExerciseDto lDto => new ListeningExercise
             {
                 LessonId = lessonId,
-                Title = lDto.Title,
-                Question = lDto.Question,
-                EstimatedDurationMinutes = lDto.EstimatedDurationMinutes,
+                Instructions = lDto.Title,
                 DifficultyLevel = lDto.DifficultyLevel,
                 Points = lDto.Points,
-                OrderIndex = orderIndex,
-                Explanation = lDto.Explanation,
                 AudioUrl = lDto.AudioUrl,
-                CorrectAnswer = lDto.CorrectAnswer,
-                AcceptedAnswers = lDto.AcceptedAnswers,
-                CaseSensitive = lDto.CaseSensitive,
                 MaxReplays = lDto.MaxReplays,
+                Options = lDto
+                    .Options.Select(o => new ExerciseOption
+                    {
+                        OptionText = o.OptionText,
+                        IsCorrect = o.IsCorrect,
+                        Explanation = o.Explanation,
+                    })
+                    .ToList(),
             },
-            CreateTranslationExerciseDto tDto => new TranslationExercise
+            CreateTrueFalseExerciseDto tfDto => new TrueFalseExercise
             {
                 LessonId = lessonId,
-                Title = tDto.Title,
-                Question = tDto.Question,
-                EstimatedDurationMinutes = tDto.EstimatedDurationMinutes,
-                DifficultyLevel = tDto.DifficultyLevel,
-                Points = tDto.Points,
-                OrderIndex = orderIndex,
-                Explanation = tDto.Explanation,
-                SourceText = tDto.SourceText,
-                TargetText = tDto.TargetText,
-                SourceLanguageCode = tDto.SourceLanguageCode,
-                TargetLanguageCode = tDto.TargetLanguageCode,
-                MatchingThreshold = tDto.MatchingThreshold,
+                Instructions = tfDto.Title,
+                DifficultyLevel = tfDto.DifficultyLevel,
+                Points = tfDto.Points,
+                Statement = tfDto.Statement,
+                CorrectAnswer = tfDto.CorrectAnswer,
+                ImageUrl = tfDto.ImageUrl,
+                Explanation = tfDto.Explanation ?? string.Empty,
+            },
+            CreateImageChoiceExerciseDto icDto => new ImageChoiceExercise
+            {
+                LessonId = lessonId,
+                Instructions = icDto.Title,
+                DifficultyLevel = icDto.DifficultyLevel,
+                Points = icDto.Points,
+                Options = icDto
+                    .Options.Select(o => new ImageOption
+                    {
+                        ImageUrl = o.ImageUrl,
+                        AltText = o.AltText,
+                        IsCorrect = o.IsCorrect,
+                        Explanation = o.Explanation,
+                    })
+                    .ToList(),
+            },
+            CreateAudioMatchingExerciseDto amDto => new AudioMatchingExercise
+            {
+                LessonId = lessonId,
+                Instructions = amDto.Title,
+                DifficultyLevel = amDto.DifficultyLevel,
+                Points = amDto.Points,
+                Pairs = amDto
+                    .Pairs.Select(p => new AudioMatchPair
+                    {
+                        AudioUrl = p.AudioUrl,
+                        ImageUrl = p.ImageUrl,
+                        Explanation = p.Explanation,
+                    })
+                    .ToList(),
             },
             _ => throw new ArgumentException("Unknown exercise type", nameof(dto)),
         };
@@ -124,25 +136,13 @@ public class ExerciseService(BackendDbContext context)
             return null;
 
         if (dto.Title != null)
-            exercise.Title = dto.Title;
-
-        if (dto.Question != null)
-            exercise.Question = dto.Question;
-
-        if (dto.EstimatedDurationMinutes.HasValue)
-            exercise.EstimatedDurationMinutes = dto.EstimatedDurationMinutes.Value;
+            exercise.Instructions = dto.Title;
 
         if (dto.DifficultyLevel.HasValue)
             exercise.DifficultyLevel = dto.DifficultyLevel.Value;
 
         if (dto.Points.HasValue)
             exercise.Points = dto.Points.Value;
-
-        if (dto.OrderIndex.HasValue)
-            exercise.OrderIndex = dto.OrderIndex.Value;
-
-        if (dto.Explanation != null)
-            exercise.Explanation = dto.Explanation;
 
         await _context.SaveChangesAsync();
         return exercise;
@@ -165,13 +165,13 @@ public class ExerciseService(BackendDbContext context)
         if (currentExercise == null)
             return false;
 
-        // Find the next exercise in the same lesson by OrderIndex
+        // Find the next exercise in the same lesson by CreatedAt
         var nextExercise = await _context
             .Exercises.Where(e =>
                 e.LessonId == currentExercise.LessonId
-                && e.OrderIndex > currentExercise.OrderIndex
+                && e.CreatedAt > currentExercise.CreatedAt
             )
-            .OrderBy(e => e.OrderIndex)
+            .OrderBy(e => e.CreatedAt)
             .FirstOrDefaultAsync();
 
         if (nextExercise == null)
@@ -190,7 +190,7 @@ public class ExerciseService(BackendDbContext context)
     {
         var firstExercise = await _context
             .Exercises.Where(e => e.LessonId == lessonId)
-            .OrderBy(e => e.OrderIndex)
+            .OrderBy(e => e.CreatedAt)
             .FirstOrDefaultAsync();
 
         if (firstExercise == null)
@@ -203,14 +203,5 @@ public class ExerciseService(BackendDbContext context)
         await _context.SaveChangesAsync();
 
         return true;
-    }
-
-    private async Task<int> GetNextOrderIndexForLessonAsync(string lessonId)
-    {
-        var maxOrderIndex = await _context
-            .Exercises.Where(e => e.LessonId == lessonId)
-            .MaxAsync(e => (int?)e.OrderIndex);
-
-        return (maxOrderIndex ?? -1) + 1;
     }
 }
