@@ -1,14 +1,18 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Database.Entities.Exercises;
 
+[Index(nameof(ExerciseId))]
 public class ExerciseOption
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    [MaxLength(36)]
+    public string ExerciseOptionId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
+    [MaxLength(36)]
     public string ExerciseId { get; set; } = string.Empty;
 
     [Required]
@@ -19,7 +23,8 @@ public class ExerciseOption
     public bool IsCorrect { get; set; } = false;
 
     [Required]
-    public int OrderIndex { get; set; } // Display order (A, B, C, D)
+    [MaxLength(1000)]
+    public required string Explanation { get; set; }
 
     [ForeignKey(nameof(ExerciseId))]
     public Exercise Exercise { get; set; } = null!;
