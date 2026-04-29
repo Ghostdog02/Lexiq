@@ -9,15 +9,15 @@ public static class ContentMappingExtensions
 {
     public static LanguageDto ToDto(this Language entity)
     {
-        return new LanguageDto(entity.Name, entity.FlagIconUrl, entity.Courses.Count);
+        return new LanguageDto(entity.LanguageName, entity.FlagIconUrl, entity.Courses.Count);
     }
 
     public static CourseDto ToDto(this Course entity)
     {
         return new CourseDto(
-            entity.Id,
+            entity.CourseId,
             entity.Title,
-            entity.Language?.Name ?? string.Empty,
+            entity.Language?.LanguageName ?? string.Empty,
             entity.Description,
             entity.EstimatedDurationHours,
             entity.OrderIndex,
@@ -32,13 +32,13 @@ public static class ContentMappingExtensions
     )
     {
         return new LessonDto(
-            entity.Id,
+            entity.LessonId,
             entity.CourseId,
             entity.Course?.Title ?? string.Empty,
             entity.Title,
-            entity.Description,
+            null, // Description removed from Lesson entity
             entity.EstimatedDurationMinutes,
-            entity.OrderIndex,
+            0, // OrderIndex removed from return DTO
             entity.LessonContent,  // Editor.js JSON content
             entity.IsLocked,
             entity.Exercises.Select(e => e.ToDto(exerciseProgress)).ToList(),
@@ -54,83 +54,109 @@ public static class ContentMappingExtensions
         Dictionary<string, UserExerciseProgressDto>? userProgress = null
     )
     {
-        var progress = userProgress?.GetValueOrDefault(entity.Id);
+        var progress = userProgress?.GetValueOrDefault(entity.ExerciseId);
 
         return entity switch
         {
-            MultipleChoiceExercise mce => new MultipleChoiceExerciseDto(
-                mce.Id,
-                mce.LessonId,
-                mce.Title,
-                mce.Question,
-                mce.EstimatedDurationMinutes,
-                mce.DifficultyLevel,
-                mce.Points,
-                mce.OrderIndex,
-                mce.Explanation,
-                mce.IsLocked,
-                progress,
-                mce.Options.Select(o => new ExerciseOptionDto(
-                        o.Id,
-                        o.OptionText,
-                        o.IsCorrect,
-                        o.OrderIndex
-                    ))
-                    .ToList()
-            ),
             FillInBlankExercise fib => new FillInBlankExerciseDto(
-                fib.Id,
+                fib.ExerciseId,
                 fib.LessonId,
-                fib.Title,
-                fib.Question,
-                fib.EstimatedDurationMinutes,
+                fib.Instructions,
+                null,
+                null,
                 fib.DifficultyLevel,
                 fib.Points,
-                fib.OrderIndex,
-                fib.Explanation,
+                0,
+                null,
                 fib.IsLocked,
                 progress,
                 fib.Text,
-                fib.CorrectAnswer,
-                fib.AcceptedAnswers,
-                fib.CaseSensitive,
-                fib.TrimWhitespace
+                fib.Options.Select(o => new ExerciseOptionDto(
+                        o.ExerciseOptionId,
+                        o.OptionText,
+                        o.IsCorrect,
+                        o.Explanation
+                    ))
+                    .ToList()
             ),
             ListeningExercise le => new ListeningExerciseDto(
-                le.Id,
+                le.ExerciseId,
                 le.LessonId,
-                le.Title,
-                le.Question,
-                le.EstimatedDurationMinutes,
+                le.Instructions,
+                null,
+                null,
                 le.DifficultyLevel,
                 le.Points,
-                le.OrderIndex,
-                le.Explanation,
+                0,
+                null,
                 le.IsLocked,
                 progress,
                 le.AudioUrl,
-                le.CorrectAnswer,
-                le.AcceptedAnswers,
-                le.CaseSensitive,
-                le.MaxReplays
+                le.MaxReplays,
+                le.Options.Select(o => new ExerciseOptionDto(
+                        o.ExerciseOptionId,
+                        o.OptionText,
+                        o.IsCorrect,
+                        o.Explanation
+                    ))
+                    .ToList()
             ),
-            TranslationExercise te => new TranslationExerciseDto(
-                te.Id,
-                te.LessonId,
-                te.Title,
-                te.Question,
-                te.EstimatedDurationMinutes,
-                te.DifficultyLevel,
-                te.Points,
-                te.OrderIndex,
-                te.Explanation,
-                te.IsLocked,
+            TrueFalseExercise tf => new TrueFalseExerciseDto(
+                tf.ExerciseId,
+                tf.LessonId,
+                tf.Instructions,
+                null,
+                null,
+                tf.DifficultyLevel,
+                tf.Points,
+                0,
+                tf.Explanation,
+                tf.IsLocked,
                 progress,
-                te.SourceText,
-                te.TargetText,
-                te.SourceLanguageCode,
-                te.TargetLanguageCode,
-                te.MatchingThreshold
+                tf.Statement,
+                tf.CorrectAnswer,
+                tf.ImageUrl
+            ),
+            ImageChoiceExercise ice => new ImageChoiceExerciseDto(
+                ice.ExerciseId,
+                ice.LessonId,
+                ice.Instructions,
+                null,
+                null,
+                ice.DifficultyLevel,
+                ice.Points,
+                0,
+                null,
+                ice.IsLocked,
+                progress,
+                ice.Options.Select(o => new ImageOptionDto(
+                        o.ImageOptionId,
+                        o.ImageUrl,
+                        o.AltText,
+                        o.IsCorrect,
+                        o.Explanation
+                    ))
+                    .ToList()
+            ),
+            AudioMatchingExercise ame => new AudioMatchingExerciseDto(
+                ame.ExerciseId,
+                ame.LessonId,
+                ame.Instructions,
+                null,
+                null,
+                ame.DifficultyLevel,
+                ame.Points,
+                0,
+                null,
+                ame.IsLocked,
+                progress,
+                ame.Pairs.Select(p => new AudioMatchPairDto(
+                        p.AudioMatchPairId,
+                        p.AudioUrl,
+                        p.ImageUrl,
+                        p.Explanation
+                    ))
+                    .ToList()
             ),
             _ => throw new NotImplementedException(
                 $"Mapping for exercise type {entity.GetType().Name} is not implemented"
@@ -143,7 +169,7 @@ public static class ContentMappingExtensions
         return new UserLanguageDto(
             entity.UserId,
             entity.LanguageId,
-            entity.Language?.Name ?? string.Empty,
+            entity.Language?.LanguageName ?? string.Empty,
             entity.Language?.FlagIconUrl,
             entity.EnrolledAt,
             0, // Placeholder
