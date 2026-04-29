@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using Backend.Database.Entities.Users;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Database.Entities.Exercises;
 
@@ -14,29 +16,31 @@ public enum DifficultyLevel
 
 public enum ExerciseType
 {
-    MultipleChoice,
     FillInBlank,
     Listening,
-    Translation,
+    TrueFalse,
+    ImageChoice,
+    AudioMatching,
 }
 
+[Index(nameof(LessonId))]
 public abstract class Exercise
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    [MaxLength(36)]
+    public string ExerciseId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
+    [MaxLength(36)]
     public string LessonId { get; set; } = string.Empty;
 
     [Required]
-    [MaxLength(200)]
-    public required string Title { get; set; }
+    [MaxLength(2000)]
+    public required string Instructions { get; set; }
 
-    [MaxLength(1000)]
-    public string? Question { get; set; }
-
-    [Range(5, 20)]
-    public int? EstimatedDurationMinutes { get; set; }
+    [Required]
+    [MaxLength(450)]
+    public string CreatedById { get; set; } = string.Empty;
 
     [Required]
     public DifficultyLevel DifficultyLevel { get; set; }
@@ -45,13 +49,7 @@ public abstract class Exercise
     [Range(1, int.MaxValue)]
     public int Points { get; set; } = 0; // Points earned for completion
 
-    [MaxLength(1000)]
-    public string? Explanation { get; set; }
-
     public bool IsLocked { get; set; } = true;
-
-    [Required]
-    public int OrderIndex { get; set; } // Position in Lesson
 
     [Required]
     [DataType(DataType.DateTime)]
@@ -59,6 +57,9 @@ public abstract class Exercise
 
     [ForeignKey(nameof(LessonId))]
     public Lesson? Lesson { get; set; }
+
+    [ForeignKey(nameof(CreatedById))]
+    public User? CreatedBy { get; set; }
 
     public List<UserExerciseProgress> ExerciseProgress { get; set; } = [];
 }
