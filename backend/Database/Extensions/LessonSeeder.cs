@@ -18,7 +18,7 @@ public static class LessonSeeder
 
         if (existingLessons.Count > 0)
         {
-            return existingLessons.Select(l => l.Id).ToList();
+            return existingLessons.Select(l => l.LessonId).ToList();
         }
 
         var definitions = GetLessonDefinitions();
@@ -31,7 +31,6 @@ public static class LessonSeeder
             {
                 CourseId = courseId,
                 Title = def.Title,
-                Description = def.Description,
                 EstimatedDurationMinutes = def.DurationMinutes,
                 OrderIndex = i,
                 LessonContent = def.EditorContent,
@@ -40,7 +39,7 @@ public static class LessonSeeder
             };
 
             context.Lessons.Add(lesson);
-            lessonIds.Add(lesson.Id);
+            lessonIds.Add(lesson.LessonId);
         }
 
         await context.SaveChangesAsync();
@@ -51,7 +50,6 @@ public static class LessonSeeder
         [
             new(
                 "Greetings and Introductions",
-                "Learn basic Italian greetings, how to introduce yourself, and common pleasantries for everyday conversations.",
                 15,
                 BuildEditorJson(
                     "Buongiorno! Welcome to Italian",
@@ -75,7 +73,6 @@ public static class LessonSeeder
             ),
             new(
                 "Numbers 1 to 20",
-                "Master counting in Italian from uno to venti and use numbers in simple everyday contexts.",
                 20,
                 BuildEditorJson(
                     "I Numeri - Counting in Italian",
@@ -95,7 +92,6 @@ public static class LessonSeeder
             ),
             new(
                 "Colors and Descriptions",
-                "Describe objects using Italian color words and learn basic adjective agreement.",
                 18,
                 BuildEditorJson(
                     "I Colori - Colors in Italian",
@@ -119,7 +115,6 @@ public static class LessonSeeder
             ),
             new(
                 "Food and Ordering",
-                "Navigate an Italian cafe or restaurant - order food and drinks with confidence.",
                 22,
                 BuildEditorJson(
                     "Mangiare e Bere - Food and Drink",
@@ -145,7 +140,6 @@ public static class LessonSeeder
             ),
             new(
                 "Travel and Directions",
-                "Ask for directions and find your way around an Italian city.",
                 20,
                 BuildEditorJson(
                     "Viaggiare - Getting Around",
@@ -172,7 +166,6 @@ public static class LessonSeeder
             ),
             new(
                 "Present Tense Verbs",
-                "Conjugate the most common Italian verbs in the present tense.",
                 25,
                 BuildEditorJson(
                     "I Verbi - Present Tense",
@@ -195,7 +188,6 @@ public static class LessonSeeder
             ),
             new(
                 "Days and Time",
-                "Tell time, name the days of the week, and discuss daily schedules.",
                 18,
                 BuildEditorJson(
                     "Il Tempo - Days and Time",
@@ -219,7 +211,6 @@ public static class LessonSeeder
             ),
             new(
                 "First Conversations",
-                "Put everything together in guided conversation practice - your first real Italian dialogue!",
                 25,
                 BuildEditorJson(
                     "La Conversazione - Putting It Together",
@@ -278,7 +269,6 @@ public static class LessonSeeder
 
     private record LessonDefinition(
         string Title,
-        string Description,
         int DurationMinutes,
         string EditorContent
     );

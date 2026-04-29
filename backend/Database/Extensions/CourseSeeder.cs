@@ -23,7 +23,7 @@ public static class CourseSeeder
 
         if (existing != null)
         {
-            return existing.Id;
+            return existing.CourseId;
         }
 
         var course = new Course
@@ -44,6 +44,6 @@ public static class CourseSeeder
         context.Courses.Add(course);
         await context.SaveChangesAsync();
 
-        return course.Id;
+        return course.CourseId;
     }
 }
