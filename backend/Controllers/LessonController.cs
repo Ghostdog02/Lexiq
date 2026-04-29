@@ -58,13 +58,13 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
             return NotFound(new { message = $"Course '{courseId}' not found" });
 
         var currentUser = HttpContext.GetCurrentUser()!;
-        var lessonIds = lessons.Select(l => l.Id).ToList();
+        var lessonIds = lessons.Select(l => l.LessonId).ToList();
         var progressMap = await _lessonService.GetProgressForLessonsAsync(
             currentUser.Id,
             lessonIds
         );
 
-        var result = lessons.Select(l => l.ToDto(progressMap.GetValueOrDefault(l.Id))).ToList();
+        var result = lessons.Select(l => l.ToDto(progressMap.GetValueOrDefault(l.LessonId))).ToList();
 
         return Ok(result);
     }
@@ -108,7 +108,7 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
         var lesson = await _lessonService.CreateLessonAsync(dto);
         var result = CreatedAtAction(
             nameof(GetLesson),
-            new { lessonId = lesson.Id },
+            new { lessonId = lesson.LessonId },
             lesson.ToDto()
         );
         result.DeclaredType = typeof(LessonDto);

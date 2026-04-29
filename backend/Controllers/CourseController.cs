@@ -41,7 +41,7 @@ public class CourseController(CourseService courseService) : ControllerBase
             return Unauthorized();
 
         var course = await _courseService.CreateCourseAsync(dto, user.Id);
-        return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, course.ToDto());
+        return CreatedAtAction(nameof(GetCourse), new { id = course.CourseId }, course.ToDto());
     }
 
     [HttpPut("{id}")]

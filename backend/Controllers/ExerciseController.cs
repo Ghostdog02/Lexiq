@@ -49,7 +49,7 @@ public class ExerciseController(
         var exercise = await _exerciseService.CreateExerciseAsync(dto);
         var result = CreatedAtAction(
             nameof(GetExercise),
-            new { id = exercise.Id },
+            new { id = exercise.ExerciseId },
             exercise.ToDto()
         );
         result.DeclaredType = typeof(ExerciseDto);
@@ -141,11 +141,14 @@ public class ExerciseController(
     {
         return exercise switch
         {
-            MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)
-                ?.OptionText,
-            FillInBlankExercise fib => fib.CorrectAnswer,
-            TranslationExercise te => te.TargetText,
-            ListeningExercise le => le.CorrectAnswer,
+            FillInBlankExercise fib => fib.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ExerciseOptionId,
+            ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ExerciseOptionId,
+            TrueFalseExercise tf => tf.CorrectAnswer.ToString().ToLowerInvariant(),
+            ImageChoiceExercise ice => ice.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ImageOptionId,
+            AudioMatchingExercise => "See explanation for correct pairings",
             _ => null,
         };
     }

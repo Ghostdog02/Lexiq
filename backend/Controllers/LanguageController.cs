@@ -34,7 +34,7 @@ public class LanguageController(LanguageService languageService) : ControllerBas
     public async Task<ActionResult<LanguageDto>> CreateLanguage(CreateLanguageDto dto)
     {
         var language = await _languageService.CreateLanguageAsync(dto);
-        return CreatedAtAction(nameof(GetLanguage), new { id = language.Id }, language.ToDto());
+        return CreatedAtAction(nameof(GetLanguage), new { id = language.LanguageId }, language.ToDto());
     }
 
     [HttpPut("{id}")]
