@@ -1,32 +1,34 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Backend.Database.Entities.Exercises;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Database.Entities;
 
+[Index(nameof(CourseId), nameof(OrderIndex))]
 public class Lesson
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    [MaxLength(36)]
+    public string LessonId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
+    [MaxLength(36)]
     public string CourseId { get; set; } = string.Empty;
 
     [Required]
     [MaxLength(200)]
     public required string Title { get; set; }
 
-    [MaxLength(1000)]
-    public string? Description { get; set; }
-
-    [Range(10, 40)]
-    public int? EstimatedDurationMinutes { get; set; }
+    [Range(10, 120)]
+    public int EstimatedDurationMinutes { get; set; }
 
     [Required]
-    public int OrderIndex { get; set; } // Position within the module (0, 1, 2, ...)
+    public int OrderIndex { get; set; } // Position within the course (0, 1, 2, ...)
 
     [Required]
-    public required string LessonContent { get; set; } // Editor.js JSON content (stored as text)
+    [Column(TypeName = "nvarchar(max)")]
+    public required string LessonContent { get; set; } // Editor.js JSON content
 
     [Required]
     public bool IsLocked { get; set; } = true;
