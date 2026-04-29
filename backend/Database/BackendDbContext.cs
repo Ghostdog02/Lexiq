@@ -77,16 +77,36 @@ public class BackendDbContext(DbContextOptions options)
             .HasForeignKey(e => e.LessonId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Configure TPH discriminator for Exercise hierarchy
+        modelBuilder.Entity<FillInBlankExercise>();
+        modelBuilder.Entity<ListeningExercise>();
+        modelBuilder.Entity<TrueFalseExercise>();
+        modelBuilder.Entity<ImageChoiceExercise>();
+        modelBuilder.Entity<AudioMatchingExercise>();
+
+        // ExerciseOption - shared by FillInBlank and Listening exercises
         modelBuilder
-            .Entity<MultipleChoiceExercise>()
-            .HasMany(e => e.Options)
-            .WithOne(eo => eo.Exercise as MultipleChoiceExercise)
+            .Entity<ExerciseOption>()
+            .HasOne(eo => eo.Exercise)
+            .WithMany()
             .HasForeignKey(eo => eo.ExerciseId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<FillInBlankExercise>();
-        modelBuilder.Entity<ListeningExercise>();
-        modelBuilder.Entity<TranslationExercise>();
+        // ImageOption - belongs to ImageChoiceExercise
+        modelBuilder
+            .Entity<ImageOption>()
+            .HasOne(io => io.Exercise)
+            .WithMany(e => (e as ImageChoiceExercise)!.Options)
+            .HasForeignKey(io => io.ImageChoiceExerciseId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // AudioMatchPair - belongs to AudioMatchingExercise
+        modelBuilder
+            .Entity<AudioMatchPair>()
+            .HasOne(amp => amp.Exercise)
+            .WithMany(e => (e as AudioMatchingExercise)!.Pairs)
+            .HasForeignKey(amp => amp.AudioMatchingExerciseId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<UserLanguage>().HasKey(ul => new { ul.UserId, ul.LanguageId });
 
@@ -123,7 +143,7 @@ public class BackendDbContext(DbContextOptions options)
 
         modelBuilder.Entity<Achievement>(entity =>
         {
-            entity.Property(a => a.Name).HasMaxLength(100).IsRequired();
+            entity.Property(a => a.AchievementName).HasMaxLength(100).IsRequired();
             entity.Property(a => a.Description).HasMaxLength(500).IsRequired();
             entity.Property(a => a.Icon).HasMaxLength(10).IsRequired();
         });
