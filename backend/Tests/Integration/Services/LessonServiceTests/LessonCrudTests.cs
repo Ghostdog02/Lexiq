@@ -33,18 +33,19 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _sut = new LessonService(_ctx, exerciseService);
 
         var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
-        _languageId = language.Id;
+        _languageId = language.LanguageId;
 
         var course = await _ctx.Courses.FirstAsync(TestContext.Current.CancellationToken);
-        _courseId = course.Id;
+        _courseId = course.CourseId;
 
         _secondCourseId = Guid.NewGuid().ToString();
         _ctx.Courses.Add(
             new Course
             {
-                Id = _secondCourseId,
+                CourseId = _secondCourseId,
                 LanguageId = _languageId,
                 Title = "Second Course",
+                Description = "Second test course for lesson CRUD tests.",
                 CreatedById = _fixture.SystemUserId,
                 OrderIndex = 1,
             }
@@ -69,7 +70,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = existingLessonId,
+                LessonId =existingLessonId,
                 CourseId = _courseId,
                 Title = "Existing Lesson",
                 LessonContent = "{}",
@@ -127,33 +128,29 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         {
             new CreateFillInBlankExerciseDto(
                 LessonId: null,
-                Title: "Exercise 1",
-                Question: null,
-                EstimatedDurationMinutes: null,
+                Instructions: "Exercise 1",
                 DifficultyLevel: DifficultyLevel.Beginner,
                 Points: 10,
-                OrderIndex: null,
                 Explanation: null,
                 Text: "Fill in: The cat is ___",
-                CorrectAnswer: "meowing",
-                AcceptedAnswers: null,
-                CaseSensitive: false,
-                TrimWhitespace: true
+                Options:
+                [
+                    new CreateExerciseOptionDto("meowing", IsCorrect: true, Explanation: "Correct answer."),
+                    new CreateExerciseOptionDto("sleeping", IsCorrect: false, Explanation: "Wrong answer."),
+                ]
             ),
             new CreateFillInBlankExerciseDto(
                 LessonId: null,
-                Title: "Exercise 2",
-                Question: null,
-                EstimatedDurationMinutes: null,
+                Instructions: "Exercise 2",
                 DifficultyLevel: DifficultyLevel.Intermediate,
                 Points: 15,
-                OrderIndex: null,
                 Explanation: null,
                 Text: "Fill in: The dog is ___",
-                CorrectAnswer: "barking",
-                AcceptedAnswers: null,
-                CaseSensitive: false,
-                TrimWhitespace: true
+                Options:
+                [
+                    new CreateExerciseOptionDto("barking", IsCorrect: true, Explanation: "Correct answer."),
+                    new CreateExerciseOptionDto("quiet", IsCorrect: false, Explanation: "Wrong answer."),
+                ]
             ),
         };
 
@@ -242,7 +239,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId =lessonId,
                 CourseId = _courseId,
                 Title = "Original Title",
                 Description = "Original Description",
@@ -283,7 +280,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId =lessonId,
                 CourseId = _courseId,
                 Title = "Original Title",
                 Description = "Original Description",
@@ -344,7 +341,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId =lessonId,
                 CourseId = _courseId,
                 Title = "Test",
                 LessonContent = "{}",
@@ -384,7 +381,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId =lessonId,
                 CourseId = _courseId,
                 Title = "To Delete",
                 LessonContent = "{}",
