@@ -32,8 +32,7 @@ public class ExerciseProgressService(
     {
         var exercise =
             await _context
-                .Exercises
-                .Include(e => (e as FillInBlankExercise)!.Options)
+                .Exercises.Include(e => (e as FillInBlankExercise)!.Options)
                 .Include(e => (e as ListeningExercise)!.Options)
                 .Include(e => (e as ImageChoiceExercise)!.Options)
                 .Include(e => (e as AudioMatchingExercise)!.Pairs)
@@ -119,13 +118,13 @@ public class ExerciseProgressService(
 
         var correctOptionId = exercise switch
         {
-            FillInBlankExercise fib => fib.Options.FirstOrDefault(o => o.IsCorrect)
+            FillInBlankExercise fib => fib
+                .Options.FirstOrDefault(o => o.IsCorrect)
                 ?.ExerciseOptionId,
-            ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)
-                ?.ExerciseOptionId,
-            ImageChoiceExercise ice => ice.Options.FirstOrDefault(o => o.IsCorrect)
-                ?.ImageOptionId,
-            AudioMatchingExercise ame => ame.Pairs.FirstOrDefault(p => p.IsCorrect)
+            ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)?.ExerciseOptionId,
+            ImageChoiceExercise ice => ice.Options.FirstOrDefault(o => o.IsCorrect)?.ImageOptionId,
+            AudioMatchingExercise ame => ame
+                .Pairs.FirstOrDefault(p => p.IsCorrect)
                 ?.AudioMatchPairId,
             _ => null,
         };
@@ -134,20 +133,36 @@ public class ExerciseProgressService(
         {
             TrueFalseExercise tf => tf.Explanation,
             FillInBlankExercise fib => ResolveOptionExplanation(
-                fib.Options, answer, isCorrect,
-                o => o.ExerciseOptionId, o => o.Explanation, o => o.IsCorrect
+                fib.Options,
+                answer,
+                isCorrect,
+                o => o.ExerciseOptionId,
+                o => o.Explanation,
+                o => o.IsCorrect
             ),
             ListeningExercise le => ResolveOptionExplanation(
-                le.Options, answer, isCorrect,
-                o => o.ExerciseOptionId, o => o.Explanation, o => o.IsCorrect
+                le.Options,
+                answer,
+                isCorrect,
+                o => o.ExerciseOptionId,
+                o => o.Explanation,
+                o => o.IsCorrect
             ),
             ImageChoiceExercise ice => ResolveOptionExplanation(
-                ice.Options, answer, isCorrect,
-                o => o.ImageOptionId, o => o.Explanation, o => o.IsCorrect
+                ice.Options,
+                answer,
+                isCorrect,
+                o => o.ImageOptionId,
+                o => o.Explanation,
+                o => o.IsCorrect
             ),
             AudioMatchingExercise ame => ResolveOptionExplanation(
-                ame.Pairs, answer, isCorrect,
-                p => p.AudioMatchPairId, p => p.Explanation, p => p.IsCorrect
+                ame.Pairs,
+                answer,
+                isCorrect,
+                p => p.AudioMatchPairId,
+                p => p.Explanation,
+                p => p.IsCorrect
             ),
             _ => null,
         };
@@ -162,7 +177,7 @@ public class ExerciseProgressService(
 
     private static string? ResolveOptionExplanation<T>(
         IEnumerable<T> options,
-        string answer,
+        string optionId,
         bool isCorrect,
         Func<T, string> idSelector,
         Func<T, string> explanationSelector,
@@ -172,15 +187,12 @@ public class ExerciseProgressService(
     {
         var materialized = options as IList<T> ?? options.ToList();
 
-        if (isCorrect)
-        {
-            var chosen = materialized.FirstOrDefault(o => idSelector(o) == answer);
-            return chosen != null ? explanationSelector(chosen) : null;
-        }
+        var chosen = materialized.FirstOrDefault(o => idSelector(o) == optionId);
+        if (chosen != null)
+            return explanationSelector(chosen);
 
-        var picked = materialized.FirstOrDefault(o => idSelector(o) == answer);
-        if (picked != null)
-            return explanationSelector(picked);
+        if (isCorrect)
+            return null;
 
         var correct = materialized.FirstOrDefault(isCorrectSelector);
         return correct != null ? explanationSelector(correct) : null;
