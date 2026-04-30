@@ -12,12 +12,9 @@ namespace Backend.Api.Dtos;
 public abstract record ExerciseDto(
     string Id,
     string LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int OrderIndex,
     string? Explanation,
     bool IsLocked,
     UserExerciseProgressDto? UserProgress
@@ -26,12 +23,9 @@ public abstract record ExerciseDto(
 public record FillInBlankExerciseDto(
     string Id,
     string LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int OrderIndex,
     string? Explanation,
     bool IsLocked,
     UserExerciseProgressDto? UserProgress,
@@ -41,12 +35,9 @@ public record FillInBlankExerciseDto(
     : ExerciseDto(
         Id,
         LessonId,
-        Title,
-        Question,
-        EstimatedDurationMinutes,
+        Instructions,
         DifficultyLevel,
         Points,
-        OrderIndex,
         Explanation,
         IsLocked,
         UserProgress
@@ -55,12 +46,9 @@ public record FillInBlankExerciseDto(
 public record ListeningExerciseDto(
     string Id,
     string LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int OrderIndex,
     string? Explanation,
     bool IsLocked,
     UserExerciseProgressDto? UserProgress,
@@ -71,12 +59,9 @@ public record ListeningExerciseDto(
     : ExerciseDto(
         Id,
         LessonId,
-        Title,
-        Question,
-        EstimatedDurationMinutes,
+        Instructions,
         DifficultyLevel,
         Points,
-        OrderIndex,
         Explanation,
         IsLocked,
         UserProgress
@@ -85,12 +70,9 @@ public record ListeningExerciseDto(
 public record TrueFalseExerciseDto(
     string Id,
     string LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int OrderIndex,
     string? Explanation,
     bool IsLocked,
     UserExerciseProgressDto? UserProgress,
@@ -101,12 +83,9 @@ public record TrueFalseExerciseDto(
     : ExerciseDto(
         Id,
         LessonId,
-        Title,
-        Question,
-        EstimatedDurationMinutes,
+        Instructions,
         DifficultyLevel,
         Points,
-        OrderIndex,
         Explanation,
         IsLocked,
         UserProgress
@@ -115,12 +94,9 @@ public record TrueFalseExerciseDto(
 public record ImageChoiceExerciseDto(
     string Id,
     string LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int OrderIndex,
     string? Explanation,
     bool IsLocked,
     UserExerciseProgressDto? UserProgress,
@@ -129,12 +105,9 @@ public record ImageChoiceExerciseDto(
     : ExerciseDto(
         Id,
         LessonId,
-        Title,
-        Question,
-        EstimatedDurationMinutes,
+        Instructions,
         DifficultyLevel,
         Points,
-        OrderIndex,
         Explanation,
         IsLocked,
         UserProgress
@@ -143,12 +116,9 @@ public record ImageChoiceExerciseDto(
 public record AudioMatchingExerciseDto(
     string Id,
     string LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int OrderIndex,
     string? Explanation,
     bool IsLocked,
     UserExerciseProgressDto? UserProgress,
@@ -157,12 +127,9 @@ public record AudioMatchingExerciseDto(
     : ExerciseDto(
         Id,
         LessonId,
-        Title,
-        Question,
-        EstimatedDurationMinutes,
+        Instructions,
         DifficultyLevel,
         Points,
-        OrderIndex,
         Explanation,
         IsLocked,
         UserProgress
@@ -181,47 +148,35 @@ public record AudioMatchPairDto(string Id, string AudioUrl, string ImageUrl, str
 [JsonDerivedType(typeof(CreateImageChoiceExerciseDto), typeDiscriminator: "ImageChoice")]
 [JsonDerivedType(typeof(CreateAudioMatchingExerciseDto), typeDiscriminator: "AudioMatching")]
 public abstract record CreateExerciseDto(
-    string? LessonId, 
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string? LessonId,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex, 
     string? Explanation
 );
 
 public record CreateFillInBlankExerciseDto(
     string? LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex,
     string? Explanation,
     string Text,
     List<CreateExerciseOptionDto> Options
 )
     : CreateExerciseDto(
         LessonId,
-        Title,
-        Question,
-        EstimatedDurationMinutes,
+        Instructions,
         DifficultyLevel,
         Points,
-        OrderIndex,
         Explanation
     );
 
 public record CreateListeningExerciseDto(
     string? LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex,
     string? Explanation,
     string AudioUrl,
     int MaxReplays,
@@ -229,23 +184,17 @@ public record CreateListeningExerciseDto(
 )
     : CreateExerciseDto(
         LessonId,
-        Title,
-        Question,
-        EstimatedDurationMinutes,
+        Instructions,
         DifficultyLevel,
         Points,
-        OrderIndex,
         Explanation
     );
 
 public record CreateTrueFalseExerciseDto(
     string? LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex,
     string? Explanation,
     string Statement,
     bool CorrectAnswer,
@@ -253,56 +202,41 @@ public record CreateTrueFalseExerciseDto(
 )
     : CreateExerciseDto(
         LessonId,
-        Title,
-        Question,
-        EstimatedDurationMinutes,
+        Instructions,
         DifficultyLevel,
         Points,
-        OrderIndex,
         Explanation
     );
 
 public record CreateImageChoiceExerciseDto(
     string? LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex,
     string? Explanation,
     List<CreateImageOptionDto> Options
 )
     : CreateExerciseDto(
         LessonId,
-        Title,
-        Question,
-        EstimatedDurationMinutes,
+        Instructions,
         DifficultyLevel,
         Points,
-        OrderIndex,
         Explanation
     );
 
 public record CreateAudioMatchingExerciseDto(
     string? LessonId,
-    string Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string Instructions,
     DifficultyLevel DifficultyLevel,
     int Points,
-    int? OrderIndex,
     string? Explanation,
     List<CreateAudioMatchPairDto> Pairs
 )
     : CreateExerciseDto(
         LessonId,
-        Title,
-        Question,
-        EstimatedDurationMinutes,
+        Instructions,
         DifficultyLevel,
         Points,
-        OrderIndex,
         Explanation
     );
 
@@ -313,12 +247,9 @@ public record CreateImageOptionDto(string ImageUrl, string AltText, bool IsCorre
 public record CreateAudioMatchPairDto(string AudioUrl, string ImageUrl, string Explanation);
 
 public record UpdateExerciseDto(
-    string? Title,
-    string? Question,
-    int? EstimatedDurationMinutes,
+    string? Instructions,
     DifficultyLevel? DifficultyLevel,
     int? Points,
-    int? OrderIndex,
     string? Explanation
 );
 
