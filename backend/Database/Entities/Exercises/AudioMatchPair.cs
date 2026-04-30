@@ -27,6 +27,9 @@ public class AudioMatchPair
     [MaxLength(1000)]
     public required string Explanation { get; set; }
 
+    [Required]
+    public bool IsCorrect { get; set; } = false;
+
     [ForeignKey(nameof(AudioMatchingExerciseId))]
     public AudioMatchingExercise Exercise { get; set; } = null!;
 }
