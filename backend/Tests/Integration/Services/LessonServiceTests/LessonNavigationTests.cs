@@ -108,7 +108,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
 
         // Assert
         result.Should().NotBeNull();
-        result.Id.Should().Be(secondLessonId);
+        result.LessonId.Should().Be(secondLessonId);
         result.Title.Should().Be("Lesson 2");
     }
 
@@ -148,7 +148,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
 
         // Assert
         result.Should().NotBeNull();
-        result.Id.Should().Be(firstLessonThirdCourseId);
+        result.LessonId.Should().Be(firstLessonThirdCourseId);
         result.Title.Should().Be("First Lesson Course 3");
     }
 
@@ -223,7 +223,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
 
         // Assert
         result.Should().NotBeNull();
-        result.Id.Should().Be(lesson3Id);
+        result.LessonId.Should().Be(lesson3Id);
         result.OrderIndex.Should().Be(2);
     }
 
@@ -379,7 +379,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
 
         // Assert
         result.Should().NotBeNull();
-        result.Id.Should().Be(lesson1Id);
+        result.LessonId.Should().Be(lesson1Id);
         result.OrderIndex.Should().Be(0);
     }
 

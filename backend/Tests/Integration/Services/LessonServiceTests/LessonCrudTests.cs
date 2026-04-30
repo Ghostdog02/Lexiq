@@ -70,7 +70,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =existingLessonId,
+                LessonId = existingLessonId,
                 CourseId = _courseId,
                 Title = "Existing Lesson",
                 LessonContent = "{}",
@@ -135,8 +135,16 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
                 Text: "Fill in: The cat is ___",
                 Options:
                 [
-                    new CreateExerciseOptionDto("meowing", IsCorrect: true, Explanation: "Correct answer."),
-                    new CreateExerciseOptionDto("sleeping", IsCorrect: false, Explanation: "Wrong answer."),
+                    new CreateExerciseOptionDto(
+                        "meowing",
+                        IsCorrect: true,
+                        Explanation: "Correct answer."
+                    ),
+                    new CreateExerciseOptionDto(
+                        "sleeping",
+                        IsCorrect: false,
+                        Explanation: "Wrong answer."
+                    ),
                 ]
             ),
             new CreateFillInBlankExerciseDto(
@@ -148,8 +156,16 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
                 Text: "Fill in: The dog is ___",
                 Options:
                 [
-                    new CreateExerciseOptionDto("barking", IsCorrect: true, Explanation: "Correct answer."),
-                    new CreateExerciseOptionDto("quiet", IsCorrect: false, Explanation: "Wrong answer."),
+                    new CreateExerciseOptionDto(
+                        "barking",
+                        IsCorrect: true,
+                        Explanation: "Correct answer."
+                    ),
+                    new CreateExerciseOptionDto(
+                        "quiet",
+                        IsCorrect: false,
+                        Explanation: "Wrong answer."
+                    ),
                 ]
             ),
         };
@@ -172,15 +188,15 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         result.Title.Should().Be("Lesson with Exercises");
 
         var createdExercises = await _ctx
-            .Exercises.Where(e => e.LessonId == result.Id)
-            .OrderBy(e => e.OrderIndex)
+            .Exercises.Where(e => e.LessonId == result.LessonId)
+            .OrderBy(e => e.CreatedAt)
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         createdExercises.Should().HaveCount(2);
         createdExercises[0].IsLocked.Should().BeFalse("first exercise should be unlocked");
         createdExercises[1].IsLocked.Should().BeTrue("second exercise should be locked");
-        createdExercises[0].Title.Should().Be("Exercise 1");
-        createdExercises[1].Title.Should().Be("Exercise 2");
+        createdExercises[0].Instructions.Should().Be("Exercise 1");
+        createdExercises[1].Instructions.Should().Be("Exercise 2");
     }
 
     [Fact]
@@ -239,10 +255,9 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Original Title",
-                Description = "Original Description",
                 EstimatedDurationMinutes = 30,
                 OrderIndex = 0,
                 LessonContent = "{}",
@@ -265,7 +280,6 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // Assert
         result.Should().NotBeNull();
         result.Title.Should().Be("Updated Title");
-        result.Description.Should().Be("Updated Description");
         result.EstimatedDurationMinutes.Should().Be(45);
         result.OrderIndex.Should().Be(5);
         result.CourseId.Should().Be(_secondCourseId);
@@ -280,10 +294,9 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Original Title",
-                Description = "Original Description",
                 EstimatedDurationMinutes = 30,
                 OrderIndex = 0,
                 LessonContent = "{}",
@@ -306,7 +319,6 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // Assert
         result.Should().NotBeNull();
         result.Title.Should().Be("Updated Title");
-        result.Description.Should().Be("Original Description", "should not change");
         result.EstimatedDurationMinutes.Should().Be(30, "should not change");
         result.OrderIndex.Should().Be(0, "should not change");
         result.CourseId.Should().Be(_courseId, "should not change");
@@ -341,7 +353,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Test",
                 LessonContent = "{}",
@@ -381,7 +393,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "To Delete",
                 LessonContent = "{}",

@@ -87,7 +87,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =firstLessonId,
+                LessonId = firstLessonId,
                 CourseId = _courseId,
                 Title = "Lesson 1",
                 LessonContent = "{}",
@@ -98,7 +98,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =secondLessonId,
+                LessonId = secondLessonId,
                 CourseId = _courseId,
                 Title = "Lesson 2",
                 LessonContent = "{}",
@@ -161,7 +161,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =firstLessonId,
+                LessonId = firstLessonId,
                 CourseId = _courseId,
                 Title = "Lesson 1",
                 LessonContent = "{}",
@@ -172,7 +172,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =secondLessonId,
+                LessonId = secondLessonId,
                 CourseId = _courseId,
                 Title = "Lesson 2",
                 LessonContent = "{}",
@@ -197,7 +197,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =lastLessonId,
+                LessonId = lastLessonId,
                 CourseId = _thirdCourseId,
                 Title = "Last Lesson",
                 LessonContent = "{}",
@@ -241,7 +241,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Test Lesson",
                 LessonContent = "{}",
@@ -327,7 +327,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Test Lesson",
                 LessonContent = "{}",
