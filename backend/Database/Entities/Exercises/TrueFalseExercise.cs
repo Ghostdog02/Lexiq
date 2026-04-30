@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+
 namespace Backend.Database.Entities.Exercises;
 
 public class TrueFalseExercise : Exercise
