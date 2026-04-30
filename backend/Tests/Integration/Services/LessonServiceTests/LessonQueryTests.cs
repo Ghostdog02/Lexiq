@@ -32,18 +32,19 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _sut = new LessonService(_ctx, exerciseService);
 
         var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
-        _languageId = language.Id;
+        _languageId = language.LanguageId;
 
         var course = await _ctx.Courses.FirstAsync(TestContext.Current.CancellationToken);
-        _courseId = course.Id;
+        _courseId = course.CourseId;
 
         _secondCourseId = Guid.NewGuid().ToString();
         _ctx.Courses.Add(
             new Course
             {
-                Id = _secondCourseId,
+                CourseId = _secondCourseId,
                 LanguageId = _languageId,
                 Title = "Second Course",
+                Description = "Second test course for lesson query tests.",
                 CreatedById = _fixture.SystemUserId,
                 OrderIndex = 1,
             }
@@ -72,7 +73,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.AddRange(
             new Lesson
             {
-                Id = lesson2Id,
+                LessonId =lesson2Id,
                 CourseId = _secondCourseId,
                 Title = "Lesson 2",
                 LessonContent = "{}",
@@ -80,7 +81,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
             },
             new Lesson
             {
-                Id = lesson3Id,
+                LessonId =lesson3Id,
                 CourseId = _secondCourseId,
                 Title = "Lesson 3",
                 LessonContent = "{}",
@@ -88,7 +89,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
             },
             new Lesson
             {
-                Id = lesson1Id,
+                LessonId =lesson1Id,
                 CourseId = _secondCourseId,
                 Title = "Lesson 1",
                 LessonContent = "{}",
@@ -147,7 +148,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId =lessonId,
                 CourseId = _courseId,
                 Title = "Test Lesson",
                 LessonContent = "{}",
@@ -218,7 +219,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId =lessonId,
                 CourseId = _courseId,
                 Title = "Empty Lesson",
                 LessonContent = "{}",
@@ -248,7 +249,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId =lessonId,
                 CourseId = _courseId,
                 Title = "Mixed Exercise Lesson",
                 LessonContent = "{}",
