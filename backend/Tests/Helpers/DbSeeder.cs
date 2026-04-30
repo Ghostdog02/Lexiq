@@ -103,18 +103,30 @@ public static class DbSeeder
         ctx.Exercises.Add(
             new FillInBlankExercise
             {
-                Id = exerciseId,
+                ExerciseId = exerciseId,
                 LessonId = lessonId,
-                Title = $"FillInBlank {orderIndex}",
+                Instructions = $"FillInBlank {orderIndex}",
                 Text = "Fill in the blank: _",
-                CorrectAnswer = "answer",
-                AcceptedAnswers = "ans",
-                CaseSensitive = false,
-                TrimWhitespace = true,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = points,
-                OrderIndex = orderIndex,
                 IsLocked = isLocked,
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        ExerciseId = exerciseId,
+                        OptionText = "answer",
+                        IsCorrect = true,
+                        Explanation = "Correct answer.",
+                    },
+                    new ExerciseOption
+                    {
+                        ExerciseId = exerciseId,
+                        OptionText = "ans",
+                        IsCorrect = true,
+                        Explanation = "Accepted alternative.",
+                    },
+                ],
             }
         );
         await ctx.SaveChangesAsync();
@@ -122,7 +134,7 @@ public static class DbSeeder
     }
 
     /// <summary>
-    /// Creates a MultipleChoice exercise with "answer" as the correct option text.
+    /// Creates a FillInBlank exercise (MultipleChoice type removed - redirects for backward compat).
     /// </summary>
     public static async Task<string> CreateMultipleChoiceExerciseAsync(
         BackendDbContext ctx,
@@ -132,49 +144,7 @@ public static class DbSeeder
         int points = 10
     )
     {
-        var exerciseId = Guid.NewGuid().ToString();
-        ctx.Exercises.Add(
-            new MultipleChoiceExercise
-            {
-                Id = exerciseId,
-                LessonId = lessonId,
-                Title = $"MultipleChoice {orderIndex}",
-                Question = "Select the correct answer",
-                DifficultyLevel = DifficultyLevel.Beginner,
-                Points = points,
-                OrderIndex = orderIndex,
-                IsLocked = isLocked,
-                Options = new List<ExerciseOption>
-                {
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = exerciseId,
-                        OptionText = "wrong1",
-                        IsCorrect = false,
-                        OrderIndex = 0,
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = exerciseId,
-                        OptionText = "answer",
-                        IsCorrect = true,
-                        OrderIndex = 1,
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = exerciseId,
-                        OptionText = "wrong2",
-                        IsCorrect = false,
-                        OrderIndex = 2,
-                    },
-                },
-            }
-        );
-        await ctx.SaveChangesAsync();
-        return exerciseId;
+        return await CreateFillInBlankExerciseAsync(ctx, lessonId, orderIndex, isLocked, points);
     }
 
     /// <summary>
@@ -192,27 +162,40 @@ public static class DbSeeder
         ctx.Exercises.Add(
             new ListeningExercise
             {
-                Id = exerciseId,
+                ExerciseId = exerciseId,
                 LessonId = lessonId,
-                Title = $"Listening {orderIndex}",
+                Instructions = $"Listening {orderIndex}",
                 AudioUrl = $"https://example.com/audio{orderIndex}.mp3",
-                CorrectAnswer = "answer",
-                AcceptedAnswers = "ans",
-                CaseSensitive = false,
                 MaxReplays = 3,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = points,
-                OrderIndex = orderIndex,
                 IsLocked = isLocked,
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        ExerciseId = exerciseId,
+                        OptionText = "answer",
+                        IsCorrect = true,
+                        Explanation = "Correct answer.",
+                    },
+                    new ExerciseOption
+                    {
+                        ExerciseId = exerciseId,
+                        OptionText = "ans",
+                        IsCorrect = true,
+                        Explanation = "Accepted alternative.",
+                    },
+                ],
             }
         );
-        
+
         await ctx.SaveChangesAsync();
         return exerciseId;
     }
 
     /// <summary>
-    /// Creates a Translation exercise with "answer" as the target text.
+    /// Creates a FillInBlank exercise (Translation type removed - redirects for backward compat).
     /// </summary>
     public static async Task<string> CreateTranslationExerciseAsync(
         BackendDbContext ctx,
@@ -222,44 +205,7 @@ public static class DbSeeder
         int points = 10
     )
     {
-        var exerciseId = Guid.NewGuid().ToString();
-        ctx.Exercises.Add(
-            new TranslationExercise
-            {
-                Id = exerciseId,
-                LessonId = lessonId,
-                Title = $"Translation {orderIndex}",
-                SourceText = "Test",
-                TargetText = "answer",
-                SourceLanguageCode = "en",
-                TargetLanguageCode = "it",
-                MatchingThreshold = 0.85,
-                DifficultyLevel = DifficultyLevel.Beginner,
-                Points = points,
-                OrderIndex = orderIndex,
-                IsLocked = isLocked,
-            }
-        );
-        await ctx.SaveChangesAsync();
-        return exerciseId;
-    }
-
-    /// <summary>
-    /// Resets all exercise lock states to their initial seeded values.
-    /// Only the first exercise (OrderIndex 0) is unlocked; all others are locked.
-    /// Call this after ClearLeaderboardDataAsync to ensure clean test state.
-    /// </summary>
-    public static async Task ResetExerciseLocksAsync(BackendDbContext ctx)
-    {
-        // Unlock only the first exercise (OrderIndex 0)
-        await ctx
-            .Exercises.Where(e => e.OrderIndex == 0)
-            .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsLocked, false));
-
-        // Lock all other exercises
-        await ctx
-            .Exercises.Where(e => e.OrderIndex > 0)
-            .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsLocked, true));
+        return await CreateFillInBlankExerciseAsync(ctx, lessonId, orderIndex, isLocked, points);
     }
 
     /// <summary>

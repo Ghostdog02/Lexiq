@@ -19,11 +19,9 @@ public class UserAchievement
     [Required]
     public DateTime UnlockedAt { get; set; }
 
-    [Required]
     [ForeignKey(nameof(UserId))]
-    public required User User { get; set; }
+    public User? User { get; set; }
 
-    [Required]
     [ForeignKey(nameof(AchievementId))]
-    public required Achievement Achievement { get; set; }
+    public Achievement? Achievement { get; set; }
 }

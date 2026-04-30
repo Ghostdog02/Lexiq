@@ -9,9 +9,8 @@ public class UserAvatar
     [MaxLength(450)]
     public required string UserId { get; set; }
 
-    [Required]
     [ForeignKey(nameof(UserId))]
-    public required User User { get; set; }
+    public User? User { get; set; }
 
     [Required]
     public required byte[] Data { get; set; }

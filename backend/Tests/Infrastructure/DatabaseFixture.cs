@@ -81,16 +81,17 @@ public class DatabaseFixture : IAsyncLifetime
         await ctx.SaveChangesAsync();
 
         var languageId = Guid.NewGuid().ToString();
-        ctx.Languages.Add(new Language { LanguageId = languageId, Name = "Italian" });
+        ctx.Languages.Add(new Language { LanguageId = languageId, LanguageName = "Italian", FlagIconUrl = "https://example.com/it.png" });
         await ctx.SaveChangesAsync();
 
         var courseId = Guid.NewGuid().ToString();
         ctx.Courses.Add(
             new Course
             {
-                Id = courseId,
+                CourseId = courseId,
                 LanguageId = languageId,
                 Title = "Test Course",
+                Description = "Test course for integration tests",
                 CreatedById = SystemUserId,
                 OrderIndex = 0,
             }
@@ -102,7 +103,7 @@ public class DatabaseFixture : IAsyncLifetime
         ctx.Lessons.Add(
             new Lesson
             {
-                Id = LessonId,
+                LessonId = LessonId,
                 CourseId = courseId,
                 Title = "Test Lesson",
                 LessonContent = "{}",

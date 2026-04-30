@@ -42,11 +42,9 @@ public class UserExerciseProgress
 
     public DateTime? LastReviewedAt { get; set; }
 
-    [Required]
     [ForeignKey(nameof(UserId))]
-    public required User User { get; set; }
+    public User? User { get; set; }
 
-    [Required]
     [ForeignKey(nameof(ExerciseId))]
-    public required Exercise Exercise { get; set; }
+    public Exercise? Exercise { get; set; }
 }

@@ -21,11 +21,9 @@ public class UserLanguage
 
     public DateTime EnrolledAt { get; set; } = DateTime.UtcNow;
 
-    [Required]
     [ForeignKey(nameof(UserId))]
-    public required User User { get; set; }
+    public User? User { get; set; }
 
-    [Required]
     [ForeignKey(nameof(LanguageId))]
-    public required Language Language { get; set; }
+    public Language? Language { get; set; }
 }
