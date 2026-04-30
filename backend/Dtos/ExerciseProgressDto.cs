@@ -5,14 +5,14 @@ public record SubmitAnswerRequest(string Answer);
 public record ExerciseSubmitResult(
     bool IsCorrect,
     int PointsEarned,
-    string? CorrectAnswer,
+    string? CorrectOptionId,
     string? Explanation
 );
 
 public record SubmitAnswerResponse(
     bool IsCorrect,
     int PointsEarned,
-    string? CorrectAnswer,
+    string? CorrectOptionId,
     string? Explanation,
     LessonProgressSummary LessonProgress
 );

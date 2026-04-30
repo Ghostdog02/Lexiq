@@ -117,33 +117,73 @@ public class ExerciseProgressService(
             nextExerciseUnlocked = await _exerciseService.UnlockNextExerciseAsync(exerciseId);
         }
 
-        var correctAnswer = isCorrect
-            ? null
-            : exercise switch
-            {
-                FillInBlankExercise fib => fib.Options.FirstOrDefault(o => o.IsCorrect)
-                    ?.ExerciseOptionId,
-                ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)
-                    ?.ExerciseOptionId,
-                TrueFalseExercise tf => tf.CorrectAnswer.ToString().ToLowerInvariant(),
-                ImageChoiceExercise ice => ice.Options.FirstOrDefault(o => o.IsCorrect)
-                    ?.ImageOptionId,
-                AudioMatchingExercise => "See explanation for correct pairings",
-                _ => null,
-            };
+        var correctOptionId = exercise switch
+        {
+            FillInBlankExercise fib => fib.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ExerciseOptionId,
+            ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ExerciseOptionId,
+            ImageChoiceExercise ice => ice.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ImageOptionId,
+            AudioMatchingExercise ame => ame.Pairs.FirstOrDefault(p => p.IsCorrect)
+                ?.AudioMatchPairId,
+            _ => null,
+        };
 
         var explanation = exercise switch
         {
             TrueFalseExercise tf => tf.Explanation,
-            _ => null
+            FillInBlankExercise fib => ResolveOptionExplanation(
+                fib.Options, answer, isCorrect,
+                o => o.ExerciseOptionId, o => o.Explanation, o => o.IsCorrect
+            ),
+            ListeningExercise le => ResolveOptionExplanation(
+                le.Options, answer, isCorrect,
+                o => o.ExerciseOptionId, o => o.Explanation, o => o.IsCorrect
+            ),
+            ImageChoiceExercise ice => ResolveOptionExplanation(
+                ice.Options, answer, isCorrect,
+                o => o.ImageOptionId, o => o.Explanation, o => o.IsCorrect
+            ),
+            AudioMatchingExercise ame => ResolveOptionExplanation(
+                ame.Pairs, answer, isCorrect,
+                p => p.AudioMatchPairId, p => p.Explanation, p => p.IsCorrect
+            ),
+            _ => null,
         };
 
         return new ExerciseSubmitResult(
             IsCorrect: isCorrect,
             PointsEarned: pointsEarned,
-            CorrectAnswer: correctAnswer,
+            CorrectOptionId: correctOptionId,
             Explanation: explanation
         );
+    }
+
+    private static string? ResolveOptionExplanation<T>(
+        IEnumerable<T> options,
+        string answer,
+        bool isCorrect,
+        Func<T, string> idSelector,
+        Func<T, string> explanationSelector,
+        Func<T, bool> isCorrectSelector
+    )
+        where T : class
+    {
+        var materialized = options as IList<T> ?? options.ToList();
+
+        if (isCorrect)
+        {
+            var chosen = materialized.FirstOrDefault(o => idSelector(o) == answer);
+            return chosen != null ? explanationSelector(chosen) : null;
+        }
+
+        var picked = materialized.FirstOrDefault(o => idSelector(o) == answer);
+        if (picked != null)
+            return explanationSelector(picked);
+
+        var correct = materialized.FirstOrDefault(isCorrectSelector);
+        return correct != null ? explanationSelector(correct) : null;
     }
 
     public async Task<CompleteLessonResponse> CompleteLessonAsync(string userId, string lessonId)
@@ -219,32 +259,7 @@ public class ExerciseProgressService(
 
     private static bool ValidateAudioMatching(AudioMatchingExercise exercise, string answer)
     {
-        // Expected format: "pairId1:imageUrl1,pairId2:imageUrl2,..."
-        try
-        {
-            var userPairs = answer
-                .Split(',')
-                .Select(p =>
-                {
-                    var parts = p.Split(':');
-                    return parts.Length == 2 ? (pairId: parts[0], imageUrl: parts[1]) : default;
-                })
-                .Where(p => p != default)
-                .ToList();
-
-            if (userPairs.Count != exercise.Pairs.Count)
-                return false;
-
-            // Check all user pairs match the exercise pairs
-            return userPairs.All(up =>
-                exercise.Pairs.Any(ep =>
-                    ep.AudioMatchPairId == up.pairId && ep.ImageUrl == up.imageUrl
-                )
-            );
-        }
-        catch
-        {
-            return false;
-        }
+        var selected = exercise.Pairs.FirstOrDefault(p => p.AudioMatchPairId == answer);
+        return selected?.IsCorrect ?? false;
     }
 }

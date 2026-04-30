@@ -318,8 +318,8 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
                 return new SubmitAnswerResponse(
                     IsCorrect: hasProgress && progress!.IsCompleted,
                     PointsEarned: hasProgress ? progress!.PointsEarned : 0,
-                    CorrectAnswer: hasProgress && !progress!.IsCompleted
-                        ? GetCorrectAnswer(exercise)
+                    CorrectOptionId: hasProgress && !progress!.IsCompleted
+                        ? GetCorrectOptionId(exercise)
                         : null,
                     Explanation: explanation,
                     LessonProgress: fullProgress.Summary
@@ -381,7 +381,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         public UserExerciseProgress? Progress { get; init; }
     }
 
-    private static string? GetCorrectAnswer(Exercise exercise)
+    private static string? GetCorrectOptionId(Exercise exercise)
     {
         return exercise switch
         {
@@ -389,10 +389,10 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
                 ?.ExerciseOptionId,
             ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)
                 ?.ExerciseOptionId,
-            TrueFalseExercise tf => tf.CorrectAnswer.ToString().ToLowerInvariant(),
             ImageChoiceExercise ice => ice.Options.FirstOrDefault(o => o.IsCorrect)
                 ?.ImageOptionId,
-            AudioMatchingExercise => "See explanation for correct pairings",
+            AudioMatchingExercise ame => ame.Pairs.FirstOrDefault(p => p.IsCorrect)
+                ?.AudioMatchPairId,
             _ => null,
         };
     }
