@@ -81,7 +81,7 @@ public class DatabaseFixture : IAsyncLifetime
         await ctx.SaveChangesAsync();
 
         var languageId = Guid.NewGuid().ToString();
-        ctx.Languages.Add(new Language { Id = languageId, Name = "Italian" });
+        ctx.Languages.Add(new Language { LanguageId = languageId, Name = "Italian" });
         await ctx.SaveChangesAsync();
 
         var courseId = Guid.NewGuid().ToString();
