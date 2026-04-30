@@ -162,7 +162,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         var course = new Course
         {
             Id = Guid.NewGuid().ToString(),
-            LanguageId = language.Id,
+            LanguageId = language.LanguageId,
             Title = "Russian Basics",
             Description = null,
             OrderIndex = 0,
@@ -174,7 +174,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _sut.GetLanguageByIdAsync(language.Id);
+        var result = await _sut.GetLanguageByIdAsync(language.LanguageId);
 
         // Assert
         result.Should().NotBeNull();
@@ -212,7 +212,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         var updateDto = new CreateLanguageDto("Korean (Updated)", "https://example.com/ko-new.svg");
 
         // Act
-        var result = await _sut.UpdateLanguageAsync(language.Id, updateDto);
+        var result = await _sut.UpdateLanguageAsync(language.LanguageId, updateDto);
 
         // Assert
         result.Should().NotBeNull();
@@ -249,7 +249,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         var updateDto = new CreateLanguageDto("Chinese", null);
 
         // Act
-        var result = await _sut.UpdateLanguageAsync(language.Id, updateDto);
+        var result = await _sut.UpdateLanguageAsync(language.LanguageId, updateDto);
 
         // Assert
         result.Should().NotBeNull();
@@ -265,11 +265,11 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         var language = await _sut.CreateLanguageAsync(new CreateLanguageDto("Arabic", null));
 
         // Act
-        var result = await _sut.DeleteLanguageAsync(language.Id);
+        var result = await _sut.DeleteLanguageAsync(language.LanguageId);
 
         var stillExists = await _ctx
             .Languages.AnyAsync(
-                l => l.Id == language.Id,
+                l => l.Id == language.LanguageId,
                 TestContext.Current.CancellationToken
             );
 
@@ -309,7 +309,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         var course = new Course
         {
             Id = courseId,
-            LanguageId = language.Id,
+            LanguageId = language.LanguageId,
             Title = "Dutch for Beginners",
             Description = null,
             OrderIndex = 0,
@@ -321,7 +321,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _sut.DeleteLanguageAsync(language.Id);
+        var result = await _sut.DeleteLanguageAsync(language.LanguageId);
 
         var deletedCourse = await _ctx
             .Courses.FindAsync(new object[] { courseId }, TestContext.Current.CancellationToken);

@@ -45,7 +45,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Get the fixture's Italian language
         var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
-        _languageId = language.Id;
+        _languageId = language.LanguageId;
     }
 
     public async ValueTask DisposeAsync()
@@ -205,13 +205,13 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Assert
         var orderedCourses = allCourses
-            .Where(c => new[] { course1.Id, course2.Id, course3.Id }.Contains(c.Id))
+            .Where(c => new[] { course1.CourseId, course2.CourseId, course3.CourseId }.Contains(c.Id))
             .ToList();
 
         orderedCourses.Should().HaveCount(3);
-        orderedCourses[0].Id.Should().Be(course1.Id);
-        orderedCourses[1].Id.Should().Be(course2.Id);
-        orderedCourses[2].Id.Should().Be(course3.Id);
+        orderedCourses[0].Id.Should().Be(course1.CourseId);
+        orderedCourses[1].Id.Should().Be(course2.CourseId);
+        orderedCourses[2].Id.Should().Be(course3.CourseId);
     }
 
     #endregion
@@ -230,7 +230,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         var lesson = new Lesson
         {
             Id = Guid.NewGuid().ToString(),
-            CourseId = course.Id,
+            CourseId = course.CourseId,
             Title = "Test Lesson",
             LessonContent = "{}",
             OrderIndex = 0,
@@ -239,7 +239,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _sut.GetCourseByIdAsync(course.Id);
+        var result = await _sut.GetCourseByIdAsync(course.CourseId);
 
         // Assert
         result.Should().NotBeNull();
@@ -284,7 +284,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         );
 
         // Act
-        var result = await _sut.UpdateCourseAsync(course.Id, dto);
+        var result = await _sut.UpdateCourseAsync(course.CourseId, dto);
 
         // Assert
         result.Should().NotBeNull();
@@ -338,7 +338,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         );
 
         // Act
-        var result = await _sut.UpdateCourseAsync(course.Id, dto);
+        var result = await _sut.UpdateCourseAsync(course.CourseId, dto);
 
         // Assert
         result.Should().NotBeNull();
@@ -364,7 +364,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         );
 
         // Act
-        var result = await _sut.UpdateCourseAsync(course.Id, dto);
+        var result = await _sut.UpdateCourseAsync(course.CourseId, dto);
 
         // Assert
         result.Should().NotBeNull();
@@ -392,7 +392,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         );
 
         // Act
-        var result = await _sut.UpdateCourseAsync(course.Id, dto);
+        var result = await _sut.UpdateCourseAsync(course.CourseId, dto);
 
         // Assert
         result.Should().NotBeNull();
@@ -420,13 +420,13 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         );
 
         // Act
-        var result = await _sut.DeleteCourseAsync(course.Id);
+        var result = await _sut.DeleteCourseAsync(course.CourseId);
 
         // Assert
         result.Should().BeTrue();
 
         var deleted = await _ctx.Courses.FindAsync(
-            new object[] { course.Id },
+            new object[] { course.CourseId },
             TestContext.Current.CancellationToken
         );
         deleted.Should().BeNull();
@@ -458,7 +458,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         var lesson = new Lesson
         {
             Id = lessonId,
-            CourseId = course.Id,
+            CourseId = course.CourseId,
             Title = "Lesson to cascade delete",
             LessonContent = "{}",
             OrderIndex = 0,
@@ -467,7 +467,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _sut.DeleteCourseAsync(course.Id);
+        var result = await _sut.DeleteCourseAsync(course.CourseId);
 
         // Assert
         result.Should().BeTrue();
