@@ -41,10 +41,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         _sut = BuildExerciseProgressService(_ctx);
 
         // Create test user
-        var user = new UserBuilder()
-            .WithUserName("testuser")
-            .WithEmail("user@test.com")
-            .Build();
+        var user = new UserBuilder().WithUserName("testuser").WithEmail("user@test.com").Build();
         await DbSeeder.AddUserAsync(_ctx, user);
         _testUserId = user.Id;
 
@@ -80,9 +77,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
             .BeFalse(
                 because: "case-sensitive validation rejects lowercase when correct answer is capitalized"
             );
-        resultCorrect
-            .IsCorrect.Should()
-            .BeTrue(because: "exact case match passes validation");
+        resultCorrect.IsCorrect.Should().BeTrue(because: "exact case match passes validation");
     }
 
     [Fact]
@@ -118,24 +113,12 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 
         // Act
         var resultLeading = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "  answer");
-        var resultTrailing = await _sut.SubmitAnswerAsync(
-            _testUserId,
-            exerciseId,
-            "answer   "
-        );
-        var resultBoth = await _sut.SubmitAnswerAsync(
-            _testUserId,
-            exerciseId,
-            "   answer   "
-        );
+        var resultTrailing = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "answer   ");
+        var resultBoth = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "   answer   ");
 
         // Assert
-        resultLeading
-            .IsCorrect.Should()
-            .BeTrue(because: "TrimWhitespace removes leading spaces");
-        resultTrailing
-            .IsCorrect.Should()
-            .BeTrue(because: "TrimWhitespace removes trailing spaces");
+        resultLeading.IsCorrect.Should().BeTrue(because: "TrimWhitespace removes leading spaces");
+        resultTrailing.IsCorrect.Should().BeTrue(because: "TrimWhitespace removes trailing spaces");
         resultBoth.IsCorrect.Should().BeTrue(because: "TrimWhitespace removes both");
     }
 
@@ -150,11 +133,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         );
 
         // Act
-        var resultWithSpace = await _sut.SubmitAnswerAsync(
-            _testUserId,
-            exerciseId,
-            " answer"
-        );
+        var resultWithSpace = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, " answer");
         var resultExact = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "answer");
 
         // Assert
@@ -184,18 +163,10 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 
         // Assert
         resultHello.IsCorrect.Should().BeTrue(because: "correct answer always accepted");
-        resultHi
-            .IsCorrect.Should()
-            .BeTrue(because: "first alternative in AcceptedAnswers list");
-        resultHey
-            .IsCorrect.Should()
-            .BeTrue(because: "second alternative in AcceptedAnswers list");
-        resultHowdy
-            .IsCorrect.Should()
-            .BeTrue(because: "third alternative in AcceptedAnswers list");
-        resultInvalid
-            .IsCorrect.Should()
-            .BeFalse(because: "answer not in accepted list");
+        resultHi.IsCorrect.Should().BeTrue(because: "first alternative in AcceptedAnswers list");
+        resultHey.IsCorrect.Should().BeTrue(because: "second alternative in AcceptedAnswers list");
+        resultHowdy.IsCorrect.Should().BeTrue(because: "third alternative in AcceptedAnswers list");
+        resultInvalid.IsCorrect.Should().BeFalse(because: "answer not in accepted list");
     }
 
     [Fact]
@@ -210,16 +181,8 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         );
 
         // Act
-        var resultAlt1 = await _sut.SubmitAnswerAsync(
-            _testUserId,
-            exerciseId,
-            "alternative1"
-        );
-        var resultAlt2 = await _sut.SubmitAnswerAsync(
-            _testUserId,
-            exerciseId,
-            "alternative2"
-        );
+        var resultAlt1 = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "alternative1");
+        var resultAlt2 = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "alternative2");
 
         // Assert
         resultAlt1
@@ -229,9 +192,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
             );
         resultAlt2
             .IsCorrect.Should()
-            .BeTrue(
-                because: "whitespace around alternatives is trimmed when TrimWhitespace=true"
-            );
+            .BeTrue(because: "whitespace around alternatives is trimmed when TrimWhitespace=true");
     }
 
     [Fact]
@@ -246,20 +207,14 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         );
 
         // Act
-        var resultCorrectCase = await _sut.SubmitAnswerAsync(
-            _testUserId,
-            exerciseId,
-            "Alt1"
-        );
+        var resultCorrectCase = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "Alt1");
         var resultWrongCase = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "alt1");
 
         // Assert
         resultCorrectCase.IsCorrect.Should().BeTrue();
         resultWrongCase
             .IsCorrect.Should()
-            .BeFalse(
-                because: "case-sensitive validation applies to AcceptedAnswers as well"
-            );
+            .BeFalse(because: "case-sensitive validation applies to AcceptedAnswers as well");
     }
 
     [Fact]
@@ -341,9 +296,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "buon");
 
         // Assert
-        result
-            .IsCorrect.Should()
-            .BeFalse(because: "40% similarity is below 90% threshold");
+        result.IsCorrect.Should().BeFalse(because: "40% similarity is below 90% threshold");
         result
             .CorrectAnswer.Should()
             .Be("buongiorno", because: "wrong answers reveal the correct answer");
@@ -363,9 +316,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "grazi");
 
         // Assert
-        result
-            .IsCorrect.Should()
-            .BeTrue(because: "83.3% similarity exceeds 80% threshold");
+        result.IsCorrect.Should().BeTrue(because: "83.3% similarity exceeds 80% threshold");
     }
 
     [Fact]
@@ -382,9 +333,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "graz");
 
         // Assert
-        result
-            .IsCorrect.Should()
-            .BeFalse(because: "66.7% similarity is below 80% threshold");
+        result.IsCorrect.Should().BeFalse(because: "66.7% similarity is below 80% threshold");
     }
 
     [Fact]
@@ -446,9 +395,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "come stay");
 
         // Assert
-        result
-            .IsCorrect.Should()
-            .BeTrue(because: "88.9% similarity exceeds 70% threshold");
+        result.IsCorrect.Should().BeTrue(because: "88.9% similarity exceeds 70% threshold");
     }
 
     // ── Listening Validation ────────────────────────────────────────────────
@@ -601,9 +548,10 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton(ctx);
-        services.AddIdentityCore<User>().AddRoles<IdentityRole>().AddEntityFrameworkStores<
-            BackendDbContext
-        >();
+        services
+            .AddIdentityCore<User>()
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<BackendDbContext>();
         var sp = services.BuildServiceProvider();
         var userManager = sp.GetRequiredService<UserManager<User>>();
 
@@ -658,7 +606,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 
         _ctx.Exercises.Add(exercise);
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
-        return exercise.Id;
+        return exercise.ExerciseId;
     }
 
     private async Task<string> CreateAndSaveTranslationAsync(
@@ -685,7 +633,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 
         _ctx.Exercises.Add(exercise);
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
-        return exercise.Id;
+        return exercise.ExerciseId;
     }
 
     private async Task<string> CreateAndSaveListeningAsync(
@@ -712,11 +660,14 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 
         _ctx.Exercises.Add(exercise);
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
-        return exercise.Id;
+        return exercise.ExerciseId;
     }
 
-    private async Task<(string exerciseId, string correctId, string wrongId)>
-        CreateAndSaveMultipleChoiceAsync()
+    private async Task<(
+        string exerciseId,
+        string correctId,
+        string wrongId
+    )> CreateAndSaveMultipleChoiceAsync()
     {
         var exercise = new MultipleChoiceExercise
         {
@@ -733,7 +684,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var correctOption = new ExerciseOption
         {
             Id = Guid.NewGuid().ToString(),
-            ExerciseId = exercise.Id,
+            ExerciseId = exercise.ExerciseId,
             OptionText = "Correct option",
             IsCorrect = true,
             OrderIndex = 0,
@@ -742,7 +693,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var wrongOption1 = new ExerciseOption
         {
             Id = Guid.NewGuid().ToString(),
-            ExerciseId = exercise.Id,
+            ExerciseId = exercise.ExerciseId,
             OptionText = "Wrong option 1",
             IsCorrect = false,
             OrderIndex = 1,
@@ -751,7 +702,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var wrongOption2 = new ExerciseOption
         {
             Id = Guid.NewGuid().ToString(),
-            ExerciseId = exercise.Id,
+            ExerciseId = exercise.ExerciseId,
             OptionText = "Wrong option 2",
             IsCorrect = false,
             OrderIndex = 2,
@@ -764,6 +715,6 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         _ctx.Exercises.Add(exercise);
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        return (exercise.Id, correctOption.Id, wrongOption1.Id);
+        return (exercise.ExerciseId, correctOption.Id, wrongOption1.Id);
     }
 }

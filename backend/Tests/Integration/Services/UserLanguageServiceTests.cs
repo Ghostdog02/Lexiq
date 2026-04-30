@@ -41,7 +41,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Get existing language from fixture
         var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
-        _languageId = language.Id;
+        _languageId = language.LanguageId;
         _userId = user.Id;
 
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
