@@ -50,7 +50,7 @@ public class ExerciseService(BackendDbContext context)
             CreateFillInBlankExerciseDto fibDto => new FillInBlankExercise
             {
                 LessonId = lessonId,
-                Instructions = fibDto.Title,
+                Instructions = fibDto.Instructions,
                 DifficultyLevel = fibDto.DifficultyLevel,
                 Points = fibDto.Points,
                 Text = fibDto.Text,
@@ -66,7 +66,7 @@ public class ExerciseService(BackendDbContext context)
             CreateListeningExerciseDto lDto => new ListeningExercise
             {
                 LessonId = lessonId,
-                Instructions = lDto.Title,
+                Instructions = lDto.Instructions,
                 DifficultyLevel = lDto.DifficultyLevel,
                 Points = lDto.Points,
                 AudioUrl = lDto.AudioUrl,
@@ -83,7 +83,7 @@ public class ExerciseService(BackendDbContext context)
             CreateTrueFalseExerciseDto tfDto => new TrueFalseExercise
             {
                 LessonId = lessonId,
-                Instructions = tfDto.Title,
+                Instructions = tfDto.Instructions,
                 DifficultyLevel = tfDto.DifficultyLevel,
                 Points = tfDto.Points,
                 Statement = tfDto.Statement,
@@ -94,7 +94,7 @@ public class ExerciseService(BackendDbContext context)
             CreateImageChoiceExerciseDto icDto => new ImageChoiceExercise
             {
                 LessonId = lessonId,
-                Instructions = icDto.Title,
+                Instructions = icDto.Instructions,
                 DifficultyLevel = icDto.DifficultyLevel,
                 Points = icDto.Points,
                 Options = icDto
@@ -110,7 +110,7 @@ public class ExerciseService(BackendDbContext context)
             CreateAudioMatchingExerciseDto amDto => new AudioMatchingExercise
             {
                 LessonId = lessonId,
-                Instructions = amDto.Title,
+                Instructions = amDto.Instructions,
                 DifficultyLevel = amDto.DifficultyLevel,
                 Points = amDto.Points,
                 Pairs = amDto
@@ -135,8 +135,8 @@ public class ExerciseService(BackendDbContext context)
         if (exercise == null)
             return null;
 
-        if (dto.Title != null)
-            exercise.Instructions = dto.Title;
+        if (dto.Instructions != null)
+            exercise.Instructions = dto.Instructions;
 
         if (dto.DifficultyLevel.HasValue)
             exercise.DifficultyLevel = dto.DifficultyLevel.Value;
