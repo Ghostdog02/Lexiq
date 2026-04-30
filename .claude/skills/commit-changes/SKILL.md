@@ -43,6 +43,7 @@ Apply these rules in order (from `.claude/rules/rules.md`):
 1. **Never mix concerns.** Feature code, docs, tests, and migrations go in **separate** commits.
 2. **Order by dependency.** Infrastructure / migrations / core fixes first; tests and docs last.
 3. **One concern per commit** — if a single concern still spans many files, that's fine; if it spans many *unrelated* files, split further.
+4. **Keep commits digestible** — max 4-5 files per commit. If a concern touches more files, split into multiple commits (e.g., one commit per test file or logical subgroup).
 
 Standard groupings:
 
