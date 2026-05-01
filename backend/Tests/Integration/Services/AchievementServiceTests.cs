@@ -226,7 +226,9 @@ public class AchievementServiceTests(DatabaseFixture fixture)
         unlocked
             .Select(u => u.AchievementId)
             .Should()
-            .BeEquivalentTo(new[] { _achievements[0].AchievementId, _achievements[1].AchievementId });
+            .BeEquivalentTo(
+                new[] { _achievements[0].AchievementId, _achievements[1].AchievementId }
+            );
     }
 
     [Fact]
@@ -249,7 +251,10 @@ public class AchievementServiceTests(DatabaseFixture fixture)
             .HaveCount(2, because: "user now qualifies for both 100 XP and 500 XP achievements");
         unlocked
             .Should()
-            .Contain(_achievements[0].AchievementId, because: "First Steps was already unlocked at 100 XP");
+            .Contain(
+                _achievements[0].AchievementId,
+                because: "First Steps was already unlocked at 100 XP"
+            );
         unlocked
             .Should()
             .Contain(

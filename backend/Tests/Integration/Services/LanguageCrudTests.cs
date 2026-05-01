@@ -135,7 +135,9 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         result.Should().NotBeEmpty();
         result.Should().HaveCountGreaterThanOrEqualTo(2);
 
-        var testLanguages = result.Where(l => new[] { lang1.LanguageId, lang2.LanguageId }.Contains(l.LanguageId)).ToList();
+        var testLanguages = result
+            .Where(l => new[] { lang1.LanguageId, lang2.LanguageId }.Contains(l.LanguageId))
+            .ToList();
         testLanguages.Should().HaveCount(2);
 
         var lang1Result = testLanguages.First(l => l.LanguageId == lang1.LanguageId);

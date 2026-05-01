@@ -56,7 +56,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
                 ctx,
                 Fixture.LessonId,
                 orderIndex: i,
-                isLocked: i != 0  // Only first exercise unlocked
+                isLocked: i != 0 // Only first exercise unlocked
             );
             _exerciseIds.Add(id);
         }
@@ -118,7 +118,9 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
 
         exercises.Should().NotBeNull();
         secondEx.Should().NotBeNull();
-        secondEx!.IsLocked.Should().BeTrue("second exercise should remain locked after wrong answer");
+        secondEx!
+            .IsLocked.Should()
+            .BeTrue("second exercise should remain locked after wrong answer");
     }
 
     [Fact]
@@ -152,7 +154,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
             new SubmitAnswerRequest("answer"),
             TestContext.Current.CancellationToken
         );
-        
+
         System.Console.WriteLine(response);
         System.Console.WriteLine(response.Content);
         var result = await response.Content.ReadFromJsonAsync<ExerciseSubmitResult>(
@@ -299,10 +301,18 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         var wrongOption = mcCast?.Options.FirstOrDefault(o => !o.IsCorrect);
 
         // Act - submit wrong option first
-        var wrongSubmit = await SubmitAnswerAsync(_studentClient, mcExerciseId, wrongOption?.Id ?? "");
+        var wrongSubmit = await SubmitAnswerAsync(
+            _studentClient,
+            mcExerciseId,
+            wrongOption?.Id ?? ""
+        );
 
         // Act - submit correct option
-        var correctSubmit = await SubmitAnswerAsync(_studentClient, mcExerciseId, correctOption?.Id ?? "");
+        var correctSubmit = await SubmitAnswerAsync(
+            _studentClient,
+            mcExerciseId,
+            correctOption?.Id ?? ""
+        );
 
         // Assert
         mcCast.Should().NotBeNull();
