@@ -214,7 +214,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
             .NotBeNull(
                 because: "GetUserLanguagesAsync should eager-load the Language navigation property"
             );
-        result[0].Language.Id.Should().Be(_languageId);
+        result[0].Language.LanguageId.Should().Be(_languageId);
     }
 
     [Fact]
@@ -232,12 +232,12 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
     {
         // Arrange
         // Create a second language
-        var secondLanguage = new Language { Name = "Spanish", FlagIconUrl = null };
+        var secondLanguage = new Language { LanguageId = Guid.NewGuid().ToString(), LanguageName = "Spanish", FlagIconUrl = "https://example.com/es.png" };
         _ctx.Languages.Add(secondLanguage);
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         await _sut.EnrollUserAsync(_userId, _languageId);
-        await _sut.EnrollUserAsync(_userId, secondLanguage.Id);
+        await _sut.EnrollUserAsync(_userId, secondLanguage.LanguageId);
 
         // Act
         var result = await _sut.GetUserLanguagesAsync(_userId);
@@ -253,7 +253,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
         result
             .Should()
             .Contain(
-                ul => ul.LanguageId == secondLanguage.Id,
+                ul => ul.LanguageId == secondLanguage.LanguageId,
                 because: "second enrollment should be in result"
             );
     }
