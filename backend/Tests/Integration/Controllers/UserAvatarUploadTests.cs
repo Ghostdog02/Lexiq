@@ -65,10 +65,9 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
                 because: "valid avatar upload should succeed for authenticated user"
             );
 
-        var responseBody = await response
-            .Content.ReadFromJsonAsync<AvatarUploadResponse>(
-                cancellationToken: TestContext.Current.CancellationToken
-            );
+        var responseBody = await response.Content.ReadFromJsonAsync<AvatarUploadResponse>(
+            cancellationToken: TestContext.Current.CancellationToken
+        );
         responseBody.Should().NotBeNull();
         responseBody!
             .AvatarUrl.Should()
@@ -119,10 +118,7 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
         // Assert
         response
             .StatusCode.Should()
-            .Be(
-                HttpStatusCode.OK,
-                because: "uploading a new avatar should update existing record"
-            );
+            .Be(HttpStatusCode.OK, because: "uploading a new avatar should update existing record");
 
         // Verify the new avatar replaced the old one
         var getResponse = await _client.GetAsync(
@@ -288,12 +284,8 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
             .StatusCode.Should()
             .Be(HttpStatusCode.OK, because: "existing avatar should be retrievable");
         response
-            .Content.Headers.ContentType!
-            .MediaType.Should()
-            .Be(
-                "image/jpeg",
-                because: "content type should match the uploaded avatar's MIME type"
-            );
+            .Content.Headers.ContentType!.MediaType.Should()
+            .Be("image/jpeg", because: "content type should match the uploaded avatar's MIME type");
 
         var retrievedBytes = await response.Content.ReadAsByteArrayAsync(
             TestContext.Current.CancellationToken
@@ -304,16 +296,11 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
 
         // Verify Cache-Control header is set
         response
-            .Headers.CacheControl!
-            .Public.Should()
+            .Headers.CacheControl!.Public.Should()
             .BeTrue(because: "avatars should be publicly cacheable for performance");
         response
-            .Headers.CacheControl!
-            .MaxAge.Should()
-            .Be(
-                TimeSpan.FromDays(1),
-                because: "Cache-Control header should set 24-hour expiry"
-            );
+            .Headers.CacheControl!.MaxAge.Should()
+            .Be(TimeSpan.FromDays(1), because: "Cache-Control header should set 24-hour expiry");
     }
 
     [Fact]

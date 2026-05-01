@@ -151,8 +151,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode
-            .Should()
+        response
+            .StatusCode.Should()
             .Be(
                 HttpStatusCode.Forbidden,
                 because: "students cannot access locked exercises - sequential progression enforcement"
@@ -179,8 +179,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode
-            .Should()
+        response
+            .StatusCode.Should()
             .Be(HttpStatusCode.OK, because: "admins can bypass lock checks");
     }
 
@@ -292,8 +292,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode
-            .Should()
+        response
+            .StatusCode.Should()
             .Be(
                 HttpStatusCode.Created,
                 because: "ContentCreator role can create exercises per [Authorize(Roles = 'Admin,ContentCreator')]"
@@ -329,8 +329,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode
-            .Should()
+        response
+            .StatusCode.Should()
             .Be(
                 HttpStatusCode.Forbidden,
                 because: "Student role is not in the [Authorize(Roles = 'Admin,ContentCreator')] list"
@@ -567,8 +567,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
         result.Should().NotBeNull();
-        result!.CorrectAnswer
-            .Should()
+        result!
+            .CorrectAnswer.Should()
             .Be("answer", because: "FillInBlankExercise seed data sets CorrectAnswer to 'answer'");
     }
 
@@ -591,8 +591,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
         result.Should().NotBeNull();
-        result!.CorrectAnswer
-            .Should()
+        result!
+            .CorrectAnswer.Should()
             .Be(
                 "answer",
                 because: "MultipleChoice seed data sets option at index 1 (IsCorrect=true) with OptionText='answer'"
@@ -618,8 +618,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
         result.Should().NotBeNull();
-        result!.CorrectAnswer
-            .Should()
+        result!
+            .CorrectAnswer.Should()
             .Be("answer", because: "ListeningExercise seed data sets CorrectAnswer to 'answer'");
     }
 
@@ -642,8 +642,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
         result.Should().NotBeNull();
-        result!.CorrectAnswer
-            .Should()
+        result!
+            .CorrectAnswer.Should()
             .Be("answer", because: "TranslationExercise seed data sets TargetText to 'answer'");
     }
 
@@ -660,8 +660,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode
-            .Should()
+        response
+            .StatusCode.Should()
             .Be(
                 HttpStatusCode.NotFound,
                 because: "endpoint should return 404 for exercises that don't exist in the database"
@@ -682,8 +682,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode
-            .Should()
+        response
+            .StatusCode.Should()
             .Be(
                 HttpStatusCode.Unauthorized,
                 because: "ExerciseController has [Authorize] at class level - all endpoints require authentication"
@@ -704,8 +704,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode
-            .Should()
+        response
+            .StatusCode.Should()
             .Be(
                 HttpStatusCode.OK,
                 because: "endpoint has no role restriction - any authenticated user (including Students) can access it"
@@ -725,8 +725,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
         );
 
         // Assert
-        response.StatusCode
-            .Should()
+        response
+            .StatusCode.Should()
             .Be(HttpStatusCode.OK, because: "Admins can access all authenticated endpoints");
     }
 
@@ -781,8 +781,8 @@ public class ExerciseControllerTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
         result.Should().NotBeNull();
-        result!.CorrectAnswer
-            .Should()
+        result!
+            .CorrectAnswer.Should()
             .BeNull(
                 because: "when no option has IsCorrect=true, FirstOrDefault returns null and switch returns null"
             );

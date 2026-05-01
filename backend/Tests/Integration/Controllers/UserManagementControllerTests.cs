@@ -356,7 +356,13 @@ public class UserManagementControllerTests(DatabaseFixture fixture)
     public async Task Update_Admin_ValidDto_UpdatesUser()
     {
         // Arrange
-        var updateDto = new UserManagementUpdateDto(_testUserId, "Updated User", "testuser@test.com", "555-1234", DateTime.UtcNow);
+        var updateDto = new UserManagementUpdateDto(
+            _testUserId,
+            "Updated User",
+            "testuser@test.com",
+            "555-1234",
+            DateTime.UtcNow
+        );
 
         // Act
         var response = await _adminClient.PutAsJsonAsync(
@@ -533,9 +539,7 @@ public class UserManagementControllerTests(DatabaseFixture fixture)
 
         // Verify deletion with a fresh scope
         using var verifyScope = Factory.Services.CreateScope();
-        var verifyUserManager = verifyScope
-            .ServiceProvider
-            .GetRequiredService<UserManager<User>>();
+        var verifyUserManager = verifyScope.ServiceProvider.GetRequiredService<UserManager<User>>();
         var deletedUser = await verifyUserManager.FindByIdAsync(userIdToDelete);
         deletedUser.Should().BeNull();
     }
