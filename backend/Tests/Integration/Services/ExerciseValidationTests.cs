@@ -571,7 +571,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
     private async Task UnlockLessonAsync(string lessonId)
     {
         var lesson = await _ctx.Lessons.FindAsync(
-            new object[] { lessonId },
+            [lessonId],
             TestContext.Current.CancellationToken
         );
         if (lesson != null)

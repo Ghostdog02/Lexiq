@@ -78,7 +78,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Verify in database
         var dbRecord = await _ctx.UserLanguages.FindAsync(
-            new object[] { _userId, _languageId },
+            [_userId, _languageId],
             TestContext.Current.CancellationToken
         );
         dbRecord.Should().NotBeNull();
@@ -134,7 +134,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Verify no record was created
         var dbRecord = await _ctx.UserLanguages.FindAsync(
-            new object[] { _userId, nonExistentLanguageId },
+            [_userId, nonExistentLanguageId],
             TestContext.Current.CancellationToken
         );
         dbRecord.Should().BeNull();
@@ -173,7 +173,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Verify record was deleted
         var dbRecord = await _ctx.UserLanguages.FindAsync(
-            new object[] { _userId, _languageId },
+            [_userId, _languageId],
             TestContext.Current.CancellationToken
         );
         dbRecord.Should().BeNull(because: "unenrollment should delete the UserLanguage record");

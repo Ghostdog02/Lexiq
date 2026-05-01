@@ -36,10 +36,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _sut = new CourseService(_ctx);
 
         // Create test user for CreatedById FK
-        var user = new UserBuilder()
-            .WithUserName("testadmin")
-            .WithEmail("admin@test.com")
-            .Build();
+        var user = new UserBuilder().WithUserName("testadmin").WithEmail("admin@test.com").Build();
         await DbSeeder.AddUserAsync(_ctx, user);
         _testUserId = user.Id;
 
@@ -99,8 +96,10 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // Assert
         await act.Should()
             .ThrowAsync<ArgumentException>()
-            .WithMessage("Language 'NonexistentLanguage' not found.",
-                because: "CourseService validates language existence before creation");
+            .WithMessage(
+                "Language 'NonexistentLanguage' not found.",
+                because: "CourseService validates language existence before creation"
+            );
     }
 
     [Fact]
@@ -145,8 +144,13 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // Assert
         result.CreatedAt.Should().BeAfter(beforeCreate);
         result.CreatedAt.Should().BeBefore(afterCreate);
-        result.UpdatedAt.Should().BeCloseTo(result.CreatedAt, TimeSpan.FromMilliseconds(10),
-            because: "CreatedAt and UpdatedAt are both set to UtcNow on creation");
+        result
+            .UpdatedAt.Should()
+            .BeCloseTo(
+                result.CreatedAt,
+                TimeSpan.FromMilliseconds(10),
+                because: "CreatedAt and UpdatedAt are both set to UtcNow on creation"
+            );
     }
 
     #endregion
@@ -174,8 +178,12 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         var result = await _sut.GetAllCoursesAsync();
 
         // Assert
-        result.Should().HaveCountGreaterThanOrEqualTo(3,
-            because: "three courses were created in this test plus the fixture course");
+        result
+            .Should()
+            .HaveCountGreaterThanOrEqualTo(
+                3,
+                because: "three courses were created in this test plus the fixture course"
+            );
         var testCourses = result.Where(c => c.Title.StartsWith("Course ")).ToList();
         testCourses.Should().HaveCount(3);
         testCourses[0].Title.Should().Be("Course A");
@@ -205,7 +213,9 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Assert
         var orderedCourses = allCourses
-            .Where(c => new[] { course1.CourseId, course2.CourseId, course3.CourseId }.Contains(c.Id))
+            .Where(c =>
+                new[] { course1.CourseId, course2.CourseId, course3.CourseId }.Contains(c.Id)
+            )
             .ToList();
 
         orderedCourses.Should().HaveCount(3);
@@ -271,7 +281,13 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
         // Arrange
         var course = await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "Original Title", "Original Description", 30, 0),
+            new CreateCourseDto(
+                ItalianLanguageName,
+                "Original Title",
+                "Original Description",
+                30,
+                0
+            ),
             _testUserId
         );
 
@@ -289,12 +305,18 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // Assert
         result.Should().NotBeNull();
         result!.Title.Should().Be("Updated Title");
-        result.Description.Should().Be("Original Description",
-            because: "null in UpdateCourseDto should not overwrite existing value");
-        result.EstimatedDurationHours.Should().Be(30,
-            because: "null in UpdateCourseDto should not overwrite existing value");
-        result.OrderIndex.Should().Be(0,
-            because: "null in UpdateCourseDto should not overwrite existing value");
+        result
+            .Description.Should()
+            .Be(
+                "Original Description",
+                because: "null in UpdateCourseDto should not overwrite existing value"
+            );
+        result
+            .EstimatedDurationHours.Should()
+            .Be(30, because: "null in UpdateCourseDto should not overwrite existing value");
+        result
+            .OrderIndex.Should()
+            .Be(0, because: "null in UpdateCourseDto should not overwrite existing value");
     }
 
     [Fact]
@@ -342,8 +364,12 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Assert
         result.Should().NotBeNull();
-        result!.UpdatedAt.Should().BeAfter(originalUpdatedAt,
-            because: "UpdatedAt must change when the course is updated");
+        result!
+            .UpdatedAt.Should()
+            .BeAfter(
+                originalUpdatedAt,
+                because: "UpdatedAt must change when the course is updated"
+            );
     }
 
     [Fact]
@@ -396,14 +422,24 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Assert
         result.Should().NotBeNull();
-        result!.Title.Should().Be("Original Title",
-            because: "null Title in DTO should not overwrite existing value");
-        result.Description.Should().Be("Original Desc",
-            because: "null Description in DTO should not overwrite existing value");
-        result.EstimatedDurationHours.Should().Be(40,
-            because: "null EstimatedDurationHours in DTO should not overwrite existing value");
-        result.OrderIndex.Should().Be(3,
-            because: "null OrderIndex in DTO should not overwrite existing value");
+        result!
+            .Title.Should()
+            .Be("Original Title", because: "null Title in DTO should not overwrite existing value");
+        result
+            .Description.Should()
+            .Be(
+                "Original Desc",
+                because: "null Description in DTO should not overwrite existing value"
+            );
+        result
+            .EstimatedDurationHours.Should()
+            .Be(
+                40,
+                because: "null EstimatedDurationHours in DTO should not overwrite existing value"
+            );
+        result
+            .OrderIndex.Should()
+            .Be(3, because: "null OrderIndex in DTO should not overwrite existing value");
     }
 
     #endregion
@@ -426,7 +462,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         result.Should().BeTrue();
 
         var deleted = await _ctx.Courses.FindAsync(
-            new object[] { course.CourseId },
+            [course.CourseId],
             TestContext.Current.CancellationToken
         );
         deleted.Should().BeNull();
@@ -473,11 +509,12 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         result.Should().BeTrue();
 
         var deletedLesson = await _ctx.Lessons.FindAsync(
-            new object[] { lessonId },
+            [lessonId],
             TestContext.Current.CancellationToken
         );
-        deletedLesson.Should().BeNull(
-            because: "lessons should cascade delete when their parent course is deleted");
+        deletedLesson
+            .Should()
+            .BeNull(because: "lessons should cascade delete when their parent course is deleted");
     }
 
     #endregion

@@ -137,14 +137,14 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         result.Should().Be(UnlockStatus.Unlocked);
 
         var unlockedLesson = await _ctx.Lessons.FindAsync(
-            new object[] { secondLessonId },
+            [secondLessonId],
             TestContext.Current.CancellationToken
         );
         unlockedLesson.Should().NotBeNull();
         unlockedLesson.IsLocked.Should().BeFalse();
 
         var unlockedExercise = await _ctx.Exercises.FindAsync(
-            new object[] { exerciseId },
+            [exerciseId],
             TestContext.Current.CancellationToken
         );
         unlockedExercise.Should().NotBeNull();
@@ -298,21 +298,21 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
 
         // Assert
         var lesson = await _ctx.Lessons.FindAsync(
-            new object[] { lessonId },
+            [lessonId],
             TestContext.Current.CancellationToken
         );
         lesson.Should().NotBeNull();
         lesson.IsLocked.Should().BeFalse();
 
         var exercise1 = await _ctx.Exercises.FindAsync(
-            new object[] { exercise1Id },
+            [exercise1Id],
             TestContext.Current.CancellationToken
         );
         exercise1.Should().NotBeNull();
         exercise1.IsLocked.Should().BeFalse();
 
         var exercise2 = await _ctx.Exercises.FindAsync(
-            new object[] { exercise2Id },
+            [exercise2Id],
             TestContext.Current.CancellationToken
         );
         exercise2.Should().NotBeNull();
@@ -343,7 +343,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
 
         // Assert
         var lesson = await _ctx.Lessons.FindAsync(
-            new object[] { lessonId },
+            [lessonId],
             TestContext.Current.CancellationToken
         );
         lesson.Should().NotBeNull();

@@ -409,7 +409,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         result.Should().BeTrue();
 
         var deleted = await _ctx.Lessons.FindAsync(
-            new object[] { lessonId },
+            [lessonId],
             TestContext.Current.CancellationToken
         );
         deleted.Should().BeNull();

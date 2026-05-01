@@ -73,7 +73,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.AddRange(
             new Lesson
             {
-                LessonId =lesson2Id,
+                LessonId = lesson2Id,
                 CourseId = _secondCourseId,
                 Title = "Lesson 2",
                 LessonContent = "{}",
@@ -81,7 +81,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
             },
             new Lesson
             {
-                LessonId =lesson3Id,
+                LessonId = lesson3Id,
                 CourseId = _secondCourseId,
                 Title = "Lesson 3",
                 LessonContent = "{}",
@@ -89,7 +89,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
             },
             new Lesson
             {
-                LessonId =lesson1Id,
+                LessonId = lesson1Id,
                 CourseId = _secondCourseId,
                 Title = "Lesson 1",
                 LessonContent = "{}",
@@ -148,7 +148,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Test Lesson",
                 LessonContent = "{}",
@@ -219,7 +219,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Empty Lesson",
                 LessonContent = "{}",
@@ -249,7 +249,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                LessonId =lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Mixed Exercise Lesson",
                 LessonContent = "{}",
