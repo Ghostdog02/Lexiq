@@ -77,18 +77,15 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
             [
                 new CreateFillInBlankExerciseDto(
                     LessonId: null,
-                    Title: "Test Exercise 1",
-                    Question: "Fill in",
-                    EstimatedDurationMinutes: 5,
+                    Instructions: "Fill in the blank",
                     DifficultyLevel: DifficultyLevel.Beginner,
                     Points: 10,
-                    OrderIndex: 0,
                     Explanation: "Good job",
                     Text: "Test _",
-                    CorrectAnswer: "answer",
-                    AcceptedAnswers: null,
-                    CaseSensitive: false,
-                    TrimWhitespace: true
+                    Options:
+                    [
+                        new CreateExerciseOptionDto("answer", IsCorrect: true, "Correct answer"),
+                    ]
                 ),
             ]
         );
@@ -171,7 +168,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
             createLessonDto,
             TestContext.Current.CancellationToken
         );
-        
+
         var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
             cancellationToken: TestContext.Current.CancellationToken
         );
@@ -236,7 +233,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
             createLessonDto,
             TestContext.Current.CancellationToken
         );
-        
+
         var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
             cancellationToken: TestContext.Current.CancellationToken
         );
@@ -348,18 +345,15 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
             [
                 new CreateFillInBlankExerciseDto(
                     LessonId: null,
-                    Title: "Exercise 1",
-                    Question: null,
-                    EstimatedDurationMinutes: 5,
+                    Instructions: "Exercise 1",
                     DifficultyLevel: DifficultyLevel.Beginner,
                     Points: 10,
-                    OrderIndex: 0,
                     Explanation: null,
                     Text: "First",
-                    CorrectAnswer: "one",
-                    AcceptedAnswers: null,
-                    CaseSensitive: false,
-                    TrimWhitespace: true
+                    Options:
+                    [
+                        new CreateExerciseOptionDto("one", IsCorrect: true, "Correct answer"),
+                    ]
                 ),
             ]
         );
@@ -383,18 +377,15 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         // Act
         CreateExerciseDto addExerciseDto = new CreateFillInBlankExerciseDto(
             LessonId: createdLesson.LessonId,
-            Title: "Exercise 2",
-            Question: null,
-            EstimatedDurationMinutes: 5,
+            Instructions: "Exercise 2",
             DifficultyLevel: DifficultyLevel.Beginner,
             Points: 10,
-            OrderIndex: 1,
             Explanation: null,
             Text: "Second",
-            CorrectAnswer: "two",
-            AcceptedAnswers: null,
-            CaseSensitive: false,
-            TrimWhitespace: true
+            Options:
+            [
+                new CreateExerciseOptionDto("two", IsCorrect: true, "Correct answer"),
+            ]
         );
 
         var addExerciseResponse = await _adminClient.PostAsJsonAsync(
@@ -418,8 +409,8 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         addExerciseResponse.StatusCode.Should().Be(HttpStatusCode.Created);
         lessonWithExercises.Should().NotBeNull();
         lessonWithExercises!.Exercises.Should().HaveCount(2);
-        lessonWithExercises.Exercises.Should().Contain(e => e.Title == "Exercise 1");
-        lessonWithExercises.Exercises.Should().Contain(e => e.Title == "Exercise 2");
+        lessonWithExercises.Exercises.Should().Contain(e => e.Instructions == "Exercise 1");
+        lessonWithExercises.Exercises.Should().Contain(e => e.Instructions == "Exercise 2");
     }
 
     [Fact]
