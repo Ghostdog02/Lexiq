@@ -1,4 +1,3 @@
-using Backend.Api.Dtos;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities.Exercises;
@@ -8,7 +7,6 @@ using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -18,10 +16,8 @@ namespace Backend.Tests.Services;
 /// Integration tests for ExerciseProgressService answer validation.
 ///
 /// Verifies:
-///   - FillInBlank: case sensitivity, whitespace trimming, AcceptedAnswers parsing
-///   - Translation: Levenshtein distance, MatchingThreshold, fuzzy matching
-///   - Listening: AcceptedAnswers, case sensitivity
-///   - MultipleChoice: option ID validation
+///   - FillInBlank: option-based validation with multiple correct answers
+///   - Listening: option-based validation with audio exercises
 /// </summary>
 public class ExerciseValidationTests(DatabaseFixture fixture)
     : IClassFixture<DatabaseFixture>,
@@ -239,165 +235,6 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
             .BeFalse(because: "empty AcceptedAnswers means only CorrectAnswer is valid");
     }
 
-    // ── Translation Validation ──────────────────────────────────────────────
-
-    [Fact]
-    public async Task Translation_ExactMatch_Returns100PercentSimilarity()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveTranslationAsync(
-            sourceText: "Hello",
-            targetText: "Ciao",
-            matchingThreshold: 0.8
-        );
-
-        // Act
-        var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "Ciao");
-
-        // Assert
-        result
-            .IsCorrect.Should()
-            .BeTrue(because: "exact match meets any threshold (100% similarity)");
-    }
-
-    [Fact]
-    public async Task Translation_OneCharDifference_PassesLowThreshold()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveTranslationAsync(
-            sourceText: "Hello",
-            targetText: "buongiorno",
-            matchingThreshold: 0.7
-        );
-
-        // Act - "buongirno" has 1 char deletion (missing 'o'), 9/10 chars = 90% similarity
-        var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "buongirno");
-
-        // Assert
-        result
-            .IsCorrect.Should()
-            .BeTrue(
-                because: "90% similarity exceeds 70% threshold (1 char difference in 10-char word)"
-            );
-    }
-
-    [Fact]
-    public async Task Translation_BelowThreshold_Fails()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveTranslationAsync(
-            sourceText: "Good morning",
-            targetText: "buongiorno",
-            matchingThreshold: 0.9
-        );
-
-        // Act - "buon" is 4 chars, "buongiorno" is 10 chars
-        // Similarity = (10 - 6) / 10 = 0.4 = 40%
-        var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "buon");
-
-        // Assert
-        result.IsCorrect.Should().BeFalse(because: "40% similarity is below 90% threshold");
-        result
-            .CorrectAnswer.Should()
-            .Be("buongiorno", because: "wrong answers reveal the correct answer");
-    }
-
-    [Fact]
-    public async Task Translation_Threshold80_AcceptsCloseMatch()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveTranslationAsync(
-            sourceText: "Thank you",
-            targetText: "grazie",
-            matchingThreshold: 0.8
-        );
-
-        // Act - "grazi" has 1 char missing, 5/6 = 83.3% similarity
-        var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "grazi");
-
-        // Assert
-        result.IsCorrect.Should().BeTrue(because: "83.3% similarity exceeds 80% threshold");
-    }
-
-    [Fact]
-    public async Task Translation_Threshold80_RejectsDistantMatch()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveTranslationAsync(
-            sourceText: "Thank you",
-            targetText: "grazie",
-            matchingThreshold: 0.8
-        );
-
-        // Act - "graz" has 2 chars missing, 4/6 = 66.7% similarity
-        var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "graz");
-
-        // Assert
-        result.IsCorrect.Should().BeFalse(because: "66.7% similarity is below 80% threshold");
-    }
-
-    [Fact]
-    public async Task Translation_CaseInsensitive_IgnoresCase()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveTranslationAsync(
-            sourceText: "Hello",
-            targetText: "Ciao",
-            matchingThreshold: 0.8
-        );
-
-        // Act
-        var resultLower = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "ciao");
-        var resultUpper = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "CIAO");
-
-        // Assert
-        resultLower
-            .IsCorrect.Should()
-            .BeTrue(because: "translation validation is case-insensitive");
-        resultUpper
-            .IsCorrect.Should()
-            .BeTrue(because: "translation validation is case-insensitive");
-    }
-
-    [Fact]
-    public async Task Translation_EmptyStrings_ReturnsTrue()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveTranslationAsync(
-            sourceText: "",
-            targetText: "",
-            matchingThreshold: 0.8
-        );
-
-        // Act
-        var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "");
-
-        // Assert
-        result
-            .IsCorrect.Should()
-            .BeTrue(
-                because: "two empty strings have 100% similarity (edge case for empty translations)"
-            );
-    }
-
-    [Fact]
-    public async Task Translation_MultipleSubstitutions_CalculatesCorrectSimilarity()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveTranslationAsync(
-            sourceText: "How are you?",
-            targetText: "come stai",
-            matchingThreshold: 0.7
-        );
-
-        // Act - "come stay" vs "come stai": 1 substitution (y→i)
-        // Similarity = (9 - 1) / 9 = 88.9%
-        var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "come stay");
-
-        // Assert
-        result.IsCorrect.Should().BeTrue(because: "88.9% similarity exceeds 70% threshold");
-    }
-
     // ── Listening Validation ────────────────────────────────────────────────
 
     [Fact]
@@ -488,59 +325,6 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         resultInvalid.IsCorrect.Should().BeFalse();
     }
 
-    // ── MultipleChoice Validation ───────────────────────────────────────────
-
-    [Fact]
-    public async Task MultipleChoice_CorrectOptionId_ReturnsTrue()
-    {
-        // Arrange
-        var (exerciseId, correctOptionId, _) = await CreateAndSaveMultipleChoiceAsync();
-
-        // Act
-        var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, correctOptionId);
-
-        // Assert
-        result
-            .IsCorrect.Should()
-            .BeTrue(because: "submitting the correct option ID validates successfully");
-        result.PointsEarned.Should().Be(10);
-    }
-
-    [Fact]
-    public async Task MultipleChoice_WrongOptionId_ReturnsFalse()
-    {
-        // Arrange
-        var (exerciseId, _, wrongOptionId) = await CreateAndSaveMultipleChoiceAsync();
-
-        // Act
-        var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, wrongOptionId);
-
-        // Assert
-        result
-            .IsCorrect.Should()
-            .BeFalse(because: "submitting a wrong option ID fails validation");
-        result.PointsEarned.Should().Be(0);
-        result.CorrectAnswer.Should().NotBeNullOrEmpty("wrong answers reveal correct answer");
-    }
-
-    [Fact]
-    public async Task MultipleChoice_InvalidOptionId_ReturnsFalse()
-    {
-        // Arrange
-        var (exerciseId, _, _) = await CreateAndSaveMultipleChoiceAsync();
-        var invalidId = Guid.NewGuid().ToString();
-
-        // Act
-        var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, invalidId);
-
-        // Assert
-        result
-            .IsCorrect.Should()
-            .BeFalse(
-                because: "option ID not in the exercise's Options collection fails validation"
-            );
-    }
-
     // ── Helper Methods ──────────────────────────────────────────────────────
 
     private static ExerciseProgressService BuildExerciseProgressService(BackendDbContext ctx)
@@ -588,20 +372,49 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         string? acceptedAnswers = null
     )
     {
+        var exerciseId = Guid.NewGuid().ToString();
+        var options = new List<ExerciseOption>
+        {
+            new()
+            {
+                ExerciseId = exerciseId,
+                OptionText = correctAnswer,
+                IsCorrect = true,
+                Explanation = "Correct answer",
+            },
+        };
+
+        if (!string.IsNullOrEmpty(acceptedAnswers))
+        {
+            var alternatives = acceptedAnswers
+                .Split(',')
+                .Select(a => a.Trim())
+                .Where(a => !string.IsNullOrEmpty(a));
+
+            foreach (var alt in alternatives)
+            {
+                options.Add(
+                    new ExerciseOption
+                    {
+                        ExerciseId = exerciseId,
+                        OptionText = alt,
+                        IsCorrect = true,
+                        Explanation = "Accepted alternative",
+                    }
+                );
+            }
+        }
+
         var exercise = new FillInBlankExercise
         {
-            Id = Guid.NewGuid().ToString(),
+            ExerciseId = exerciseId,
             LessonId = _fixture.LessonId,
-            Title = "Test FillInBlank",
+            Instructions = "Fill in the blank",
             Text = "Fill in the blank: ___",
-            CorrectAnswer = correctAnswer,
-            AcceptedAnswers = acceptedAnswers,
-            CaseSensitive = caseSensitive,
-            TrimWhitespace = trimWhitespace,
             DifficultyLevel = DifficultyLevel.Beginner,
             Points = 10,
-            OrderIndex = 0,
             IsLocked = false,
+            Options = options,
         };
 
         _ctx.Exercises.Add(exercise);
@@ -609,32 +422,6 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         return exercise.ExerciseId;
     }
 
-    private async Task<string> CreateAndSaveTranslationAsync(
-        string sourceText,
-        string targetText,
-        double matchingThreshold
-    )
-    {
-        var exercise = new TranslationExercise
-        {
-            Id = Guid.NewGuid().ToString(),
-            LessonId = _fixture.LessonId,
-            Title = "Test Translation",
-            SourceText = sourceText,
-            TargetText = targetText,
-            SourceLanguageCode = "en",
-            TargetLanguageCode = "it",
-            MatchingThreshold = matchingThreshold,
-            DifficultyLevel = DifficultyLevel.Beginner,
-            Points = 10,
-            OrderIndex = 0,
-            IsLocked = false,
-        };
-
-        _ctx.Exercises.Add(exercise);
-        await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
-        return exercise.ExerciseId;
-    }
 
     private async Task<string> CreateAndSaveListeningAsync(
         string audioUrl,
@@ -643,19 +430,49 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         bool caseSensitive
     )
     {
+        var exerciseId = Guid.NewGuid().ToString();
+        var options = new List<ExerciseOption>
+        {
+            new()
+            {
+                ExerciseId = exerciseId,
+                OptionText = correctAnswer,
+                IsCorrect = true,
+                Explanation = "Correct answer",
+            },
+        };
+
+        if (!string.IsNullOrEmpty(acceptedAnswers))
+        {
+            var alternatives = acceptedAnswers
+                .Split(',')
+                .Select(a => a.Trim())
+                .Where(a => !string.IsNullOrEmpty(a));
+
+            foreach (var alt in alternatives)
+            {
+                options.Add(
+                    new ExerciseOption
+                    {
+                        ExerciseId = exerciseId,
+                        OptionText = alt,
+                        IsCorrect = true,
+                        Explanation = "Accepted alternative",
+                    }
+                );
+            }
+        }
+
         var exercise = new ListeningExercise
         {
-            Id = Guid.NewGuid().ToString(),
+            ExerciseId = exerciseId,
             LessonId = _fixture.LessonId,
-            Title = "Test Listening",
+            Instructions = "Listen and type what you hear",
             AudioUrl = audioUrl,
-            CorrectAnswer = correctAnswer,
-            AcceptedAnswers = acceptedAnswers,
-            CaseSensitive = caseSensitive,
             DifficultyLevel = DifficultyLevel.Beginner,
             Points = 10,
-            OrderIndex = 0,
             IsLocked = false,
+            Options = options,
         };
 
         _ctx.Exercises.Add(exercise);
@@ -663,58 +480,4 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         return exercise.ExerciseId;
     }
 
-    private async Task<(
-        string exerciseId,
-        string correctId,
-        string wrongId
-    )> CreateAndSaveMultipleChoiceAsync()
-    {
-        var exercise = new MultipleChoiceExercise
-        {
-            Id = Guid.NewGuid().ToString(),
-            LessonId = _fixture.LessonId,
-            Title = "Which is correct?",
-            DifficultyLevel = DifficultyLevel.Beginner,
-            Points = 10,
-            OrderIndex = 0,
-            IsLocked = false,
-            Options = new List<ExerciseOption>(),
-        };
-
-        var correctOption = new ExerciseOption
-        {
-            Id = Guid.NewGuid().ToString(),
-            ExerciseId = exercise.ExerciseId,
-            OptionText = "Correct option",
-            IsCorrect = true,
-            OrderIndex = 0,
-        };
-
-        var wrongOption1 = new ExerciseOption
-        {
-            Id = Guid.NewGuid().ToString(),
-            ExerciseId = exercise.ExerciseId,
-            OptionText = "Wrong option 1",
-            IsCorrect = false,
-            OrderIndex = 1,
-        };
-
-        var wrongOption2 = new ExerciseOption
-        {
-            Id = Guid.NewGuid().ToString(),
-            ExerciseId = exercise.ExerciseId,
-            OptionText = "Wrong option 2",
-            IsCorrect = false,
-            OrderIndex = 2,
-        };
-
-        exercise.Options.Add(correctOption);
-        exercise.Options.Add(wrongOption1);
-        exercise.Options.Add(wrongOption2);
-
-        _ctx.Exercises.Add(exercise);
-        await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        return (exercise.ExerciseId, correctOption.Id, wrongOption1.Id);
-    }
 }
