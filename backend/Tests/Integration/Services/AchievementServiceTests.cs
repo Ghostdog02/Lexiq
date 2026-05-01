@@ -51,8 +51,8 @@ public class AchievementServiceTests(DatabaseFixture fixture)
         {
             new()
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = "First Steps",
+                AchievementId = Guid.NewGuid().ToString(),
+                AchievementName = "First Steps",
                 Description = "Earned 100 XP",
                 XpRequired = 100,
                 Icon = "🌱",
@@ -60,8 +60,8 @@ public class AchievementServiceTests(DatabaseFixture fixture)
             },
             new()
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = "Getting Started",
+                AchievementId = Guid.NewGuid().ToString(),
+                AchievementName = "Getting Started",
                 Description = "Reached 500 XP",
                 XpRequired = 500,
                 Icon = "🚀",
@@ -69,8 +69,8 @@ public class AchievementServiceTests(DatabaseFixture fixture)
             },
             new()
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = "Dedicated Learner",
+                AchievementId = Guid.NewGuid().ToString(),
+                AchievementName = "Dedicated Learner",
                 Description = "Accumulated 1,000 XP",
                 XpRequired = 1000,
                 Icon = "📚",
@@ -78,8 +78,8 @@ public class AchievementServiceTests(DatabaseFixture fixture)
             },
             new()
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = "Rising Star",
+                AchievementId = Guid.NewGuid().ToString(),
+                AchievementName = "Rising Star",
                 Description = "Reached 2,500 XP",
                 XpRequired = 2500,
                 Icon = "⭐",
@@ -147,9 +147,15 @@ public class AchievementServiceTests(DatabaseFixture fixture)
             .UserAchievements.Where(ua => ua.UserId == _userId)
             .ToListAsync(TestContext.Current.CancellationToken);
 
-        unlocked.Should().ContainSingle(because: "100 XP exactly matches the first achievement threshold");
-        unlocked[0].AchievementId.Should().Be(_achievements[0].Id, because: "First Steps requires 100 XP");
-        unlocked[0].UnlockedAt.Should().BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(2));
+        unlocked
+            .Should()
+            .ContainSingle(because: "100 XP exactly matches the first achievement threshold");
+        unlocked[0]
+            .AchievementId.Should()
+            .Be(_achievements[0].AchievementId, because: "First Steps requires 100 XP");
+        unlocked[0]
+            .UnlockedAt.Should()
+            .BeCloseTo(DateTime.UtcNow, precision: TimeSpan.FromSeconds(2));
     }
 
     [Fact]
@@ -173,25 +179,25 @@ public class AchievementServiceTests(DatabaseFixture fixture)
         unlocked
             .Should()
             .Contain(
-                _achievements[0].Id,
+                _achievements[0].AchievementId,
                 because: "First Steps (100 XP) is unlocked when user has 1200 XP"
             );
         unlocked
             .Should()
             .Contain(
-                _achievements[1].Id,
+                _achievements[1].AchievementId,
                 because: "Getting Started (500 XP) is unlocked when user has 1200 XP"
             );
         unlocked
             .Should()
             .Contain(
-                _achievements[2].Id,
+                _achievements[2].AchievementId,
                 because: "Dedicated Learner (1000 XP) is unlocked when user has 1200 XP"
             );
         unlocked
             .Should()
             .NotContain(
-                _achievements[3].Id,
+                _achievements[3].AchievementId,
                 because: "Rising Star requires 2500 XP, user only has 1200 XP"
             );
     }
@@ -217,11 +223,10 @@ public class AchievementServiceTests(DatabaseFixture fixture)
                 2,
                 because: "duplicate trigger should not create additional UserAchievement records (prevents XP farming)"
             );
-        unlocked.Select(u => u.AchievementId).Should().BeEquivalentTo(new[]
-        {
-            _achievements[0].Id,
-            _achievements[1].Id,
-        });
+        unlocked
+            .Select(u => u.AchievementId)
+            .Should()
+            .BeEquivalentTo(new[] { _achievements[0].AchievementId, _achievements[1].AchievementId });
     }
 
     [Fact]
@@ -241,20 +246,14 @@ public class AchievementServiceTests(DatabaseFixture fixture)
 
         unlocked
             .Should()
-            .HaveCount(
-                2,
-                because: "user now qualifies for both 100 XP and 500 XP achievements"
-            );
+            .HaveCount(2, because: "user now qualifies for both 100 XP and 500 XP achievements");
+        unlocked
+            .Should()
+            .Contain(_achievements[0].AchievementId, because: "First Steps was already unlocked at 100 XP");
         unlocked
             .Should()
             .Contain(
-                _achievements[0].Id,
-                because: "First Steps was already unlocked at 100 XP"
-            );
-        unlocked
-            .Should()
-            .Contain(
-                _achievements[1].Id,
+                _achievements[1].AchievementId,
                 because: "Getting Started unlocks at 500 XP, user now has 600 XP"
             );
     }
@@ -273,10 +272,11 @@ public class AchievementServiceTests(DatabaseFixture fixture)
             .UserAchievements.Where(ua => ua.UserId == _userId)
             .ToListAsync(TestContext.Current.CancellationToken);
 
+        unlocked.Should().HaveCount(4, because: "10000 XP exceeds all achievement thresholds");
         unlocked
+            .Select(u => u.AchievementId)
             .Should()
-            .HaveCount(4, because: "10000 XP exceeds all achievement thresholds");
-        unlocked.Select(u => u.AchievementId).Should().BeEquivalentTo(_achievements.Select(a => a.Id));
+            .BeEquivalentTo(_achievements.Select(a => a.AchievementId));
     }
 
     [Fact]
@@ -307,13 +307,22 @@ public class AchievementServiceTests(DatabaseFixture fixture)
         var result = await _service.GetUserAchievementsAsync(_userId);
 
         // Assert
-        result.Should().HaveCount(_achievements.Count, because: "returns all achievement definitions");
-        result.Should().AllSatisfy(a =>
-        {
-            a.IsUnlocked.Should().BeFalse(because: "user has not unlocked any achievements");
-            a.UnlockedAt.Should().BeNull();
-        });
-        result.Should().BeInAscendingOrder(a => a.XpRequired, because: "ordered by OrderIndex which matches XP progression");
+        result
+            .Should()
+            .HaveCount(_achievements.Count, because: "returns all achievement definitions");
+        result
+            .Should()
+            .AllSatisfy(a =>
+            {
+                a.IsUnlocked.Should().BeFalse(because: "user has not unlocked any achievements");
+                a.UnlockedAt.Should().BeNull();
+            });
+        result
+            .Should()
+            .BeInAscendingOrder(
+                a => a.XpRequired,
+                because: "ordered by OrderIndex which matches XP progression"
+            );
     }
 
     [Fact]
@@ -326,14 +335,20 @@ public class AchievementServiceTests(DatabaseFixture fixture)
         var result = await _service.GetUserAchievementsAsync(_userId);
 
         // Assert
-        result.Should().HaveCount(_achievements.Count, because: "returns all achievement definitions");
+        result
+            .Should()
+            .HaveCount(_achievements.Count, because: "returns all achievement definitions");
 
         var firstSteps = result.First(a => a.XpRequired == 100);
-        firstSteps.IsUnlocked.Should().BeTrue(because: "user has 500 XP, unlocked 100 XP achievement");
+        firstSteps
+            .IsUnlocked.Should()
+            .BeTrue(because: "user has 500 XP, unlocked 100 XP achievement");
         firstSteps.UnlockedAt.Should().NotBeNull();
 
         var gettingStarted = result.First(a => a.XpRequired == 500);
-        gettingStarted.IsUnlocked.Should().BeTrue(because: "user has 500 XP, unlocked 500 XP achievement");
+        gettingStarted
+            .IsUnlocked.Should()
+            .BeTrue(because: "user has 500 XP, unlocked 500 XP achievement");
         gettingStarted.UnlockedAt.Should().NotBeNull();
 
         var dedicated = result.First(a => a.XpRequired == 1000);
@@ -356,11 +371,14 @@ public class AchievementServiceTests(DatabaseFixture fixture)
 
         // Assert
         result.Should().HaveCount(_achievements.Count);
-        result.Should().AllSatisfy(a =>
-        {
-            a.IsUnlocked.Should().BeTrue(because: "user has 10000 XP, unlocked all achievements");
-            a.UnlockedAt.Should().NotBeNull();
-        });
+        result
+            .Should()
+            .AllSatisfy(a =>
+            {
+                a.IsUnlocked.Should()
+                    .BeTrue(because: "user has 10000 XP, unlocked all achievements");
+                a.UnlockedAt.Should().NotBeNull();
+            });
     }
 
     [Fact]
@@ -371,7 +389,9 @@ public class AchievementServiceTests(DatabaseFixture fixture)
 
         // Assert
         result.Should().HaveCount(_achievements.Count);
-        result.Should().BeInAscendingOrder(a => a.XpRequired, because: "OrderIndex matches XP progression");
+        result
+            .Should()
+            .BeInAscendingOrder(a => a.XpRequired, because: "OrderIndex matches XP progression");
         result[0].Name.Should().Be("First Steps");
         result[1].Name.Should().Be("Getting Started");
         result[2].Name.Should().Be("Dedicated Learner");
@@ -388,12 +408,19 @@ public class AchievementServiceTests(DatabaseFixture fixture)
         var result = await _service.GetUserAchievementsAsync(nonExistentUserId);
 
         // Assert
-        result.Should().HaveCount(_achievements.Count, because: "returns all definitions even for non-existent users");
-        result.Should().AllSatisfy(a =>
-        {
-            a.IsUnlocked.Should().BeFalse(because: "user does not exist, no unlocks possible");
-            a.UnlockedAt.Should().BeNull();
-        });
+        result
+            .Should()
+            .HaveCount(
+                _achievements.Count,
+                because: "returns all definitions even for non-existent users"
+            );
+        result
+            .Should()
+            .AllSatisfy(a =>
+            {
+                a.IsUnlocked.Should().BeFalse(because: "user does not exist, no unlocks possible");
+                a.UnlockedAt.Should().BeNull();
+            });
     }
 
     [Fact]
@@ -414,6 +441,9 @@ public class AchievementServiceTests(DatabaseFixture fixture)
         unlocked
             .UnlockedAt.Should()
             .BeAfter(beforeUnlock.AddSeconds(-1))
-            .And.BeBefore(afterUnlock.AddSeconds(1), because: "UnlockedAt timestamp is set to UtcNow");
+            .And.BeBefore(
+                afterUnlock.AddSeconds(1),
+                because: "UnlockedAt timestamp is set to UtcNow"
+            );
     }
 }

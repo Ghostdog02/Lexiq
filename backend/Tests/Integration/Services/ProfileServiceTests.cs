@@ -75,8 +75,8 @@ public class ProfileServiceTests(DatabaseFixture fixture)
         {
             new()
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = "First Steps",
+                AchievementId = Guid.NewGuid().ToString(),
+                AchievementName = "First Steps",
                 Description = "Earned 100 XP",
                 XpRequired = 100,
                 Icon = "🌱",
@@ -84,8 +84,8 @@ public class ProfileServiceTests(DatabaseFixture fixture)
             },
             new()
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = "Getting Started",
+                AchievementId = Guid.NewGuid().ToString(),
+                AchievementName = "Getting Started",
                 Description = "Reached 500 XP",
                 XpRequired = 500,
                 Icon = "🚀",
@@ -93,8 +93,8 @@ public class ProfileServiceTests(DatabaseFixture fixture)
             },
             new()
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = "Dedicated Learner",
+                AchievementId = Guid.NewGuid().ToString(),
+                AchievementName = "Dedicated Learner",
                 Description = "Accumulated 1,000 XP",
                 XpRequired = 1000,
                 Icon = "📚",
@@ -102,8 +102,8 @@ public class ProfileServiceTests(DatabaseFixture fixture)
             },
             new()
             {
-                Id = Guid.NewGuid().ToString(),
-                Name = "Rising Star",
+                AchievementId = Guid.NewGuid().ToString(),
+                AchievementName = "Rising Star",
                 Description = "Reached 2,500 XP",
                 XpRequired = 2500,
                 Icon = "⭐",
@@ -154,9 +154,16 @@ public class ProfileServiceTests(DatabaseFixture fixture)
         profile.TotalXp.Should().Be(1500, because: "user was seeded with 1500 XP");
         profile.CurrentStreak.Should().Be(0, because: "no exercise progress exists");
         profile.LongestStreak.Should().Be(0, because: "no exercise progress exists");
-        profile.Level.Should().Be(LeaderboardService.CalculateLevel(1500), because: "level is calculated from total XP");
+        profile
+            .Level.Should()
+            .Be(
+                LeaderboardService.CalculateLevel(1500),
+                because: "level is calculated from total XP"
+            );
         profile.AvatarUrl.Should().BeNull(because: "no avatar exists for this user");
-        profile.Achievements.Should().NotBeEmpty(because: "achievement definitions are always returned");
+        profile
+            .Achievements.Should()
+            .NotBeEmpty(because: "achievement definitions are always returned");
     }
 
     [Fact]
@@ -176,12 +183,13 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!.CurrentStreak
-            .Should()
-            .Be(3, because: "grace period extends streak to consecutive 3-day run ending yesterday");
-        profile.LongestStreak
-            .Should()
-            .Be(3, because: "longest streak is the only streak (3 days)");
+        profile!
+            .CurrentStreak.Should()
+            .Be(
+                3,
+                because: "grace period extends streak to consecutive 3-day run ending yesterday"
+            );
+        profile.LongestStreak.Should().Be(3, because: "longest streak is the only streak (3 days)");
     }
 
     [Fact]
@@ -212,11 +220,11 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!.CurrentStreak
-            .Should()
+        profile!
+            .CurrentStreak.Should()
             .Be(1, because: "yesterday's activity counts as 1-day current streak (grace period)");
-        profile.LongestStreak
-            .Should()
+        profile
+            .LongestStreak.Should()
             .Be(5, because: "longest streak is the 5-day run from 10-14 days ago");
     }
 
@@ -357,7 +365,10 @@ public class ProfileServiceTests(DatabaseFixture fixture)
         profile.LongestStreak.Should().Be(7, because: "only one streak exists (7 days)");
         profile.AvatarUrl.Should().Be($"/api/user/{_userId}/avatar");
         profile.Achievements.Should().HaveCount(4);
-        profile.Achievements.Count(a => a.IsUnlocked).Should().Be(3, because: "1500 XP unlocks 3 achievements");
+        profile
+            .Achievements.Count(a => a.IsUnlocked)
+            .Should()
+            .Be(3, because: "1500 XP unlocks 3 achievements");
     }
 
     [Fact]
