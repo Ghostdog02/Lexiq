@@ -121,7 +121,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         result.Should().NotBeNull();
         result.Title.Should().Be("Minimal Course");
         result.Description.Should().BeNull();
-        result.EstimatedDurationHours.Should().BeNull();
+        result.EstimatedDurationHours.Should().Be(null);
     }
 
     [Fact]
@@ -214,14 +214,14 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // Assert
         var orderedCourses = allCourses
             .Where(c =>
-                new[] { course1.CourseId, course2.CourseId, course3.CourseId }.Contains(c.Id)
+                new[] { course1.CourseId, course2.CourseId, course3.CourseId }.Contains(c.CourseId)
             )
             .ToList();
 
         orderedCourses.Should().HaveCount(3);
-        orderedCourses[0].Id.Should().Be(course1.CourseId);
-        orderedCourses[1].Id.Should().Be(course2.CourseId);
-        orderedCourses[2].Id.Should().Be(course3.CourseId);
+        orderedCourses[0].CourseId.Should().Be(course1.CourseId);
+        orderedCourses[1].CourseId.Should().Be(course2.CourseId);
+        orderedCourses[2].CourseId.Should().Be(course3.CourseId);
     }
 
     #endregion
@@ -239,7 +239,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         var lesson = new Lesson
         {
-            Id = Guid.NewGuid().ToString(),
+            LessonId = Guid.NewGuid().ToString(),
             CourseId = course.CourseId,
             Title = "Test Lesson",
             LessonContent = "{}",
@@ -254,7 +254,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // Assert
         result.Should().NotBeNull();
         result!.Language.Should().NotBeNull();
-        result.Language.Name.Should().Be(ItalianLanguageName);
+        result.Language.LanguageName.Should().Be(ItalianLanguageName);
         result.Lessons.Should().ContainSingle();
         result.Lessons.First().Title.Should().Be("Test Lesson");
     }
@@ -493,7 +493,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         var lessonId = Guid.NewGuid().ToString();
         var lesson = new Lesson
         {
-            Id = lessonId,
+            LessonId = lessonId,
             CourseId = course.CourseId,
             Title = "Lesson to cascade delete",
             LessonContent = "{}",
