@@ -4,6 +4,70 @@ Quick reference for diagnosing common Lexiq failures. Pulled out of CLAUDE.md so
 
 ---
 
+## Test cross-contamination: fixture data deleted by another test class
+
+**Symptom**: FK constraint violation on `fixture.LessonId` / `fixture.CourseId`, or tests pass in isolation but fail in the full suite.
+
+**Root cause**: `_ctx.Courses.FirstAsync()` or `_ctx.Languages.FirstAsync()` returns a row left by a test class that doesn't clean up courses/languages (e.g. `CourseCrudTests`, `LanguageCrudTests`). The cleanup then deletes the **fixture** course/language as a "stale" row, cascade-deleting the fixture lesson — breaking all subsequent E2E and integration tests that need it.
+
+**Fix**: always anchor to the fixture's known ID, never to `FirstAsync()`:
+
+```csharp
+// ❌ Wrong — returns any course if another test class left rows behind
+var course = await _ctx.Courses.FirstAsync(...);
+_courseId = course.CourseId;
+
+// ✅ Correct — always resolves to the fixture's course
+var fixtureLesson = await _ctx
+    .Lessons.Where(l => l.LessonId == fixture.LessonId)
+    .Select(l => new { l.CourseId, l.Course.LanguageId })
+    .FirstAsync(...);
+_courseId = fixtureLesson.CourseId;
+_languageId = fixtureLesson.LanguageId;
+```
+
+Apply this pattern in every test class that does its own course/lesson cleanup with `ExecuteDeleteAsync`.
+
+---
+
+## Test answer submission: option-ID vs text
+
+**Symptom**: `submitResult.IsCorrect` is `false` even when submitting the "correct" text (e.g. `"answer"`).
+
+**Root cause**: `ExerciseProgressService.ValidateAnswer` for FillInBlank / Listening / TrueFalse validates by `ExerciseOptionId` (GUID), not by `OptionText`. Submitting the text directly never matches a GUID.
+
+**Fix — exercise DTO already loaded** (use `IsCorrect` from the API response):
+
+```csharp
+private static string GetCorrectOptionId(ExerciseDto exercise) => exercise switch
+{
+    FillInBlankExerciseDto fib => fib.Options.First(o => o.IsCorrect).Id,
+    ListeningExerciseDto   le  => le.Options.First(o => o.IsCorrect).Id,
+    TrueFalseExerciseDto   tf  => tf.Options.First(o => o.IsCorrect).Id,
+    _ => throw new InvalidOperationException($"Cannot extract correct option from {exercise.GetType().Name}"),
+};
+
+// Usage
+var submitResult = await SubmitAnswerAsync(ex.Id, GetCorrectOptionId(ex));
+```
+
+**Fix — only exercise ID available** (use `DbSeeder.GetCorrectOptionIdAsync`):
+
+```csharp
+// In InitializeAsync — load alongside exerciseId
+_correctOptionIds.Add(await DbSeeder.GetCorrectOptionIdAsync(ctx, id));
+
+// Or inline in a test method
+using var scope = Factory.Services.CreateScope();
+var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
+var correctOptionId = await DbSeeder.GetCorrectOptionIdAsync(ctx, exerciseId);
+await SubmitAnswerAsync(client, exerciseId, correctOptionId);
+```
+
+Wrong-answer submissions are unaffected — any non-matching string correctly returns `IsCorrect = false`.
+
+---
+
 ## 401 Unauthorized
 
 1. Browser DevTools → Application → Cookies → confirm `AuthToken` exists.

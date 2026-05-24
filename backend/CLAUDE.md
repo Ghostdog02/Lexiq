@@ -193,4 +193,5 @@ Listens on `:8080`. Don't set `ASPNETCORE_URLS` — base image sets `ASPNETCORE_
 - `Lesson.status` is **not** returned by the API; frontend derives it from `isLocked`, `isCompleted`, `completedExercises`.
 - Lesson completion threshold: 70% XP (`ExerciseProgressService.DefaultCompletionThreshold`).
 - `UserExerciseProgress.ExerciseId` FK uses `DeleteBehavior.NoAction` (SQL Server multiple-cascade-path constraint).
-- Exercise unlocking: hybrid — first exercise unlocks with the lesson; rest unlock sequentially on completion (infinite retries).
+- Exercise unlocking: hybrid — first exercise unlocks with the lesson; rest unlock sequentially on correct completion.
+- **Hearts**: users start with 3 hearts. Each wrong answer costs 1 heart. When hearts reach 0, all further submissions are blocked (including correct answers) until hearts are replenished. Admins and ContentCreators bypass the hearts check.
