@@ -2,12 +2,13 @@ using System.Net;
 using System.Net.Http.Json;
 using Backend.Api.Dtos;
 using Backend.Database;
+using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Backend.Tests.EndToEnd;
+namespace Backend.Tests.Integration.E2E;
 
 /// <summary>
 /// HTTP-level E2E tests for student exercise completion and progress workflows.
@@ -54,13 +55,13 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-        var firstExId = await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+        var firstExId = await DbSeeder.CreateFillInBlankExerciseAsync(
             ctx,
             Fixture.LessonId,
             orderIndex: 0,
             isLocked: false
         );
-        var secondExId = await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+        var secondExId = await DbSeeder.CreateFillInBlankExerciseAsync(
             ctx,
             Fixture.LessonId,
             orderIndex: 1,
@@ -68,8 +69,8 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         );
 
         var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
-        var firstEx = exercises.First(e => e.Id == firstExId);
-        var secondEx = exercises.First(e => e.Id == secondExId);
+        var firstEx = exercises!.First(e => e.Id == firstExId);
+        var secondEx = exercises!.First(e => e.Id == secondExId);
 
         // Act
         var submitResult = await SubmitAnswerAsync(firstEx.Id, "answer");
@@ -97,7 +98,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-        var firstExId = await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+        var firstExId = await DbSeeder.CreateFillInBlankExerciseAsync(
             ctx,
             Fixture.LessonId,
             orderIndex: 0,
@@ -105,7 +106,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         );
 
         var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
-        var firstEx = exercises.First(e => e.Id == firstExId);
+        var firstEx = exercises!.First(e => e.Id == firstExId);
 
         // Act
         var attempt1 = await SubmitAnswerAsync(firstEx.Id, "wrong1");
@@ -136,7 +137,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-        var firstExId = await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+        var firstExId = await DbSeeder.CreateFillInBlankExerciseAsync(
             ctx,
             Fixture.LessonId,
             orderIndex: 0,
@@ -144,7 +145,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         );
 
         var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
-        var firstEx = exercises.First(e => e.Id == firstExId);
+        var firstEx = exercises!.First(e => e.Id == firstExId);
         var firstSubmit = await SubmitAnswerAsync(firstEx.Id, "answer");
 
         // Act
@@ -175,7 +176,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         var exerciseIds = new List<string>();
         for (var i = 0; i < 40; i++)
         {
-            var exId = await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+            var exId = await DbSeeder.CreateFillInBlankExerciseAsync(
                 ctx,
                 Fixture.LessonId,
                 orderIndex: i,
@@ -189,7 +190,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         // Act - complete 28 exercises (70% of 40)
         for (var i = 0; i < 28; i++)
         {
-            var ex = exercises.First(e => e.Id == exerciseIds[i]);
+            var ex = exercises!.First(e => e.Id == exerciseIds[i]);
             await SubmitAnswerAsync(ex.Id, "answer");
         }
 
@@ -219,19 +220,19 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-        var ex1Id = await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+        var ex1Id = await DbSeeder.CreateFillInBlankExerciseAsync(
             ctx,
             Fixture.LessonId,
             orderIndex: 0,
             isLocked: false
         );
-        var ex2Id = await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+        var ex2Id = await DbSeeder.CreateFillInBlankExerciseAsync(
             ctx,
             Fixture.LessonId,
             orderIndex: 1,
             isLocked: true
         );
-        var ex3Id = await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+        var ex3Id = await DbSeeder.CreateFillInBlankExerciseAsync(
             ctx,
             Fixture.LessonId,
             orderIndex: 2,
@@ -239,9 +240,9 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         );
 
         var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
-        var ex1 = exercises.First(e => e.Id == ex1Id);
-        var ex2 = exercises.First(e => e.Id == ex2Id);
-        var ex3 = exercises.First(e => e.Id == ex3Id);
+        var ex1 = exercises!.First(e => e.Id == ex1Id);
+        var ex2 = exercises!.First(e => e.Id == ex2Id);
+        var ex3 = exercises!.First(e => e.Id == ex3Id);
 
         await SubmitAnswerAsync(ex1.Id, "answer");
         await SubmitAnswerAsync(ex2.Id, "answer");
@@ -266,7 +267,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-        var firstExId = await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+        var firstExId = await DbSeeder.CreateFillInBlankExerciseAsync(
             ctx,
             Fixture.LessonId,
             orderIndex: 0,
@@ -274,7 +275,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         );
 
         var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
-        var firstEx = exercises.First(e => e.Id == firstExId);
+        var firstEx = exercises!.First(e => e.Id == firstExId);
 
         // Act
         await SubmitAnswerAsync(firstEx.Id, "wrong");
@@ -298,7 +299,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         var exerciseIds = new List<string>();
         for (var i = 0; i < 40; i++)
         {
-            var exId = await Helpers.DbSeeder.CreateFillInBlankExerciseAsync(
+            var exId = await DbSeeder.CreateFillInBlankExerciseAsync(
                 ctx,
                 Fixture.LessonId,
                 orderIndex: i,
@@ -312,7 +313,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         // Complete 27 exercises (67.5% of 40 - below 70% threshold)
         for (var i = 0; i < 27; i++)
         {
-            var ex = exercises.First(e => e.Id == exerciseIds[i]);
+            var ex = exercises!.First(e => e.Id == exerciseIds[i]);
             await SubmitAnswerAsync(ex.Id, "answer");
         }
 

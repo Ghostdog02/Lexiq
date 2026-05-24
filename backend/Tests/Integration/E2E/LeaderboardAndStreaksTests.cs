@@ -2,14 +2,13 @@ using System.Net;
 using System.Net.Http.Json;
 using Backend.Api.Dtos;
 using Backend.Database;
-using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Backend.Tests.EndToEnd;
+namespace Backend.Tests.Integration.E2E;
 
 /// <summary>
 /// HTTP-level E2E tests for leaderboard rankings and streak tracking.
