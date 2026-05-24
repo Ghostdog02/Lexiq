@@ -259,7 +259,6 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         ctx.Exercises.Add(
             new FillInBlankExercise
             {
-                ExerciseId = exerciseInLockedLessonId,
                 LessonId = lockedLessonId,
                 Instructions = "Exercise in locked lesson",
                 Text = "Test",
@@ -270,7 +269,6 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
                 [
                     new ExerciseOption
                     {
-                        ExerciseId = exerciseInLockedLessonId,
                         OptionText = "answer",
                         IsCorrect = true,
                         Explanation = "Correct answer.",
