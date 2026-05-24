@@ -6,13 +6,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Backend.Database.Migrations
 {
     /// <inheritdoc />
-    public partial class RestructureExerciseTypes : Migration
+    public partial class RemoveRestrictionsOnIds : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
-                name: "FK_Courses_Languages_LanguageId",
+                name: "FK_Courses_Users_CreatedById",
                 table: "Courses");
 
             migrationBuilder.DropForeignKey(
@@ -20,72 +20,24 @@ namespace Backend.Database.Migrations
                 table: "ExerciseOption");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_Exercises_Lessons_LessonId",
-                table: "Exercises");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Lessons_Courses_CourseId",
-                table: "Lessons");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_UserAchievements_Achievements_AchievementId",
-                table: "UserAchievements");
-
-            migrationBuilder.DropForeignKey(
                 name: "FK_UserExerciseProgress_Exercises_ExerciseId",
                 table: "UserExerciseProgress");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_UserLanguages_Languages_LanguageId",
-                table: "UserLanguages");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Lessons",
-                table: "Lessons");
 
             migrationBuilder.DropIndex(
                 name: "IX_Lessons_CourseId",
                 table: "Lessons");
 
             migrationBuilder.DropPrimaryKey(
-                name: "PK_Languages",
-                table: "Languages");
-
-            migrationBuilder.DropPrimaryKey(
                 name: "PK_Exercises",
                 table: "Exercises");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_ExerciseOption",
-                table: "ExerciseOption");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Courses",
-                table: "Courses");
 
             migrationBuilder.DropIndex(
                 name: "IX_Courses_LanguageId",
                 table: "Courses");
 
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Achievements",
-                table: "Achievements");
-
-            migrationBuilder.DropColumn(
-                name: "Id",
-                table: "Lessons");
-
             migrationBuilder.DropColumn(
                 name: "Description",
                 table: "Lessons");
-
-            migrationBuilder.DropColumn(
-                name: "Id",
-                table: "Languages");
-
-            migrationBuilder.DropColumn(
-                name: "Id",
-                table: "Exercises");
 
             migrationBuilder.DropColumn(
                 name: "AcceptedAnswers",
@@ -96,7 +48,15 @@ namespace Backend.Database.Migrations
                 table: "Exercises");
 
             migrationBuilder.DropColumn(
+                name: "CorrectAnswer",
+                table: "Exercises");
+
+            migrationBuilder.DropColumn(
                 name: "EstimatedDurationMinutes",
+                table: "Exercises");
+
+            migrationBuilder.DropColumn(
+                name: "Explanation",
                 table: "Exercises");
 
             migrationBuilder.DropColumn(
@@ -140,25 +100,23 @@ namespace Backend.Database.Migrations
                 table: "Exercises");
 
             migrationBuilder.DropColumn(
-                name: "Id",
-                table: "ExerciseOption");
-
-            migrationBuilder.DropColumn(
                 name: "OrderIndex",
                 table: "ExerciseOption");
 
-            migrationBuilder.DropColumn(
+            migrationBuilder.RenameColumn(
                 name: "Id",
-                table: "Courses");
-
-            migrationBuilder.DropColumn(
-                name: "Id",
-                table: "Achievements");
+                table: "Lessons",
+                newName: "LessonId");
 
             migrationBuilder.RenameColumn(
                 name: "Name",
                 table: "Languages",
                 newName: "LanguageName");
+
+            migrationBuilder.RenameColumn(
+                name: "Id",
+                table: "Languages",
+                newName: "LanguageId");
 
             migrationBuilder.RenameColumn(
                 name: "TargetText",
@@ -171,27 +129,29 @@ namespace Backend.Database.Migrations
                 newName: "ImageUrl");
 
             migrationBuilder.RenameColumn(
+                name: "Id",
+                table: "Exercises",
+                newName: "CreatedById");
+
+            migrationBuilder.RenameColumn(
+                name: "Id",
+                table: "ExerciseOption",
+                newName: "ExerciseOptionId");
+
+            migrationBuilder.RenameColumn(
+                name: "Id",
+                table: "Courses",
+                newName: "CourseId");
+
+            migrationBuilder.RenameColumn(
                 name: "Name",
                 table: "Achievements",
                 newName: "AchievementName");
 
-            migrationBuilder.AlterColumn<string>(
-                name: "LanguageId",
-                table: "UserLanguages",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(450)");
-
-            migrationBuilder.AlterColumn<string>(
-                name: "ExerciseId",
-                table: "UserExerciseProgress",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(450)");
+            migrationBuilder.RenameColumn(
+                name: "Id",
+                table: "Achievements",
+                newName: "AchievementId");
 
             migrationBuilder.AddColumn<double>(
                 name: "EaseFactor",
@@ -226,15 +186,6 @@ namespace Backend.Database.Migrations
                 nullable: false,
                 defaultValue: 0);
 
-            migrationBuilder.AlterColumn<string>(
-                name: "AchievementId",
-                table: "UserAchievements",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(450)");
-
             migrationBuilder.AlterColumn<int>(
                 name: "EstimatedDurationMinutes",
                 table: "Lessons",
@@ -244,23 +195,6 @@ namespace Backend.Database.Migrations
                 oldClrType: typeof(int),
                 oldType: "int",
                 oldNullable: true);
-
-            migrationBuilder.AlterColumn<string>(
-                name: "CourseId",
-                table: "Lessons",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(450)");
-
-            migrationBuilder.AddColumn<string>(
-                name: "LessonId",
-                table: "Lessons",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                defaultValue: "");
 
             migrationBuilder.AlterColumn<string>(
                 name: "FlagIconUrl",
@@ -274,23 +208,6 @@ namespace Backend.Database.Migrations
                 oldMaxLength: 255,
                 oldNullable: true);
 
-            migrationBuilder.AddColumn<string>(
-                name: "LanguageId",
-                table: "Languages",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AlterColumn<string>(
-                name: "LessonId",
-                table: "Exercises",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(450)");
-
             migrationBuilder.AlterColumn<string>(
                 name: "Discriminator",
                 table: "Exercises",
@@ -301,29 +218,10 @@ namespace Backend.Database.Migrations
                 oldType: "nvarchar(34)",
                 oldMaxLength: 34);
 
-            migrationBuilder.AlterColumn<bool>(
-                name: "CorrectAnswer",
-                table: "Exercises",
-                type: "bit",
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(500)",
-                oldMaxLength: 500,
-                oldNullable: true);
-
             migrationBuilder.AddColumn<string>(
                 name: "ExerciseId",
                 table: "Exercises",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "CreatedById",
-                table: "Exercises",
                 type: "nvarchar(450)",
-                maxLength: 450,
                 nullable: false,
                 defaultValue: "");
 
@@ -335,23 +233,6 @@ namespace Backend.Database.Migrations
                 nullable: false,
                 defaultValue: "");
 
-            migrationBuilder.AlterColumn<string>(
-                name: "ExerciseId",
-                table: "ExerciseOption",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(450)");
-
-            migrationBuilder.AddColumn<string>(
-                name: "ExerciseOptionId",
-                table: "ExerciseOption",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                defaultValue: "");
-
             migrationBuilder.AddColumn<string>(
                 name: "Explanation",
                 table: "ExerciseOption",
@@ -359,27 +240,6 @@ namespace Backend.Database.Migrations
                 maxLength: 1000,
                 nullable: false,
                 defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "FillInBlankExerciseExerciseId",
-                table: "ExerciseOption",
-                type: "nvarchar(36)",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "ListeningExerciseExerciseId",
-                table: "ExerciseOption",
-                type: "nvarchar(36)",
-                nullable: true);
-
-            migrationBuilder.AlterColumn<string>(
-                name: "LanguageId",
-                table: "Courses",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(450)");
 
             migrationBuilder.AlterColumn<int>(
                 name: "EstimatedDurationHours",
@@ -403,58 +263,17 @@ namespace Backend.Database.Migrations
                 oldMaxLength: 1000,
                 oldNullable: true);
 
-            migrationBuilder.AddColumn<string>(
-                name: "CourseId",
-                table: "Courses",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "AchievementId",
-                table: "Achievements",
-                type: "nvarchar(36)",
-                maxLength: 36,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Lessons",
-                table: "Lessons",
-                column: "LessonId");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Languages",
-                table: "Languages",
-                column: "LanguageId");
-
             migrationBuilder.AddPrimaryKey(
                 name: "PK_Exercises",
                 table: "Exercises",
                 column: "ExerciseId");
 
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_ExerciseOption",
-                table: "ExerciseOption",
-                column: "ExerciseOptionId");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Courses",
-                table: "Courses",
-                column: "CourseId");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Achievements",
-                table: "Achievements",
-                column: "AchievementId");
-
             migrationBuilder.CreateTable(
                 name: "AudioMatchPair",
                 columns: table => new
                 {
-                    AudioMatchPairId = table.Column<string>(type: "nvarchar(36)", maxLength: 36, nullable: false),
-                    AudioMatchingExerciseId = table.Column<string>(type: "nvarchar(36)", maxLength: 36, nullable: false),
+                    AudioMatchPairId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    AudioMatchingExerciseId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     AudioUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     Explanation = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
@@ -475,8 +294,8 @@ namespace Backend.Database.Migrations
                 name: "ImageOption",
                 columns: table => new
                 {
-                    ImageOptionId = table.Column<string>(type: "nvarchar(36)", maxLength: 36, nullable: false),
-                    ImageChoiceExerciseId = table.Column<string>(type: "nvarchar(36)", maxLength: 36, nullable: false),
+                    ImageOptionId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ImageChoiceExerciseId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     AltText = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     IsCorrect = table.Column<bool>(type: "bit", nullable: false),
@@ -525,16 +344,6 @@ namespace Backend.Database.Migrations
                 column: "CreatedById");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ExerciseOption_FillInBlankExerciseExerciseId",
-                table: "ExerciseOption",
-                column: "FillInBlankExerciseExerciseId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ExerciseOption_ListeningExerciseExerciseId",
-                table: "ExerciseOption",
-                column: "ListeningExerciseExerciseId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Courses_LanguageId_OrderIndex",
                 table: "Courses",
                 columns: new[] { "LanguageId", "OrderIndex" });
@@ -550,12 +359,11 @@ namespace Backend.Database.Migrations
                 column: "ImageChoiceExerciseId");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_Courses_Languages_LanguageId",
+                name: "FK_Courses_Users_CreatedById",
                 table: "Courses",
-                column: "LanguageId",
-                principalTable: "Languages",
-                principalColumn: "LanguageId",
-                onDelete: ReferentialAction.Cascade);
+                column: "CreatedById",
+                principalTable: "Users",
+                principalColumn: "Id");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_ExerciseOption_Exercises_ExerciseId",
@@ -566,50 +374,11 @@ namespace Backend.Database.Migrations
                 onDelete: ReferentialAction.Cascade);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_ExerciseOption_Exercises_FillInBlankExerciseExerciseId",
-                table: "ExerciseOption",
-                column: "FillInBlankExerciseExerciseId",
-                principalTable: "Exercises",
-                principalColumn: "ExerciseId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_ExerciseOption_Exercises_ListeningExerciseExerciseId",
-                table: "ExerciseOption",
-                column: "ListeningExerciseExerciseId",
-                principalTable: "Exercises",
-                principalColumn: "ExerciseId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Exercises_Lessons_LessonId",
-                table: "Exercises",
-                column: "LessonId",
-                principalTable: "Lessons",
-                principalColumn: "LessonId",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
                 name: "FK_Exercises_Users_CreatedById",
                 table: "Exercises",
                 column: "CreatedById",
                 principalTable: "Users",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Lessons_Courses_CourseId",
-                table: "Lessons",
-                column: "CourseId",
-                principalTable: "Courses",
-                principalColumn: "CourseId",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_UserAchievements_Achievements_AchievementId",
-                table: "UserAchievements",
-                column: "AchievementId",
-                principalTable: "Achievements",
-                principalColumn: "AchievementId",
-                onDelete: ReferentialAction.Cascade);
+                principalColumn: "Id");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_UserExerciseProgress_Exercises_ExerciseId",
@@ -617,21 +386,13 @@ namespace Backend.Database.Migrations
                 column: "ExerciseId",
                 principalTable: "Exercises",
                 principalColumn: "ExerciseId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_UserLanguages_Languages_LanguageId",
-                table: "UserLanguages",
-                column: "LanguageId",
-                principalTable: "Languages",
-                principalColumn: "LanguageId",
-                onDelete: ReferentialAction.Cascade);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
-                name: "FK_Courses_Languages_LanguageId",
+                name: "FK_Courses_Users_CreatedById",
                 table: "Courses");
 
             migrationBuilder.DropForeignKey(
@@ -639,36 +400,12 @@ namespace Backend.Database.Migrations
                 table: "ExerciseOption");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_ExerciseOption_Exercises_FillInBlankExerciseExerciseId",
-                table: "ExerciseOption");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_ExerciseOption_Exercises_ListeningExerciseExerciseId",
-                table: "ExerciseOption");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Exercises_Lessons_LessonId",
-                table: "Exercises");
-
-            migrationBuilder.DropForeignKey(
                 name: "FK_Exercises_Users_CreatedById",
                 table: "Exercises");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_Lessons_Courses_CourseId",
-                table: "Lessons");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_UserAchievements_Achievements_AchievementId",
-                table: "UserAchievements");
-
-            migrationBuilder.DropForeignKey(
                 name: "FK_UserExerciseProgress_Exercises_ExerciseId",
                 table: "UserExerciseProgress");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_UserLanguages_Languages_LanguageId",
-                table: "UserLanguages");
 
             migrationBuilder.DropTable(
                 name: "AudioMatchPair");
@@ -688,17 +425,9 @@ namespace Backend.Database.Migrations
                 name: "IX_UserAchievements_UserId",
                 table: "UserAchievements");
 
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Lessons",
-                table: "Lessons");
-
             migrationBuilder.DropIndex(
                 name: "IX_Lessons_CourseId_OrderIndex",
                 table: "Lessons");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Languages",
-                table: "Languages");
 
             migrationBuilder.DropIndex(
                 name: "IX_Languages_LanguageName",
@@ -712,29 +441,9 @@ namespace Backend.Database.Migrations
                 name: "IX_Exercises_CreatedById",
                 table: "Exercises");
 
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_ExerciseOption",
-                table: "ExerciseOption");
-
-            migrationBuilder.DropIndex(
-                name: "IX_ExerciseOption_FillInBlankExerciseExerciseId",
-                table: "ExerciseOption");
-
-            migrationBuilder.DropIndex(
-                name: "IX_ExerciseOption_ListeningExerciseExerciseId",
-                table: "ExerciseOption");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Courses",
-                table: "Courses");
-
             migrationBuilder.DropIndex(
                 name: "IX_Courses_LanguageId_OrderIndex",
                 table: "Courses");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Achievements",
-                table: "Achievements");
 
             migrationBuilder.DropColumn(
                 name: "EaseFactor",
@@ -757,19 +466,7 @@ namespace Backend.Database.Migrations
                 table: "UserExerciseProgress");
 
             migrationBuilder.DropColumn(
-                name: "LessonId",
-                table: "Lessons");
-
-            migrationBuilder.DropColumn(
-                name: "LanguageId",
-                table: "Languages");
-
-            migrationBuilder.DropColumn(
                 name: "ExerciseId",
-                table: "Exercises");
-
-            migrationBuilder.DropColumn(
-                name: "CreatedById",
                 table: "Exercises");
 
             migrationBuilder.DropColumn(
@@ -777,33 +474,23 @@ namespace Backend.Database.Migrations
                 table: "Exercises");
 
             migrationBuilder.DropColumn(
-                name: "ExerciseOptionId",
-                table: "ExerciseOption");
-
-            migrationBuilder.DropColumn(
                 name: "Explanation",
                 table: "ExerciseOption");
 
-            migrationBuilder.DropColumn(
-                name: "FillInBlankExerciseExerciseId",
-                table: "ExerciseOption");
-
-            migrationBuilder.DropColumn(
-                name: "ListeningExerciseExerciseId",
-                table: "ExerciseOption");
-
-            migrationBuilder.DropColumn(
-                name: "CourseId",
-                table: "Courses");
-
-            migrationBuilder.DropColumn(
-                name: "AchievementId",
-                table: "Achievements");
+            migrationBuilder.RenameColumn(
+                name: "LessonId",
+                table: "Lessons",
+                newName: "Id");
 
             migrationBuilder.RenameColumn(
                 name: "LanguageName",
                 table: "Languages",
                 newName: "Name");
+
+            migrationBuilder.RenameColumn(
+                name: "LanguageId",
+                table: "Languages",
+                newName: "Id");
 
             migrationBuilder.RenameColumn(
                 name: "Statement",
@@ -816,36 +503,29 @@ namespace Backend.Database.Migrations
                 newName: "ListeningExercise_CorrectAnswer");
 
             migrationBuilder.RenameColumn(
+                name: "CreatedById",
+                table: "Exercises",
+                newName: "Id");
+
+            migrationBuilder.RenameColumn(
+                name: "ExerciseOptionId",
+                table: "ExerciseOption",
+                newName: "Id");
+
+            migrationBuilder.RenameColumn(
+                name: "CourseId",
+                table: "Courses",
+                newName: "Id");
+
+            migrationBuilder.RenameColumn(
                 name: "AchievementName",
                 table: "Achievements",
                 newName: "Name");
 
-            migrationBuilder.AlterColumn<string>(
-                name: "LanguageId",
-                table: "UserLanguages",
-                type: "nvarchar(450)",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(36)",
-                oldMaxLength: 36);
-
-            migrationBuilder.AlterColumn<string>(
-                name: "ExerciseId",
-                table: "UserExerciseProgress",
-                type: "nvarchar(450)",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(36)",
-                oldMaxLength: 36);
-
-            migrationBuilder.AlterColumn<string>(
+            migrationBuilder.RenameColumn(
                 name: "AchievementId",
-                table: "UserAchievements",
-                type: "nvarchar(450)",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(36)",
-                oldMaxLength: 36);
+                table: "Achievements",
+                newName: "Id");
 
             migrationBuilder.AlterColumn<int>(
                 name: "EstimatedDurationMinutes",
@@ -854,22 +534,6 @@ namespace Backend.Database.Migrations
                 nullable: true,
                 oldClrType: typeof(int),
                 oldType: "int");
-
-            migrationBuilder.AlterColumn<string>(
-                name: "CourseId",
-                table: "Lessons",
-                type: "nvarchar(450)",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(36)",
-                oldMaxLength: 36);
-
-            migrationBuilder.AddColumn<string>(
-                name: "Id",
-                table: "Lessons",
-                type: "nvarchar(450)",
-                nullable: false,
-                defaultValue: "");
 
             migrationBuilder.AddColumn<string>(
                 name: "Description",
@@ -888,22 +552,6 @@ namespace Backend.Database.Migrations
                 oldType: "nvarchar(255)",
                 oldMaxLength: 255);
 
-            migrationBuilder.AddColumn<string>(
-                name: "Id",
-                table: "Languages",
-                type: "nvarchar(450)",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AlterColumn<string>(
-                name: "LessonId",
-                table: "Exercises",
-                type: "nvarchar(450)",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(36)",
-                oldMaxLength: 36);
-
             migrationBuilder.AlterColumn<string>(
                 name: "Discriminator",
                 table: "Exercises",
@@ -913,23 +561,6 @@ namespace Backend.Database.Migrations
                 oldClrType: typeof(string),
                 oldType: "nvarchar(21)",
                 oldMaxLength: 21);
-
-            migrationBuilder.AlterColumn<string>(
-                name: "CorrectAnswer",
-                table: "Exercises",
-                type: "nvarchar(500)",
-                maxLength: 500,
-                nullable: true,
-                oldClrType: typeof(bool),
-                oldType: "bit",
-                oldNullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "Id",
-                table: "Exercises",
-                type: "nvarchar(450)",
-                nullable: false,
-                defaultValue: "");
 
             migrationBuilder.AddColumn<string>(
                 name: "AcceptedAnswers",
@@ -944,10 +575,24 @@ namespace Backend.Database.Migrations
                 type: "bit",
                 nullable: true);
 
+            migrationBuilder.AddColumn<string>(
+                name: "CorrectAnswer",
+                table: "Exercises",
+                type: "nvarchar(500)",
+                maxLength: 500,
+                nullable: true);
+
             migrationBuilder.AddColumn<int>(
                 name: "EstimatedDurationMinutes",
                 table: "Exercises",
                 type: "int",
+                nullable: true);
+
+            migrationBuilder.AddColumn<string>(
+                name: "Explanation",
+                table: "Exercises",
+                type: "nvarchar(1000)",
+                maxLength: 1000,
                 nullable: true);
 
             migrationBuilder.AddColumn<string>(
@@ -1018,37 +663,12 @@ namespace Backend.Database.Migrations
                 type: "bit",
                 nullable: true);
 
-            migrationBuilder.AlterColumn<string>(
-                name: "ExerciseId",
-                table: "ExerciseOption",
-                type: "nvarchar(450)",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(36)",
-                oldMaxLength: 36);
-
-            migrationBuilder.AddColumn<string>(
-                name: "Id",
-                table: "ExerciseOption",
-                type: "nvarchar(450)",
-                nullable: false,
-                defaultValue: "");
-
             migrationBuilder.AddColumn<int>(
                 name: "OrderIndex",
                 table: "ExerciseOption",
                 type: "int",
                 nullable: false,
                 defaultValue: 0);
-
-            migrationBuilder.AlterColumn<string>(
-                name: "LanguageId",
-                table: "Courses",
-                type: "nvarchar(450)",
-                nullable: false,
-                oldClrType: typeof(string),
-                oldType: "nvarchar(36)",
-                oldMaxLength: 36);
 
             migrationBuilder.AlterColumn<int>(
                 name: "EstimatedDurationHours",
@@ -1068,48 +688,9 @@ namespace Backend.Database.Migrations
                 oldType: "nvarchar(1000)",
                 oldMaxLength: 1000);
 
-            migrationBuilder.AddColumn<string>(
-                name: "Id",
-                table: "Courses",
-                type: "nvarchar(450)",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Id",
-                table: "Achievements",
-                type: "nvarchar(450)",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Lessons",
-                table: "Lessons",
-                column: "Id");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Languages",
-                table: "Languages",
-                column: "Id");
-
             migrationBuilder.AddPrimaryKey(
                 name: "PK_Exercises",
                 table: "Exercises",
-                column: "Id");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_ExerciseOption",
-                table: "ExerciseOption",
-                column: "Id");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Courses",
-                table: "Courses",
-                column: "Id");
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Achievements",
-                table: "Achievements",
                 column: "Id");
 
             migrationBuilder.CreateIndex(
@@ -1123,10 +704,10 @@ namespace Backend.Database.Migrations
                 column: "LanguageId");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_Courses_Languages_LanguageId",
+                name: "FK_Courses_Users_CreatedById",
                 table: "Courses",
-                column: "LanguageId",
-                principalTable: "Languages",
+                column: "CreatedById",
+                principalTable: "Users",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
 
@@ -1139,43 +720,11 @@ namespace Backend.Database.Migrations
                 onDelete: ReferentialAction.Cascade);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_Exercises_Lessons_LessonId",
-                table: "Exercises",
-                column: "LessonId",
-                principalTable: "Lessons",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Lessons_Courses_CourseId",
-                table: "Lessons",
-                column: "CourseId",
-                principalTable: "Courses",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_UserAchievements_Achievements_AchievementId",
-                table: "UserAchievements",
-                column: "AchievementId",
-                principalTable: "Achievements",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
                 name: "FK_UserExerciseProgress_Exercises_ExerciseId",
                 table: "UserExerciseProgress",
                 column: "ExerciseId",
                 principalTable: "Exercises",
                 principalColumn: "Id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_UserLanguages_Languages_LanguageId",
-                table: "UserLanguages",
-                column: "LanguageId",
-                principalTable: "Languages",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
         }
     }
 }

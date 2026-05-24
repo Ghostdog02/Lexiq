@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Backend.Database.Migrations
 {
     [DbContext(typeof(BackendDbContext))]
-    [Migration("20260430093230_RestructureExerciseTypes")]
-    partial class RestructureExerciseTypes
+    [Migration("20260524072055_RemoveRestrictionsOnIds")]
+    partial class RemoveRestrictionsOnIds
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -28,15 +28,13 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Course", b =>
                 {
                     b.Property<string>("CourseId")
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CreatedById")
                         .IsRequired()
-                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Description")
@@ -49,8 +47,7 @@ namespace Backend.Database.Migrations
 
                     b.Property<string>("LanguageId")
                         .IsRequired()
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("OrderIndex")
                         .HasColumnType("int");
@@ -75,13 +72,11 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Exercises.AudioMatchPair", b =>
                 {
                     b.Property<string>("AudioMatchPairId")
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("AudioMatchingExerciseId")
                         .IsRequired()
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("AudioUrl")
                         .IsRequired()
@@ -111,15 +106,13 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Exercises.Exercise", b =>
                 {
                     b.Property<string>("ExerciseId")
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CreatedById")
                         .IsRequired()
-                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("DifficultyLevel")
@@ -140,8 +133,7 @@ namespace Backend.Database.Migrations
 
                     b.Property<string>("LessonId")
                         .IsRequired()
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("Points")
                         .HasColumnType("int");
@@ -162,27 +154,19 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Exercises.ExerciseOption", b =>
                 {
                     b.Property<string>("ExerciseOptionId")
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("ExerciseId")
                         .IsRequired()
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Explanation")
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<string>("FillInBlankExerciseExerciseId")
-                        .HasColumnType("nvarchar(36)");
-
                     b.Property<bool>("IsCorrect")
                         .HasColumnType("bit");
-
-                    b.Property<string>("ListeningExerciseExerciseId")
-                        .HasColumnType("nvarchar(36)");
 
                     b.Property<string>("OptionText")
                         .IsRequired()
@@ -193,18 +177,13 @@ namespace Backend.Database.Migrations
 
                     b.HasIndex("ExerciseId");
 
-                    b.HasIndex("FillInBlankExerciseExerciseId");
-
-                    b.HasIndex("ListeningExerciseExerciseId");
-
                     b.ToTable("ExerciseOption");
                 });
 
             modelBuilder.Entity("Backend.Database.Entities.Exercises.ImageOption", b =>
                 {
                     b.Property<string>("ImageOptionId")
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("AltText")
                         .IsRequired()
@@ -218,8 +197,7 @@ namespace Backend.Database.Migrations
 
                     b.Property<string>("ImageChoiceExerciseId")
                         .IsRequired()
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
@@ -239,8 +217,7 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Language", b =>
                 {
                     b.Property<string>("LanguageId")
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -266,13 +243,11 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Lesson", b =>
                 {
                     b.Property<string>("LessonId")
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("CourseId")
                         .IsRequired()
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -305,12 +280,10 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.UserExerciseProgress", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("ExerciseId")
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime?>("CompletedAt")
                         .HasColumnType("datetime2");
@@ -348,8 +321,7 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Users.Achievement", b =>
                 {
                     b.Property<string>("AchievementId")
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("AchievementName")
                         .IsRequired()
@@ -460,12 +432,10 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Users.UserAchievement", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("AchievementId")
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("UnlockedAt")
                         .HasColumnType("datetime2");
@@ -482,7 +452,6 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Users.UserAvatar", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("ContentType")
@@ -502,12 +471,10 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Users.UserLanguage", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasMaxLength(450)
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("LanguageId")
-                        .HasMaxLength(36)
-                        .HasColumnType("nvarchar(36)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("EnrolledAt")
                         .HasColumnType("datetime2");
@@ -699,14 +666,6 @@ namespace Backend.Database.Migrations
                 {
                     b.HasBaseType("Backend.Database.Entities.Exercises.Exercise");
 
-                    b.Property<bool>("CorrectAnswer")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Explanation")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -724,7 +683,7 @@ namespace Backend.Database.Migrations
                     b.HasOne("Backend.Database.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("Backend.Database.Entities.Language", "Language")
@@ -754,7 +713,7 @@ namespace Backend.Database.Migrations
                     b.HasOne("Backend.Database.Entities.Users.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.HasOne("Backend.Database.Entities.Lesson", "Lesson")
@@ -771,18 +730,10 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Exercises.ExerciseOption", b =>
                 {
                     b.HasOne("Backend.Database.Entities.Exercises.Exercise", "Exercise")
-                        .WithMany()
+                        .WithMany("Options")
                         .HasForeignKey("ExerciseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("Backend.Database.Entities.Exercises.FillInBlankExercise", null)
-                        .WithMany("Options")
-                        .HasForeignKey("FillInBlankExerciseExerciseId");
-
-                    b.HasOne("Backend.Database.Entities.Exercises.ListeningExercise", null)
-                        .WithMany("Options")
-                        .HasForeignKey("ListeningExerciseExerciseId");
 
                     b.Navigation("Exercise");
                 });
@@ -790,7 +741,7 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Exercises.ImageOption", b =>
                 {
                     b.HasOne("Backend.Database.Entities.Exercises.ImageChoiceExercise", "Exercise")
-                        .WithMany("Options")
+                        .WithMany()
                         .HasForeignKey("ImageChoiceExerciseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -936,6 +887,8 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Exercises.Exercise", b =>
                 {
                     b.Navigation("ExerciseProgress");
+
+                    b.Navigation("Options");
                 });
 
             modelBuilder.Entity("Backend.Database.Entities.Language", b =>
@@ -967,21 +920,6 @@ namespace Backend.Database.Migrations
             modelBuilder.Entity("Backend.Database.Entities.Exercises.AudioMatchingExercise", b =>
                 {
                     b.Navigation("Pairs");
-                });
-
-            modelBuilder.Entity("Backend.Database.Entities.Exercises.FillInBlankExercise", b =>
-                {
-                    b.Navigation("Options");
-                });
-
-            modelBuilder.Entity("Backend.Database.Entities.Exercises.ImageChoiceExercise", b =>
-                {
-                    b.Navigation("Options");
-                });
-
-            modelBuilder.Entity("Backend.Database.Entities.Exercises.ListeningExercise", b =>
-                {
-                    b.Navigation("Options");
                 });
 #pragma warning restore 612, 618
         }
