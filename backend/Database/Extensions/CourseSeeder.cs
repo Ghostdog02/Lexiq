@@ -13,8 +13,7 @@ public static class CourseSeeder
 
     public static async Task<string> SeedAsync(
         BackendDbContext context,
-        string languageId,
-        string adminUserId
+        string languageId
     )
     {
         var existing = await context.Courses.FirstOrDefaultAsync(c =>
@@ -36,7 +35,6 @@ public static class CourseSeeder
                 + "Designed for Bulgarian speakers learning Italian from scratch.",
             EstimatedDurationHours = 12,
             OrderIndex = 0,
-            CreatedById = adminUserId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };

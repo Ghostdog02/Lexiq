@@ -91,7 +91,7 @@ public class SeedData
     private static async Task SeedContentAsync(BackendDbContext context, string adminUserId)
     {
         var languageId = await LanguageSeeder.SeedAsync(context);
-        var courseId = await CourseSeeder.SeedAsync(context, languageId, adminUserId);
+        var courseId = await CourseSeeder.SeedAsync(context, languageId);
         var lessonIds = await LessonSeeder.SeedAsync(context, courseId);
         await ExerciseSeeder.SeedAsync(context, lessonIds);
         await AchievementSeeder.SeedAsync(context);
@@ -121,18 +121,5 @@ public class SeedData
         }
 
         await context.SaveChangesAsync();
-    }
-}
-
-public class IdentityResultValidator
-{
-    public static void CheckSuccess(IdentityResult result, string description)
-    {
-        if (!result.Succeeded)
-        {
-            string errorMessages = string.Join(", ", result.Errors.Select(e => e.Description));
-
-            throw new Exception($"{description}: {string.Join(", ", result.Errors)}");
-        }
     }
 }

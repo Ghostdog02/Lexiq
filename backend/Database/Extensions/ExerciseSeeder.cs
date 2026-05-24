@@ -10,9 +10,11 @@ namespace Backend.Database.Extensions;
 public static class ExerciseSeeder
 {
     private const string AudioPlaceholder = "/static/uploads/audio/placeholder.mp3";
-    private const string AdminUserId = "system-admin";
 
-    public static async Task SeedAsync(BackendDbContext context, List<string> lessonIds)
+    public static async Task SeedAsync(
+        BackendDbContext context,
+        List<string> lessonIds
+    )
     {
         // Idempotency: if exercises exist for any lesson, assume full seed completed
         if (await context.Exercises.AnyAsync(e => lessonIds.Contains(e.LessonId)))
@@ -32,7 +34,10 @@ public static class ExerciseSeeder
         await context.SaveChangesAsync();
     }
 
-    private static List<Exercise> BuildExercisesForLesson(string lessonId, int lessonIndex) =>
+    private static List<Exercise> BuildExercisesForLesson(
+        string lessonId,
+        int lessonIndex
+    ) =>
         lessonIndex switch
         {
             0 => BuildGreetingsExercises(lessonId),
@@ -55,7 +60,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "What does 'Ciao' mean?",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 IsLocked = false,
@@ -93,7 +98,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "Complete the sentence",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Text = "Mi ____ Marco. (My name is Marco.)",
@@ -123,12 +128,20 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "True or False",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
                 Statement = "'Buonasera' is used from late afternoon onwards.",
-                CorrectAnswer = true,
-                Explanation = "'Buonasera' (good evening) is typically used from around 4-5 PM until late night.",
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        OptionText = "True",
+                        IsCorrect = true,
+                        Explanation = "'Buonasera' (good evening) is typically used from around 4-5 PM until late night.",
+                    },
+                    new ExerciseOption { OptionText = "False", IsCorrect = false, Explanation = "" },
+                ],
             },
         ];
 
@@ -141,7 +154,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "What number is this?",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 AudioUrl = AudioPlaceholder,
@@ -178,7 +191,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "Count in Italian",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Text = "uno, due, ____, quattro (one, two, ____, four)",
@@ -208,12 +221,20 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "True or False",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Statement = "The Italian word for 'ten' is 'dieci'.",
-                CorrectAnswer = true,
-                Explanation = "'Dieci' is indeed the correct Italian word for ten.",
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        OptionText = "True",
+                        IsCorrect = true,
+                        Explanation = "'Dieci' is indeed the correct Italian word for ten.",
+                    },
+                    new ExerciseOption { OptionText = "False", IsCorrect = false, Explanation = "" },
+                ],
             },
         ];
 
@@ -226,7 +247,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "What color is 'rosso'?",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 AudioUrl = AudioPlaceholder,
@@ -263,7 +284,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "Complete the phrase",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Text = "Il cielo è ____. (The sky is blue.)",
@@ -293,12 +314,20 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "True or False",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Statement = "'Nero' means white in Italian.",
-                CorrectAnswer = false,
-                Explanation = "'Nero' means black. 'Bianco' means white.",
+                Options =
+                [
+                    new ExerciseOption { OptionText = "True", IsCorrect = false, Explanation = "" },
+                    new ExerciseOption
+                    {
+                        OptionText = "False",
+                        IsCorrect = true,
+                        Explanation = "'Nero' means black. 'Bianco' means white.",
+                    },
+                ],
             },
         ];
 
@@ -311,7 +340,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "What does 'acqua' mean?",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 AudioUrl = AudioPlaceholder,
@@ -348,7 +377,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "Complete the sentence",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Text = "Vorrei un ____ di caffè. (I would like a cup of coffee.)",
@@ -378,12 +407,20 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "True or False",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Statement = "'Pizza' and 'pasta' are Italian words used worldwide.",
-                CorrectAnswer = true,
-                Explanation = "These are indeed Italian words that have been adopted into many languages globally.",
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        OptionText = "True",
+                        IsCorrect = true,
+                        Explanation = "These are indeed Italian words that have been adopted into many languages globally.",
+                    },
+                    new ExerciseOption { OptionText = "False", IsCorrect = false, Explanation = "" },
+                ],
             },
         ];
 
@@ -396,7 +433,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "What does 'stazione' mean?",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 AudioUrl = AudioPlaceholder,
@@ -433,7 +470,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "Complete the question",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Text = "Dov'è la ____? (Where is the station?)",
@@ -463,12 +500,20 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "True or False",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Statement = "'Sinistra' means left and 'destra' means right.",
-                CorrectAnswer = true,
-                Explanation = "These are the correct Italian words for left and right directions.",
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        OptionText = "True",
+                        IsCorrect = true,
+                        Explanation = "These are the correct Italian words for left and right directions.",
+                    },
+                    new ExerciseOption { OptionText = "False", IsCorrect = false, Explanation = "" },
+                ],
             },
         ];
 
@@ -481,7 +526,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "What does 'mangiare' mean?",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 AudioUrl = AudioPlaceholder,
@@ -518,7 +563,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "Conjugate the verb",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 15,
                 Text = "Io ____ italiano. (I speak Italian.)",
@@ -548,12 +593,20 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "True or False",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Statement = "Italian verbs are conjugated based on the subject pronoun.",
-                CorrectAnswer = true,
-                Explanation = "Yes, Italian verbs change their ending based on who is performing the action.",
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        OptionText = "True",
+                        IsCorrect = true,
+                        Explanation = "Yes, Italian verbs change their ending based on who is performing the action.",
+                    },
+                    new ExerciseOption { OptionText = "False", IsCorrect = false, Explanation = "" },
+                ],
             },
         ];
 
@@ -566,7 +619,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "What does 'oggi' mean?",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 AudioUrl = AudioPlaceholder,
@@ -603,7 +656,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "Complete the sentence",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Text = "Che ore ____? (What time is it?)",
@@ -633,12 +686,20 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "True or False",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Statement = "The Italian week starts with Monday (lunedì).",
-                CorrectAnswer = true,
-                Explanation = "In Italy, the week traditionally starts on Monday, not Sunday.",
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        OptionText = "True",
+                        IsCorrect = true,
+                        Explanation = "In Italy, the week traditionally starts on Monday, not Sunday.",
+                    },
+                    new ExerciseOption { OptionText = "False", IsCorrect = false, Explanation = "" },
+                ],
             },
         ];
 
@@ -651,7 +712,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "What does 'Come stai?' mean?",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 AudioUrl = AudioPlaceholder,
@@ -688,7 +749,7 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "Complete the response",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Text = "Come stai? - Bene, ____! (How are you? - Well, thanks!)",
@@ -718,12 +779,20 @@ public static class ExerciseSeeder
             {
                 LessonId = lessonId,
                 Instructions = "True or False",
-                CreatedById = AdminUserId,
+
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
                 Statement = "'Arrivederci' is a formal way to say goodbye.",
-                CorrectAnswer = true,
-                Explanation = "'Arrivederci' is more formal than 'ciao' and literally means 'until we see each other again'.",
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        OptionText = "True",
+                        IsCorrect = true,
+                        Explanation = "'Arrivederci' is more formal than 'ciao' and literally means 'until we see each other again'.",
+                    },
+                    new ExerciseOption { OptionText = "False", IsCorrect = false, Explanation = "" },
+                ],
             },
         ];
 }
