@@ -400,7 +400,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
         var otherUser = new UserBuilder()
             .WithUserName("otheruser")
             .WithEmail("other@test.com")
-            .WithTotalPoints(5000)
+            .WithTotalPoints(4900)
             .Build();
         await DbSeeder.AddUserAsync(_ctx, otherUser);
 
