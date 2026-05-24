@@ -175,6 +175,7 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
             RegistrationDate = DateTime.UtcNow,
             LastLoginDate = DateTime.UtcNow,
             TotalPointsEarned = 0,
+            Hearts = 100,
         };
 
         // Insert user into database using the fixture's context

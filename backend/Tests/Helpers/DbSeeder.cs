@@ -73,6 +73,14 @@ public static class DbSeeder
             );
         }
         await ctx.SaveChangesAsync();
+
+        // Sync the materialized XP cache — leaderboard AllTime reads TotalPointsEarned, not SUM
+        var user = await ctx.Users.FindAsync(userId);
+        if (user != null)
+        {
+            user.TotalPointsEarned += days * pointsPerDay;
+            await ctx.SaveChangesAsync();
+        }
     }
 
     public static async Task AddAvatarAsync(BackendDbContext ctx, string userId)
@@ -220,6 +228,14 @@ public static class DbSeeder
     /// 4. Identity junction tables (no DbSet; cleared via raw SQL)
     /// 5. Test users (excluding system user who owns the content hierarchy)
     /// </summary>
+    public static async Task<string> GetCorrectOptionIdAsync(BackendDbContext ctx, string exerciseId)
+    {
+        return await ctx.Set<ExerciseOption>()
+            .Where(o => o.ExerciseId == exerciseId && o.IsCorrect)
+            .Select(o => o.ExerciseOptionId)
+            .FirstAsync();
+    }
+
     public static async Task ClearLeaderboardDataAsync(BackendDbContext ctx, string systemUserId)
     {
         await ctx.UserExerciseProgress.ExecuteDeleteAsync();
