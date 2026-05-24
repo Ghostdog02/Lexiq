@@ -73,7 +73,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         var secondEx = exercises!.First(e => e.Id == secondExId);
 
         // Act
-        var submitResult = await SubmitAnswerAsync(firstEx.Id, "answer");
+        var submitResult = await SubmitAnswerAsync(firstEx.Id, GetCorrectOptionId(firstEx));
         var exercisesAfter = await GetExercisesForLessonAsync(Fixture.LessonId);
 
         // Assert
@@ -92,7 +92,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task Student_SubmitsWrongAnswer_CanRetryInfinitely()
+    public async Task Student_DepletesHearts_SubmissionBlocked()
     {
         // Arrange - create 1 unlocked exercise
         using var scope = Factory.Services.CreateScope();
@@ -108,13 +108,14 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
         var firstEx = exercises!.First(e => e.Id == firstExId);
 
-        // Act
+        // Act - deplete all 3 hearts with wrong answers
         var attempt1 = await SubmitAnswerAsync(firstEx.Id, "wrong1");
         var attempt2 = await SubmitAnswerAsync(firstEx.Id, "wrong2");
         var attempt3 = await SubmitAnswerAsync(firstEx.Id, "wrong3");
-        var correct = await SubmitAnswerAsync(firstEx.Id, "answer");
+        // After 3 wrong answers hearts == 0; further submissions (even correct) are blocked
+        var blocked = await SubmitAnswerAsync(firstEx.Id, GetCorrectOptionId(firstEx));
 
-        // Assert
+        // Assert - wrong answers accepted while hearts remain
         attempt1.Should().NotBeNull();
         attempt1.IsCorrect.Should().BeFalse();
         attempt1.PointsEarned.Should().Be(0);
@@ -125,9 +126,10 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         attempt3.Should().NotBeNull();
         attempt3.IsCorrect.Should().BeFalse();
 
-        correct.Should().NotBeNull();
-        correct.IsCorrect.Should().BeTrue();
-        correct.PointsEarned.Should().Be(10);
+        // Once hearts are depleted the endpoint returns 403 and the helper returns null
+        blocked.Should().BeNull(
+            because: "hearts depleted — no submissions allowed until hearts are replenished"
+        );
     }
 
     [Fact]
@@ -146,10 +148,10 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
 
         var exercises = await GetExercisesForLessonAsync(Fixture.LessonId);
         var firstEx = exercises!.First(e => e.Id == firstExId);
-        var firstSubmit = await SubmitAnswerAsync(firstEx.Id, "answer");
+        var firstSubmit = await SubmitAnswerAsync(firstEx.Id, GetCorrectOptionId(firstEx));
 
         // Act
-        var secondSubmit = await SubmitAnswerAsync(firstEx.Id, "answer");
+        var secondSubmit = await SubmitAnswerAsync(firstEx.Id, GetCorrectOptionId(firstEx));
         var progress = await GetLessonProgressAsync(Fixture.LessonId);
 
         // Assert
@@ -191,7 +193,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         for (var i = 0; i < 28; i++)
         {
             var ex = exercises!.First(e => e.Id == exerciseIds[i]);
-            await SubmitAnswerAsync(ex.Id, "answer");
+            await SubmitAnswerAsync(ex.Id, GetCorrectOptionId(ex));
         }
 
         var response = await _client.PostAsync(
@@ -244,9 +246,9 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         var ex2 = exercises!.First(e => e.Id == ex2Id);
         var ex3 = exercises!.First(e => e.Id == ex3Id);
 
-        await SubmitAnswerAsync(ex1.Id, "answer");
-        await SubmitAnswerAsync(ex2.Id, "answer");
-        await SubmitAnswerAsync(ex3.Id, "answer");
+        await SubmitAnswerAsync(ex1.Id, GetCorrectOptionId(ex1));
+        await SubmitAnswerAsync(ex2.Id, GetCorrectOptionId(ex2));
+        await SubmitAnswerAsync(ex3.Id, GetCorrectOptionId(ex3));
 
         // Act
         var progress = await GetLessonProgressAsync(Fixture.LessonId);
@@ -314,7 +316,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         for (var i = 0; i < 27; i++)
         {
             var ex = exercises!.First(e => e.Id == exerciseIds[i]);
-            await SubmitAnswerAsync(ex.Id, "answer");
+            await SubmitAnswerAsync(ex.Id, GetCorrectOptionId(ex));
         }
 
         // Act
@@ -334,6 +336,15 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         result.IsCompleted.Should().BeFalse("67.5% is below 70% threshold");
         result.CompletionPercentage.Should().Be(0.68, "27 out of 40 exercises completed");
     }
+
+    // Extracts the first correct option ID from any option-based exercise DTO
+    private static string GetCorrectOptionId(ExerciseDto exercise) => exercise switch
+    {
+        FillInBlankExerciseDto fib => fib.Options.First(o => o.IsCorrect).Id,
+        ListeningExerciseDto le => le.Options.First(o => o.IsCorrect).Id,
+        TrueFalseExerciseDto tf => tf.Options.First(o => o.IsCorrect).Id,
+        _ => throw new InvalidOperationException($"Cannot extract correct option from {exercise.GetType().Name}"),
+    };
 
     // Helper methods - no assertions, just return data
 

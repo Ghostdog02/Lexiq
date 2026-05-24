@@ -38,6 +38,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
     private string _adminToken = null!;
     private string _creatorToken = null!;
     private List<string> _exerciseIds = null!;
+    private List<string> _correctOptionIds = null!;
 
     public override async ValueTask InitializeAsync()
     {
@@ -49,6 +50,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
         _exerciseIds = new List<string>();
+        _correctOptionIds = new List<string>();
         for (var i = 0; i < 15; i++)
         {
             var id = await DbSeeder.CreateFillInBlankExerciseAsync(
@@ -58,6 +60,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
                 isLocked: i != 0 // Only first exercise unlocked
             );
             _exerciseIds.Add(id);
+            _correctOptionIds.Add(await DbSeeder.GetCorrectOptionIdAsync(ctx, id));
         }
 
         // Create users with different roles
@@ -166,12 +169,10 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         // Act
         var response = await _adminClient.PostAsJsonAsync(
             $"/api/exercises/{lockedExerciseId}/submit",
-            new SubmitAnswerRequest("answer"),
+            new SubmitAnswerRequest(_correctOptionIds[2]),
             TestContext.Current.CancellationToken
         );
 
-        Console.WriteLine(response);
-        Console.WriteLine(response.Content);
         var result = await response.Content.ReadFromJsonAsync<ExerciseSubmitResult>(
             cancellationToken: TestContext.Current.CancellationToken
         );
@@ -192,7 +193,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         // Act
         var response = await _creatorClient.PostAsJsonAsync(
             $"/api/exercises/{lockedExerciseId}/submit",
-            new SubmitAnswerRequest("answer"),
+            new SubmitAnswerRequest(_correctOptionIds[3]),
             TestContext.Current.CancellationToken
         );
 
@@ -246,6 +247,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         ctx.Lessons.Add(
             new Lesson
             {
+                LessonId = lockedLessonId,
                 CourseId = courseId,
                 Title = "Locked Lesson",
                 LessonContent = "{}",
@@ -259,6 +261,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         ctx.Exercises.Add(
             new FillInBlankExercise
             {
+                ExerciseId = exerciseInLockedLessonId,
                 LessonId = lockedLessonId,
                 Instructions = "Exercise in locked lesson",
                 Text = "Test",
@@ -301,25 +304,29 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
-        // Create a MultipleChoice exercise for this test
-        var mcExerciseId = await DbSeeder.CreateMultipleChoiceExerciseAsync(
-            ctx,
-            Fixture.LessonId,
-            orderIndex: 100,
-            isLocked: false
-        );
+        // Create a FillInBlank exercise with one correct and one wrong option
+        var mcExerciseId = Guid.NewGuid().ToString();
+        var correctOptionId = Guid.NewGuid().ToString();
+        var wrongOptionId = Guid.NewGuid().ToString();
+        ctx.Exercises.Add(new FillInBlankExercise
+        {
+            ExerciseId = mcExerciseId,
+            LessonId = Fixture.LessonId,
+            Instructions = "Submit correct or wrong option",
+            Text = "Test _",
+            DifficultyLevel = DifficultyLevel.Beginner,
+            Points = 10,
+            IsLocked = false,
+            Options =
+            [
+                new ExerciseOption { ExerciseOptionId = correctOptionId, ExerciseId = mcExerciseId, OptionText = "correct", IsCorrect = true, Explanation = "Correct." },
+                new ExerciseOption { ExerciseOptionId = wrongOptionId,   ExerciseId = mcExerciseId, OptionText = "wrong",   IsCorrect = false, Explanation = "Wrong." },
+            ],
+        });
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        // Get the correct option ID
-        var mcExerciseWithOptions = await ctx
-            .Exercises.Include(e => (e as FillInBlankExercise)!.Options)
-            .FirstOrDefaultAsync(
-                e => e.ExerciseId == mcExerciseId,
-                TestContext.Current.CancellationToken
-            );
-
-        var mcCast = mcExerciseWithOptions as FillInBlankExercise;
-        var correctOption = mcCast?.Options.FirstOrDefault(o => o.IsCorrect);
-        var wrongOption = mcCast?.Options.FirstOrDefault(o => !o.IsCorrect);
+        var correctOption = new { ExerciseOptionId = correctOptionId };
+        var wrongOption = new { ExerciseOptionId = wrongOptionId };
 
         // Act - submit wrong option first
         var wrongSubmit = await SubmitAnswerAsync(
@@ -336,10 +343,6 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         );
 
         // Assert
-        mcCast.Should().NotBeNull();
-        mcCast.Options.Should().NotBeEmpty();
-        correctOption.Should().NotBeNull();
-        wrongOption.Should().NotBeNull();
 
         wrongSubmit.Should().NotBeNull();
         wrongSubmit.IsCorrect.Should().BeFalse("wrong option is incorrect");
@@ -358,7 +361,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         var secondExId = _exerciseIds[1];
 
         // Submit correct answer to first exercise to create progress
-        await SubmitAnswerAsync(_studentClient, firstExId, "answer");
+        await SubmitAnswerAsync(_studentClient, firstExId, _correctOptionIds[0]);
 
         // Get lesson ID from first exercise
         var exResponse = await _studentClient.GetAsync(
@@ -409,7 +412,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         var secondExId = _exerciseIds[1];
 
         // Submit correct answer to first, wrong to second (which unlocks it)
-        await SubmitAnswerAsync(_studentClient, firstExId, "answer");
+        await SubmitAnswerAsync(_studentClient, firstExId, _correctOptionIds[0]);
         await SubmitAnswerAsync(_studentClient, secondExId, "wrong");
 
         // Get lesson ID
@@ -445,7 +448,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
         submissions.Should().NotBeNull();
         submissions.Should().NotBeEmpty("endpoint returns submissions for all exercises");
 
-        // Submissions are ordered by OrderIndex, so index 0 = first exercise, index 1 = second
+        // Submissions are ordered by CreatedAt, so index 0 = first exercise created, index 1 = second
         var firstExSubmission = submissions[0];
         firstExSubmission.Should().NotBeNull("first exercise was attempted");
         firstExSubmission.IsCorrect.Should().BeTrue();
