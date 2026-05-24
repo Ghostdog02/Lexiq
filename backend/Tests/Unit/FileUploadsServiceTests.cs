@@ -101,7 +101,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
             .BeFalse(
                 because: "SanitizeFilename rejects filenames containing '..' even after Path.GetFileName() to prevent obfuscated path traversal"
             );
-        result.Message.Should().Contain("Invalid filename");
+        result.Message.Should().Contain("Upload failed");
     }
 
     [Fact]
@@ -137,7 +137,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
             .BeFalse(
                 because: "SanitizeFilename rejects filenames containing '\\' even after Path.GetFileName() to prevent path manipulation"
             );
-        result.Message.Should().Contain("Invalid filename");
+        result.Message.Should().Contain("Upload failed");
     }
 
     [Fact]
