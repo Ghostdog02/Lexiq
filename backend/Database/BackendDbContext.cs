@@ -46,13 +46,11 @@ public class BackendDbContext(DbContextOptions options)
             entity
                 .HasOne(ul => ul.User)
                 .WithMany(u => u.UserLanguages)
-                .HasForeignKey(ul => ul.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity
                 .HasOne(ul => ul.Language)
                 .WithMany(l => l.UserLanguages)
-                .HasForeignKey(ul => ul.LanguageId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -60,23 +58,26 @@ public class BackendDbContext(DbContextOptions options)
             .Entity<Language>()
             .HasMany(l => l.Courses)
             .WithOne(c => c.Language)
-            .HasForeignKey(c => c.LanguageId)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder
             .Entity<Course>()
             .HasMany(c => c.Lessons)
             .WithOne(l => l.Course)
-            .HasForeignKey(l => l.CourseId)
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder
             .Entity<Lesson>()
             .HasMany(l => l.Exercises)
             .WithOne(e => e.Lesson)
-            .HasForeignKey(e => e.LessonId)
             .OnDelete(DeleteBehavior.Cascade);
-
+        
+        modelBuilder
+            .Entity<Exercise>()
+            .HasMany(e => e.Options)
+            .WithOne(o => o.Exercise)
+            .OnDelete(DeleteBehavior.Cascade);
+        
         // Configure TPH discriminator for Exercise hierarchy
         modelBuilder.Entity<FillInBlankExercise>();
         modelBuilder.Entity<ListeningExercise>();
@@ -84,31 +85,22 @@ public class BackendDbContext(DbContextOptions options)
         modelBuilder.Entity<ImageChoiceExercise>();
         modelBuilder.Entity<AudioMatchingExercise>();
 
-        // ExerciseOption - shared by FillInBlank and Listening exercises
-        modelBuilder
-            .Entity<ExerciseOption>()
-            .HasOne(eo => eo.Exercise)
-            .WithMany()
-            .HasForeignKey(eo => eo.ExerciseId)
-            .OnDelete(DeleteBehavior.Cascade);
 
         // ImageOption - belongs to ImageChoiceExercise
-        modelBuilder
-            .Entity<ImageOption>()
-            .HasOne(io => io.Exercise)
-            .WithMany(e => (e as ImageChoiceExercise)!.Options)
-            .HasForeignKey(io => io.ImageChoiceExerciseId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // AudioMatchPair - belongs to AudioMatchingExercise
-        modelBuilder
-            .Entity<AudioMatchPair>()
-            .HasOne(amp => amp.Exercise)
-            .WithMany(e => (e as AudioMatchingExercise)!.Pairs)
-            .HasForeignKey(amp => amp.AudioMatchingExerciseId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<UserLanguage>().HasKey(ul => new { ul.UserId, ul.LanguageId });
+        // modelBuilder
+        //     .Entity<ImageOption>()
+        //     .HasOne(io => io.Exercise)
+        //     .WithMany(e => (e as ImageChoiceExercise).Options)
+        //     .HasForeignKey(io => io.ImageChoiceExerciseId)
+        //     .OnDelete(DeleteBehavior.Cascade);
+        //
+        // // AudioMatchPair - belongs to AudioMatchingExercise
+        // modelBuilder
+        //     .Entity<AudioMatchPair>()
+        //     .HasOne(amp => amp.Exercise)
+        //     .WithMany(e => (e as AudioMatchingExercise).Pairs)
+        //     .HasForeignKey(amp => amp.AudioMatchingExerciseId)
+        //     .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<UserAvatar>(entity =>
         {
@@ -139,13 +131,6 @@ public class BackendDbContext(DbContextOptions options)
                 .WithMany(e => e.ExerciseProgress)
                 .HasForeignKey(uep => uep.ExerciseId)
                 .OnDelete(DeleteBehavior.NoAction);
-        });
-
-        modelBuilder.Entity<Achievement>(entity =>
-        {
-            entity.Property(a => a.AchievementName).HasMaxLength(100).IsRequired();
-            entity.Property(a => a.Description).HasMaxLength(500).IsRequired();
-            entity.Property(a => a.Icon).HasMaxLength(10).IsRequired();
         });
 
         modelBuilder.Entity<UserAchievement>(entity =>
@@ -186,16 +171,6 @@ public class BackendDbContext(DbContextOptions options)
         modelBuilder.Entity<IdentityUserLogin<string>>(entity =>
         {
             entity.ToTable("UserLogins");
-        });
-
-        modelBuilder.Entity<IdentityRoleClaim<string>>(entity =>
-        {
-            entity.ToTable("RoleClaims");
-        });
-
-        modelBuilder.Entity<IdentityUserToken<string>>(entity =>
-        {
-            entity.ToTable("UserTokens");
         });
 
         modelBuilder.Entity<IdentityRoleClaim<string>>(entity =>
