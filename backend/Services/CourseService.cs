@@ -35,8 +35,8 @@ public class CourseService(BackendDbContext context)
         {
             LanguageId = language.LanguageId,
             Title = dto.Title,
-            Description = dto.Description ?? string.Empty,
-            EstimatedDurationHours = dto.EstimatedDurationHours ?? 0,
+            Description = dto.Description ?? "",
+            EstimatedDurationHours = dto.EstimatedDurationHours ?? 1,
             OrderIndex = dto.OrderIndex,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
