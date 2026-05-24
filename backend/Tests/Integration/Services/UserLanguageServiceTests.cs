@@ -9,7 +9,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Integration.Services;
 
 /// <summary>
 /// Integration tests for UserLanguageService: enrollment, unenrollment, composite key behavior.
@@ -66,7 +66,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
             .NotBeNull(
                 because: "enrolling in a valid language should create a UserLanguage record"
             );
-        result!.UserId.Should().Be(_userId);
+        result.UserId.Should().Be(_userId);
         result.LanguageId.Should().Be(_languageId);
         result
             .EnrolledAt.Should()
@@ -99,7 +99,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Assert
         secondEnrollment.Should().NotBeNull();
-        secondEnrollment!.UserId.Should().Be(_userId);
+        secondEnrollment.UserId.Should().Be(_userId);
         secondEnrollment.LanguageId.Should().Be(_languageId);
         secondEnrollment
             .EnrolledAt.Should()
@@ -152,7 +152,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Assert
         result.Should().NotBeNull();
-        result!.EnrolledAt.Should().BeOnOrAfter(beforeEnrollment).And.BeOnOrBefore(afterEnrollment);
+        result.EnrolledAt.Should().BeOnOrAfter(beforeEnrollment).And.BeOnOrBefore(afterEnrollment);
     }
 
     #endregion

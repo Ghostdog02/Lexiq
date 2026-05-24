@@ -1,4 +1,5 @@
 using Backend.Api.Services;
+using Backend.Database;
 using Backend.Database.Entities.Users;
 using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
@@ -7,7 +8,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Integration.Services;
 
 /// <summary>
 /// Integration tests for AchievementService against a real SQL Server instance.
@@ -24,7 +25,7 @@ public class AchievementServiceTests(DatabaseFixture fixture)
         IAsyncLifetime
 {
     private readonly DatabaseFixture _fixture = fixture;
-    private Database.BackendDbContext _ctx = null!;
+    private BackendDbContext _ctx = null!;
     private AchievementService _service = null!;
     private string _userId = null!;
     private List<Achievement> _achievements = null!;
@@ -226,9 +227,7 @@ public class AchievementServiceTests(DatabaseFixture fixture)
         unlocked
             .Select(u => u.AchievementId)
             .Should()
-            .BeEquivalentTo(
-                new[] { _achievements[0].AchievementId, _achievements[1].AchievementId }
-            );
+            .BeEquivalentTo(_achievements[0].AchievementId, _achievements[1].AchievementId);
     }
 
     [Fact]

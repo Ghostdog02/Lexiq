@@ -1,6 +1,5 @@
 using Backend.Api.Services;
 using Backend.Database;
-using Backend.Database.Entities.Users;
 using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
@@ -12,7 +11,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Integration.Services;
 
 /// <summary>
 /// Integration tests for AvatarService: validation, upsert, retrieval, Google download, batch checks.
@@ -214,7 +213,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         );
 
         avatar.Should().NotBeNull(because: "upsert should create a new UserAvatar record");
-        avatar!.UserId.Should().Be(_userId);
+        avatar.UserId.Should().Be(_userId);
         avatar.Data.Should().Equal(imageBytes);
         avatar.ContentType.Should().Be("image/jpeg");
     }
@@ -244,7 +243,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         );
 
         updatedAvatar.Should().NotBeNull();
-        updatedAvatar!.Data.Should().NotEqual(originalData);
+        updatedAvatar.Data.Should().NotEqual(originalData);
         updatedAvatar.Data.Should().Equal(newImageBytes);
         updatedAvatar
             .ContentType.Should()
@@ -275,7 +274,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         // Assert
         data.Should()
             .NotBeNull(because: "GetAvatarAsync should return binary data for an existing avatar");
-        data!.Length.Should().BeGreaterThan(0);
+        data.Length.Should().BeGreaterThan(0);
         contentType.Should().Be("image/jpeg");
     }
 

@@ -1,4 +1,5 @@
 using Backend.Api.Services;
+using Backend.Database;
 using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
@@ -22,7 +23,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         IAsyncLifetime
 {
     private readonly DatabaseFixture _fixture = fixture;
-    private Database.BackendDbContext _ctx = null!;
+    private BackendDbContext _ctx = null!;
     private LeaderboardService _service = null!;
     private string _userId = null!;
     private List<string> _exerciseIds = null!;
@@ -311,7 +312,7 @@ public class GetStreakTests(DatabaseFixture fixture)
         longest.Should().Be(0);
     }
 
-    private static AvatarService CreateAvatarService(Database.BackendDbContext ctx)
+    private static AvatarService CreateAvatarService(BackendDbContext ctx)
     {
         var factory = new ServiceCollection()
             .AddHttpClient()

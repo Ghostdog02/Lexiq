@@ -1,4 +1,5 @@
 using Backend.Api.Services;
+using Backend.Database;
 using Backend.Database.Entities.Users;
 using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
@@ -9,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Integration.Services;
 
 /// <summary>
 /// Integration tests for ProfileService against a real SQL Server instance.
@@ -35,7 +36,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
         IAsyncLifetime
 {
     private readonly DatabaseFixture _fixture = fixture;
-    private Database.BackendDbContext _ctx = null!;
+    private BackendDbContext _ctx = null!;
     private ProfileService _service = null!;
     private string _userId = null!;
     private List<string> _exerciseIds = null!;
@@ -149,7 +150,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!.UserId.Should().Be(_userId);
+        profile.UserId.Should().Be(_userId);
         profile.UserName.Should().Be("profileuser");
         profile.TotalXp.Should().Be(1500, because: "user was seeded with 1500 XP");
         profile.CurrentStreak.Should().Be(0, because: "no exercise progress exists");
@@ -183,7 +184,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!
+        profile
             .CurrentStreak.Should()
             .Be(
                 3,
@@ -220,7 +221,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!
+        profile
             .CurrentStreak.Should()
             .Be(1, because: "yesterday's activity counts as 1-day current streak (grace period)");
         profile
@@ -239,7 +240,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!
+        profile
             .AvatarUrl.Should()
             .Be(
                 $"/api/user/{_userId}/avatar",
@@ -255,7 +256,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!.AvatarUrl.Should().BeNull(because: "no avatar exists for this user");
+        profile.AvatarUrl.Should().BeNull(because: "no avatar exists for this user");
     }
 
     [Fact]
@@ -270,7 +271,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!.Achievements.Should().HaveCount(4, because: "returns all achievement definitions");
+        profile.Achievements.Should().HaveCount(4, because: "returns all achievement definitions");
 
         var unlockedAchievements = profile.Achievements.Where(a => a.IsUnlocked).ToList();
         unlockedAchievements
@@ -305,7 +306,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!
+        profile
             .Level.Should()
             .Be(
                 LeaderboardService.CalculateLevel(1500),
@@ -327,7 +328,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!
+        profile
             .JoinDate.Should()
             .BeCloseTo(
                 expectedJoinDate,
@@ -357,7 +358,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert — verify all fields are populated correctly
         profile.Should().NotBeNull();
-        profile!.UserId.Should().Be(_userId);
+        profile.UserId.Should().Be(_userId);
         profile.UserName.Should().Be("profileuser");
         profile.TotalXp.Should().Be(1500);
         profile.Level.Should().Be(LeaderboardService.CalculateLevel(1500));
@@ -387,7 +388,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!
+        profile
             .UserName.Should()
             .Be("Unknown", because: "UserName ?? \"Unknown\" fallback when UserName is null");
     }
@@ -421,14 +422,14 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert — verify data does not cross-contaminate
         profile1.Should().NotBeNull();
-        profile1!.UserId.Should().Be(_userId);
+        profile1.UserId.Should().Be(_userId);
         profile1.UserName.Should().Be("profileuser");
         profile1.TotalXp.Should().Be(1500);
         profile1.CurrentStreak.Should().Be(0, because: "first user has no activity");
         profile1.AvatarUrl.Should().BeNull(because: "first user has no avatar");
 
         profile2.Should().NotBeNull();
-        profile2!.UserId.Should().Be(otherUser.Id);
+        profile2.UserId.Should().Be(otherUser.Id);
         profile2.UserName.Should().Be("otheruser");
         profile2.TotalXp.Should().Be(5000);
         profile2.CurrentStreak.Should().Be(10, because: "second user has 10-day streak");
@@ -443,14 +444,14 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Assert
         profile.Should().NotBeNull();
-        profile!.Achievements.Should().BeInAscendingOrder(a => a.XpRequired);
+        profile.Achievements.Should().BeInAscendingOrder(a => a.XpRequired);
         profile.Achievements[0].Name.Should().Be("First Steps");
         profile.Achievements[1].Name.Should().Be("Getting Started");
         profile.Achievements[2].Name.Should().Be("Dedicated Learner");
         profile.Achievements[3].Name.Should().Be("Rising Star");
     }
 
-    private static AvatarService CreateAvatarService(Database.BackendDbContext ctx)
+    private static AvatarService CreateAvatarService(BackendDbContext ctx)
     {
         var factory = new ServiceCollection()
             .AddHttpClient()
