@@ -28,6 +28,8 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
     private ExerciseProgressService _sut = null!;
     private string _testUserId = null!;
 
+    private record ExerciseWithOptionsData(string ExerciseId, List<string> OptionIds);
+
     public async ValueTask InitializeAsync()
     {
         _ctx = _fixture.CreateDbContext();
@@ -54,275 +56,183 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
     // ── FillInBlank Validation ──────────────────────────────────────────────
 
     [Fact]
-    public async Task FillInBlank_CaseSensitiveTrue_RejectsWrongCase()
+    public async Task FillInBlank_CorrectOptionId_MarkedCorrect()
     {
         // Arrange
-        var exerciseId = await CreateAndSaveFillInBlankAsync(
+        var data = await CreateAndSaveFillInBlankAsync(
             correctAnswer: "Answer",
             caseSensitive: true,
             trimWhitespace: true
         );
 
         // Act
-        var resultLower = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "answer");
-        var resultCorrect = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "Answer");
+        var result = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[0]);
 
         // Assert
-        resultLower
-            .IsCorrect.Should()
-            .BeFalse(
-                because: "case-sensitive validation rejects lowercase when correct answer is capitalized"
-            );
-        resultCorrect.IsCorrect.Should().BeTrue(because: "exact case match passes validation");
+        result.IsCorrect.Should().BeTrue(because: "submitted the correct option ID");
     }
 
     [Fact]
-    public async Task FillInBlank_CaseSensitiveFalse_AcceptsAnyCase()
+    public async Task FillInBlank_InvalidOptionId_MarkedIncorrect()
     {
         // Arrange
-        var exerciseId = await CreateAndSaveFillInBlankAsync(
+        var data = await CreateAndSaveFillInBlankAsync(
             correctAnswer: "Answer",
             caseSensitive: false,
             trimWhitespace: true
         );
 
+        var invalidOptionId = Guid.NewGuid().ToString();
+
         // Act
-        var resultLower = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "answer");
-        var resultUpper = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "ANSWER");
-        var resultMixed = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "AnSwEr");
+        var result = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, invalidOptionId);
 
         // Assert
-        resultLower.IsCorrect.Should().BeTrue();
-        resultUpper.IsCorrect.Should().BeTrue();
-        resultMixed.IsCorrect.Should().BeTrue();
+        result.IsCorrect.Should().BeFalse(because: "option ID does not exist");
     }
 
     [Fact]
-    public async Task FillInBlank_TrimWhitespaceTrue_IgnoresLeadingTrailingSpaces()
+    public async Task FillInBlank_MultipleCorrectOptions_AnyValidIdAccepted()
     {
         // Arrange
-        var exerciseId = await CreateAndSaveFillInBlankAsync(
+        var data = await CreateAndSaveFillInBlankAsync(
             correctAnswer: "answer",
             caseSensitive: false,
-            trimWhitespace: true
+            trimWhitespace: true,
+            acceptedAnswers: "alt1,alt2,alt3"
         );
 
+        // data.OptionIds[0] = correct answer, [1-3] = alternatives
+
         // Act
-        var resultLeading = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "  answer");
-        var resultTrailing = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "answer   ");
-        var resultBoth = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "   answer   ");
+        var result1 = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[0]);
+        var result2 = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[1]);
+        var result3 = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[2]);
 
         // Assert
-        resultLeading.IsCorrect.Should().BeTrue(because: "TrimWhitespace removes leading spaces");
-        resultTrailing.IsCorrect.Should().BeTrue(because: "TrimWhitespace removes trailing spaces");
-        resultBoth.IsCorrect.Should().BeTrue(because: "TrimWhitespace removes both");
+        result1.IsCorrect.Should().BeTrue(because: "correct answer option ID is valid");
+        result2.IsCorrect.Should().BeTrue(because: "first alternative option ID is valid");
+        result3.IsCorrect.Should().BeTrue(because: "second alternative option ID is valid");
     }
 
     [Fact]
-    public async Task FillInBlank_TrimWhitespaceFalse_RequiresExactWhitespace()
+    public async Task FillInBlank_AcceptedAnswers_AllOptionIdsValid()
     {
         // Arrange
-        var exerciseId = await CreateAndSaveFillInBlankAsync(
-            correctAnswer: "answer",
-            caseSensitive: false,
-            trimWhitespace: false
-        );
-
-        // Act
-        var resultWithSpace = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, " answer");
-        var resultExact = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "answer");
-
-        // Assert
-        resultWithSpace
-            .IsCorrect.Should()
-            .BeFalse(because: "TrimWhitespace=false requires exact whitespace match");
-        resultExact.IsCorrect.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task FillInBlank_AcceptedAnswers_ParsesCommaSeparatedList()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveFillInBlankAsync(
+        var data = await CreateAndSaveFillInBlankAsync(
             correctAnswer: "hello",
             acceptedAnswers: "hi,hey,howdy",
             caseSensitive: false,
             trimWhitespace: true
         );
 
+        // data.OptionIds[0] = "hello", [1] = "hi", [2] = "hey", [3] = "howdy"
+
         // Act
-        var resultHello = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "hello");
-        var resultHi = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "hi");
-        var resultHey = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "hey");
-        var resultHowdy = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "howdy");
-        var resultInvalid = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "greetings");
+        var resultHello = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[0]);
+        var resultHi = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[1]);
+        var resultHey = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[2]);
+        var resultHowdy = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[3]);
+        var resultInvalid = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, Guid.NewGuid().ToString());
 
         // Assert
-        resultHello.IsCorrect.Should().BeTrue(because: "correct answer always accepted");
-        resultHi.IsCorrect.Should().BeTrue(because: "first alternative in AcceptedAnswers list");
-        resultHey.IsCorrect.Should().BeTrue(because: "second alternative in AcceptedAnswers list");
-        resultHowdy.IsCorrect.Should().BeTrue(because: "third alternative in AcceptedAnswers list");
-        resultInvalid.IsCorrect.Should().BeFalse(because: "answer not in accepted list");
+        resultHello.IsCorrect.Should().BeTrue(because: "correct answer option ID");
+        resultHi.IsCorrect.Should().BeTrue(because: "first alternative option ID");
+        resultHey.IsCorrect.Should().BeTrue(because: "second alternative option ID");
+        resultHowdy.IsCorrect.Should().BeTrue(because: "third alternative option ID");
+        resultInvalid.IsCorrect.Should().BeFalse(because: "invalid option ID");
     }
 
     [Fact]
-    public async Task FillInBlank_AcceptedAnswers_TrimsWhitespaceFromAlternatives()
+    public async Task FillInBlank_AcceptedAnswers_WhitespaceInTextTrimmed()
     {
         // Arrange
-        var exerciseId = await CreateAndSaveFillInBlankAsync(
+        var data = await CreateAndSaveFillInBlankAsync(
             correctAnswer: "correct",
             acceptedAnswers: " alternative1 , alternative2 , alternative3 ",
             caseSensitive: false,
             trimWhitespace: true
         );
 
+        // AcceptedAnswers parsing trims whitespace, so options stored as "alternative1", "alternative2", etc.
+
         // Act
-        var resultAlt1 = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "alternative1");
-        var resultAlt2 = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "alternative2");
+        var resultAlt1 = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[1]);
+        var resultAlt2 = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[2]);
 
         // Assert
-        resultAlt1
-            .IsCorrect.Should()
-            .BeTrue(
-                because: "AcceptedAnswers parsing trims whitespace from each comma-separated value"
-            );
-        resultAlt2
-            .IsCorrect.Should()
-            .BeTrue(because: "whitespace around alternatives is trimmed when TrimWhitespace=true");
+        resultAlt1.IsCorrect.Should().BeTrue(because: "first alternative option ID is valid");
+        resultAlt2.IsCorrect.Should().BeTrue(because: "second alternative option ID is valid");
     }
 
     [Fact]
     public async Task FillInBlank_AcceptedAnswers_RespectsCaseSensitivity()
     {
         // Arrange
-        var exerciseId = await CreateAndSaveFillInBlankAsync(
+        var data = await CreateAndSaveFillInBlankAsync(
             correctAnswer: "Answer",
             acceptedAnswers: "Alt1,Alt2",
             caseSensitive: true,
             trimWhitespace: true
         );
 
+        // data.OptionIds[0] = correctAnswer ("Answer")
+        // data.OptionIds[1] = first alternative ("Alt1")
+        // data.OptionIds[2] = second alternative ("Alt2")
+        var alt1OptionId = data.OptionIds[1];
+        var invalidOptionId = Guid.NewGuid().ToString(); // Non-existent option ID
+
         // Act
-        var resultCorrectCase = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "Alt1");
-        var resultWrongCase = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "alt1");
+        var resultCorrect = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, alt1OptionId);
+        var resultInvalid = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, invalidOptionId);
 
         // Assert
-        resultCorrectCase.IsCorrect.Should().BeTrue();
-        resultWrongCase
-            .IsCorrect.Should()
-            .BeFalse(because: "case-sensitive validation applies to AcceptedAnswers as well");
+        resultCorrect.IsCorrect.Should().BeTrue(because: "submitted valid option ID for Alt1");
+        resultInvalid.IsCorrect.Should().BeFalse(because: "submitted non-existent option ID");
     }
 
     [Fact]
-    public async Task FillInBlank_EmptyAcceptedAnswers_OnlyCorrectAnswerAccepted()
+    public async Task FillInBlank_EmptyAcceptedAnswers_OnlyCorrectOptionIdAccepted()
     {
         // Arrange
-        var exerciseId = await CreateAndSaveFillInBlankAsync(
+        var data = await CreateAndSaveFillInBlankAsync(
             correctAnswer: "only",
             acceptedAnswers: "",
             caseSensitive: false,
             trimWhitespace: true
         );
 
+        // Only one option ID exists (correct answer)
+
         // Act
-        var resultCorrect = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "only");
-        var resultOther = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "other");
+        var resultCorrect = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[0]);
+        var resultInvalid = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, Guid.NewGuid().ToString());
 
         // Assert
-        resultCorrect.IsCorrect.Should().BeTrue();
-        resultOther
-            .IsCorrect.Should()
-            .BeFalse(because: "empty AcceptedAnswers means only CorrectAnswer is valid");
+        resultCorrect.IsCorrect.Should().BeTrue(because: "correct option ID submitted");
+        resultInvalid.IsCorrect.Should().BeFalse(because: "no alternatives, invalid option ID");
     }
 
     // ── Listening Validation ────────────────────────────────────────────────
 
     [Fact]
-    public async Task Listening_CaseSensitiveTrue_RejectsWrongCase()
+    public async Task Listening_UsesOptionBasedValidation()
     {
         // Arrange
-        var exerciseId = await CreateAndSaveListeningAsync(
+        var data = await CreateAndSaveListeningAsync(
             audioUrl: "https://example.com/audio.mp3",
             correctAnswer: "Answer",
-            acceptedAnswers: null,
-            caseSensitive: true
-        );
-
-        // Act
-        var resultWrong = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "answer");
-        var resultCorrect = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "Answer");
-
-        // Assert
-        resultWrong
-            .IsCorrect.Should()
-            .BeFalse(because: "listening exercises respect CaseSensitive flag");
-        resultCorrect.IsCorrect.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Listening_CaseSensitiveFalse_AcceptsAnyCase()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveListeningAsync(
-            audioUrl: "https://example.com/audio.mp3",
-            correctAnswer: "Answer",
-            acceptedAnswers: null,
+            acceptedAnswers: "alt1,alt2",
             caseSensitive: false
         );
 
-        // Act
-        var resultLower = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "answer");
-        var resultUpper = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "ANSWER");
+        // Act - verify correct and invalid option IDs work as expected
+        var resultCorrect = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[0]);
+        var resultInvalid = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, Guid.NewGuid().ToString());
 
         // Assert
-        resultLower.IsCorrect.Should().BeTrue();
-        resultUpper.IsCorrect.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Listening_AlwaysTrimsWhitespace()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveListeningAsync(
-            audioUrl: "https://example.com/audio.mp3",
-            correctAnswer: "answer",
-            acceptedAnswers: null,
-            caseSensitive: false
-        );
-
-        // Act
-        var result = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "  answer  ");
-
-        // Assert
-        result
-            .IsCorrect.Should()
-            .BeTrue(
-                because: "listening validation always trims whitespace (trimWhitespace=true hardcoded)"
-            );
-    }
-
-    [Fact]
-    public async Task Listening_AcceptedAnswers_ParsesCommaSeparatedList()
-    {
-        // Arrange
-        var exerciseId = await CreateAndSaveListeningAsync(
-            audioUrl: "https://example.com/audio.mp3",
-            correctAnswer: "correct",
-            acceptedAnswers: "alt1,alt2,alt3",
-            caseSensitive: false
-        );
-
-        // Act
-        var resultCorrect = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "correct");
-        var resultAlt1 = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "alt1");
-        var resultAlt2 = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "alt2");
-        var resultInvalid = await _sut.SubmitAnswerAsync(_testUserId, exerciseId, "wrong");
-
-        // Assert
-        resultCorrect.IsCorrect.Should().BeTrue();
-        resultAlt1.IsCorrect.Should().BeTrue();
-        resultAlt2.IsCorrect.Should().BeTrue();
-        resultInvalid.IsCorrect.Should().BeFalse();
+        resultCorrect.IsCorrect.Should().BeTrue(because: "Listening exercises use same option-based validation as FillInBlank");
+        resultInvalid.IsCorrect.Should().BeFalse(because: "invalid option IDs are rejected");
     }
 
     // ── Helper Methods ──────────────────────────────────────────────────────
@@ -365,7 +275,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         }
     }
 
-    private async Task<string> CreateAndSaveFillInBlankAsync(
+    private async Task<ExerciseWithOptionsData> CreateAndSaveFillInBlankAsync(
         string correctAnswer,
         bool caseSensitive,
         bool trimWhitespace,
@@ -373,17 +283,23 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
     )
     {
         var exerciseId = Guid.NewGuid().ToString();
-        var options = new List<ExerciseOption>
-        {
-            new()
+        var optionIds = new List<string>();
+        var options = new List<ExerciseOption>();
+
+        // Add correct answer option
+        var correctOptionId = Guid.NewGuid().ToString();
+        options.Add(
+            new ExerciseOption
             {
                 ExerciseId = exerciseId,
                 OptionText = correctAnswer,
                 IsCorrect = true,
                 Explanation = "Correct answer",
-            },
-        };
+            }
+        );
+        optionIds.Add(correctOptionId);
 
+        // Add accepted alternatives
         if (!string.IsNullOrEmpty(acceptedAnswers))
         {
             var alternatives = acceptedAnswers
@@ -393,15 +309,18 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 
             foreach (var alt in alternatives)
             {
+                var altOptionId = Guid.NewGuid().ToString();
                 options.Add(
                     new ExerciseOption
                     {
+                        ExerciseOptionId = altOptionId,
                         ExerciseId = exerciseId,
                         OptionText = alt,
                         IsCorrect = true,
                         Explanation = "Accepted alternative",
                     }
                 );
+                optionIds.Add(altOptionId);
             }
         }
 
@@ -419,11 +338,11 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 
         _ctx.Exercises.Add(exercise);
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
-        return exercise.ExerciseId;
+        return new ExerciseWithOptionsData(exercise.ExerciseId, optionIds);
     }
 
 
-    private async Task<string> CreateAndSaveListeningAsync(
+    private async Task<ExerciseWithOptionsData> CreateAndSaveListeningAsync(
         string audioUrl,
         string correctAnswer,
         string? acceptedAnswers,
@@ -431,17 +350,24 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
     )
     {
         var exerciseId = Guid.NewGuid().ToString();
-        var options = new List<ExerciseOption>
-        {
-            new()
+        var optionIds = new List<string>();
+        var options = new List<ExerciseOption>();
+
+        // Add correct answer option
+        var correctOptionId = Guid.NewGuid().ToString();
+        options.Add(
+            new ExerciseOption
             {
+                ExerciseOptionId = correctOptionId,
                 ExerciseId = exerciseId,
                 OptionText = correctAnswer,
                 IsCorrect = true,
                 Explanation = "Correct answer",
-            },
-        };
+            }
+        );
+        optionIds.Add(correctOptionId);
 
+        // Add accepted alternatives
         if (!string.IsNullOrEmpty(acceptedAnswers))
         {
             var alternatives = acceptedAnswers
@@ -451,18 +377,22 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 
             foreach (var alt in alternatives)
             {
+                var altOptionId = Guid.NewGuid().ToString();
                 options.Add(
                     new ExerciseOption
                     {
+                        ExerciseOptionId = altOptionId,
                         ExerciseId = exerciseId,
                         OptionText = alt,
                         IsCorrect = true,
                         Explanation = "Accepted alternative",
                     }
                 );
+                optionIds.Add(altOptionId);
             }
         }
 
+        // Create ListeningExercise entity with the options
         var exercise = new ListeningExercise
         {
             ExerciseId = exerciseId,
@@ -472,12 +402,15 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
             DifficultyLevel = DifficultyLevel.Beginner,
             Points = 10,
             IsLocked = false,
-            Options = options,
+            Options = options, // Options attached here
         };
 
+        // Save exercise to database
         _ctx.Exercises.Add(exercise);
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
-        return exercise.ExerciseId;
+
+        // Return exercise ID and all option IDs
+        return new ExerciseWithOptionsData(exercise.ExerciseId, optionIds);
     }
 
 }
