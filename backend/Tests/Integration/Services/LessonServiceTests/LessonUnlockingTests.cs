@@ -8,14 +8,13 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services.LessonServiceTests;
+namespace Backend.Tests.Integration.Services.LessonServiceTests;
 
 /// <summary>
 /// Tests for lesson unlocking: automatic and manual unlocking with exercise cascade behavior.
 /// </summary>
-public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
     private BackendDbContext _ctx = null!;
     private LessonService _sut = null!;
 
@@ -24,11 +23,9 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
     private string _thirdCourseId = null!;
     private string _languageId = null!;
 
-    public LessonUnlockingTests(DatabaseFixture fixture) => _fixture = fixture;
-
     public async ValueTask InitializeAsync()
     {
-        _ctx = _fixture.CreateDbContext();
+        _ctx = fixture.CreateDbContext();
 
         var exerciseService = new ExerciseService(_ctx);
         _sut = new LessonService(_ctx, exerciseService);
@@ -47,7 +44,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
                 LanguageId = _languageId,
                 Title = "Second Course",
                 Description = "Second test course for lesson unlocking tests.",
-                CreatedById = _fixture.SystemUserId,
+
                 OrderIndex = 1,
             }
         );
@@ -60,7 +57,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
                 LanguageId = _languageId,
                 Title = "Third Course",
                 Description = "Third test course for lesson unlocking tests.",
-                CreatedById = _fixture.SystemUserId,
+
                 OrderIndex = 2,
             }
         );

@@ -8,14 +8,13 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services.LessonServiceTests;
+namespace Backend.Tests.Integration.Services.LessonServiceTests;
 
 /// <summary>
 /// Tests for lesson CRUD operations: Create, Update, and Delete.
 /// </summary>
-public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LessonCrudTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
     private BackendDbContext _ctx = null!;
     private LessonService _sut = null!;
 
@@ -23,11 +22,9 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     private string _secondCourseId = null!;
     private string _languageId = null!;
 
-    public LessonCrudTests(DatabaseFixture fixture) => _fixture = fixture;
-
     public async ValueTask InitializeAsync()
     {
-        _ctx = _fixture.CreateDbContext();
+        _ctx = fixture.CreateDbContext();
 
         var exerciseService = new ExerciseService(_ctx);
         _sut = new LessonService(_ctx, exerciseService);
@@ -46,7 +43,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
                 LanguageId = _languageId,
                 Title = "Second Course",
                 Description = "Second test course for lesson CRUD tests.",
-                CreatedById = _fixture.SystemUserId,
+
                 OrderIndex = 1,
             }
         );

@@ -7,14 +7,13 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services.LessonServiceTests;
+namespace Backend.Tests.Integration.Services.LessonServiceTests;
 
 /// <summary>
 /// Tests for lesson queries: listing lessons and fetching detailed lesson data with includes.
 /// </summary>
-public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LessonQueryTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
     private BackendDbContext _ctx = null!;
     private LessonService _sut = null!;
 
@@ -22,11 +21,9 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     private string _secondCourseId = null!;
     private string _languageId = null!;
 
-    public LessonQueryTests(DatabaseFixture fixture) => _fixture = fixture;
-
     public async ValueTask InitializeAsync()
     {
-        _ctx = _fixture.CreateDbContext();
+        _ctx = fixture.CreateDbContext();
 
         var exerciseService = new ExerciseService(_ctx);
         _sut = new LessonService(_ctx, exerciseService);
@@ -45,7 +42,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
                 LanguageId = _languageId,
                 Title = "Second Course",
                 Description = "Second test course for lesson query tests.",
-                CreatedById = _fixture.SystemUserId,
+
                 OrderIndex = 1,
             }
         );
@@ -104,7 +101,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // Assert
         result.Should().NotBeNull();
         result.Should().HaveCount(3);
-        result![0].LessonId.Should().Be(lesson1Id);
+        result[0].LessonId.Should().Be(lesson1Id);
         result[1].LessonId.Should().Be(lesson2Id);
         result[2].LessonId.Should().Be(lesson3Id);
     }
