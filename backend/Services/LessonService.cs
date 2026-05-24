@@ -291,6 +291,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     {
         var exercises = await _context
             .Exercises.Where(e => e.LessonId == lessonId)
+            .OrderBy(e => e.CreatedAt)
             .Include(e => (e as FillInBlankExercise)!.Options)
             .Include(e => (e as ListeningExercise)!.Options)
             .Include(e => (e as ImageChoiceExercise)!.Options)
