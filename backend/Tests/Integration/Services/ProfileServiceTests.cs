@@ -53,7 +53,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
         var user = new UserBuilder()
             .WithUserName("profileuser")
             .WithEmail("profile@test.com")
-            .WithTotalPoints(1500)
+            .WithTotalPoints(1430)
             .Build();
         await DbSeeder.AddUserAsync(_ctx, user);
         _userId = user.Id;
@@ -152,13 +152,13 @@ public class ProfileServiceTests(DatabaseFixture fixture)
         profile.Should().NotBeNull();
         profile.UserId.Should().Be(_userId);
         profile.UserName.Should().Be("profileuser");
-        profile.TotalXp.Should().Be(1500, because: "user was seeded with 1500 XP");
+        profile.TotalXp.Should().Be(1430, because: "user was seeded with 1430 XP");
         profile.CurrentStreak.Should().Be(0, because: "no exercise progress exists");
         profile.LongestStreak.Should().Be(0, because: "no exercise progress exists");
         profile
             .Level.Should()
             .Be(
-                LeaderboardService.CalculateLevel(1500),
+                LeaderboardService.CalculateLevel(1430),
                 because: "level is calculated from total XP"
             );
         profile.AvatarUrl.Should().BeNull(because: "no avatar exists for this user");
@@ -309,7 +309,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
         profile
             .Level.Should()
             .Be(
-                LeaderboardService.CalculateLevel(1500),
+                LeaderboardService.CalculateLevel(1430),
                 because: "ProfileService delegates level calculation to LeaderboardService.CalculateLevel"
             );
     }
@@ -424,7 +424,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
         profile1.Should().NotBeNull();
         profile1.UserId.Should().Be(_userId);
         profile1.UserName.Should().Be("profileuser");
-        profile1.TotalXp.Should().Be(1500);
+        profile1.TotalXp.Should().Be(1430);
         profile1.CurrentStreak.Should().Be(0, because: "first user has no activity");
         profile1.AvatarUrl.Should().BeNull(because: "first user has no avatar");
 
