@@ -194,6 +194,9 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         if (dto.EstimatedDurationMinutes.HasValue)
             lesson.EstimatedDurationMinutes = dto.EstimatedDurationMinutes.Value;
 
+        if (dto.OrderIndex.HasValue)
+            lesson.OrderIndex = dto.OrderIndex.Value;
+
         if (dto.LessonContent != null)
             lesson.LessonContent = dto.LessonContent; // Update Editor.js content
 
