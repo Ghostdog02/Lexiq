@@ -27,7 +27,7 @@ public class ExerciseProgressService(
     public async Task<ExerciseSubmitResult> SubmitAnswerAsync(
         string userId,
         string exerciseId,
-        string answer
+        string selectedOptionId
     )
     {
         var exercise =
@@ -50,11 +50,11 @@ public class ExerciseProgressService(
         if (exercise.IsLocked && !canBypassLocks)
             throw new InvalidOperationException("Cannot submit answers for a locked exercise");
 
-        var isCorrect = ValidateAnswer(exercise, answer);
+        var isCorrect = ValidateAnswer(exercise, selectedOptionId);
         var pointsEarned = isCorrect ? exercise.Points : 0;
 
         // Check hearts (don't allow submission if hearts depleted, unless bypass)
-        if (!canBypassLocks && user != null && user.Hearts <= 0)
+        if (!canBypassLocks && user is { Hearts: <= 0 })
             throw new InvalidOperationException("No hearts remaining. Cannot submit answer.");
 
         // Decrement hearts on wrong answer (but not for admins/creators)
@@ -110,10 +110,9 @@ public class ExerciseProgressService(
         }
 
         // Unlock the next exercise if this one was completed successfully
-        var nextExerciseUnlocked = false;
         if (isCorrect)
         {
-            nextExerciseUnlocked = await _exerciseService.UnlockNextExerciseAsync(exerciseId);
+            await _exerciseService.UnlockNextExerciseAsync(exerciseId);
         }
 
         var correctOptionId = exercise switch
@@ -208,8 +207,7 @@ public class ExerciseProgressService(
 
     public async Task<CompleteLessonResponse> CompleteLessonAsync(string userId, string lessonId)
     {
-        var lesson =
-            await _context
+        _ = await _context
                 .Lessons.Include(l => l.Exercises)
                 .FirstOrDefaultAsync(l => l.LessonId == lessonId)
             ?? throw new ArgumentException("Lesson not found");
@@ -244,34 +242,34 @@ public class ExerciseProgressService(
         );
     }
 
-    private static bool ValidateAnswer(Exercise exercise, string answer)
+    private static bool ValidateAnswer(Exercise exercise, string selectedOptionId)
     {
         return exercise switch
         {
-            FillInBlankExercise fib => ValidateOptionBased(fib.Options, answer),
-            ListeningExercise le => ValidateOptionBased(le.Options, answer),
-            TrueFalseExercise tf => ValidateOptionBased(tf.Options, answer),
-            ImageChoiceExercise ice => ValidateImageChoice(ice, answer),
-            AudioMatchingExercise ame => ValidateAudioMatching(ame, answer),
+            FillInBlankExercise fib => ValidateOptionBased(fib.Options, selectedOptionId),
+            ListeningExercise le => ValidateOptionBased(le.Options, selectedOptionId),
+            TrueFalseExercise tf => ValidateOptionBased(tf.Options, selectedOptionId),
+            ImageChoiceExercise ice => ValidateImageChoice(ice, selectedOptionId),
+            AudioMatchingExercise ame => ValidateAudioMatching(ame, selectedOptionId),
             _ => false,
         };
     }
 
-    private static bool ValidateOptionBased(List<ExerciseOption> options, string answer)
+    private static bool ValidateOptionBased(List<ExerciseOption> options, string selectedOptionId)
     {
-        var selectedOption = options.FirstOrDefault(o => o.ExerciseOptionId == answer);
+        var selectedOption = options.FirstOrDefault(o => o.ExerciseOptionId == selectedOptionId);
         return selectedOption?.IsCorrect ?? false;
     }
 
-    private static bool ValidateImageChoice(ImageChoiceExercise exercise, string answer)
+    private static bool ValidateImageChoice(ImageChoiceExercise exercise, string selectedImageOptionId)
     {
-        var selectedOption = exercise.Options.FirstOrDefault(o => o.ImageOptionId == answer);
+        var selectedOption = exercise.Options.FirstOrDefault(o => o.ImageOptionId == selectedImageOptionId);
         return selectedOption?.IsCorrect ?? false;
     }
 
-    private static bool ValidateAudioMatching(AudioMatchingExercise exercise, string answer)
+    private static bool ValidateAudioMatching(AudioMatchingExercise exercise, string selectedPairId)
     {
-        var selected = exercise.Pairs.FirstOrDefault(p => p.AudioMatchPairId == answer);
+        var selected = exercise.Pairs.FirstOrDefault(p => p.AudioMatchPairId == selectedPairId);
         return selected?.IsCorrect ?? false;
     }
 }

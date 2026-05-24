@@ -1,6 +1,6 @@
 namespace Backend.Api.Dtos;
 
-public record SubmitAnswerRequest(string Answer);
+public record SubmitAnswerRequest(string SelectedOptionId);
 
 public record ExerciseSubmitResult(
     bool IsCorrect,

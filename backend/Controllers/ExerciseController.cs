@@ -91,8 +91,8 @@ public class ExerciseController(
         SubmitAnswerRequest request
     )
     {
-        if (string.IsNullOrWhiteSpace(request.Answer))
-            return BadRequest(new { message = "Answer cannot be empty" });
+        if (string.IsNullOrWhiteSpace(request.SelectedOptionId))
+            return BadRequest(new { message = "Selected option ID cannot be empty" });
 
         var user = HttpContext.GetCurrentUser()!;
 
@@ -101,7 +101,7 @@ public class ExerciseController(
             ExerciseSubmitResult result = await _progressService.SubmitAnswerAsync(
                 user.Id,
                 exerciseId,
-                request.Answer
+                request.SelectedOptionId
             );
 
             return Ok(result);
