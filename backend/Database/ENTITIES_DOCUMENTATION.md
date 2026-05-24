@@ -35,19 +35,19 @@ Additionally:
 
 **Inheritance**: Extends `IdentityUser` from ASP.NET Core Identity, inheriting standard authentication properties (Username, Email, PasswordHash, etc.).
 
-**File**: [User.cs](backend/Database/Entities/User.cs)
+**File**: [User.cs](../Database/Entities/Users/User.cs)
 
 #### Properties
 
-| Property | Type | Description |
-|----------|------|-------------|
-| Id | string | Primary key (inherited from IdentityUser) |
-| RegistrationDate | DateTime | Timestamp when user created their account |
-| LastLoginDate | DateTime | Timestamp of user's most recent login |
-| Avatar | UserAvatar? | Navigation property to `UserAvatars` table (1:1, shared PK). Binary avatar data stored separately to avoid loading bytes on every request. Served via `GET /api/user/{id}/avatar`. Auto-populated from Google on login; overridable via `PUT /api/user/avatar`. |
-| TotalPointsEarned | int | Materialized XP aggregate; incremented on first correct exercise submission to avoid full re-aggregation for leaderboard queries |
-| UserLanguages | List\<UserLanguage\> | Navigation property: Languages this user is learning |
-| ExerciseProgress | List\<UserExerciseProgress\> | Navigation property: Exercise progress records for this user |
+| Property          | Type                         | Description                                                                                                                                                                                                                                                     |
+|-------------------|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Id                | string                       | Primary key (inherited from IdentityUser)                                                                                                                                                                                                                       |
+| RegistrationDate  | DateTime                     | Timestamp when user created their account                                                                                                                                                                                                                       |
+| LastLoginDate     | DateTime                     | Timestamp of user's most recent login                                                                                                                                                                                                                           |
+| Avatar            | UserAvatar?                  | Navigation property to `UserAvatars` table (1:1, shared PK). Binary avatar data stored separately to avoid loading bytes on every request. Served via `GET /api/user/{id}/avatar`. Auto-populated from Google on login; overridable via `PUT /api/user/avatar`. |
+| TotalPointsEarned | int                          | Materialized XP aggregate; incremented on first correct exercise submission to avoid full re-aggregation for leaderboard queries                                                                                                                                |
+| UserLanguages     | List\<UserLanguage\>         | Navigation property: Languages this user is learning                                                                                                                                                                                                            |
+| ExerciseProgress  | List\<UserExerciseProgress\> | Navigation property: Exercise progress records for this user                                                                                                                                                                                                    |
 
 #### Relationships
 
@@ -61,15 +61,15 @@ Additionally:
 
 **Purpose**: Stores a user's avatar image as binary data in a dedicated table. Kept separate from `User` to prevent loading the `varbinary(max)` payload on every request through `UserContextMiddleware`.
 
-**File**: [Entities/Users/UserAvatar.cs](backend/Database/Entities/Users/UserAvatar.cs)
+**File**: [Entities/Users/UserAvatar.cs](../Database/Entities/Users/UserAvatar.cs)
 
 #### Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| UserId | string | Primary Key, Foreign Key → User | Shared PK with `User`; identifies the owning user |
-| User | User | Navigation | Parent user entity |
-| Data | byte[] | Required, `varbinary(max)` | Raw avatar image bytes |
+| Property    | Type   | Constraints                                    | Description                                                    |
+|-------------|--------|------------------------------------------------|----------------------------------------------------------------|
+| UserId      | string | Primary Key, Foreign Key → User                | Shared PK with `User`; identifies the owning user              |
+| User        | User   | Navigation                                     | Parent user entity                                             |
+| Data        | byte[] | Required, `varbinary(max)`                     | Raw avatar image bytes                                         |
 | ContentType | string | Required, MaxLength(50), Default: "image/jpeg" | MIME type of the stored image (e.g. `image/jpeg`, `image/png`) |
 
 #### Relationships
@@ -90,18 +90,18 @@ Additionally:
 
 **Purpose**: Represents a language that can be learned on the platform (e.g., Italian, Spanish).
 
-**File**: [Language.cs](backend/Database/Entities/Language.cs)
+**File**: [Language.cs](../Database/Entities/Language.cs)
 
 #### Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| Id | string | Primary Key (Guid) | Unique identifier |
-| Name | string | Required, MaxLength(100) | Language name (e.g., "Italian", "Spanish") |
-| FlagIconUrl | string? | MaxLength(255), Optional | URL to flag icon for visual representation |
-| CreatedAt | DateTime | Default: UtcNow | Timestamp when language was added |
-| UserLanguages | List\<UserLanguage\> | Navigation | Users learning this language |
-| Courses | List\<Course\> | Navigation | Courses available for this language |
+| Property      | Type                 | Constraints              | Description                                |
+|---------------|----------------------|--------------------------|--------------------------------------------|
+| Id            | string               | Primary Key (Guid)       | Unique identifier                          |
+| Name          | string               | Required, MaxLength(100) | Language name (e.g., "Italian", "Spanish") |
+| FlagIconUrl   | string?              | MaxLength(255), Optional | URL to flag icon for visual representation |
+| CreatedAt     | DateTime             | Default: UtcNow          | Timestamp when language was added          |
+| UserLanguages | List\<UserLanguage\> | Navigation               | Users learning this language               |
+| Courses       | List\<Course\>       | Navigation               | Courses available for this language        |
 
 #### Relationships
 
@@ -114,17 +114,17 @@ Additionally:
 
 **Purpose**: Junction table tracking which languages each user is learning (many-to-many relationship).
 
-**File**: [UserLanguage.cs](backend/Database/Entities/UserLanguage.cs)
+**File**: [UserLanguage.cs](../Database/Entities/Users/UserLanguage.cs)
 
 #### Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| UserId | string | Required, Foreign Key | Reference to User |
-| LanguageId | string | Required, Foreign Key | Reference to Language |
-| EnrolledAt | DateTime | Default: UtcNow | When user started learning this language |
-| User | User | Navigation | User entity |
-| Language | Language | Navigation | Language entity |
+| Property   | Type     | Constraints           | Description                              |
+|------------|----------|-----------------------|------------------------------------------|
+| UserId     | string   | Required, Foreign Key | Reference to User                        |
+| LanguageId | string   | Required, Foreign Key | Reference to Language                    |
+| EnrolledAt | DateTime | Default: UtcNow       | When user started learning this language |
+| User       | User     | Navigation            | User entity                              |
+| Language   | Language | Navigation            | Language entity                          |
 
 #### Composite Primary Key
 
@@ -143,24 +143,24 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 **Purpose**: Top-level learning content container for a specific language. Represents a complete learning path (e.g., "Italian for Beginners", "Business Italian").
 
-**File**: [Course.cs](backend/Database/Entities/Course.cs)
+**File**: [Course.cs](../Database/Entities/Course.cs)
 
 #### Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| Id | string | Primary Key (Guid) | Unique identifier |
-| LanguageId | string | Required, Foreign Key | The language this course teaches |
-| Title | string | Required, MaxLength(100) | Course title |
-| Description | string? | MaxLength(1000), Optional | Detailed course description |
-| EstimatedDurationHours | int? | Range(1, 300), Optional | Expected time to complete course |
-| OrderIndex | int | Required | Position within the language (0, 1, 2, ...) |
-| CreatedById | string | Required, Foreign Key | User who created this course |
-| CreatedAt | DateTime | Default: UtcNow | Course creation timestamp |
-| UpdatedAt | DateTime | Default: UtcNow | Last modification timestamp |
-| Language | Language | Navigation | Parent language |
-| CreatedBy | User | Navigation | Creator user |
-| Lessons | List\<Lesson\> | Navigation | Child lessons (direct, no intermediate module layer) |
+| Property               | Type           | Constraints               | Description                                          |
+|------------------------|----------------|---------------------------|------------------------------------------------------|
+| Id                     | string         | Primary Key (Guid)        | Unique identifier                                    |
+| LanguageId             | string         | Required, Foreign Key     | The language this course teaches                     |
+| Title                  | string         | Required, MaxLength(100)  | Course title                                         |
+| Description            | string?        | MaxLength(1000), Optional | Detailed course description                          |
+| EstimatedDurationHours | int?           | Range(1, 300), Optional   | Expected time to complete course                     |
+| OrderIndex             | int            | Required                  | Position within the language (0, 1, 2, ...)          |
+| CreatedById            | string         | Required, Foreign Key     | User who created this course                         |
+| CreatedAt              | DateTime       | Default: UtcNow           | Course creation timestamp                            |
+| UpdatedAt              | DateTime       | Default: UtcNow           | Last modification timestamp                          |
+| Language               | Language       | Navigation                | Parent language                                      |
+| CreatedBy              | User           | Navigation                | Creator user                                         |
+| Lessons                | List\<Lesson\> | Navigation                | Child lessons (direct, no intermediate module layer) |
 
 #### Relationships
 
@@ -180,23 +180,23 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 **Purpose**: Individual learning unit within a course, containing content and exercises (e.g., "Introduction to Pronouns", "Conjugating -ARE verbs").
 
-**File**: [Lesson.cs](backend/Database/Entities/Lesson.cs)
+**File**: [Lesson.cs](../Database/Entities/Lesson.cs)
 
 #### Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| Id | string | Primary Key (Guid) | Unique identifier |
-| CourseId | string | Required, Foreign Key | Parent course |
-| Title | string | Required, MaxLength(200) | Lesson title |
-| Description | string? | MaxLength(1000), Optional | Lesson description |
-| EstimatedDurationMinutes | int? | Range(10, 40), Optional | Expected completion time in minutes |
-| OrderIndex | int | Required | Position within course (0, 1, 2, ...) |
-| LessonContent | string | Required | Editor.js JSON content stored as text |
-| IsLocked | bool | Required, Default: false | Whether lesson is accessible to the user |
-| CreatedAt | DateTime | Default: UtcNow | Creation timestamp |
-| Course | Course | Navigation | Parent course |
-| Exercises | ICollection\<Exercise\> | Navigation | Child exercises |
+| Property                 | Type                    | Constraints               | Description                              |
+|--------------------------|-------------------------|---------------------------|------------------------------------------|
+| Id                       | string                  | Primary Key (Guid)        | Unique identifier                        |
+| CourseId                 | string                  | Required, Foreign Key     | Parent course                            |
+| Title                    | string                  | Required, MaxLength(200)  | Lesson title                             |
+| Description              | string?                 | MaxLength(1000), Optional | Lesson description                       |
+| EstimatedDurationMinutes | int?                    | Range(10, 40), Optional   | Expected completion time in minutes      |
+| OrderIndex               | int                     | Required                  | Position within course (0, 1, 2, ...)    |
+| LessonContent            | string                  | Required                  | Editor.js JSON content stored as text    |
+| IsLocked                 | bool                    | Required, Default: false  | Whether lesson is accessible to the user |
+| CreatedAt                | DateTime                | Default: UtcNow           | Creation timestamp                       |
+| Course                   | Course                  | Navigation                | Parent course                            |
+| Exercises                | ICollection\<Exercise\> | Navigation                | Child exercises                          |
 
 #### Relationships
 
@@ -217,7 +217,7 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 **Purpose**: Abstract base class for all practice activities within a lesson. Uses Table-Per-Hierarchy (TPH) with a discriminator column to represent all exercise subtypes in a single `Exercises` table.
 
-**File**: [Exercise.cs](backend/Database/Entities/Exercises/Exercise.cs)
+**File**: [Exercise.cs](../Database/Entities/Exercises/Exercise.cs)
 
 #### Enumerations
 
@@ -234,21 +234,21 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 #### Base Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| Id | string | Primary Key (Guid) | Unique identifier |
-| LessonId | string | Required, Foreign Key | Parent lesson |
-| Title | string | Required, MaxLength(200) | Exercise title |
-| Instructions | string? | MaxLength(1000), Optional | Instructions for completing the exercise |
-| EstimatedDurationMinutes | int? | Range(5, 20), Optional | Expected completion time |
-| DifficultyLevel | DifficultyLevel | Required | Complexity level |
-| Points | int | Range(1, int.MaxValue) | Points earned for correct completion |
-| OrderIndex | int | Required | Position within lesson |
-| IsLocked | bool | Required, Default: true | Whether this exercise is accessible; first exercise unlocks with the lesson, rest unlock sequentially |
-| Explanation | string? | MaxLength(1000), Optional | Educational feedback shown after answering |
-| CreatedAt | DateTime | Default: UtcNow | Creation timestamp |
-| Lesson | Lesson? | Navigation | Parent lesson |
-| ExerciseProgress | List\<UserExerciseProgress\> | Navigation | User progress records for this exercise |
+| Property                 | Type                         | Constraints               | Description                                                                                           |
+|--------------------------|------------------------------|---------------------------|-------------------------------------------------------------------------------------------------------|
+| Id                       | string                       | Primary Key (Guid)        | Unique identifier                                                                                     |
+| LessonId                 | string                       | Required, Foreign Key     | Parent lesson                                                                                         |
+| Title                    | string                       | Required, MaxLength(200)  | Exercise title                                                                                        |
+| Instructions             | string?                      | MaxLength(1000), Optional | Instructions for completing the exercise                                                              |
+| EstimatedDurationMinutes | int?                         | Range(5, 20), Optional    | Expected completion time                                                                              |
+| DifficultyLevel          | DifficultyLevel              | Required                  | Complexity level                                                                                      |
+| Points                   | int                          | Range(1, int.MaxValue)    | Points earned for correct completion                                                                  |
+| OrderIndex               | int                          | Required                  | Position within lesson                                                                                |
+| IsLocked                 | bool                         | Required, Default: true   | Whether this exercise is accessible; first exercise unlocks with the lesson, rest unlock sequentially |
+| Explanation              | string?                      | MaxLength(1000), Optional | Educational feedback shown after answering                                                            |
+| CreatedAt                | DateTime                     | Default: UtcNow           | Creation timestamp                                                                                    |
+| Lesson                   | Lesson?                      | Navigation                | Parent lesson                                                                                         |
+| ExerciseProgress         | List\<UserExerciseProgress\> | Navigation                | User progress records for this exercise                                                               |
 
 #### Relationships
 
@@ -269,13 +269,13 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 **Purpose**: Exercise subtype where the user selects the correct answer from a set of options.
 
-**File**: [Exercises/MultipleChoiceExercise.cs](backend/Database/Entities/Exercises/MultipleChoiceExercise.cs)
+**File**: [Exercises/MultipleChoiceExercise.cs](../Database/Entities/Exercises/MultipleChoiceExercise.cs)
 
 #### Additional Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| Options | List\<ExerciseOption\> | Navigation | Answer choices for this exercise |
+| Property | Type                   | Constraints | Description                      |
+|----------|------------------------|-------------|----------------------------------|
+| Options  | List\<ExerciseOption\> | Navigation  | Answer choices for this exercise |
 
 #### Relationships
 
@@ -287,17 +287,17 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 **Purpose**: Exercise subtype where the user types the correct word or phrase into a blank.
 
-**File**: [Exercises/FillInBlankExercise.cs](backend/Database/Entities/Exercises/FillInBlankExercise.cs)
+**File**: [Exercises/FillInBlankExercise.cs](../Database/Entities/Exercises/FillInBlankExercise.cs)
 
 #### Additional Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| Text | string | Required | The sentence containing the blank to fill |
-| CorrectAnswer | string | Required, MaxLength(500) | The expected answer |
-| AcceptedAnswers | string? | MaxLength(1000), Optional | Comma-separated list of alternative accepted answers |
-| CaseSensitive | bool | Required, Default: false | Whether answer matching is case-sensitive |
-| TrimWhitespace | bool | Required, Default: true | Whether leading/trailing whitespace is ignored before comparison |
+| Property        | Type    | Constraints               | Description                                                      |
+|-----------------|---------|---------------------------|------------------------------------------------------------------|
+| Text            | string  | Required                  | The sentence containing the blank to fill                        |
+| CorrectAnswer   | string  | Required, MaxLength(500)  | The expected answer                                              |
+| AcceptedAnswers | string? | MaxLength(1000), Optional | Comma-separated list of alternative accepted answers             |
+| CaseSensitive   | bool    | Required, Default: false  | Whether answer matching is case-sensitive                        |
+| TrimWhitespace  | bool    | Required, Default: true   | Whether leading/trailing whitespace is ignored before comparison |
 
 ---
 
@@ -305,17 +305,17 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 **Purpose**: Exercise subtype where the user listens to audio and provides an answer (transcription or comprehension).
 
-**File**: [Exercises/ListeningExercise.cs](backend/Database/Entities/Exercises/ListeningExercise.cs)
+**File**: [Exercises/ListeningExercise.cs](../Database/Entities/Exercises/ListeningExercise.cs)
 
 #### Additional Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| AudioUrl | string | Required, MaxLength(500) | URL to the audio file |
-| CorrectAnswer | string | Required, MaxLength(500) | Expected transcription or answer text |
-| AcceptedAnswers | string? | MaxLength(1000), Optional | Comma-separated alternative accepted answers |
-| CaseSensitive | bool | Default: false | Whether answer matching is case-sensitive |
-| MaxReplays | int | Range(1, 10), Default: 3 | Maximum number of times the user may replay the audio |
+| Property        | Type    | Constraints               | Description                                           |
+|-----------------|---------|---------------------------|-------------------------------------------------------|
+| AudioUrl        | string  | Required, MaxLength(500)  | URL to the audio file                                 |
+| CorrectAnswer   | string  | Required, MaxLength(500)  | Expected transcription or answer text                 |
+| AcceptedAnswers | string? | MaxLength(1000), Optional | Comma-separated alternative accepted answers          |
+| CaseSensitive   | bool    | Default: false            | Whether answer matching is case-sensitive             |
+| MaxReplays      | int     | Range(1, 10), Default: 3  | Maximum number of times the user may replay the audio |
 
 ---
 
@@ -323,17 +323,17 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 **Purpose**: Exercise subtype where the user translates text from one language to another.
 
-**File**: [Exercises/TranslationExercise.cs](backend/Database/Entities/Exercises/TranslationExercise.cs)
+**File**: [Exercises/TranslationExercise.cs](../Database/Entities/Exercises/TranslationExercise.cs)
 
 #### Additional Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| SourceText | string | Required, MaxLength(1000) | The text to translate |
-| TargetText | string | Required, MaxLength(1000) | The correct translation |
-| SourceLanguageCode | string | Required, MaxLength(10) | BCP 47 language code of the source (e.g., "bg", "en") |
-| TargetLanguageCode | string | Required, MaxLength(10) | BCP 47 language code of the target (e.g., "it", "es") |
-| MatchingThreshold | double | Range(0.0, 1.0), Default: 0.85 | Fuzzy-match tolerance; lower values accept less precise translations |
+| Property           | Type   | Constraints                    | Description                                                          |
+|--------------------|--------|--------------------------------|----------------------------------------------------------------------|
+| SourceText         | string | Required, MaxLength(1000)      | The text to translate                                                |
+| TargetText         | string | Required, MaxLength(1000)      | The correct translation                                              |
+| SourceLanguageCode | string | Required, MaxLength(10)        | BCP 47 language code of the source (e.g., "bg", "en")                |
+| TargetLanguageCode | string | Required, MaxLength(10)        | BCP 47 language code of the target (e.g., "it", "es")                |
+| MatchingThreshold  | double | Range(0.0, 1.0), Default: 0.85 | Fuzzy-match tolerance; lower values accept less precise translations |
 
 ---
 
@@ -341,18 +341,18 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 **Purpose**: Individual answer choice for `MultipleChoiceExercise` questions.
 
-**File**: [Exercises/ExerciseOption.cs](backend/Database/Entities/Exercises/ExerciseOption.cs)
+**File**: [Exercises/ExerciseOption.cs](../Database/Entities/Exercises/ExerciseOption.cs)
 
 #### Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| Id | string | Primary Key (Guid) | Unique identifier |
-| ExerciseId | string | Required, Foreign Key | Parent MultipleChoiceExercise |
-| OptionText | string | Required, MaxLength(500) | Display text of this answer option |
-| IsCorrect | bool | Required, Default: false | Whether this is the correct answer |
-| OrderIndex | int | Required | Display order (0=A, 1=B, 2=C, 3=D) |
-| Exercise | MultipleChoiceExercise | Navigation | Parent exercise |
+| Property   | Type                   | Constraints              | Description                        |
+|------------|------------------------|--------------------------|------------------------------------|
+| Id         | string                 | Primary Key (Guid)       | Unique identifier                  |
+| ExerciseId | string                 | Required, Foreign Key    | Parent MultipleChoiceExercise      |
+| OptionText | string                 | Required, MaxLength(500) | Display text of this answer option |
+| IsCorrect  | bool                   | Required, Default: false | Whether this is the correct answer |
+| OrderIndex | int                    | Required                 | Display order (0=A, 1=B, 2=C, 3=D) |
+| Exercise   | MultipleChoiceExercise | Navigation               | Parent exercise                    |
 
 #### Relationships
 
@@ -370,19 +370,19 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 **Purpose**: Tracks each user's progress on individual exercises. Used for sequential exercise unlocking, lesson completion thresholds, and leaderboard XP aggregation.
 
-**File**: [UserExerciseProgress.cs](backend/Database/Entities/UserExerciseProgress.cs)
+**File**: [UserExerciseProgress.cs](../Database/Entities/UserExerciseProgress.cs)
 
 #### Properties
 
-| Property | Type | Constraints | Description |
-|----------|------|-------------|-------------|
-| UserId | string | Required, Foreign Key, Composite PK | Reference to User |
-| ExerciseId | string | Required, Foreign Key, Composite PK | Reference to Exercise |
-| IsCompleted | bool | Required | Whether the user has answered correctly at least once |
-| PointsEarned | int | Required | Points awarded for correct completion (0 if not yet completed) |
-| CompletedAt | DateTime? | Optional | Timestamp of first correct answer; null if not yet completed |
-| User | User | Navigation | User entity |
-| Exercise | Exercise | Navigation | Exercise entity |
+| Property     | Type      | Constraints                         | Description                                                    |
+|--------------|-----------|-------------------------------------|----------------------------------------------------------------|
+| UserId       | string    | Required, Foreign Key, Composite PK | Reference to User                                              |
+| ExerciseId   | string    | Required, Foreign Key, Composite PK | Reference to Exercise                                          |
+| IsCompleted  | bool      | Required                            | Whether the user has answered correctly at least once          |
+| PointsEarned | int       | Required                            | Points awarded for correct completion (0 if not yet completed) |
+| CompletedAt  | DateTime? | Optional                            | Timestamp of first correct answer; null if not yet completed   |
+| User         | User      | Navigation                          | User entity                                                    |
+| Exercise     | Exercise  | Navigation                          | Exercise entity                                                |
 
 #### Composite Primary Key
 
