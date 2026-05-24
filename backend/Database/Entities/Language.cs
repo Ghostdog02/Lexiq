@@ -15,7 +15,7 @@ public class Language
     public required string LanguageName { get; set; }
 
     [MaxLength(255)]
-    public required string FlagIconUrl { get; set; }
+    public string? FlagIconUrl { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
