@@ -2,14 +2,13 @@ using Backend.Api.Dtos;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities;
-using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Integration.Services;
 
 /// <summary>
 /// Integration tests for Course CRUD operations covering:
@@ -17,28 +16,19 @@ namespace Backend.Tests.Services;
 /// - Business logic (OrderIndex handling, FK validation, partial updates)
 /// - Edge cases (multiple courses, timestamps, ordering, cascade deletes)
 /// </summary>
-public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class CourseCrudTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
     private BackendDbContext _ctx = null!;
     private CourseService _sut = null!;
-    private string _testUserId = null!;
     private string _languageId = null!;
     private const string ItalianLanguageName = "Italian";
 
-    public CourseCrudTests(DatabaseFixture fixture) => _fixture = fixture;
-
     public async ValueTask InitializeAsync()
     {
-        _ctx = _fixture.CreateDbContext();
-        await DbSeeder.ClearLeaderboardDataAsync(_ctx, _fixture.SystemUserId);
+        _ctx = fixture.CreateDbContext();
+        await DbSeeder.ClearLeaderboardDataAsync(_ctx, fixture.SystemUserId);
 
         _sut = new CourseService(_ctx);
-
-        // Create test user for CreatedById FK
-        var user = new UserBuilder().WithUserName("testadmin").WithEmail("admin@test.com").Build();
-        await DbSeeder.AddUserAsync(_ctx, user);
-        _testUserId = user.Id;
 
         // Get the fixture's Italian language
         var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
@@ -66,7 +56,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         );
 
         // Act
-        var result = await _sut.CreateCourseAsync(dto, _testUserId);
+        var result = await _sut.CreateCourseAsync(dto);
 
         // Assert
         result.Should().NotBeNull();
@@ -75,7 +65,6 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         result.EstimatedDurationHours.Should().Be(40);
         result.OrderIndex.Should().Be(0);
         result.LanguageId.Should().Be(_languageId);
-        result.CreatedById.Should().Be(_testUserId);
     }
 
     [Fact]
@@ -91,7 +80,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         );
 
         // Act
-        var act = async () => await _sut.CreateCourseAsync(dto, _testUserId);
+        var act = async () => await _sut.CreateCourseAsync(dto);
 
         // Assert
         await act.Should()
@@ -115,7 +104,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         );
 
         // Act
-        var result = await _sut.CreateCourseAsync(dto, _testUserId);
+        var result = await _sut.CreateCourseAsync(dto);
 
         // Assert
         result.Should().NotBeNull();
@@ -138,7 +127,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         );
 
         // Act
-        var result = await _sut.CreateCourseAsync(dto, _testUserId);
+        var result = await _sut.CreateCourseAsync(dto);
         var afterCreate = DateTime.UtcNow.AddSeconds(1);
 
         // Assert
@@ -162,16 +151,13 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
         // Arrange
         await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "Course C", null, null, 2),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "Course C", null, null, 2)
         );
         await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "Course A", null, null, 0),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "Course A", null, null, 0)
         );
         await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "Course B", null, null, 1),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "Course B", null, null, 1)
         );
 
         // Act
@@ -196,16 +182,13 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
         // Arrange
         var course1 = await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "First", null, null, 0),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "First", null, null, 0)
         );
         var course2 = await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "Second", null, null, 1),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "Second", null, null, 1)
         );
         var course3 = await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "Third", null, null, 2),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "Third", null, null, 2)
         );
 
         // Act
@@ -233,8 +216,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
         // Arrange
         var course = await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "Course with Lessons", null, null, 0),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "Course with Lessons", null, null, 0)
         );
 
         var lesson = new Lesson
@@ -253,7 +235,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Assert
         result.Should().NotBeNull();
-        result!.Language.Should().NotBeNull();
+        result.Language.Should().NotBeNull();
         result.Language.LanguageName.Should().Be(ItalianLanguageName);
         result.Lessons.Should().ContainSingle();
         result.Lessons.First().Title.Should().Be("Test Lesson");
@@ -287,8 +269,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
                 "Original Description",
                 30,
                 0
-            ),
-            _testUserId
+            )
         );
 
         var dto = new UpdateCourseDto(
@@ -304,7 +285,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Assert
         result.Should().NotBeNull();
-        result!.Title.Should().Be("Updated Title");
+        result.Title.Should().Be("Updated Title");
         result
             .Description.Should()
             .Be(
@@ -344,12 +325,11 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
         // Arrange
         var course = await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "Original", null, null, 0),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "Original", null, null, 0)
         );
 
         var originalUpdatedAt = course.UpdatedAt;
-        await Task.Delay(100); // Ensure timestamp difference
+        await Task.Delay(100, TestContext.Current.CancellationToken); // Ensure timestamp difference
 
         var dto = new UpdateCourseDto(
             LanguageName: ItalianLanguageName,
@@ -364,7 +344,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Assert
         result.Should().NotBeNull();
-        result!
+        result
             .UpdatedAt.Should()
             .BeAfter(
                 originalUpdatedAt,
@@ -377,8 +357,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
         // Arrange
         var course = await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "Original", "Old description", 20, 0),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "Original", "Old description", 20, 0)
         );
 
         var dto = new UpdateCourseDto(
@@ -394,7 +373,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Assert
         result.Should().NotBeNull();
-        result!.Title.Should().Be("New Title");
+        result.Title.Should().Be("New Title");
         result.Description.Should().Be("New Description");
         result.EstimatedDurationHours.Should().Be(50);
         result.OrderIndex.Should().Be(5);
@@ -405,8 +384,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
         // Arrange
         var course = await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "Original Title", "Original Desc", 40, 3),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "Original Title", "Original Desc", 40, 3)
         );
 
         var dto = new UpdateCourseDto(
@@ -422,7 +400,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Assert
         result.Should().NotBeNull();
-        result!
+        result
             .Title.Should()
             .Be("Original Title", because: "null Title in DTO should not overwrite existing value");
         result
@@ -451,8 +429,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
         // Arrange
         var course = await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "To Delete", null, null, 0),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "To Delete", null, null, 0)
         );
 
         // Act
@@ -486,8 +463,7 @@ public class CourseCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     {
         // Arrange
         var course = await _sut.CreateCourseAsync(
-            new CreateCourseDto(ItalianLanguageName, "Course with Lesson", null, null, 0),
-            _testUserId
+            new CreateCourseDto(ItalianLanguageName, "Course with Lesson", null, null, 0)
         );
 
         var lessonId = Guid.NewGuid().ToString();

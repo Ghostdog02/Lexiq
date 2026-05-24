@@ -2,14 +2,13 @@ using Backend.Api.Dtos;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities;
-using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Integration.Services;
 
 /// <summary>
 /// Integration tests for Language CRUD operations covering:
@@ -24,7 +23,6 @@ public class LanguageCrudTests(DatabaseFixture fixture)
     private readonly DatabaseFixture _fixture = fixture;
     private BackendDbContext _ctx = null!;
     private LanguageService _sut = null!;
-    private string _testUserId = null!;
 
     public async ValueTask InitializeAsync()
     {
@@ -32,11 +30,6 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         await DbSeeder.ClearLeaderboardDataAsync(_ctx, _fixture.SystemUserId);
 
         _sut = new LanguageService(_ctx);
-
-        // Create test user for Course.CreatedById FK
-        var user = new UserBuilder().WithUserName("testadmin").WithEmail("admin@test.com").Build();
-        await DbSeeder.AddUserAsync(_ctx, user);
-        _testUserId = user.Id;
     }
 
     public async ValueTask DisposeAsync()
@@ -68,7 +61,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         result.LanguageId.Should().NotBeNullOrEmpty();
 
         savedLanguage.Should().NotBeNull();
-        savedLanguage!.LanguageName.Should().Be("Spanish");
+        savedLanguage.LanguageName.Should().Be("Spanish");
     }
 
     [Fact]
@@ -121,7 +114,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
             Title = "Portuguese 101",
             Description = "Portuguese course",
             OrderIndex = 0,
-            CreatedById = _testUserId,
+
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -162,7 +155,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
             Title = "Russian Basics",
             Description = "Russian course",
             OrderIndex = 0,
-            CreatedById = _testUserId,
+
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -174,7 +167,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
 
         // Assert
         result.Should().NotBeNull();
-        result!.Courses.Should().ContainSingle();
+        result.Courses.Should().ContainSingle();
         result.Courses.First().Title.Should().Be("Russian Basics");
     }
 
@@ -210,7 +203,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
 
         // Assert
         result.Should().NotBeNull();
-        result!.LanguageName.Should().Be("Korean (Updated)");
+        result.LanguageName.Should().Be("Korean (Updated)");
         result.FlagIconUrl.Should().Be("https://example.com/ko-new.svg");
     }
 
@@ -247,7 +240,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
 
         // Assert
         result.Should().NotBeNull();
-        result!
+        result
             .FlagIconUrl.Should()
             .BeNull(because: "null in DTO sets field to null (not preserved)");
     }
@@ -304,7 +297,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
             Title = "Dutch for Beginners",
             Description = "Dutch course",
             OrderIndex = 0,
-            CreatedById = _testUserId,
+
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
