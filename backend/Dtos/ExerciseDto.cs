@@ -77,8 +77,8 @@ public record TrueFalseExerciseDto(
     bool IsLocked,
     UserExerciseProgressDto? UserProgress,
     string Statement,
-    bool CorrectAnswer,
-    string? ImageUrl
+    string? ImageUrl,
+    List<ExerciseOptionDto> Options
 )
     : ExerciseDto(
         Id,
@@ -197,8 +197,8 @@ public record CreateTrueFalseExerciseDto(
     int Points,
     string? Explanation,
     string Statement,
-    bool CorrectAnswer,
-    string? ImageUrl
+    string? ImageUrl,
+    List<CreateExerciseOptionDto> Options
 )
     : CreateExerciseDto(
         LessonId,
