@@ -34,6 +34,14 @@ public class LessonNavigationTests(DatabaseFixture fixture) : IClassFixture<Data
         var course = await _ctx.Courses.FirstAsync(TestContext.Current.CancellationToken);
         _courseId = course.CourseId;
 
+        // Clean up test data from previous runs — keep only the fixture course
+        await _ctx
+            .Lessons.Where(l => l.CourseId != _courseId)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+        await _ctx
+            .Courses.Where(c => c.CourseId != _courseId)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+
         _secondCourseId = Guid.NewGuid().ToString();
         _ctx.Courses.Add(
             new Course
@@ -42,7 +50,7 @@ public class LessonNavigationTests(DatabaseFixture fixture) : IClassFixture<Data
                 LanguageId = _languageId,
                 Title = "Second Course",
                 Description = "Second test course for lesson navigation tests.",
-
+                EstimatedDurationHours = 10,
                 OrderIndex = 1,
             }
         );
@@ -55,7 +63,7 @@ public class LessonNavigationTests(DatabaseFixture fixture) : IClassFixture<Data
                 LanguageId = _languageId,
                 Title = "Third Course",
                 Description = "Third test course for lesson navigation tests.",
-
+                EstimatedDurationHours = 10,
                 OrderIndex = 2,
             }
         );
