@@ -133,7 +133,7 @@ public class ExerciseProgressService(
         {
             TrueFalseExercise tf => ResolveOptionExplanation(
                 tf.Options,
-                answer,
+                selectedOptionId,
                 isCorrect,
                 o => o.ExerciseOptionId,
                 o => o.Explanation,
@@ -141,7 +141,7 @@ public class ExerciseProgressService(
             ),
             FillInBlankExercise fib => ResolveOptionExplanation(
                 fib.Options,
-                answer,
+                selectedOptionId,
                 isCorrect,
                 o => o.ExerciseOptionId,
                 o => o.Explanation,
@@ -149,7 +149,7 @@ public class ExerciseProgressService(
             ),
             ListeningExercise le => ResolveOptionExplanation(
                 le.Options,
-                answer,
+                selectedOptionId,
                 isCorrect,
                 o => o.ExerciseOptionId,
                 o => o.Explanation,
@@ -157,7 +157,7 @@ public class ExerciseProgressService(
             ),
             ImageChoiceExercise ice => ResolveOptionExplanation(
                 ice.Options,
-                answer,
+                selectedOptionId,
                 isCorrect,
                 o => o.ImageOptionId,
                 o => o.Explanation,
@@ -165,7 +165,7 @@ public class ExerciseProgressService(
             ),
             AudioMatchingExercise ame => ResolveOptionExplanation(
                 ame.Pairs,
-                answer,
+                selectedOptionId,
                 isCorrect,
                 p => p.AudioMatchPairId,
                 p => p.Explanation,
