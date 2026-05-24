@@ -6,7 +6,7 @@ using FluentAssertions;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Unit;
 
 /// <summary>
 /// Pure unit tests for JwtService.GenerateToken.
@@ -124,7 +124,7 @@ public class JwtServiceTests : IDisposable
                 c.Type == "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
             )
             .Select(c => c.Value);
-        roles.Should().BeEquivalentTo(["Admin", "ContentCreator"]);
+        roles.Should().BeEquivalentTo("Admin", "ContentCreator");
     }
 
     [Fact]

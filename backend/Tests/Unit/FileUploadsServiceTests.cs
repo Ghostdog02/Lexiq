@@ -1,12 +1,12 @@
-using Backend.Api.Models;
 using Backend.Api.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Unit;
 
 /// <summary>
 /// Unit tests for FileUploadsService security, validation, and file handling.
@@ -20,18 +20,14 @@ namespace Backend.Tests.Services;
 /// </summary>
 public class FileUploadsServiceTests : IAsyncLifetime
 {
-    private readonly string _testUploadPath;
+    private readonly string _testUploadPath = Path.Combine(
+        Path.GetTempPath(),
+        "lexiq-test-uploads",
+        Guid.NewGuid().ToString()
+    );
     private FileUploadsService _sut = null!;
 
-    public FileUploadsServiceTests()
-    {
-        // Use a temp directory for test uploads
-        _testUploadPath = Path.Combine(
-            Path.GetTempPath(),
-            "lexiq-test-uploads",
-            Guid.NewGuid().ToString()
-        );
-    }
+    // Use a temp directory for test uploads
 
     public async ValueTask InitializeAsync()
     {
@@ -43,7 +39,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
         mockEnv.Setup(e => e.WebRootPath).Returns(_testUploadPath);
         mockEnv.Setup(e => e.ContentRootPath).Returns(_testUploadPath);
 
-        _sut = new FileUploadsService(mockEnv.Object);
+        _sut = new FileUploadsService(mockEnv.Object, NullLogger<FileUploadsService>.Instance);
 
         await Task.CompletedTask;
     }
