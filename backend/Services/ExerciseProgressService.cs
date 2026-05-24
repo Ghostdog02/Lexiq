@@ -122,6 +122,7 @@ public class ExerciseProgressService(
                 .Options.FirstOrDefault(o => o.IsCorrect)
                 ?.ExerciseOptionId,
             ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)?.ExerciseOptionId,
+            TrueFalseExercise tf => tf.Options.FirstOrDefault(o => o.IsCorrect)?.ExerciseOptionId,
             ImageChoiceExercise ice => ice.Options.FirstOrDefault(o => o.IsCorrect)?.ImageOptionId,
             AudioMatchingExercise ame => ame
                 .Pairs.FirstOrDefault(p => p.IsCorrect)
@@ -131,7 +132,14 @@ public class ExerciseProgressService(
 
         var explanation = exercise switch
         {
-            TrueFalseExercise tf => tf.Explanation,
+            TrueFalseExercise tf => ResolveOptionExplanation(
+                tf.Options,
+                answer,
+                isCorrect,
+                o => o.ExerciseOptionId,
+                o => o.Explanation,
+                o => o.IsCorrect
+            ),
             FillInBlankExercise fib => ResolveOptionExplanation(
                 fib.Options,
                 answer,
@@ -242,7 +250,7 @@ public class ExerciseProgressService(
         {
             FillInBlankExercise fib => ValidateOptionBased(fib.Options, answer),
             ListeningExercise le => ValidateOptionBased(le.Options, answer),
-            TrueFalseExercise tf => ValidateTrueFalse(tf, answer),
+            TrueFalseExercise tf => ValidateOptionBased(tf.Options, answer),
             ImageChoiceExercise ice => ValidateImageChoice(ice, answer),
             AudioMatchingExercise ame => ValidateAudioMatching(ame, answer),
             _ => false,
@@ -253,14 +261,6 @@ public class ExerciseProgressService(
     {
         var selectedOption = options.FirstOrDefault(o => o.ExerciseOptionId == answer);
         return selectedOption?.IsCorrect ?? false;
-    }
-
-    private static bool ValidateTrueFalse(TrueFalseExercise exercise, string answer)
-    {
-        if (!bool.TryParse(answer, out var userAnswer))
-            return false;
-
-        return userAnswer == exercise.CorrectAnswer;
     }
 
     private static bool ValidateImageChoice(ImageChoiceExercise exercise, string answer)

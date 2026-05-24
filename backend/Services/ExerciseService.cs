@@ -87,9 +87,15 @@ public class ExerciseService(BackendDbContext context)
                 DifficultyLevel = tfDto.DifficultyLevel,
                 Points = tfDto.Points,
                 Statement = tfDto.Statement,
-                CorrectAnswer = tfDto.CorrectAnswer,
                 ImageUrl = tfDto.ImageUrl,
-                Explanation = tfDto.Explanation ?? string.Empty,
+                Options = tfDto
+                    .Options.Select(o => new ExerciseOption
+                    {
+                        OptionText = o.OptionText,
+                        IsCorrect = o.IsCorrect,
+                        Explanation = o.Explanation,
+                    })
+                    .ToList(),
             },
             CreateImageChoiceExerciseDto icDto => new ImageChoiceExercise
             {

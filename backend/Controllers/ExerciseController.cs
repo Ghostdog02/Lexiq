@@ -145,7 +145,7 @@ public class ExerciseController(
                 ?.ExerciseOptionId,
             ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)
                 ?.ExerciseOptionId,
-            TrueFalseExercise tf => tf.CorrectAnswer.ToString().ToLowerInvariant(),
+            TrueFalseExercise tf => tf.Options.FirstOrDefault(o => o.IsCorrect)?.ExerciseOptionId,
             ImageChoiceExercise ice => ice.Options.FirstOrDefault(o => o.IsCorrect)
                 ?.ImageOptionId,
             AudioMatchingExercise => "See explanation for correct pairings",

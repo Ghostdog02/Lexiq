@@ -311,7 +311,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
 
                 var explanation = exercise switch
                 {
-                    TrueFalseExercise tf => tf.Explanation,
+                    TrueFalseExercise tf => tf.Options.FirstOrDefault(o => o.IsCorrect)?.Explanation,
                     _ => null
                 };
 

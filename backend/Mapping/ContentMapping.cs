@@ -101,12 +101,18 @@ public static class ContentMappingExtensions
                 tf.Instructions,
                 tf.DifficultyLevel,
                 tf.Points,
-                tf.Explanation,
+                null,
                 tf.IsLocked,
                 progress,
                 tf.Statement,
-                tf.CorrectAnswer,
-                tf.ImageUrl
+                tf.ImageUrl,
+                tf.Options.Select(o => new ExerciseOptionDto(
+                        o.ExerciseOptionId,
+                        o.OptionText,
+                        o.IsCorrect,
+                        o.Explanation
+                    ))
+                    .ToList()
             ),
             ImageChoiceExercise ice => new ImageChoiceExerciseDto(
                 ice.ExerciseId,
