@@ -9,11 +9,9 @@ namespace Backend.Database.Entities;
 public class Course
 {
     [Key]
-    [MaxLength(36)]
     public string CourseId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
-    [MaxLength(36)]
     public string LanguageId { get; set; } = string.Empty;
 
     [Required]
@@ -29,20 +27,13 @@ public class Course
     
     [Required]
     public int OrderIndex { get; set; } // Position within the language (0, 1, 2, ...)
-
-    [Required]
-    [MaxLength(450)]
-    public string CreatedById { get; set; } = string.Empty;
-
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     [ForeignKey(nameof(LanguageId))]
     public Language Language { get; set; } = null!;
-
-    [ForeignKey(nameof(CreatedById))]
-    public User CreatedBy { get; set; } = null!;
-
+    
     public List<Lesson> Lessons { get; set; } = [];
 }

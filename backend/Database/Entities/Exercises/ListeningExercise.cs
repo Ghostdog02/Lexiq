@@ -9,6 +9,4 @@ public class ListeningExercise : Exercise
 
     [Range(1, 10)]
     public int MaxReplays { get; set; } = 3;
-
-    public List<ExerciseOption> Options { get; set; } = [];
 }

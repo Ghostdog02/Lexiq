@@ -24,23 +24,17 @@ public enum ExerciseType
 }
 
 [Index(nameof(LessonId))]
-public abstract class Exercise
+public class Exercise
 {
     [Key]
-    [MaxLength(36)]
     public string ExerciseId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
-    [MaxLength(36)]
     public string LessonId { get; set; } = string.Empty;
 
     [Required]
     [MaxLength(2000)]
     public required string Instructions { get; set; }
-
-    [Required]
-    [MaxLength(450)]
-    public string CreatedById { get; set; } = string.Empty;
 
     [Required]
     public DifficultyLevel DifficultyLevel { get; set; }
@@ -57,9 +51,8 @@ public abstract class Exercise
 
     [ForeignKey(nameof(LessonId))]
     public Lesson? Lesson { get; set; }
-
-    [ForeignKey(nameof(CreatedById))]
-    public User? CreatedBy { get; set; }
+    
+    public List<ExerciseOption> Options { get; set; } = [];
 
     public List<UserExerciseProgress> ExerciseProgress { get; set; } = [];
 }
