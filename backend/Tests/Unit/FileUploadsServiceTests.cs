@@ -542,7 +542,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
             .BeFalse(
                 because: "HttpClient.GetByteArrayAsync will throw on invalid URL, caught by try-catch"
             );
-        result.Message.Should().Contain("Upload failed");
+        result.Message.Should().Contain("Upload from URL failed");
     }
 
     [Fact]
@@ -558,7 +558,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
         result
             .IsSuccess.Should()
             .BeFalse(because: "unreachable URLs throw HttpRequestException");
-        result.Message.Should().Contain("Upload failed");
+        result.Message.Should().Contain("Upload from URL failed");
     }
 
     // ── Physical Path Retrieval Tests ───────────────────────────────────────
