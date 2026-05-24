@@ -291,6 +291,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         options.Add(
             new ExerciseOption
             {
+                ExerciseOptionId = correctOptionId,
                 ExerciseId = exerciseId,
                 OptionText = correctAnswer,
                 IsCorrect = true,

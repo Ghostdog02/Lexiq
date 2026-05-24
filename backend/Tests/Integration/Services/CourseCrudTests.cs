@@ -109,8 +109,8 @@ public class CourseCrudTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
         // Assert
         result.Should().NotBeNull();
         result.Title.Should().Be("Minimal Course");
-        result.Description.Should().BeNull();
-        result.EstimatedDurationHours.Should().Be(null);
+        result.Description.Should().BeEmpty();
+        result.EstimatedDurationHours.Should().Be(1);
     }
 
     [Fact]

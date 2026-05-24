@@ -29,11 +29,21 @@ public class LessonCrudTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
         var exerciseService = new ExerciseService(_ctx);
         _sut = new LessonService(_ctx, exerciseService);
 
-        var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
-        _languageId = language.LanguageId;
+        // Derive course and language from the fixture lesson — immune to leftover courses from other test classes
+        var fixtureLesson = await _ctx
+            .Lessons.Where(l => l.LessonId == fixture.LessonId)
+            .Select(l => new { l.CourseId, l.Course.LanguageId })
+            .FirstAsync(TestContext.Current.CancellationToken);
+        _courseId = fixtureLesson.CourseId;
+        _languageId = fixtureLesson.LanguageId;
 
-        var course = await _ctx.Courses.FirstAsync(TestContext.Current.CancellationToken);
-        _courseId = course.CourseId;
+        // Clean up lessons and extra courses from previous test runs
+        await _ctx
+            .Lessons.Where(l => l.LessonId != fixture.LessonId)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+        await _ctx
+            .Courses.Where(c => c.CourseId != _courseId)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
 
         _secondCourseId = Guid.NewGuid().ToString();
         _ctx.Courses.Add(
