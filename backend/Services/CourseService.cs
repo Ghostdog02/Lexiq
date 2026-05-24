@@ -25,7 +25,7 @@ public class CourseService(BackendDbContext context)
             .FirstOrDefaultAsync(c => c.CourseId == id);
     }
 
-    public async Task<Course> CreateCourseAsync(CreateCourseDto dto, string createdById)
+    public async Task<Course> CreateCourseAsync(CreateCourseDto dto)
     {
         var language =
             await _context.Languages.FirstOrDefaultAsync(l => l.LanguageName == dto.LanguageName)
@@ -38,7 +38,6 @@ public class CourseService(BackendDbContext context)
             Description = dto.Description ?? string.Empty,
             EstimatedDurationHours = dto.EstimatedDurationHours ?? 0,
             OrderIndex = dto.OrderIndex,
-            CreatedById = createdById,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
