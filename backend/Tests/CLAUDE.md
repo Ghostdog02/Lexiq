@@ -35,13 +35,13 @@ Tests/
 
 ## Key packages
 
-| Package | Purpose |
-|---------|---------|
-| `xunit.v3` 3.2.2 | Framework — `IAsyncLifetime` returns `ValueTask` |
-| `Testcontainers.MsSql` 4.10.0 | Real SQL Server 2022 in Docker |
-| `FluentAssertions` 8.8.0 | `.Should()` |
-| `Moq` 4.20.72 | Mock external services |
-| `Microsoft.AspNetCore.Mvc.Testing` 10.0.0 | `WebApplicationFactory` |
+| Package                                   | Purpose                                          |
+|-------------------------------------------|--------------------------------------------------|
+| `xunit.v3` 3.2.2                          | Framework — `IAsyncLifetime` returns `ValueTask` |
+| `Testcontainers.MsSql` 4.10.0             | Real SQL Server 2022 in Docker                   |
+| `FluentAssertions` 8.8.0                  | `.Should()`                                      |
+| `Moq` 4.20.72                             | Mock external services                           |
+| `Microsoft.AspNetCore.Mvc.Testing` 10.0.0 | `WebApplicationFactory`                          |
 
 ## DatabaseFixture
 
@@ -126,15 +126,15 @@ public class MyTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, 
 
 ## DbSeeder helpers
 
-| Helper | Use |
-|--------|-----|
-| `CreateFillInBlankExerciseAsync(ctx, lessonId, orderIndex, isLocked, points)` | Correct answer is `"answer"` |
-| `CreateMultipleChoiceExerciseAsync(ctx, lessonId, orderIndex, isLocked, points)` | 3 options, 1 correct |
-| `CreateListeningExerciseAsync(...)` | Same signature |
-| `CreateTranslationExerciseAsync(...)` | Same signature |
-| `AddProgressAsync(ctx, userId, exerciseId, isCompleted, pointsEarned, completedAt)` | Single progress row |
-| `AddConsecutiveDaysActivityAsync(ctx, userId, exerciseIds, days, startDaysAgo)` | Streak setup |
-| `AddAvatarAsync(ctx, userId)` | Avatar binary row |
+| Helper                                                                              | Use                          |
+|-------------------------------------------------------------------------------------|------------------------------|
+| `CreateFillInBlankExerciseAsync(ctx, lessonId, orderIndex, isLocked, points)`       | Correct answer is `"answer"` |
+| `CreateMultipleChoiceExerciseAsync(ctx, lessonId, orderIndex, isLocked, points)`    | 3 options, 1 correct         |
+| `CreateListeningExerciseAsync(...)`                                                 | Same signature               |
+| `CreateTranslationExerciseAsync(...)`                                               | Same signature               |
+| `AddProgressAsync(ctx, userId, exerciseId, isCompleted, pointsEarned, completedAt)` | Single progress row          |
+| `AddConsecutiveDaysActivityAsync(ctx, userId, exerciseIds, days, startDaysAgo)`     | Streak setup                 |
+| `AddAvatarAsync(ctx, userId)`                                                       | Avatar binary row            |
 
 `fixture.ExerciseIds` is FK-enforced on INSERT (`DeleteBehavior.NoAction`) — always use IDs from your test's seeded list.
 
@@ -332,13 +332,13 @@ For `private static` production helpers (e.g. `UserMapping.CleanUsername`), dupl
 
 ## E2E test files
 
-| File | Verifies | Tests |
-|------|----------|------:|
-| `StudentExerciseProgressJourneyTests.cs` | Completion, XP, sequential unlocking, retries | 7 |
-| `StudentSessionPersistenceTests.cs` | Restoration, state consistency, XP idempotency | 6 |
-| `ExerciseSubmissionSecurityTests.cs` | Lock enforcement, role bypass, MultipleChoice | 9 |
-| `LeaderboardAndStreaksTests.cs` | Rankings, streaks, avatar integration | 5 |
-| `AdminContentManagementJourneyTests.cs` | Admin/Creator CRUD, role authz, lifecycle | 6 |
+| File                                     | Verifies                                       | Tests |
+|------------------------------------------|------------------------------------------------|------:|
+| `StudentExerciseProgressJourneyTests.cs` | Completion, XP, sequential unlocking, retries  |     7 |
+| `StudentSessionPersistenceTests.cs`      | Restoration, state consistency, XP idempotency |     6 |
+| `ExerciseSubmissionSecurityTests.cs`     | Lock enforcement, role bypass, MultipleChoice  |     9 |
+| `LeaderboardAndStreaksTests.cs`          | Rankings, streaks, avatar integration          |     5 |
+| `AdminContentManagementJourneyTests.cs`  | Admin/Creator CRUD, role authz, lifecycle      |     6 |
 
 ## Misc gotchas
 

@@ -4,14 +4,14 @@ Top-level guidance. **Read at the start of every session.** Per-area detail live
 
 ## Project
 
-Lexiq — language learning app for Bulgarian speakers learning Italian. Also a recruitment showcase. Two-person team (Backend/DevOps + Frontend).
+Lexiq — language learning app for Bulgarian speakers learning Italian. Also, a recruitment showcase. Two-person team (Backend/DevOps + Frontend).
 
-| Area | Stack | Detail |
-|------|-------|--------|
-| Backend | ASP.NET Core 10.0 + EF Core + SQL Server 2022 | [`backend/CLAUDE.md`](backend/CLAUDE.md) |
-| Frontend | Angular 21 SPA | [`frontend/CLAUDE.md`](frontend/CLAUDE.md) |
-| Tests | xUnit v3 + Testcontainers + Jest + Playwright | [`backend/Tests/CLAUDE.md`](backend/Tests/CLAUDE.md) |
-| CI/CD | Docker Compose + GitHub Actions + Hetzner | [`.github/workflows/CLAUDE.md`](.github/workflows/CLAUDE.md) |
+| Area     | Stack                                         | Detail                                                       |
+|----------|-----------------------------------------------|--------------------------------------------------------------|
+| Backend  | ASP.NET Core 10.0 + EF Core + SQL Server 2022 | [`backend/CLAUDE.md`](backend/CLAUDE.md)                     |
+| Frontend | Angular 21 SPA                                | [`frontend/CLAUDE.md`](frontend/CLAUDE.md)                   |
+| Tests    | xUnit v3 + Testcontainers + Jest + Playwright | [`backend/Tests/CLAUDE.md`](backend/Tests/CLAUDE.md)         |
+| CI/CD    | Docker Compose + GitHub Actions + Hetzner     | [`.github/workflows/CLAUDE.md`](.github/workflows/CLAUDE.md) |
 
 ## Quick commands
 
@@ -43,16 +43,16 @@ docker compose up --build
 
 ## Project rules & skills
 
-| File | Covers |
-|------|--------|
-| [`.claude/rules/agent-principles.md`](.claude/rules/agent-principles.md) | Plan mode, subagents, verify-before-done, autonomous bug fixing |
-| [`.claude/rules/rules.md`](.claude/rules/rules.md) | Git conventions, commit format, branching, PR rules, commit grouping |
-| [`.claude/rules/skills.md`](.claude/rules/skills.md) | Project & plugin skills, MCP tools, agent strategies, workflows |
-| [`.claude/rules/troubleshooting.md`](.claude/rules/troubleshooting.md) | 401s, cookies, 400s, Docker, CI/CD, migrations, OpenAPI |
-| [`.claude/rules/common-gotchas.md`](.claude/rules/common-gotchas.md) | EF Core, JWT, polymorphic DTOs, nginx/IPv6, Sass, Angular |
-| [`.claude/skills/commit-changes/SKILL.md`](.claude/skills/commit-changes/SKILL.md) | Group changes, commit, push (with confirmation) |
-| [`.claude/skills/create-pr/SKILL.md`](.claude/skills/create-pr/SKILL.md) | Open PR with strict template, no Claude attribution |
-| [`.claude/agents/test-generator.md`](.claude/agents/test-generator.md) | xUnit + Testcontainers / Jest / Playwright standards |
+| File                                                                               | Covers                                                               |
+|------------------------------------------------------------------------------------|----------------------------------------------------------------------|
+| [`.claude/rules/agent-principles.md`](.claude/rules/agent-principles.md)           | Plan mode, subagents, verify-before-done, autonomous bug fixing      |
+| [`.claude/rules/rules.md`](.claude/rules/rules.md)                                 | Git conventions, commit format, branching, PR rules, commit grouping |
+| [`.claude/rules/skills.md`](.claude/rules/skills.md)                               | Project & plugin skills, MCP tools, agent strategies, workflows      |
+| [`.claude/rules/troubleshooting.md`](.claude/rules/troubleshooting.md)             | 401s, cookies, 400s, Docker, CI/CD, migrations, OpenAPI              |
+| [`.claude/rules/common-gotchas.md`](.claude/rules/common-gotchas.md)               | EF Core, JWT, polymorphic DTOs, nginx/IPv6, Sass, Angular            |
+| [`.claude/skills/commit-changes/SKILL.md`](.claude/skills/commit-changes/SKILL.md) | Group changes, commit, push (with confirmation)                      |
+| [`.claude/skills/create-pr/SKILL.md`](.claude/skills/create-pr/SKILL.md)           | Open PR with strict template, no Claude attribution                  |
+| [`.claude/agents/test-generator.md`](.claude/agents/test-generator.md)             | xUnit + Testcontainers / Jest / Playwright standards                 |
 
 ## Commit & docs cadence
 

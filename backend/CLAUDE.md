@@ -37,7 +37,7 @@ backend/
 └── Program.cs
 ```
 
-API reference docs: [`/docs/backend/api/`](../docs/backend/api/) (error handling, auth, endpoint catalog).
+API reference docs: [`/docs/backend/api/`](../docs/backend/api) (error handling, auth, endpoint catalog).
 
 ## Conventions (must-follow)
 
@@ -155,18 +155,18 @@ Listens on `:8080`. Don't set `ASPNETCORE_URLS` — base image sets `ASPNETCORE_
 
 ## API endpoints
 
-| Controller | Base route | Auth |
-|------------|-----------|------|
-| `AuthController` | `/api/auth` | Mixed — `POST /google-login`, `POST /logout`, `GET /auth-status`, `GET /is-admin` |
-| `CourseController` | `/api/courses` | Public read; Admin/Creator mutations |
-| `LessonController` | `/api/lessons` | Public read; Admin/Creator mutations |
-| `ExerciseController` | `/api/exercises` | Mutations Admin/Creator; `POST /{id}/submit` any user |
-| `LanguageController` | `/api/languages` | Public read; Admin write |
-| `UserLanguageController` | `/api/userLanguages` | Authenticated |
-| `UserManagementController` | `/api/userManagement` | Admin only |
-| `UploadsController` | `/api/uploads` | Authenticated |
-| `LeaderboardController` | `/api/leaderboard?timeFrame=Weekly\|Monthly\|AllTime` | Public (includes self if authed) |
-| `UserController` | `/api/user` | `GET /{userId}/avatar` public; `PUT /avatar` auth |
+| Controller                 | Base route                                            | Auth                                                                              |
+|----------------------------|-------------------------------------------------------|-----------------------------------------------------------------------------------|
+| `AuthController`           | `/api/auth`                                           | Mixed — `POST /google-login`, `POST /logout`, `GET /auth-status`, `GET /is-admin` |
+| `CourseController`         | `/api/courses`                                        | Public read; Admin/Creator mutations                                              |
+| `LessonController`         | `/api/lessons`                                        | Public read; Admin/Creator mutations                                              |
+| `ExerciseController`       | `/api/exercises`                                      | Mutations Admin/Creator; `POST /{id}/submit` any user                             |
+| `LanguageController`       | `/api/languages`                                      | Public read; Admin write                                                          |
+| `UserLanguageController`   | `/api/userLanguages`                                  | Authenticated                                                                     |
+| `UserManagementController` | `/api/userManagement`                                 | Admin only                                                                        |
+| `UploadsController`        | `/api/uploads`                                        | Authenticated                                                                     |
+| `LeaderboardController`    | `/api/leaderboard?timeFrame=Weekly\|Monthly\|AllTime` | Public (includes self if authed)                                                  |
+| `UserController`           | `/api/user`                                           | `GET /{userId}/avatar` public; `PUT /avatar` auth                                 |
 
 ## Workflows
 

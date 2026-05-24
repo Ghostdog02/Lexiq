@@ -77,6 +77,73 @@ docker inspect --format='{{json .State.Health}}' <container>
 - Drop bad migration: `dotnet ef migrations remove --project Database/Backend.Database.csproj`.
 - EF Core 10 throws `PendingModelChangesWarning` as an error — confirm migration class names match file names AND the `[Migration]` attribute.
 
+### Altering a column that is part of a composite primary key
+
+`ALTER TABLE ALTER COLUMN X failed because one or more objects access this column.`
+
+SQL Server cannot alter a column that participates in a composite PK. EF Core's auto-generated migrations **do not** insert the required PK drop/recreate around the `AlterColumn`. Fix the migration manually:
+
+```csharp
+migrationBuilder.DropPrimaryKey(name: "PK_UserLanguages", table: "UserLanguages");
+
+migrationBuilder.AlterColumn<string>(name: "LanguageId", table: "UserLanguages", ...);
+
+migrationBuilder.AddPrimaryKey(
+    name: "PK_UserLanguages",
+    table: "UserLanguages",
+    columns: new[] { "UserId", "LanguageId" });
+```
+
+Affected tables in this project: `UserLanguages (UserId, LanguageId)`, `UserExerciseProgress (UserId, ExerciseId)`, `UserAchievements (UserId, AchievementId)`.
+
+### Multiple cascade paths blocked by SQL Server
+
+`FK_X may cause cycles or multiple cascade paths. Specify ON DELETE NO ACTION.`
+
+Caused when two FK chains can both cascade-delete to the same table. Example: `User → Course (Cascade) → Lesson → Exercise` AND `User → Exercise via CreatedById (Cascade)`. Fix: set the secondary FK to `NoAction` in both the migration and DbContext:
+
+```csharp
+// DbContext
+modelBuilder.Entity<Exercise>()
+    .HasOne(e => e.CreatedBy)
+    .WithMany()
+    .HasForeignKey(e => e.CreatedById)
+    .OnDelete(DeleteBehavior.NoAction);
+
+// Migration
+migrationBuilder.AddForeignKey(..., onDelete: ReferentialAction.NoAction);
+```
+
+### Hardcoded FK sentinel values in seeders
+
+`INSERT conflicted with FOREIGN KEY constraint "FK_Exercises_Users_CreatedById".`
+
+Caused by using a hardcoded string (e.g. `const string AdminUserId = "system-admin"`) as a FK value. No row with that ID exists. The real admin user ID is generated dynamically by Identity — always thread it through seeder parameters:
+
+```csharp
+// SeedData.cs
+await ExerciseSeeder.SeedAsync(context, lessonIds, adminUserId); // pass it!
+
+// ExerciseSeeder.cs
+public static async Task SeedAsync(BackendDbContext ctx, List<string> lessonIds, string createdById)
+```
+
+## xUnit fixture errors
+
+### "Class fixture type may only define a single public constructor"
+
+Despite the message mentioning constructors, this is often caused by the fixture class being `abstract`. xUnit instantiates `IClassFixture<T>` directly — `T` must be a concrete class. Remove `abstract` from the fixture:
+
+```csharp
+// ❌ xUnit cannot instantiate this
+public abstract class DatabaseFixture : IAsyncLifetime { }
+
+// ✅ concrete — xUnit can create one instance per test class
+public class DatabaseFixture : IAsyncLifetime { }
+```
+
+`ControllerTestBase` can remain `abstract` — it's a base class that tests *inherit*, not a fixture xUnit creates.
+
 ## Mixed content (HTTPS page → HTTP backend request)
 
 - Root cause: `BACKEND_API_URL` baked into the Angular bundle as absolute `http://…`.
