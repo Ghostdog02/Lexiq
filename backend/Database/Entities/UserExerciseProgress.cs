@@ -12,11 +12,9 @@ namespace Backend.Database.Entities;
 public class UserExerciseProgress
 {
     [Required]
-    [MaxLength(450)]
     public required string UserId { get; set; }
 
     [Required]
-    [MaxLength(36)]
     public required string ExerciseId { get; set; }
 
     [Required]

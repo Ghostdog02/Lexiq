@@ -9,11 +9,9 @@ namespace Backend.Database.Entities;
 public class Lesson
 {
     [Key]
-    [MaxLength(36)]
     public string LessonId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
-    [MaxLength(36)]
     public string CourseId { get; set; } = string.Empty;
 
     [Required]

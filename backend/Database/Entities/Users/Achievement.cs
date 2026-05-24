@@ -5,7 +5,6 @@ namespace Backend.Database.Entities.Users;
 public class Achievement
 {
     [Key]
-    [MaxLength(36)]
     public string AchievementId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]

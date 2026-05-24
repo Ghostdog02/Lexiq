@@ -12,11 +12,9 @@ namespace Backend.Database.Entities.Users;
 public class UserLanguage
 {
     [Required]
-    [MaxLength(450)]
     public required string UserId { get; set; }
 
     [Required]
-    [MaxLength(36)]
     public required string LanguageId { get; set; }
 
     public DateTime EnrolledAt { get; set; } = DateTime.UtcNow;

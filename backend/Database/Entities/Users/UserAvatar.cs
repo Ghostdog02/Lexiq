@@ -6,7 +6,6 @@ namespace Backend.Database.Entities.Users;
 public class UserAvatar
 {
     [Key]
-    [MaxLength(450)]
     public required string UserId { get; set; }
 
     [ForeignKey(nameof(UserId))]

@@ -8,11 +8,9 @@ namespace Backend.Database.Entities.Exercises;
 public class AudioMatchPair
 {
     [Key]
-    [MaxLength(36)]
     public string AudioMatchPairId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
-    [MaxLength(36)]
     public string AudioMatchingExerciseId { get; set; } = string.Empty;
 
     [Required]

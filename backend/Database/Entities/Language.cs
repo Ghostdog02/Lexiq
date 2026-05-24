@@ -8,7 +8,6 @@ namespace Backend.Database.Entities;
 public class Language
 {
     [Key]
-    [MaxLength(36)]
     public string LanguageId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]

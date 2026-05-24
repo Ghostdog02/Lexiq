@@ -8,11 +8,9 @@ namespace Backend.Database.Entities.Exercises;
 public class ExerciseOption
 {
     [Key]
-    [MaxLength(36)]
     public string ExerciseOptionId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
-    [MaxLength(36)]
     public string ExerciseId { get; set; } = string.Empty;
 
     [Required]

@@ -8,11 +8,9 @@ namespace Backend.Database.Entities.Exercises;
 public class ImageOption
 {
     [Key]
-    [MaxLength(36)]
     public string ImageOptionId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
-    [MaxLength(36)]
     public string ImageChoiceExerciseId { get; set; } = string.Empty;
 
     [Required]
