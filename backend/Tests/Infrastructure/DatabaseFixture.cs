@@ -1,6 +1,5 @@
 using Backend.Database;
 using Backend.Database.Entities;
-using Backend.Database.Entities.Exercises;
 using Backend.Database.Entities.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -27,8 +26,7 @@ public class DatabaseFixture : IAsyncLifetime
     public string ConnectionString => _container.GetConnectionString();
 
     /// <summary>
-    /// ID of the system user created to satisfy Course.CreatedById FK.
-    /// Excluded from per-test teardown so the content hierarchy survives.
+    /// ID of the system user excluded from per-test teardown so the content hierarchy survives.
     /// </summary>
     public string SystemUserId { get; } = Guid.NewGuid().ToString();
 
@@ -62,7 +60,7 @@ public class DatabaseFixture : IAsyncLifetime
 
     private async ValueTask SeedContentHierarchyAsync(BackendDbContext ctx)
     {
-        // System user satisfies Course.CreatedById FK — never deleted during tests
+        // System user excluded from ClearLeaderboardDataAsync — never deleted during tests
         var systemUser = new User
         {
             Id = SystemUserId,
@@ -92,7 +90,6 @@ public class DatabaseFixture : IAsyncLifetime
                 LanguageId = languageId,
                 Title = "Test Course",
                 Description = "Test course for integration tests",
-                CreatedById = SystemUserId,
                 OrderIndex = 0,
             }
         );

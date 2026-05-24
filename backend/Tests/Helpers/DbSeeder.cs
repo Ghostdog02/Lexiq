@@ -225,10 +225,10 @@ public static class DbSeeder
         await ctx.UserExerciseProgress.ExecuteDeleteAsync();
         await ctx.Exercises.ExecuteDeleteAsync();
         await ctx.UserAvatars.ExecuteDeleteAsync();
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM UserClaims");
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM UserLogins");
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM UserRoles");
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM UserTokens");
+        await ctx.UserClaims.ExecuteDeleteAsync();
+        await ctx.UserLogins.ExecuteDeleteAsync();
+        await ctx.UserRoles.ExecuteDeleteAsync();
+        await ctx.UserTokens.ExecuteDeleteAsync();
 
         await ctx.Users.Where(u => u.Id != systemUserId).ExecuteDeleteAsync();
     }

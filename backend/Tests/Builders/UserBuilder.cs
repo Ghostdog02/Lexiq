@@ -10,11 +10,11 @@ namespace Backend.Tests.Builders;
 public class UserBuilder
 {
     private string _id = Guid.NewGuid().ToString();
-    private string? _userName = null;
-    private string? _normalizedUserName = null;
-    private string? _email = null;
-    private string? _normalizedEmail = null;
-    private int _totalPointsEarned = 0;
+    private string? _userName;
+    private string? _normalizedUserName;
+    private string? _email;
+    private string? _normalizedEmail;
+    private int _totalPointsEarned;
 
     public UserBuilder WithId(string id)
     {
