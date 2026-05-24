@@ -11,7 +11,7 @@ using FluentAssertions;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
-namespace Backend.Tests.Controllers;
+namespace Backend.Tests.Integration.Controllers;
 
 /// <summary>
 /// HTTP-level integration tests for authorization policy enforcement across all controllers.

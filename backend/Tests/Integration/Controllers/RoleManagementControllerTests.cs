@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using Backend.Database.Entities.Users;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
@@ -7,7 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Backend.Tests.Controllers;
+namespace Backend.Tests.Integration.Controllers;
 
 /// <summary>
 /// Integration tests for RoleManagementController endpoints.

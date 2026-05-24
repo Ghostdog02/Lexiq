@@ -1,11 +1,11 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 using Xunit;
 
-namespace Backend.Tests.Controllers;
+namespace Backend.Tests.Integration.Controllers;
 
 /// <summary>
 /// E2E tests for avatar upload and retrieval via UserController endpoints.
@@ -69,7 +69,7 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
         responseBody.Should().NotBeNull();
-        responseBody!
+        responseBody
             .AvatarUrl.Should()
             .Be(
                 $"/api/user/{_userId}/avatar",
@@ -166,7 +166,7 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
     public async Task PutAvatar_InvalidFileType_Returns400()
     {
         // Arrange - unsupported file type (.bmp)
-        var imageBytes = new byte[] { 0x42, 0x4D };
+        var imageBytes = "BM"u8.ToArray();
         var content = CreateMultipartFormData(imageBytes, "avatar.bmp", "image/bmp");
 
         // Act
@@ -382,7 +382,7 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
     {
         var content = new MultipartFormDataContent();
         var fileContent = new ByteArrayContent(fileBytes);
-        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             contentType
         );
 
