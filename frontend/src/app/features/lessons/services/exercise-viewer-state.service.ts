@@ -41,7 +41,7 @@ export class ExerciseViewerStateService {
       selectedOptionId: null,
       isCorrect: false,
       isSubmitted: false,
-      isAccessible: !exercise.isLocked || isAdmin,
+      isAccessible: true,
     }));
 
     // Set current exercise to first accessible one
@@ -71,25 +71,6 @@ export class ExerciseViewerStateService {
 
     if (!isCorrect && this.hearts > 0) {
       this.hearts--;
-    }
-
-    if (isCorrect) {
-      this.unlockNextExercise(exerciseId);
-    }
-  }
-
-  /**
-   * Unlock the exercise that follows the given exercise.
-   */
-  unlockNextExercise(currentExerciseId: string): void {
-    const currentIndex = this.viewModels.findIndex(
-      (vm) => vm.exercise.id === currentExerciseId
-    );
-
-    if (currentIndex >= 0 && currentIndex < this.viewModels.length - 1) {
-      const nextVm = this.viewModels[currentIndex + 1];
-      nextVm.exercise.isLocked = false;
-      nextVm.isAccessible = true;
     }
   }
 

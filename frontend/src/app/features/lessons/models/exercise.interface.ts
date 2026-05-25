@@ -29,7 +29,6 @@ export interface Exercise {
   points: number;
   explanation?: string;
   type: ExerciseType;
-  isLocked: boolean;
   options: ExerciseOption[];
 }
 
