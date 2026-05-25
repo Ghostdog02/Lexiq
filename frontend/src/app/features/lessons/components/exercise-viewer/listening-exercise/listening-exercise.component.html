@@ -1,0 +1,62 @@
+<div class="listening">
+  <div class="listening-content">
+    <!-- Audio player section -->
+    <div class="audio-section">
+      @if (exercise.audioUrl) {
+        <audio
+          #audioEl
+          [src]="exercise.audioUrl"
+          (loadedmetadata)="onAudioLoaded(audioEl)"
+          (timeupdate)="onTimeUpdate(audioEl)"
+          (ended)="onEnded()">
+        </audio>
+
+        <div class="custom-audio-player">
+          <button
+            type="button"
+            class="play-pause-btn"
+            (click)="togglePlayPause()"
+            aria-label="Play or pause audio">
+            @if (isPlaying) {
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor" />
+                <rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor" />
+              </svg>
+            } @else {
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M8 5v14l11-7L8 5z" fill="currentColor" />
+              </svg>
+            }
+          </button>
+
+          <div class="audio-controls">
+            <span class="time-display">{{ formatTime(currentTime) }}</span>
+            <div
+              class="progress-bar-track"
+              (click)="seekAudio($event)"
+              role="slider"
+              [attr.aria-valuenow]="currentTime"
+              [attr.aria-valuemin]="0"
+              [attr.aria-valuemax]="duration"
+              aria-label="Audio seek bar">
+              <div class="progress-bar-fill" [style.width.%]="progressPercentage"></div>
+            </div>
+            <span class="time-display">{{ formatTime(duration) }}</span>
+          </div>
+        </div>
+
+        @if (exercise.maxReplays) {
+          <p class="replay-hint">Max replays: {{ exercise.maxReplays }}</p>
+        }
+      } @else {
+        <div class="no-audio">
+          <span class="icon">&#x1F50A;</span>
+          <p>No audio available</p>
+        </div>
+      }
+    </div>
+
+    <!-- Options list -->
+    <app-base-exercise [exerciseId]="exercise.id" />
+  </div>
+</div>

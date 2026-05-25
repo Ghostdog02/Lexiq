@@ -1,0 +1,22 @@
+<div class="options-list">
+  @for (option of options; track option.id; let i = $index) {
+  <button
+    type="button"
+    class="option-btn"
+    [class]="getOptionClass(option)"
+    [disabled]="viewModel?.isSubmitted || !viewModel?.isAccessible"
+    (click)="selectOption(option.id)"
+    [attr.aria-pressed]="viewModel?.selectedOptionId === option.id"
+    [attr.data-index]="i">
+    <span class="option-letter">{{ letters[i] }}</span>
+    <span class="option-text">{{ option.optionText }}</span>
+    @if (viewModel?.isSubmitted) {
+      @if (option.isCorrect) {
+        <span class="result-icon correct">&#x2713;</span>
+      } @else if (viewModel?.selectedOptionId === option.id) {
+        <span class="result-icon incorrect">&#x2715;</span>
+      }
+    }
+  </button>
+  }
+</div>

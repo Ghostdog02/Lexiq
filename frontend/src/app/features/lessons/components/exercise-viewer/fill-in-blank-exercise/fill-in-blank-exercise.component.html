@@ -1,0 +1,20 @@
+<div class="fill-in-blank">
+  <!-- Sentence with blank slot -->
+  <div class="question-display">
+    <p class="question-text-inline">
+      <span class="text-before">{{ textBefore }}</span>
+      <span
+        class="blank-slot"
+        [class.filled]="!!state.getViewModelById(exercise.id)?.selectedOptionId"
+        [class.correct]="isSubmitted && isCorrect"
+        [class.incorrect]="isSubmitted && !isCorrect"
+        aria-label="Answer slot">
+        {{ selectedOptionText }}
+      </span>
+      <span class="text-after">{{ textAfter }}</span>
+    </p>
+  </div>
+
+  <!-- Options word bank -->
+  <app-base-exercise [exerciseId]="exercise.id" />
+</div>
