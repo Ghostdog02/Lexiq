@@ -33,18 +33,14 @@ export class LessonEditorComponent implements OnInit {
   private readonly contentParser = inject(ContentParserService);
   private readonly router = inject(Router);
   lessonForm!: LessonForm;
-  exerciseTypeDictionary: { label: string; value: ExerciseType }[];
+  exerciseTypeDictionary: { label: string; value: ExerciseType }[] = [];
   courses: Course[] = [];
   ExerciseType = ExerciseType;
 
-  constructor() {
-    this.exerciseTypeDictionary = Object.entries(ExerciseType).map(([key, value]) => ({
-      label: key,
-      value: value
-    }));
-  }
-
   ngOnInit(): void {
+    this.exerciseTypeDictionary = Object.entries(ExerciseType).map(
+      ([key, value]) => ({ label: key, value: value as ExerciseType })
+    );
     this.initializeForm();
     this.setupFormValueChanges();
     this.loadCourses();
