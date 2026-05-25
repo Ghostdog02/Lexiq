@@ -63,7 +63,6 @@ public static class ExerciseSeeder
 
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                IsLocked = false,
                 AudioUrl = AudioPlaceholder,
                 MaxReplays = 3,
                 Options =

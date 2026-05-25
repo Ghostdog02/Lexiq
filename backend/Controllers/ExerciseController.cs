@@ -1,11 +1,8 @@
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
-using Backend.Api.Middleware;
 using Backend.Api.Services;
 using Backend.Database.Entities.Exercises;
-using Backend.Database.Entities.Users;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Controllers;
@@ -13,13 +10,9 @@ namespace Backend.Api.Controllers;
 [Route("api/[controller]s")]
 [ApiController]
 [Authorize]
-public class ExerciseController(
-    ExerciseService exerciseService,
-    UserManager<User> userManager
-) : ControllerBase
+public class ExerciseController(ExerciseService exerciseService) : ControllerBase
 {
     private readonly ExerciseService _exerciseService = exerciseService;
-    private readonly UserManager<User> _userManager = userManager;
 
     [HttpGet("{id}")]
     public async Task<ActionResult<ExerciseDto>> GetExercise(string id)
@@ -27,15 +20,6 @@ public class ExerciseController(
         var exercise = await _exerciseService.GetExerciseByIdAsync(id);
         if (exercise == null)
             return NotFound();
-
-        var user = HttpContext.GetCurrentUser()!;
-        var canBypassLocks = await user.CanBypassLocksAsync(_userManager);
-
-        if (exercise.IsLocked == true && !canBypassLocks)
-            return StatusCode(
-                403,
-                new { message = "Exercise is locked. Complete previous exercises to unlock." }
-            );
 
         return OkPolymorphic<ExerciseDto>(exercise.ToDto());
     }

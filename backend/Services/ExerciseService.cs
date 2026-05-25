@@ -178,49 +178,4 @@ public class ExerciseService(BackendDbContext context)
         return true;
     }
 
-    public async Task<bool> UnlockNextExerciseAsync(string currentExerciseId)
-    {
-        var currentExercise = await _context.Exercises.FindAsync(currentExerciseId);
-        if (currentExercise == null)
-            return false;
-
-        // Find the next exercise in the same lesson by CreatedAt
-        var nextExercise = await _context
-            .Exercises.Where(e =>
-                e.LessonId == currentExercise.LessonId
-                && e.CreatedAt > currentExercise.CreatedAt
-            )
-            .OrderBy(e => e.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        if (nextExercise == null)
-            return false; // No next exercise in this lesson
-
-        if (!nextExercise.IsLocked)
-            return false; // Already unlocked
-
-        nextExercise.IsLocked = false;
-        await _context.SaveChangesAsync();
-
-        return true;
-    }
-
-    public async Task<bool> UnlockFirstExerciseInLessonAsync(string lessonId)
-    {
-        var firstExercise = await _context
-            .Exercises.Where(e => e.LessonId == lessonId)
-            .OrderBy(e => e.CreatedAt)
-            .FirstOrDefaultAsync();
-
-        if (firstExercise == null)
-            return false; // No exercises in this lesson
-
-        if (!firstExercise.IsLocked)
-            return false; // Already unlocked
-
-        firstExercise.IsLocked = false;
-        await _context.SaveChangesAsync();
-
-        return true;
-    }
 }

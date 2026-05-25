@@ -76,8 +76,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         nextLesson.IsLocked = false;
         await _context.SaveChangesAsync();
 
-        await _exerciseService.UnlockFirstExerciseInLessonAsync(nextLesson.LessonId);
-
         return UnlockStatus.Unlocked;
     }
 
@@ -125,10 +123,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             lesson.IsLocked = false;
             await _context.SaveChangesAsync();
         }
-
-        // Always ensure the first exercise is unlocked — idempotent, safe to call
-        // even when the lesson was already unlocked (repairs corrupt lock states).
-        await _exerciseService.UnlockFirstExerciseInLessonAsync(lessonId);
     }
 
     public async Task<Lesson> CreateLessonAsync(CreateLessonDto dto)
@@ -163,7 +157,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
                     lesson.LessonId
                 );
                 exercise.CreatedAt = DateTime.UtcNow.AddSeconds(i); // Maintain order via CreatedAt
-                exercise.IsLocked = i != 0; // First exercise unlocked, rest locked
                 lesson.Exercises.Add(exercise);
             }
         }
