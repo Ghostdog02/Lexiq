@@ -31,15 +31,18 @@ export interface LessonProgressSummary {
   meetsCompletionThreshold: boolean;
 }
 
-export interface ExerciseSubmitResult {
+export interface ExerciseResult {
+  exerciseId: string;
   isCorrect: boolean;
   pointsEarned: number;
-  correctAnswer: string | null;
+  correctOptionId: string | null;
   explanation: string | null;
 }
 
-export interface SubmitAnswerResponse extends ExerciseSubmitResult {
-  lessonProgress: LessonProgressSummary;
+export interface LessonSubmitResult {
+  exercises: ExerciseResult[];
+  summary: LessonProgressSummary;
+  heartsRemaining: number;
 }
 
 // Saved progress loaded from backend (maps exerciseId → progress)
