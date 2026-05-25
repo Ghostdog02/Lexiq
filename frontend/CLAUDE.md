@@ -156,5 +156,4 @@ Quick rules — full catalog in [`/docs/frontend/design-system.md`](../docs/fron
 
 - Help service returns mock data (not yet backend-integrated).
 - Frontend/backend property-name mismatches fail **silently** — `@switch` doesn't match, expressions return `undefined` with no error. Always verify the API response matches your interface.
-- `Exercise` interface MUST include `isLocked: boolean` — `exercise-viewer` depends on it.
 - `submitExerciseAnswer` returns `SubmitAnswerResponse` (includes `lessonProgress`), **not** `ExerciseSubmitResult`. Type the call and the `submissionResults` map accordingly to avoid TS2322 on `currentSubmission`.

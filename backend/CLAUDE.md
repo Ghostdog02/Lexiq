@@ -67,8 +67,8 @@ API reference docs: [`/docs/backend/api/`](../docs/backend/api) (error handling,
 - **Upsert pattern**: `FirstOrDefaultAsync` → create if null else update (see `ExerciseProgressService.SubmitAnswerAsync`).
 - **Auto OrderIndex**: `MaxAsync(e => (int?)e.OrderIndex) ?? -1 + 1`.
 - **Idempotent unlocks** — every unlock checks `IsLocked` before mutation.
-- **Cascade unlocks** — `LessonService.UnlockNextLessonAsync` calls `ExerciseService.UnlockFirstExerciseInLessonAsync`.
-- **Dual lock validation** in `SubmitAnswerAsync` — check both `lesson.IsLocked` and `exercise.IsLocked`. Admin / ContentCreator bypass via `UserExtensions.CanBypassLocksAsync`.
+- **Lock validation** in `SubmitAnswerAsync` — check `lesson.IsLocked`. Admin / ContentCreator bypass via `UserExtensions.CanBypassLocksAsync`.
+- Exercise access is gated solely by `Lesson.IsLocked` — there is no per-exercise lock.
 - **Add children to parent collection**, not DbContext: `lesson.Exercises.Add(...)` — otherwise navigation properties stay empty and DTOs render incorrectly.
 
 ### Performance
@@ -193,5 +193,5 @@ Listens on `:8080`. Don't set `ASPNETCORE_URLS` — base image sets `ASPNETCORE_
 - `Lesson.status` is **not** returned by the API; frontend derives it from `isLocked`, `isCompleted`, `completedExercises`.
 - Lesson completion threshold: 70% XP (`ExerciseProgressService.DefaultCompletionThreshold`).
 - `UserExerciseProgress.ExerciseId` FK uses `DeleteBehavior.NoAction` (SQL Server multiple-cascade-path constraint).
-- Exercise unlocking: hybrid — first exercise unlocks with the lesson; rest unlock sequentially on correct completion.
+- Exercise access: gated by `Lesson.IsLocked` only — no per-exercise lock.
 - **Hearts**: users start with 3 hearts. Each wrong answer costs 1 heart. When hearts reach 0, all further submissions are blocked (including correct answers) until hearts are replenished. Admins and ContentCreators bypass the hearts check.
