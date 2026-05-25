@@ -358,27 +358,23 @@
 }
 
 .lesson-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   align-self: center;
 }
 
 .lesson-title {
-  margin: 0 0 1rem 0;
+  margin: 0;
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--white);
-}
-
-.lesson-description {
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin: 0 0 0.75rem;
 }
 
 .lesson-progress {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-top: 0.625rem;
 
   .progress-track {
     flex: 1;
