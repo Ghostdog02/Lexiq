@@ -10,23 +10,34 @@ namespace Backend.Api.Controllers;
 [ApiController]
 [Route("api/[controller]s")]
 [Authorize]
-public class LessonController(LessonService lessonService, ExerciseProgressService progressService)
+public class LessonController(LessonService lessonService, LessonProgressService lessonProgressService)
     : ControllerBase
 {
     private readonly LessonService _lessonService = lessonService;
-    private readonly ExerciseProgressService _progressService = progressService;
+    private readonly LessonProgressService _lessonProgressService = lessonProgressService;
 
     /// <summary>
-    /// Attempts to complete a lesson. Requires meeting the XP threshold (70%).
-    /// If met, unlocks the next lesson automatically.
+    /// Submits all exercise answers for a lesson at once, updates progress, and unlocks the next lesson if threshold is met.
     /// </summary>
-    /// <param name="lessonId">The ID of the lesson to complete</param>
-    [HttpPost("{lessonId}/complete")]
-    public async Task<ActionResult<CompleteLessonResponse>> CompleteLesson(string lessonId)
+    /// <param name="lessonId">The ID of the lesson to submit</param>
+    /// <param name="request">The list of exercise answers</param>
+    [HttpPost("{lessonId}/submit")]
+    public async Task<ActionResult<LessonSubmitResult>> SubmitLesson(string lessonId, SubmitLessonRequest request)
     {
         var currentUser = HttpContext.GetCurrentUser()!;
-        var result = await _progressService.CompleteLessonAsync(currentUser.Id, lessonId);
-        return Ok(result);
+        try
+        {
+            var result = await _lessonProgressService.SubmitLessonAsync(currentUser.Id, lessonId, request.Answers);
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
     }
 
     /// <summary>
@@ -59,7 +70,7 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
 
         var currentUser = HttpContext.GetCurrentUser()!;
         var lessonIds = lessons.Select(l => l.LessonId).ToList();
-        var progressMap = await _lessonService.GetProgressForLessonsAsync(
+        var progressMap = await _lessonProgressService.GetProgressForLessonsAsync(
             currentUser.Id,
             lessonIds
         );
@@ -84,7 +95,7 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
         }
 
         var currentUser = HttpContext.GetCurrentUser()!;
-        var progress = await _lessonService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
+        var progress = await _lessonProgressService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
 
         return OkPolymorphic<LessonDto>(lesson.ToDto(progress.Summary, progress.ExerciseProgress));
     }
@@ -160,7 +171,7 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
     )
     {
         var user = HttpContext.GetCurrentUser()!;
-        var fullProgress = await _lessonService.GetFullLessonProgressAsync(user.Id, lessonId);
+        var fullProgress = await _lessonProgressService.GetFullLessonProgressAsync(user.Id, lessonId);
         return Ok(fullProgress.ExerciseProgress.Values.ToList());
     }
 
@@ -174,7 +185,7 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
     )
     {
         var user = HttpContext.GetCurrentUser()!;
-        var submissions = await _lessonService.GetLessonSubmissionsAsync(user.Id, lessonId);
+        var submissions = await _lessonProgressService.GetLessonSubmissionsAsync(user.Id, lessonId);
         return Ok(submissions);
     }
 

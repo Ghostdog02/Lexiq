@@ -15,12 +15,10 @@ namespace Backend.Api.Controllers;
 [Authorize]
 public class ExerciseController(
     ExerciseService exerciseService,
-    ExerciseProgressService progressService,
     UserManager<User> userManager
 ) : ControllerBase
 {
     private readonly ExerciseService _exerciseService = exerciseService;
-    private readonly ExerciseProgressService _progressService = progressService;
     private readonly UserManager<User> _userManager = userManager;
 
     [HttpGet("{id}")]
@@ -85,37 +83,6 @@ public class ExerciseController(
         return NoContent();
     }
 
-    [HttpPost("{exerciseId}/submit")]
-    public async Task<ActionResult<ExerciseSubmitResult>> SubmitAnswer(
-        string exerciseId,
-        SubmitAnswerRequest request
-    )
-    {
-        if (string.IsNullOrWhiteSpace(request.SelectedOptionId))
-            return BadRequest(new { message = "Selected option ID cannot be empty" });
-
-        var user = HttpContext.GetCurrentUser()!;
-
-        try
-        {
-            ExerciseSubmitResult result = await _progressService.SubmitAnswerAsync(
-                user.Id,
-                exerciseId,
-                request.SelectedOptionId
-            );
-
-            return Ok(result);
-        }
-        catch (ArgumentException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
-    }
-
     /// <summary>
     /// Gets the correct answer for an exercise (useful for tests and content creators)
     /// </summary>
@@ -135,7 +102,7 @@ public class ExerciseController(
     }
 
     /// <summary>
-    /// Extracts correct answer from exercise based on type (mirrors LessonService.GetCorrectAnswer)
+    /// Extracts correct answer from exercise based on type
     /// </summary>
     private static string? GetCorrectAnswerForExercise(Exercise exercise)
     {
