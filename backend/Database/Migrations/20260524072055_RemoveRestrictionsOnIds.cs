@@ -208,6 +208,13 @@ namespace Backend.Database.Migrations
                 oldMaxLength: 255,
                 oldNullable: true);
 
+            // Purge seeded exercise data before shrinking the discriminator column.
+            // Old discriminator values (e.g. "MultipleChoiceExercise", 22 chars) exceed
+            // the new nvarchar(21) limit. Exercises are re-seeded on startup so this is safe.
+            migrationBuilder.Sql("DELETE FROM [UserExerciseProgress]");
+            migrationBuilder.Sql("DELETE FROM [ExerciseOption]");
+            migrationBuilder.Sql("DELETE FROM [Exercises]");
+
             migrationBuilder.AlterColumn<string>(
                 name: "Discriminator",
                 table: "Exercises",
