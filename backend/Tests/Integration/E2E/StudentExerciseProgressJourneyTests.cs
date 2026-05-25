@@ -92,7 +92,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task Student_DepletesHearts_SubmissionBlocked()
+    public async Task Student_DepletesHearts_HeartsReachZero()
     {
         // Arrange - create 1 unlocked exercise
         using var scope = Factory.Services.CreateScope();
@@ -111,9 +111,14 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         // Act - deplete all 3 hearts with wrong answers
         var attempt1 = await SubmitAnswerAsync(firstEx.Id, "wrong1");
         var attempt2 = await SubmitAnswerAsync(firstEx.Id, "wrong2");
-        var attempt3 = await SubmitAnswerAsync(firstEx.Id, "wrong3");
-        // After 3 wrong answers hearts == 0; further submissions (even correct) are blocked
-        var blocked = await SubmitAnswerAsync(firstEx.Id, GetCorrectOptionId(firstEx));
+        var lastResponse = await _client.PostAsJsonAsync(
+            $"/api/lessons/{Fixture.LessonId}/submit",
+            new SubmitLessonRequest([new ExerciseAnswerDto(firstEx.Id, "wrong3")]),
+            TestContext.Current.CancellationToken
+        );
+        var lastResult = await lastResponse.Content.ReadFromJsonAsync<LessonSubmitResult>(
+            cancellationToken: TestContext.Current.CancellationToken
+        );
 
         // Assert - wrong answers accepted while hearts remain
         attempt1.Should().NotBeNull();
@@ -123,12 +128,11 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         attempt2.Should().NotBeNull();
         attempt2.IsCorrect.Should().BeFalse();
 
-        attempt3.Should().NotBeNull();
-        attempt3.IsCorrect.Should().BeFalse();
-
-        // Once hearts are depleted the endpoint returns 403 and the helper returns null
-        blocked.Should().BeNull(
-            because: "hearts depleted — no submissions allowed until hearts are replenished"
+        lastResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        lastResult.Should().NotBeNull();
+        lastResult.HeartsRemaining.Should().Be(
+            0,
+            because: "three wrong answers deplete all 3 starting hearts"
         );
     }
 
@@ -363,20 +367,26 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         );
     }
 
-    private async Task<ExerciseSubmitResult?> SubmitAnswerAsync(string exerciseId, string answer)
+    /// <summary>
+    /// Submits a single exercise answer via the lesson-level submit endpoint.
+    /// Returns the ExerciseResultDto for the submitted exercise, or null on non-200 response.
+    /// </summary>
+    private async Task<ExerciseResultDto?> SubmitAnswerAsync(string exerciseId, string? answer)
     {
         var response = await _client.PostAsJsonAsync(
-            $"/api/exercises/{exerciseId}/submit",
-            new SubmitAnswerRequest(answer),
+            $"/api/lessons/{Fixture.LessonId}/submit",
+            new SubmitLessonRequest([new ExerciseAnswerDto(exerciseId, answer)]),
             TestContext.Current.CancellationToken
         );
 
         if (!response.IsSuccessStatusCode)
             return null;
 
-        return await response.Content.ReadFromJsonAsync<ExerciseSubmitResult>(
+        var result = await response.Content.ReadFromJsonAsync<LessonSubmitResult>(
             cancellationToken: TestContext.Current.CancellationToken
         );
+
+        return result?.Exercises.FirstOrDefault(e => e.ExerciseId == exerciseId);
     }
 
     private async Task<List<UserExerciseProgressDto>?> GetLessonProgressAsync(string lessonId)
