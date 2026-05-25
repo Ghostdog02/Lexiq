@@ -17,7 +17,6 @@ public abstract record ExerciseDto(
     DifficultyLevel DifficultyLevel,
     int Points,
     string? Explanation,
-    bool IsLocked,
     UserExerciseProgressDto? UserProgress
 );
 
@@ -28,7 +27,6 @@ public record MultipleChoiceExerciseDto(
     DifficultyLevel DifficultyLevel,
     int Points,
     string? Explanation,
-    bool IsLocked,
     UserExerciseProgressDto? UserProgress,
     List<ExerciseOptionDto> Options
 )
@@ -39,7 +37,6 @@ public record MultipleChoiceExerciseDto(
         DifficultyLevel,
         Points,
         Explanation,
-        IsLocked,
         UserProgress
     );
 
@@ -50,7 +47,6 @@ public record FillInBlankExerciseDto(
     DifficultyLevel DifficultyLevel,
     int Points,
     string? Explanation,
-    bool IsLocked,
     UserExerciseProgressDto? UserProgress,
     string Text,
     List<ExerciseOptionDto> Options
@@ -62,7 +58,6 @@ public record FillInBlankExerciseDto(
         DifficultyLevel,
         Points,
         Explanation,
-        IsLocked,
         UserProgress
     );
 
@@ -73,7 +68,6 @@ public record ListeningExerciseDto(
     DifficultyLevel DifficultyLevel,
     int Points,
     string? Explanation,
-    bool IsLocked,
     UserExerciseProgressDto? UserProgress,
     string AudioUrl,
     int MaxReplays,
@@ -86,7 +80,6 @@ public record ListeningExerciseDto(
         DifficultyLevel,
         Points,
         Explanation,
-        IsLocked,
         UserProgress
     );
 
@@ -97,7 +90,6 @@ public record TrueFalseExerciseDto(
     DifficultyLevel DifficultyLevel,
     int Points,
     string? Explanation,
-    bool IsLocked,
     UserExerciseProgressDto? UserProgress,
     string Statement,
     string? ImageUrl,
@@ -110,7 +102,6 @@ public record TrueFalseExerciseDto(
         DifficultyLevel,
         Points,
         Explanation,
-        IsLocked,
         UserProgress
     );
 
@@ -121,7 +112,6 @@ public record ImageChoiceExerciseDto(
     DifficultyLevel DifficultyLevel,
     int Points,
     string? Explanation,
-    bool IsLocked,
     UserExerciseProgressDto? UserProgress,
     List<ImageOptionDto> Options
 )
@@ -132,7 +122,6 @@ public record ImageChoiceExerciseDto(
         DifficultyLevel,
         Points,
         Explanation,
-        IsLocked,
         UserProgress
     );
 
@@ -143,7 +132,6 @@ public record AudioMatchingExerciseDto(
     DifficultyLevel DifficultyLevel,
     int Points,
     string? Explanation,
-    bool IsLocked,
     UserExerciseProgressDto? UserProgress,
     List<AudioMatchPairDto> Pairs
 )
@@ -154,7 +142,6 @@ public record AudioMatchingExerciseDto(
         DifficultyLevel,
         Points,
         Explanation,
-        IsLocked,
         UserProgress
     );
 

@@ -65,7 +65,6 @@ public static class ContentMappingExtensions
                 fib.DifficultyLevel,
                 fib.Points,
                 null,
-                fib.IsLocked,
                 progress,
                 fib.Text,
                 fib.Options.Select(o => new ExerciseOptionDto(
@@ -83,7 +82,6 @@ public static class ContentMappingExtensions
                 le.DifficultyLevel,
                 le.Points,
                 null,
-                le.IsLocked,
                 progress,
                 le.AudioUrl,
                 le.MaxReplays,
@@ -102,7 +100,6 @@ public static class ContentMappingExtensions
                 tf.DifficultyLevel,
                 tf.Points,
                 null,
-                tf.IsLocked,
                 progress,
                 tf.Statement,
                 tf.ImageUrl,
@@ -121,7 +118,6 @@ public static class ContentMappingExtensions
                 ice.DifficultyLevel,
                 ice.Points,
                 null,
-                ice.IsLocked,
                 progress,
                 ice.Options.Select(o => new ImageOptionDto(
                         o.ImageOptionId,
@@ -139,7 +135,6 @@ public static class ContentMappingExtensions
                 ame.DifficultyLevel,
                 ame.Points,
                 null,
-                ame.IsLocked,
                 progress,
                 ame.Pairs.Select(p => new AudioMatchPairDto(
                         p.AudioMatchPairId,
@@ -156,7 +151,6 @@ public static class ContentMappingExtensions
                 entity.DifficultyLevel,
                 entity.Points,
                 null,
-                entity.IsLocked,
                 progress,
                 entity.Options.Select(o => new ExerciseOptionDto(
                     o.ExerciseOptionId,
