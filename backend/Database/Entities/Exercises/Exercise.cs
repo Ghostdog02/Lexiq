@@ -43,8 +43,6 @@ public class Exercise
     [Range(1, int.MaxValue)]
     public int Points { get; set; } = 0; // Points earned for completion
 
-    public bool IsLocked { get; set; } = true;
-
     [Required]
     [DataType(DataType.DateTime)]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

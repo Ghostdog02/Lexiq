@@ -244,7 +244,6 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 | DifficultyLevel          | DifficultyLevel              | Required                  | Complexity level                                                                                      |
 | Points                   | int                          | Range(1, int.MaxValue)    | Points earned for correct completion                                                                  |
 | OrderIndex               | int                          | Required                  | Position within lesson                                                                                |
-| IsLocked                 | bool                         | Required, Default: true   | Whether this exercise is accessible; first exercise unlocks with the lesson, rest unlock sequentially |
 | Explanation              | string?                      | MaxLength(1000), Optional | Educational feedback shown after answering                                                            |
 | CreatedAt                | DateTime                     | Default: UtcNow           | Creation timestamp                                                                                    |
 | Lesson                   | Lesson?                      | Navigation                | Parent lesson                                                                                         |
@@ -259,7 +258,7 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 - Exercises are ordered within a lesson using `OrderIndex`
 - Duration ranges from 5 to 20 minutes
-- First exercise in a lesson unlocks when the lesson unlocks; subsequent exercises unlock sequentially on correct completion
+- Access is gated at the lesson level via `Lesson.IsLocked`; there is no per-exercise lock
 - Wrong answers allow infinite retries without penalty
 - Points system feeds leaderboard via `User.TotalPointsEarned`
 
@@ -454,8 +453,7 @@ User (1) ──────────────────< (M) UserLanguag
 
 ### Progressive Locking
 - `Lesson.IsLocked` controls lesson accessibility (default: `false` at schema level, `true` in seed data)
-- `Exercise.IsLocked` controls exercise accessibility (default: `true`)
-- Hybrid unlock: first exercise in a lesson unlocks with the lesson; subsequent exercises unlock sequentially on correct completion
+- Exercise access is gated solely by the parent lesson's `IsLocked` flag — there is no per-exercise lock
 - All unlock methods are idempotent (check `IsLocked` before writing)
 
 ### XP Caching
