@@ -4,6 +4,7 @@ using Backend.Database.Entities.Exercises;
 namespace Backend.Api.Dtos;
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(MultipleChoiceExerciseDto), typeDiscriminator: "MultipleChoice")]
 [JsonDerivedType(typeof(FillInBlankExerciseDto), typeDiscriminator: "FillInBlank")]
 [JsonDerivedType(typeof(ListeningExerciseDto), typeDiscriminator: "Listening")]
 [JsonDerivedType(typeof(TrueFalseExerciseDto), typeDiscriminator: "TrueFalse")]
@@ -19,6 +20,28 @@ public abstract record ExerciseDto(
     bool IsLocked,
     UserExerciseProgressDto? UserProgress
 );
+
+public record MultipleChoiceExerciseDto(
+    string Id,
+    string LessonId,
+    string Instructions,
+    DifficultyLevel DifficultyLevel,
+    int Points,
+    string? Explanation,
+    bool IsLocked,
+    UserExerciseProgressDto? UserProgress,
+    List<ExerciseOptionDto> Options
+)
+    : ExerciseDto(
+        Id,
+        LessonId,
+        Instructions,
+        DifficultyLevel,
+        Points,
+        Explanation,
+        IsLocked,
+        UserProgress
+    );
 
 public record FillInBlankExerciseDto(
     string Id,
@@ -142,6 +165,7 @@ public record ImageOptionDto(string Id, string ImageUrl, string AltText, bool Is
 public record AudioMatchPairDto(string Id, string AudioUrl, string ImageUrl, string Explanation);
 
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(CreateMultipleChoiceExerciseDto), typeDiscriminator: "MultipleChoice")]
 [JsonDerivedType(typeof(CreateFillInBlankExerciseDto), typeDiscriminator: "FillInBlank")]
 [JsonDerivedType(typeof(CreateListeningExerciseDto), typeDiscriminator: "Listening")]
 [JsonDerivedType(typeof(CreateTrueFalseExerciseDto), typeDiscriminator: "TrueFalse")]
@@ -154,6 +178,22 @@ public abstract record CreateExerciseDto(
     int Points,
     string? Explanation
 );
+
+public record CreateMultipleChoiceExerciseDto(
+    string? LessonId,
+    string Instructions,
+    DifficultyLevel DifficultyLevel,
+    int Points,
+    string? Explanation,
+    List<CreateExerciseOptionDto> Options
+)
+    : CreateExerciseDto(
+        LessonId,
+        Instructions,
+        DifficultyLevel,
+        Points,
+        Explanation
+    );
 
 public record CreateFillInBlankExerciseDto(
     string? LessonId,

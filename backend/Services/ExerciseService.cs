@@ -128,6 +128,19 @@ public class ExerciseService(BackendDbContext context)
                     })
                     .ToList(),
             },
+            CreateMultipleChoiceExerciseDto mcDto => new Exercise
+            {
+                LessonId = lessonId,
+                Instructions = mcDto.Instructions,
+                DifficultyLevel = mcDto.DifficultyLevel,
+                Points = mcDto.Points,
+                Options = mcDto.Options.Select(o => new ExerciseOption
+                {
+                    OptionText = o.OptionText,
+                    IsCorrect = o.IsCorrect,
+                    Explanation = o.Explanation,
+                }).ToList(),
+            },
             _ => throw new ArgumentException("Unknown exercise type", nameof(dto)),
         };
 

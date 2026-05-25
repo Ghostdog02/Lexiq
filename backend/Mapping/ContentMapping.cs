@@ -149,8 +149,21 @@ public static class ContentMappingExtensions
                     ))
                     .ToList()
             ),
-            _ => throw new NotImplementedException(
-                $"Mapping for exercise type {entity.GetType().Name} is not implemented"
+            _ => new MultipleChoiceExerciseDto(
+                entity.ExerciseId,
+                entity.LessonId,
+                entity.Instructions,
+                entity.DifficultyLevel,
+                entity.Points,
+                null,
+                entity.IsLocked,
+                progress,
+                entity.Options.Select(o => new ExerciseOptionDto(
+                    o.ExerciseOptionId,
+                    o.OptionText,
+                    o.IsCorrect,
+                    o.Explanation
+                )).ToList()
             ),
         };
     }
