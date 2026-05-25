@@ -984,6 +984,98 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 
+// ── Results card ─────────────────────────────────────────────────────────────
+
+.results-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  padding: 2.5rem;
+  text-align: center;
+
+  .results-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+
+    .results-icon {
+      font-size: 4rem;
+      font-weight: 900;
+
+      &.success {
+        color: var(--color-correct);
+        filter: drop-shadow(0 0 1rem rgba(var(--color-correct-rgb), 0.6));
+      }
+
+      &.warning {
+        color: var(--color-xp);
+        filter: drop-shadow(0 0 1rem rgba(var(--accent-rgb), 0.5));
+      }
+    }
+
+    .results-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--white);
+      margin: 0;
+    }
+  }
+
+  .results-stats {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.375rem;
+
+      .stat-value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: var(--white);
+      }
+
+      .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+    }
+  }
+}
+
+// ── TrueFalse statement ───────────────────────────────────────────────────────
+
+.true-false-statement {
+  padding: 1rem 1.25rem;
+  background: rgba(var(--accent-rgb), 0.06);
+  border: 0.0625rem solid rgba(var(--accent-rgb), 0.2);
+  border-radius: 0.75rem;
+
+  p {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 500;
+    color: var(--white);
+    line-height: 1.5;
+  }
+}
+
+// ── Waiting hint ─────────────────────────────────────────────────────────────
+
+.waiting-hint {
+  font-size: 0.875rem;
+  color: var(--muted);
+  font-weight: 500;
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
