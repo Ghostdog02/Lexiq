@@ -1,119 +1,106 @@
 import { Injectable } from '@angular/core';
-import { FormControl } from '@angular/forms';
-import { AnyExercise } from '../models/exercise.interface';
-import { SubmitAnswerResponse } from '../models/lesson.interface';
+import { AnyExercise, ExerciseOption } from '../models/exercise.interface';
 
 /**
  * ViewModel that combines exercise data with its runtime state.
  * All state for a single exercise is co-located here.
- *
- * Note: formControl is created by the component after initialization.
  */
 export interface ExerciseViewModel {
   exercise: AnyExercise;
-  formControl: FormControl<string> | null; // Created by component
-  submission: SubmitAnswerResponse | null;
+  selectedOptionId: string | null;
+  isCorrect: boolean;
   isSubmitted: boolean;
   isAccessible: boolean;
 }
 
 /**
  * State management service for exercise viewer component.
- * Manages exercise view models, answers, submissions, and navigation.
+ * Manages exercise view models, local validation, hearts, and navigation.
  *
- * Uses ID-based tracking (not array indices) to remain robust when exercises are reordered.
- * Relies on Angular's change detection—no observables needed.
+ * Answers are validated locally using option.isCorrect — no per-exercise backend call.
+ * The lesson is submitted once at the end via buildSubmitPayload().
  */
 @Injectable()
 export class ExerciseViewerStateService {
   viewModels: ExerciseViewModel[] = [];
   currentExerciseId: string | null = null;
+  hearts = 0;
 
   /**
-   * Initialize state with exercises and restore previous submissions.
-   * FormControls should be created by the component after this initialization.
+   * Initialize state with exercises.
    *
-   * @param exercises Array of exercises (sorted by orderIndex)
-   * @param submissions Previous submission results (sorted by orderIndex, includes all exercises)
-   * @param isAdmin Whether user has admin privileges (bypasses locks)
+   * @param exercises  Array of exercises (sorted by orderIndex)
+   * @param isAdmin    Whether user has admin privileges (bypasses locks)
+   * @param hearts     Current hearts count from backend
    */
-  initialize(exercises: AnyExercise[], submissions: SubmitAnswerResponse[], isAdmin: boolean): void {
-    // Build view models with initial state (without form controls)
-    this.viewModels = exercises.map((exercise, index) => {
-      const submission = submissions[index];
+  initialize(exercises: AnyExercise[], isAdmin: boolean, hearts: number): void {
+    this.hearts = hearts;
 
-      // Determine if exercise was actually attempted
-      // Backend returns a response for ALL exercises, so we need to filter
-      const wasAttempted = submission && (
-        submission.isCorrect === true ||
-        submission.correctAnswer !== null
-      );
+    this.viewModels = exercises.map((exercise) => ({
+      exercise: { ...exercise },
+      selectedOptionId: null,
+      isCorrect: false,
+      isSubmitted: false,
+      isAccessible: !exercise.isLocked || isAdmin,
+    }));
 
-      return {
-        exercise: { ...exercise }, // Defensive copy to prevent external mutations
-        formControl: null, // Created by component
-        submission: wasAttempted ? submission : null,
-        isSubmitted: wasAttempted || false,
-        isAccessible: !exercise.isLocked || isAdmin
-      };
-    });
-
-    // Set current exercise to first incomplete unlocked one
-    const firstIncomplete = this.viewModels.find(vm => !vm.isSubmitted && vm.isAccessible);
-    this.currentExerciseId = firstIncomplete?.exercise.id || this.viewModels[0]?.exercise.id || null;
+    // Set current exercise to first accessible one
+    const firstAccessible = this.viewModels.find((vm) => vm.isAccessible);
+    this.currentExerciseId =
+      firstAccessible?.exercise.id ?? this.viewModels[0]?.exercise.id ?? null;
   }
 
   /**
-   * Update the answer for a specific exercise (user typing/selecting).
+   * Record option selection for an exercise.
+   * Validates locally via option.isCorrect.
+   * Decrements hearts on wrong answer.
+   * Marks exercise as submitted — no going back.
    */
-  updateAnswer(exerciseId: string, answer: string): void {
-    const viewModel = this.getViewModelById(exerciseId);
-    if (!viewModel || viewModel.isSubmitted || !viewModel.formControl) return;
+  selectOption(exerciseId: string, optionId: string): void {
+    const vm = this.getViewModelById(exerciseId);
+    if (!vm || vm.isSubmitted || !vm.isAccessible) return;
 
-    viewModel.formControl.setValue(answer);
-  }
+    const option: ExerciseOption | undefined = vm.exercise.options.find(
+      (o) => o.id === optionId
+    );
+    const isCorrect = option?.isCorrect ?? false;
 
-  /**
-   * Get the current answer value for an exercise.
-   */
-  getAnswer(exerciseId: string): string {
-    const viewModel = this.getViewModelById(exerciseId);
-    return viewModel?.formControl?.value || '';
-  }
+    vm.selectedOptionId = optionId;
+    vm.isCorrect = isCorrect;
+    vm.isSubmitted = true;
 
-  /**
-   * Record a submission result and update exercise state.
-   * Also unlocks the next exercise if answer was correct.
-   */
-  submitAnswer(exerciseId: string, result: SubmitAnswerResponse): void {
-    const viewModel = this.getViewModelById(exerciseId);
-    if (!viewModel) return;
-
-    viewModel.submission = result;
-    viewModel.isSubmitted = true;
-
-    // Disable form control if it exists
-    if (viewModel.formControl) {
-      viewModel.formControl.disable();
+    if (!isCorrect && this.hearts > 0) {
+      this.hearts--;
     }
 
-    // Unlock next exercise if answer was correct
-    if (result.isCorrect) {
+    if (isCorrect) {
       this.unlockNextExercise(exerciseId);
     }
   }
 
   /**
-   * Unlock the exercise that follows the given exercise (by orderIndex).
+   * Unlock the exercise that follows the given exercise.
    */
-  private unlockNextExercise(currentExerciseId: string): void {
-    const currentIndex = this.viewModels.findIndex(vm => vm.exercise.id === currentExerciseId);
+  unlockNextExercise(currentExerciseId: string): void {
+    const currentIndex = this.viewModels.findIndex(
+      (vm) => vm.exercise.id === currentExerciseId
+    );
 
     if (currentIndex >= 0 && currentIndex < this.viewModels.length - 1) {
-      const nextViewModel = this.viewModels[currentIndex + 1];
-      nextViewModel.exercise.isLocked = false;
-      nextViewModel.isAccessible = true;
+      const nextVm = this.viewModels[currentIndex + 1];
+      nextVm.exercise.isLocked = false;
+      nextVm.isAccessible = true;
     }
+  }
+
+  /**
+   * Build the payload for POST /api/lessons/{id}/submit.
+   */
+  buildSubmitPayload(): { exerciseId: string; selectedOptionId: string | null }[] {
+    return this.viewModels.map((vm) => ({
+      exerciseId: vm.exercise.id,
+      selectedOptionId: vm.selectedOptionId,
+    }));
   }
 
   /**
@@ -121,42 +108,41 @@ export class ExerciseViewerStateService {
    * Only allows navigation to accessible exercises.
    */
   setCurrentExercise(exerciseId: string): void {
-    const viewModel = this.getViewModelById(exerciseId);
-    if (viewModel && viewModel.isAccessible) {
+    const vm = this.getViewModelById(exerciseId);
+    if (vm?.isAccessible) {
       this.currentExerciseId = exerciseId;
     }
   }
 
-  /**
-   * Navigate to the next exercise in order.
-   */
   goToNext(): void {
-    const currentIndex = this.viewModels.findIndex(vm => vm.exercise.id === this.currentExerciseId);
-
+    const currentIndex = this.viewModels.findIndex(
+      (vm) => vm.exercise.id === this.currentExerciseId
+    );
     if (currentIndex >= 0 && currentIndex < this.viewModels.length - 1) {
       this.currentExerciseId = this.viewModels[currentIndex + 1].exercise.id;
     }
   }
 
-  /**
-   * Navigate to the previous exercise in order.
-   */
   goToPrevious(): void {
-    const currentIndex = this.viewModels.findIndex(vm => vm.exercise.id === this.currentExerciseId);
-
+    const currentIndex = this.viewModels.findIndex(
+      (vm) => vm.exercise.id === this.currentExerciseId
+    );
     if (currentIndex > 0) {
       this.currentExerciseId = this.viewModels[currentIndex - 1].exercise.id;
     }
   }
 
-  /**
-   * Get view model by exercise ID.
-   */
   getViewModelById(exerciseId: string): ExerciseViewModel | null {
-    return this.viewModels.find(vm => vm.exercise.id === exerciseId) || null;
+    return this.viewModels.find((vm) => vm.exercise.id === exerciseId) ?? null;
   }
 
-  // Computed properties (no storage needed)
+  reset(): void {
+    this.viewModels = [];
+    this.currentExerciseId = null;
+    this.hearts = 0;
+  }
+
+  // ── Computed getters ──────────────────────────────────────────────────────
 
   get currentViewModel(): ExerciseViewModel | null {
     return this.currentExerciseId
@@ -164,42 +150,29 @@ export class ExerciseViewerStateService {
       : null;
   }
 
-  get currentFormControl(): FormControl<string> | null {
-    const vm = this.currentViewModel;
-    return vm?.formControl || null;
-  }
-
-  get currentAnswer(): string {
-    return this.currentFormControl?.value || '';
-  }
-
   get currentIndex(): number {
-    return this.viewModels.findIndex(vm => vm.exercise.id === this.currentExerciseId);
-  }
-
-  get earnedXp(): number {
-    const lastSubmission = this.viewModels
-      .filter(vm => vm.submission)
-      .map(vm => vm.submission!)
-      .pop(); // Get the last one which has the cumulative total
-
-    return lastSubmission?.lessonProgress?.earnedXp || 0;
-  }
-
-  get totalPossibleXp(): number {
-    const lastSubmission = this.viewModels
-      .filter(vm => vm.submission)
-      .map(vm => vm.submission!)
-      .pop();
-
-    return lastSubmission?.lessonProgress?.totalPossibleXp
-      || this.viewModels.reduce((sum, vm) => sum + (vm.exercise.points || 10), 0);
+    return this.viewModels.findIndex(
+      (vm) => vm.exercise.id === this.currentExerciseId
+    );
   }
 
   get progressPercentage(): number {
     if (this.viewModels.length === 0) return 0;
-    const completedCount = this.viewModels.filter(vm => vm.isSubmitted).length;
-    return (completedCount / this.viewModels.length) * 100;
+    const submitted = this.viewModels.filter((vm) => vm.isSubmitted).length;
+    return (submitted / this.viewModels.length) * 100;
+  }
+
+  get earnedXp(): number {
+    return this.viewModels
+      .filter((vm) => vm.isSubmitted && vm.isCorrect)
+      .reduce((sum, vm) => sum + (vm.exercise.points ?? 0), 0);
+  }
+
+  get totalPossibleXp(): number {
+    return this.viewModels.reduce(
+      (sum, vm) => sum + (vm.exercise.points ?? 0),
+      0
+    );
   }
 
   get canGoNext(): boolean {
@@ -208,13 +181,5 @@ export class ExerciseViewerStateService {
 
   get canGoPrevious(): boolean {
     return this.currentIndex > 0;
-  }
-
-  /**
-   * Clean up state (call on component destroy).
-   */
-  reset(): void {
-    this.viewModels = [];
-    this.currentExerciseId = null;
   }
 }
