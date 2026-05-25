@@ -214,7 +214,8 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
             .NotBeNull(
                 because: "GetUserLanguagesAsync should eager-load the Language navigation property"
             );
-        result[0].Language.LanguageId.Should().Be(_languageId);
+        
+        result[0].Language!.LanguageId.Should().Be(_languageId);
     }
 
     [Fact]

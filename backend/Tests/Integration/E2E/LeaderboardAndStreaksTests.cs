@@ -240,11 +240,11 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
         return leaderboard;
     }
 
-    private static async Task SubmitAnswerAsync(HttpClient client, string exerciseId, string answer)
+    private async Task SubmitAnswerAsync(HttpClient client, string exerciseId, string answer)
     {
         var response = await client.PostAsJsonAsync(
-            $"/api/exercises/{exerciseId}/submit",
-            new SubmitAnswerRequest(answer),
+            $"/api/lessons/{Fixture.LessonId}/submit",
+            new SubmitLessonRequest([new ExerciseAnswerDto(exerciseId, answer)]),
             TestContext.Current.CancellationToken
         );
 
