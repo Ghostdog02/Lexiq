@@ -28,6 +28,8 @@ public class BackendDbContext(DbContextOptions options)
 
     public DbSet<UserAchievement> UserAchievements { get; set; }
 
+    public DbSet<UserLessonProgress> UserLessonProgress { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -131,6 +133,19 @@ public class BackendDbContext(DbContextOptions options)
                 .WithMany(e => e.ExerciseProgress)
                 .HasForeignKey(uep => uep.ExerciseId)
                 .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        modelBuilder.Entity<UserLessonProgress>(entity =>
+        {
+            entity.HasKey(ulp => new { ulp.UserId, ulp.LessonId });
+            entity.HasOne(ulp => ulp.User)
+                  .WithMany()
+                  .HasForeignKey(ulp => ulp.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(ulp => ulp.Lesson)
+                  .WithMany()
+                  .HasForeignKey(ulp => ulp.LessonId)
+                  .OnDelete(DeleteBehavior.NoAction);
         });
 
         modelBuilder.Entity<UserAchievement>(entity =>
