@@ -117,7 +117,6 @@ public static class DbSeeder
                 Text = "Fill in the blank: _",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = points,
-                IsLocked = isLocked,
                 Options =
                 [
                     new ExerciseOption
@@ -177,7 +176,6 @@ public static class DbSeeder
                 MaxReplays = 3,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = points,
-                IsLocked = isLocked,
                 Options =
                 [
                     new ExerciseOption
