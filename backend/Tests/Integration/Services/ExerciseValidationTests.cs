@@ -1,3 +1,4 @@
+using Backend.Api.Dtos;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities.Exercises;
@@ -13,7 +14,7 @@ using Xunit;
 namespace Backend.Tests.Integration.Services;
 
 /// <summary>
-/// Integration tests for ExerciseProgressService answer validation.
+/// Integration tests for LessonProgressService answer validation.
 ///
 /// Verifies:
 ///   - FillInBlank: option-based validation with multiple correct answers
@@ -25,7 +26,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 {
     private readonly DatabaseFixture _fixture = fixture;
     private BackendDbContext _ctx = null!;
-    private ExerciseProgressService _sut = null!;
+    private LessonProgressService _sut = null!;
     private string _testUserId = null!;
 
     private record ExerciseWithOptionsData(string ExerciseId, List<string> OptionIds);
@@ -36,7 +37,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         await DbSeeder.ClearLeaderboardDataAsync(_ctx, _fixture.SystemUserId);
 
         // Build service dependencies
-        _sut = BuildExerciseProgressService(_ctx);
+        _sut = BuildLessonProgressService(_ctx);
 
         // Create test user
         var user = new UserBuilder().WithUserName("testuser").WithEmail("user@test.com").Build();
@@ -66,7 +67,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         );
 
         // Act
-        var result = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[0]);
+        var result = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[0]);
 
         // Assert
         result.IsCorrect.Should().BeTrue(because: "submitted the correct option ID");
@@ -85,7 +86,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var invalidOptionId = Guid.NewGuid().ToString();
 
         // Act
-        var result = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, invalidOptionId);
+        var result = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, invalidOptionId);
 
         // Assert
         result.IsCorrect.Should().BeFalse(because: "option ID does not exist");
@@ -105,9 +106,9 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         // data.OptionIds[0] = correct answer, [1-3] = alternatives
 
         // Act
-        var result1 = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[0]);
-        var result2 = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[1]);
-        var result3 = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[2]);
+        var result1 = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[0]);
+        var result2 = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[1]);
+        var result3 = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[2]);
 
         // Assert
         result1.IsCorrect.Should().BeTrue(because: "correct answer option ID is valid");
@@ -129,11 +130,11 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         // data.OptionIds[0] = "hello", [1] = "hi", [2] = "hey", [3] = "howdy"
 
         // Act
-        var resultHello = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[0]);
-        var resultHi = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[1]);
-        var resultHey = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[2]);
-        var resultHowdy = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[3]);
-        var resultInvalid = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, Guid.NewGuid().ToString());
+        var resultHello = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[0]);
+        var resultHi    = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[1]);
+        var resultHey   = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[2]);
+        var resultHowdy = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[3]);
+        var resultInvalid = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, Guid.NewGuid().ToString());
 
         // Assert
         resultHello.IsCorrect.Should().BeTrue(because: "correct answer option ID");
@@ -157,8 +158,8 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         // AcceptedAnswers parsing trims whitespace, so options stored as "alternative1", "alternative2", etc.
 
         // Act
-        var resultAlt1 = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[1]);
-        var resultAlt2 = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[2]);
+        var resultAlt1 = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[1]);
+        var resultAlt2 = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[2]);
 
         // Assert
         resultAlt1.IsCorrect.Should().BeTrue(because: "first alternative option ID is valid");
@@ -183,8 +184,8 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var invalidOptionId = Guid.NewGuid().ToString(); // Non-existent option ID
 
         // Act
-        var resultCorrect = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, alt1OptionId);
-        var resultInvalid = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, invalidOptionId);
+        var resultCorrect = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, alt1OptionId);
+        var resultInvalid = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, invalidOptionId);
 
         // Assert
         resultCorrect.IsCorrect.Should().BeTrue(because: "submitted valid option ID for Alt1");
@@ -205,8 +206,8 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         // Only one option ID exists (correct answer)
 
         // Act
-        var resultCorrect = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[0]);
-        var resultInvalid = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, Guid.NewGuid().ToString());
+        var resultCorrect = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[0]);
+        var resultInvalid = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, Guid.NewGuid().ToString());
 
         // Assert
         resultCorrect.IsCorrect.Should().BeTrue(because: "correct option ID submitted");
@@ -227,8 +228,8 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         );
 
         // Act - verify correct and invalid option IDs work as expected
-        var resultCorrect = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, data.OptionIds[0]);
-        var resultInvalid = await _sut.SubmitAnswerAsync(_testUserId, data.ExerciseId, Guid.NewGuid().ToString());
+        var resultCorrect = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, data.OptionIds[0]);
+        var resultInvalid = await SubmitSingleAnswerAsync(_testUserId, _fixture.LessonId, data.ExerciseId, Guid.NewGuid().ToString());
 
         // Assert
         resultCorrect.IsCorrect.Should().BeTrue(because: "Listening exercises use same option-based validation as FillInBlank");
@@ -237,7 +238,25 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 
     // ── Helper Methods ──────────────────────────────────────────────────────
 
-    private static ExerciseProgressService BuildExerciseProgressService(BackendDbContext ctx)
+    /// <summary>
+    /// Submits a single answer for an exercise via SubmitLessonAsync and returns its result.
+    /// </summary>
+    private async Task<ExerciseResultDto> SubmitSingleAnswerAsync(
+        string userId,
+        string lessonId,
+        string exerciseId,
+        string selectedOptionId
+    )
+    {
+        var answers = new List<ExerciseAnswerDto>
+        {
+            new ExerciseAnswerDto(exerciseId, selectedOptionId),
+        };
+        var lessonResult = await _sut.SubmitLessonAsync(userId, lessonId, answers);
+        return lessonResult.Exercises.Single(e => e.ExerciseId == exerciseId);
+    }
+
+    private static LessonProgressService BuildLessonProgressService(BackendDbContext ctx)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -253,10 +272,9 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var lessonService = new LessonService(ctx, exerciseService);
         var achievementService = new AchievementService(ctx);
 
-        return new ExerciseProgressService(
+        return new LessonProgressService(
             ctx,
             lessonService,
-            exerciseService,
             userManager,
             achievementService
         );
@@ -403,7 +421,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
             DifficultyLevel = DifficultyLevel.Beginner,
             Points = 10,
             IsLocked = false,
-            Options = options, // Options attached here
+            Options = options,
         };
 
         // Save exercise to database
@@ -413,5 +431,4 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         // Return exercise ID and all option IDs
         return new ExerciseWithOptionsData(exercise.ExerciseId, optionIds);
     }
-
 }
