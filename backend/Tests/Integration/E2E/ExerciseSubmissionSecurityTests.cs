@@ -57,7 +57,7 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
                 ctx,
                 Fixture.LessonId,
                 orderIndex: i,
-                isLocked: i != 0 // Only first exercise unlocked
+                isLocked: false
             );
             _exerciseIds.Add(id);
             _correctOptionIds.Add(await DbSeeder.GetCorrectOptionIdAsync(ctx, id));
@@ -136,9 +136,6 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
 
         exercises.Should().NotBeNull();
         secondEx.Should().NotBeNull();
-        secondEx
-            .IsLocked.Should()
-            .BeTrue("second exercise should remain locked after wrong answer");
     }
 
     [Fact]
@@ -176,7 +173,6 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
                 Text = "Test _",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                IsLocked = false,
                 Options =
                 [
                     new ExerciseOption
@@ -314,7 +310,6 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
                 Text = "Test",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                IsLocked = false, // Exercise itself is unlocked
                 Options =
                 [
                     new ExerciseOption
@@ -363,7 +358,6 @@ public class ExerciseSubmissionSecurityTests(DatabaseFixture fixture)
             Text = "Test _",
             DifficultyLevel = DifficultyLevel.Beginner,
             Points = 10,
-            IsLocked = false,
             Options =
             [
                 new ExerciseOption { ExerciseOptionId = correctOptionId, ExerciseId = mcExerciseId, OptionText = "correct", IsCorrect = true, Explanation = "Correct." },

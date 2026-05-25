@@ -123,12 +123,12 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
             var exercise = studentLesson!.Exercises[0] as FillInBlankExerciseDto;
             var correctOptionId = exercise!.Options.First(o => o.IsCorrect).Id;
             var submitResponse = await _studentClient.PostAsJsonAsync(
-                $"/api/exercises/{exercise.Id}/submit",
-                new SubmitAnswerRequest(correctOptionId),
+                $"/api/lessons/{createdLesson!.LessonId}/submit",
+                new SubmitLessonRequest([new ExerciseAnswerDto(exercise!.Id, correctOptionId)]),
                 TestContext.Current.CancellationToken
             );
 
-            var submitResult = await submitResponse.Content.ReadFromJsonAsync<ExerciseSubmitResult>(
+            var submitResult = await submitResponse.Content.ReadFromJsonAsync<LessonSubmitResult>(
                 cancellationToken: TestContext.Current.CancellationToken
             );
 
@@ -148,8 +148,9 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
 
             submitResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             submitResult.Should().NotBeNull();
-            submitResult.IsCorrect.Should().BeTrue();
-            submitResult.PointsEarned.Should().Be(10);
+            var exerciseResult = submitResult!.Exercises.First(e => e.ExerciseId == exercise!.Id);
+            exerciseResult.IsCorrect.Should().BeTrue();
+            exerciseResult.PointsEarned.Should().Be(10);
         }
     }
 
