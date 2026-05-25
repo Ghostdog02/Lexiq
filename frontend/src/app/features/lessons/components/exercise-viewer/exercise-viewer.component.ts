@@ -125,7 +125,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
         filter(
           () => this.currentExercise?.type === ExerciseType.MultipleChoice
         ),
-        filter(() => !this.isCurrentSubmitted && !this.isCurrentLocked),
+        filter(() => !this.isCurrentSubmitted),
         takeUntilDestroyed(this.destroyRef)
       )
       .subscribe((event) => {
@@ -179,10 +179,6 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   get isCurrentCorrect(): boolean {
     return this.state.currentViewModel?.isCorrect ?? false;
-  }
-
-  get isCurrentLocked(): boolean {
-    return !this.state.currentViewModel?.isAccessible;
   }
 
   get currentFillInBlank(): FillInBlankExercise | null {
