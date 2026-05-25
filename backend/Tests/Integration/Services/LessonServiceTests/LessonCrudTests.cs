@@ -200,8 +200,6 @@ public class LessonCrudTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         createdExercises.Should().HaveCount(2);
-        createdExercises[0].IsLocked.Should().BeFalse("first exercise should be unlocked");
-        createdExercises[1].IsLocked.Should().BeTrue("second exercise should be locked");
         createdExercises[0].Instructions.Should().Be("Exercise 1");
         createdExercises[1].Instructions.Should().Be("Exercise 2");
     }

@@ -112,7 +112,6 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
                 Text = "Test",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                IsLocked = true,
                 Options =
                 [
                     new ExerciseOption
@@ -145,7 +144,6 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
             TestContext.Current.CancellationToken
         );
         unlockedExercise.Should().NotBeNull();
-        unlockedExercise.IsLocked.Should().BeFalse();
     }
 
     [Fact]
@@ -255,7 +253,6 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
                 Text = "Test",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                IsLocked = true,
                 Options =
                 [
                     new ExerciseOption
@@ -275,7 +272,6 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
                 Text = "Test",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                IsLocked = true,
                 Options =
                 [
                     new ExerciseOption
@@ -306,14 +302,12 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
             TestContext.Current.CancellationToken
         );
         exercise1.Should().NotBeNull();
-        exercise1.IsLocked.Should().BeFalse();
 
         var exercise2 = await _ctx.Exercises.FindAsync(
             [exercise2Id],
             TestContext.Current.CancellationToken
         );
         exercise2.Should().NotBeNull();
-        exercise2.IsLocked.Should().BeTrue("second exercise should remain locked");
     }
 
     [Fact]

@@ -161,7 +161,6 @@ public class LessonQueryTests(DatabaseFixture fixture) : IClassFixture<DatabaseF
             Text = "The answer is ___",
             DifficultyLevel = DifficultyLevel.Beginner,
             Points = 10,
-            IsLocked = false,
             Options =
             [
                 new ExerciseOption
@@ -263,7 +262,6 @@ public class LessonQueryTests(DatabaseFixture fixture) : IClassFixture<DatabaseF
                 Text = "Fill ___",
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                IsLocked = false,
                 Options =
                 [
                     new ExerciseOption
@@ -284,7 +282,6 @@ public class LessonQueryTests(DatabaseFixture fixture) : IClassFixture<DatabaseF
                 MaxReplays = 3,
                 DifficultyLevel = DifficultyLevel.Intermediate,
                 Points = 15,
-                IsLocked = false,
                 Options =
                 [
                     new ExerciseOption

@@ -351,7 +351,6 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
             Text = "Fill in the blank: ___",
             DifficultyLevel = DifficultyLevel.Beginner,
             Points = 10,
-            IsLocked = false,
             Options = options,
         };
 
@@ -420,7 +419,6 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
             AudioUrl = audioUrl,
             DifficultyLevel = DifficultyLevel.Beginner,
             Points = 10,
-            IsLocked = false,
             Options = options,
         };
 
