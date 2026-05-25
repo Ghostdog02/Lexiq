@@ -23,7 +23,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Build frontend
-        uses: docker/build-push-action@v7.1.0
+        uses: docker/build-push-action@v7.2.0
         with:
           context: ./frontend
           file: ./frontend/Dockerfile.prod
@@ -44,7 +44,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Build backend
-        uses: docker/build-push-action@v7.1.0
+        uses: docker/build-push-action@v7.2.0
         with:
           context: ./backend
           file: ./backend/Dockerfile.prod
