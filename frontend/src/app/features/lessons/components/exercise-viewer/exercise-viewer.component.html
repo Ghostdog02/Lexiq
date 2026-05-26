@@ -128,9 +128,6 @@
 
           @if (!isCurrentSubmitted) {
             <div class="check-button-wrapper">
-              @if (!state.currentHasSelection) {
-                <span class="waiting-hint">Select an answer</span>
-              }
               <button
                 class="btn primary check-btn"
                 [disabled]="!state.currentHasSelection"
