@@ -181,16 +181,19 @@ select {
   100% { transform: scale(1) rotate(0deg); }
 }
 
+// Correct answer shake - gentle 3-step horizontal wobble
 @keyframes correctShake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-4px); }
   75% { transform: translateX(4px); }
 }
 
+// Incorrect answer shake - same rhythm as correct but slightly more movement
+// Both use 3-step timing (0%, 25%, 75%, 100%) for equal animation speed
 @keyframes incorrectShake {
   0%, 100% { transform: translateX(0); }
-  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
-  20%, 40%, 60%, 80% { transform: translateX(8px); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
 }
 
 @keyframes focusPulse {
