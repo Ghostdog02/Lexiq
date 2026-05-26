@@ -11,24 +11,33 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
 :host {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;  // Row to enable horizontal centering
+  justify-content: center;  // Center content horizontally
+  align-items: flex-start;  // Align to top
   flex: 1;
   color: var(--white);
+  min-height: 100vh;  // Fill viewport height
   h1, h2, p {
     margin: 0 !important;
   }
 }
 
 .lesson-detail-container {
-  padding-top: 1rem;
+  padding: 2rem 2rem;
+  max-width: 75rem;  // Constrain width for readability
+  display: flex;
+  flex-direction: column;
+  flex: 1;  // Fill vertical space
+  min-height: 0;  // Allow flex shrinking
 }
 
 .lesson-main {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1;  // Fill remaining vertical space
   position: relative;
   z-index: 1;
+  min-height: 0;  // Allow flex items to shrink
 }
 
 .lesson-header {
@@ -123,13 +132,16 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 .content-view {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  gap: 2rem;
-  justify-content: center;
+  flex: 1;  // Fill available vertical space
+  gap: 3rem;  // Increased gap for better breathing room
+  justify-content: space-between;  // Distribute space between content and action
+  min-height: 0;  // Allow flex shrinking
 
   .section-wrapper {
     display: flex;
     flex-direction: column;
+    flex: 1;  // Allow content to expand vertically
+    min-height: 0;  // Allow flex shrinking
   }
 
   .section-label {
@@ -146,6 +158,11 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .lesson-content {
+    flex: 1;  // Expand to fill available space
+    min-height: 30rem;  // Ensure minimum content height
+    display: flex;
+    flex-direction: column;
+
     // ::ng-deep is required for [innerHTML] content which doesn't receive Angular's
     // view encapsulation attributes. Dynamically injected HTML elements don't get
     // [_ngcontent-xxx] attributes, so standard selectors can't target them.
@@ -154,6 +171,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       font-size: 1.5rem;
       margin: 0;
       padding: 0;
+      flex: 1;  // Fill card space
 
       h1, h2, h3, h4, h5, h6 {
         color: var(--white);
@@ -194,10 +212,15 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     text-align: center;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: center;  // Center items horizontally
+    justify-content: center;  // Center items vertically
+    gap: 1rem;
+    padding: 2rem 0;  // Add vertical padding for prominence
+    background: linear-gradient(180deg, transparent 0%, rgba(var(--accent-rgb), 0.03) 100%);
+    border-radius: 1rem;
 
     .no-exercises-btn {
-      width: 28%;
+      min-width: 18rem;  // Slightly smaller
       display: flex;
       gap: 0.9375rem;
       align-items: center;
@@ -205,15 +228,18 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .btn {
-      width: 20%;
-      display: flex;
+      // Let button size based on content
+      padding: 0.875rem 2rem;  // Comfortable padding
+      display: inline-flex;  // Inline-flex for natural width
       gap: 0.9375rem;
+      align-items: center;
+      justify-content: center;
     }
 
     .action-hint {
-      margin-top: 0.75rem;
       color: var(--muted);
-      font-size: 0.875rem;
+      font-size: 1rem;
+      font-weight: 500;
     }
   }
 }
