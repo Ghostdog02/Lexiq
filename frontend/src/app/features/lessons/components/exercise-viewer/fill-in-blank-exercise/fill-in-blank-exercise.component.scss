@@ -35,11 +35,20 @@
         color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
         transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
+      // Animation retrigger: both .filled and .filled-alt have identical styles
+      // but different animation names, so switching between them restarts the animation
       &.filled {
         color: var(--white);
         font-style: normal;
         font-weight: 600;
-        animation: blankFill 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        animation: blankFill 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      &.filled-alt {
+        color: var(--white);
+        font-style: normal;
+        font-weight: 600;
+        animation: blankFillAlt 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
 
       &.correct {
@@ -57,7 +66,23 @@
   }
 }
 
+// Blank slot fill animation - bouncy scale-in effect
 @keyframes blankFill {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+// Identical to blankFill but with different name to retrigger animation on selection change
+@keyframes blankFillAlt {
   0% {
     opacity: 0;
     transform: scale(0.9);

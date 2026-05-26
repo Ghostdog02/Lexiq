@@ -3,9 +3,11 @@
   <div class="question-display">
     <p class="question-text-inline">
       <span class="text-before">{{ textBefore }}</span>
+      <!-- Blank slot alternates between .filled and .filled-alt to retrigger animation on each selection -->
       <span
         class="blank-slot"
-        [class.filled]="!!state.getViewModelById(exercise.id)?.selectedOptionId"
+        [class.filled]="!!state.getViewModelById(exercise.id)?.selectedOptionId && !useAlternateAnimation"
+        [class.filled-alt]="!!state.getViewModelById(exercise.id)?.selectedOptionId && useAlternateAnimation"
         [class.correct]="isSubmitted && isCorrect"
         [class.incorrect]="isSubmitted && !isCorrect"
         aria-label="Answer slot">
