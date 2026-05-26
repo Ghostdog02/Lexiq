@@ -245,6 +245,11 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
+  checkAnswer(): void {
+    if (!this.currentExercise?.id || !this.state.currentHasSelection) return;
+    this.state.submitAnswer(this.currentExercise.id);
+  }
+
   onBackToContent(): void {
     this.router.navigate(['/lesson', this.lessonId]);
   }

@@ -127,9 +127,17 @@
           <div class="footer-spacer"></div>
 
           @if (!isCurrentSubmitted) {
-            <!-- Waiting for answer selection — no check button needed; selection auto-submits -->
             <div class="check-button-wrapper">
-              <span class="waiting-hint">Select an answer to continue</span>
+              @if (!state.currentHasSelection) {
+                <span class="waiting-hint">Select an answer</span>
+              }
+              <button
+                class="btn primary check-btn"
+                [disabled]="!state.currentHasSelection"
+                (click)="checkAnswer()"
+                aria-label="Check answer">
+                Check
+              </button>
             </div>
           } @else if (isCurrentSubmitted) {
             @if (!isCurrentCorrect && state.hearts <= 0) {

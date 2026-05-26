@@ -101,6 +101,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     flex-direction: column;
     gap: 0.5rem;
     padding: 1rem 1.75rem 1rem;
+    animation: exerciseFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 
     // h1, h2, h3, h4, h5, h6, p {
     //   margin: 0;
@@ -600,7 +601,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       display: flex;
       align-items: center;
       gap: 0.875rem;
-      animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: feedbackSlideUp 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 
       &.correct {
         background: rgba(111, 179, 127, 0.12);
@@ -626,6 +627,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
       .feedback-icon {
         flex-shrink: 0;
+        animation: iconScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
 
       .feedback-content {
@@ -699,6 +701,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         flex-direction: column;
         align-items: flex-end;
         gap: 0.5rem;
+        animation: buttonFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
         .keyboard-hint {
           font-size: 0.6875rem;
@@ -724,7 +727,24 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
           text-transform: uppercase;
           cursor: pointer;
           border: none;
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
+          transition:
+            background 0.25s ease,
+            transform 0.2s ease,
+            opacity 0.2s ease,
+            box-shadow 0.15s ease;
+
+          &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
+
+          &:not(:disabled):hover {
+            transform: translateY(-2px);
+          }
+
+          &:not(:disabled):active {
+            transform: translateY(0);
+          }
 
           svg {
             flex-shrink: 0;
@@ -883,4 +903,51 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
+}
+
+@keyframes exerciseFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes feedbackSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes iconScale {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes buttonFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

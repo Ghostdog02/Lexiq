@@ -51,21 +51,29 @@ export class ExerciseViewerStateService {
   }
 
   /**
-   * Record option selection for an exercise.
-   * Validates locally via option.isCorrect.
-   * Decrements hearts on wrong answer.
-   * Marks exercise as submitted — no going back.
+   * Record option selection for an exercise (does NOT submit).
+   * User can change selection multiple times before calling submitAnswer().
    */
   selectOption(exerciseId: string, optionId: string): void {
     const vm = this.getViewModelById(exerciseId);
     if (!vm || vm.isSubmitted || !vm.isAccessible) return;
 
-    const option: ExerciseOption | undefined = vm.exercise.options.find(
-      (o) => o.id === optionId
-    );
+    // Just record selection, don't validate yet
+    vm.selectedOptionId = optionId;
+  }
+
+  /**
+   * Submit and validate the selected answer.
+   * Marks exercise as submitted — no going back.
+   * Decrements hearts on wrong answer.
+   */
+  submitAnswer(exerciseId: string): void {
+    const vm = this.getViewModelById(exerciseId);
+    if (!vm || vm.isSubmitted || !vm.isAccessible || !vm.selectedOptionId) return;
+
+    const option = vm.exercise.options.find((o) => o.id === vm.selectedOptionId);
     const isCorrect = option?.isCorrect ?? false;
 
-    vm.selectedOptionId = optionId;
     vm.isCorrect = isCorrect;
     vm.isSubmitted = true;
 
@@ -162,5 +170,9 @@ export class ExerciseViewerStateService {
 
   get canGoPrevious(): boolean {
     return this.currentIndex > 0;
+  }
+
+  get currentHasSelection(): boolean {
+    return this.currentViewModel?.selectedOptionId !== null;
   }
 }
