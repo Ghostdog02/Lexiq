@@ -47,6 +47,7 @@
             <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </button>
+        <span class="hearts-badge">&#x2764;&#xFE0F; &times; {{ state.hearts }}</span>
         <div class="progress-bar-container">
           <div class="progress-bar" [style.width.%]="state.progressPercentage"></div>
         </div>
@@ -56,13 +57,9 @@
       <div class="exercise-card card" [class.exiting]="isExiting">
         <!-- Exercise header -->
         <div class="exercise-header">
-          <div class="exercise-type-label">{{ getExerciseTypeLabel(currentExercise.type) }}</div>
-          <div class="header-badges">
-            <span class="hearts-badge">&#x2764;&#xFE0F; &times; {{ state.hearts }}</span>
-            @if (currentExercise.points) {
-              <span class="points-badge">+{{ currentExercise.points }} XP</span>
-            }
-          </div>
+          @if (currentExercise.points) {
+            <span class="points-badge">+{{ currentExercise.points }} XP</span>
+          }
         </div>
 
         <!-- Instructions -->
