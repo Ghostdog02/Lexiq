@@ -77,7 +77,8 @@
     }
 
     // Hover state - gamified lift and glow
-    &:hover:not(:disabled):not(.correct):not(.incorrect) {
+    // :not([aria-pressed="true"]) prevents hover from overriding selected state
+    &:hover:not(:disabled):not(.correct):not(.incorrect):not([aria-pressed="true"]) {
       background: var(--glass-medium);
       border-color: rgba(var(--accent-rgb), 0.4);
       transform: translateY(-4px) scale(1.01);
@@ -116,7 +117,7 @@
         color: var(--white);
         border-color: var(--color-selected);
         box-shadow: 0 4px 20px rgba(var(--color-selected-rgb), 0.5);
-        animation: letterBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        animation: letterBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
     }
 
