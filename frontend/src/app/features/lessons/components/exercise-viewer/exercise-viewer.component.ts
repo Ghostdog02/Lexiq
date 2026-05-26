@@ -12,6 +12,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, fromEvent, filter } from 'rxjs';
 import {
   AnyExercise,
+  Exercise,
   ExerciseType,
   FillInBlankExercise,
   ListeningExercise,
@@ -21,9 +22,10 @@ import { LessonSubmitResult } from '../../models/lesson.interface';
 import { LessonService } from '../../services/lesson.service';
 import { ExerciseViewerStateService } from '../../services/exercise-viewer-state.service';
 import { AuthService } from '../../../../auth/auth.service';
-import { BaseExerciseComponent } from './base-exercise/base-exercise.component';
+import { MultipleChoiceExerciseComponent } from './multiple-choice-exercise/multiple-choice-exercise.component';
 import { FillInBlankExerciseComponent } from './fill-in-blank-exercise/fill-in-blank-exercise.component';
 import { ListeningExerciseComponent } from './listening-exercise/listening-exercise.component';
+import { TrueFalseExerciseComponent } from './true-false-exercise/true-false-exercise.component';
 
 /**
  * Container component for the exercise-solving flow.
@@ -37,9 +39,10 @@ import { ListeningExerciseComponent } from './listening-exercise/listening-exerc
   standalone: true,
   imports: [
     CommonModule,
-    BaseExerciseComponent,
+    MultipleChoiceExerciseComponent,
     FillInBlankExerciseComponent,
     ListeningExerciseComponent,
+    TrueFalseExerciseComponent,
   ],
   providers: [ExerciseViewerStateService],
   templateUrl: './exercise-viewer.component.html',
@@ -179,6 +182,11 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   get isCurrentCorrect(): boolean {
     return this.state.currentViewModel?.isCorrect ?? false;
+  }
+
+  get currentMultipleChoice(): Exercise | null {
+    const ex = this.currentExercise;
+    return ex?.type === ExerciseType.MultipleChoice ? (ex as Exercise) : null;
   }
 
   get currentFillInBlank(): FillInBlankExercise | null {

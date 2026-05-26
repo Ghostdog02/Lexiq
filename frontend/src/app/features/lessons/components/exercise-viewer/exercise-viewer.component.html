@@ -72,21 +72,11 @@
           </div>
         }
 
-        <!-- TrueFalse statement (shown above options as extra context) -->
-        @if (currentExercise.type === ExerciseType.TrueFalse && currentTrueFalse?.statement) {
-          <div class="true-false-statement">
-            <p>{{ currentTrueFalse!.statement }}</p>
-          </div>
-        }
-
         <!-- Exercise content -->
         <div class="exercise-content">
           @switch (currentExercise.type) {
             @case (ExerciseType.MultipleChoice) {
-              <div class="multiple-choice">
-                <div class="keyboard-hint">Use &#x2191;&#x2193; arrow keys to navigate</div>
-                <app-base-exercise [exerciseId]="currentExercise.id" />
-              </div>
+              <app-multiple-choice-exercise [exercise]="currentMultipleChoice!" />
             }
 
             @case (ExerciseType.FillInBlank) {
@@ -98,9 +88,7 @@
             }
 
             @case (ExerciseType.TrueFalse) {
-              <div class="true-false">
-                <app-base-exercise [exerciseId]="currentExercise.id" />
-              </div>
+              <app-true-false-exercise [exercise]="currentTrueFalse!" />
             }
           }
         </div>
