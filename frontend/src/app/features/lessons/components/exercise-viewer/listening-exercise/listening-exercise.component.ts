@@ -13,20 +13,14 @@ import { BaseExerciseComponent } from '../base-exercise/base-exercise.component'
 export class ListeningExerciseComponent {
   @Input({ required: true }) exercise!: ListeningExercise;
 
-  readonly BAR_HEIGHTS = [
-    5, 10, 15, 8, 18, 11, 14, 7, 17, 12, 9, 19, 11, 16, 9, 13, 6, 17, 12, 8, 18, 10, 15, 7,
-    5, 10, 15, 8, 18, 11, 14, 7, 17, 12, 9, 19, 11, 16, 9, 13, 6, 17, 12, 8, 18, 10, 15, 7,
-  ];
-
   audioElement: HTMLAudioElement | null = null;
   isPlaying = false;
   currentTime = 0;
   duration = 0;
   replayCount = 0;
 
-  get playedBars(): number {
-    if (!this.duration) return 0;
-    return Math.round((this.currentTime / this.duration) * this.BAR_HEIGHTS.length);
+  get scrubValue(): number {
+    return (this.currentTime / (this.duration || 1)) * 100;
   }
 
   onAudioLoaded(audio: HTMLAudioElement): void {
@@ -62,12 +56,10 @@ export class ListeningExerciseComponent {
     this.isPlaying = true;
   }
 
-  seekByWaveform(event: MouseEvent): void {
+  onScrub(event: Event): void {
     if (!this.audioElement) return;
-    const el = event.currentTarget as HTMLElement;
-    const rect = el.getBoundingClientRect();
-    this.audioElement.currentTime =
-      ((event.clientX - rect.left) / rect.width) * this.audioElement.duration;
+    const input = event.target as HTMLInputElement;
+    this.audioElement.currentTime = (Number(input.value) / 100) * this.duration;
   }
 
   formatTime(seconds: number): string {
