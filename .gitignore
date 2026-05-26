@@ -39,6 +39,9 @@ testem.log
 typings/
 .angular/
 
+# Design assets
+FigmaComponents/
+
 # e2e
 e2e/*.js
 e2e/*.map
