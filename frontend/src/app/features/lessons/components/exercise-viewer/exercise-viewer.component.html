@@ -53,7 +53,7 @@
       </div>
 
       <!-- Exercise card -->
-      <div class="exercise-card card">
+      <div class="exercise-card card" [class.exiting]="isExiting">
         <!-- Exercise header -->
         <div class="exercise-header">
           <div class="exercise-type-label">{{ getExerciseTypeLabel(currentExercise.type) }}</div>
