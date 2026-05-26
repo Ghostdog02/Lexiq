@@ -19,6 +19,10 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 }
 
+.lesson-detail-container {
+  padding-top: 1rem;
+}
+
 .lesson-main {
   display: flex;
   flex-direction: column;
