@@ -1,2 +1,172 @@
-// Option styles are defined in the parent exercise-viewer.component.scss
-// This file intentionally left minimal — only component-specific overrides go here.
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  .option-btn {
+    background: var(--glass-soft);
+    border: 0.1875rem solid var(--border-light);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.75rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    text-align: left;
+    position: relative;
+    animation: optionSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+    box-shadow: var(--shadow-medium);
+
+    @for $i from 1 through 6 {
+      &[data-index="#{$i - 1}"] {
+        animation-delay: #{0.1 + $i * 0.08}s;
+      }
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 1rem;
+      opacity: 0;
+      background: radial-gradient(circle at center, rgba(139, 110, 255, 0.08), transparent 70%);
+      transition: opacity 0.25s ease;
+    }
+
+    .option-letter {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: var(--radius-lg);
+      background: var(--glass-medium);
+      border: 0.1875rem solid var(--border-medium);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: var(--text-secondary);
+      font-size: 1.75rem;
+      flex-shrink: 0;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .option-text {
+      color: var(--white);
+      font-size: 1.625rem;
+      font-weight: 600;
+      line-height: 1.4;
+      flex: 1;
+    }
+
+    .result-icon {
+      font-size: 2rem;
+      font-weight: 900;
+      margin-left: auto;
+      animation: iconPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    // Hover state - gamified lift and glow
+    &:hover:not(:disabled):not(.correct):not(.incorrect) {
+      background: var(--glass-medium);
+      border-color: rgba(var(--accent-rgb), 0.4);
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.25);
+
+      .option-letter {
+        border-color: var(--accent-light);
+        color: var(--accent-light);
+        transform: scale(1.1) rotate(-3deg);
+        box-shadow: 0 4px 16px rgba(var(--accent-rgb), 0.4);
+      }
+    }
+
+    // Keyboard focus state
+    &.focused:not(.correct):not(.incorrect) {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 0.25rem rgba(var(--accent-rgb), 0.25), 0 8px 24px rgba(var(--accent-rgb), 0.3);
+      animation: focusPulse 1.5s ease-in-out infinite;
+
+      .option-letter {
+        border-color: var(--accent);
+        color: var(--accent-light);
+        box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.6);
+      }
+    }
+
+    // Selected state - vibrant blue
+    &[aria-pressed="true"]:not(.correct):not(.incorrect) {
+      background: linear-gradient(135deg, rgba(var(--color-selected-rgb), 0.15) 0%, rgba(var(--color-selected-rgb), 0.08) 100%);
+      border-color: var(--color-selected);
+      box-shadow: 0 0 0 0.3rem rgba(var(--color-selected-rgb), 0.2), 0 8px 32px rgba(var(--color-selected-rgb), 0.3);
+      transform: scale(1.02);
+
+      .option-letter {
+        background: linear-gradient(135deg, var(--color-selected) 0%, var(--color-selected-light) 100%);
+        color: var(--white);
+        border-color: var(--color-selected);
+        box-shadow: 0 4px 20px rgba(var(--color-selected-rgb), 0.5);
+        animation: letterBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+    }
+
+    // Correct state - vibrant green with celebration
+    &.correct {
+      background: linear-gradient(135deg, rgba(var(--color-correct-rgb), 0.2) 0%, rgba(var(--color-correct-rgb), 0.12) 100%);
+      border-color: var(--color-correct);
+      box-shadow: 0 0 0 0.3rem rgba(var(--color-correct-rgb), 0.2), 0 8px 32px rgba(var(--color-correct-rgb), 0.35);
+      animation: correctShake 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+      &::before {
+        opacity: 1;
+        background: radial-gradient(circle at center, rgba(var(--color-correct-rgb), 0.4), transparent 70%);
+      }
+
+      .option-letter {
+        background: linear-gradient(135deg, var(--color-correct) 0%, var(--color-correct-light) 100%);
+        border-color: var(--color-correct);
+        color: var(--white);
+        box-shadow: 0 4px 20px rgba(var(--color-correct-rgb), 0.6);
+        animation: letterCorrectBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .option-text {
+        color: var(--color-correct-light);
+      }
+
+      .result-icon.correct {
+        color: var(--color-correct);
+        filter: drop-shadow(0 0 8px rgba(var(--color-correct-rgb), 0.8));
+      }
+    }
+
+    // Incorrect state - vibrant red with shake
+    &.incorrect {
+      background: linear-gradient(135deg, rgba(var(--color-error-rgb), 0.18) 0%, rgba(var(--color-error-rgb), 0.1) 100%);
+      border-color: var(--color-error);
+      box-shadow: 0 0 0 0.3rem rgba(var(--color-error-rgb), 0.18), 0 8px 32px rgba(var(--color-error-rgb), 0.25);
+      animation: incorrectShake 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+      .option-letter {
+        background: linear-gradient(135deg, var(--color-error) 0%, var(--color-error-light) 100%);
+        border-color: var(--color-error);
+        color: var(--white);
+        box-shadow: 0 4px 20px rgba(var(--color-error-rgb), 0.5);
+      }
+
+      .option-text {
+        color: var(--color-error-light);
+      }
+
+      .result-icon.incorrect {
+        color: var(--color-error);
+        filter: drop-shadow(0 0 8px rgba(var(--color-error-rgb), 0.8));
+      }
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.9;
+    }
+  }
+}
