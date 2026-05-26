@@ -1,7 +1,8 @@
 .options-list {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+  padding: 1rem 1rem;
 
   .option-btn {
     background: var(--glass-soft);
