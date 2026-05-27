@@ -54,7 +54,7 @@
       </div>
 
       <!-- Exercise card -->
-      <div class="exercise-card card" [class.exiting]="isExiting">
+      <div class="exercise-card card" [@exerciseSwitch]="currentExerciseIndex">
         <!-- Exercise header -->
         <div class="exercise-header">
           @if (currentExercise.points) {
