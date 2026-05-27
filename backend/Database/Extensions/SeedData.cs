@@ -108,16 +108,16 @@ public class SeedData
         {
             var roleStore = new RoleStore<IdentityRole, BackendDbContext>(context);
 
-            if (!context.Roles.Any(role => role.Name == currRole))
+            if (context.Roles.Any(role => role.Name == currRole)) 
+                continue;
+            
+            var identityRole = new IdentityRole(currRole)
             {
-                var identityRole = new IdentityRole(currRole)
-                {
-                    NormalizedName = userManager.NormalizeName(currRole),
-                    ConcurrencyStamp = Guid.NewGuid().ToString("D"),
-                };
+                NormalizedName = userManager.NormalizeName(currRole),
+                ConcurrencyStamp = Guid.NewGuid().ToString("D"),
+            };
 
-                await roleStore.CreateAsync(identityRole);
-            }
+            await roleStore.CreateAsync(identityRole);
         }
 
         await context.SaveChangesAsync();
