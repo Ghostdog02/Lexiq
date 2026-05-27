@@ -48,8 +48,8 @@ public class SeedData
         UserManager<User> userManager
     )
     {
-        var adminEmail = "alex.vesely07@gmail.com";
-        var userName = "Ghostdog";
+        const string adminEmail = "alex.vesely07@gmail.com";
+        const string userName = "Ghostdog";
 
         var existingUser = await userManager.FindByEmailAsync(adminEmail);
         if (existingUser != null)
