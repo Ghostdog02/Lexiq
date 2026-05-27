@@ -1,9 +1,9 @@
-import { Component, HostListener, inject, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
-import { LessonService } from '../../services/lesson.service';
-import { AuthService } from '../../../../auth/auth.service';
-import { Lesson, LessonStatus } from '../../models/lesson.interface';
-import { CourseWithLessons } from '../../models/course.interface';
+import {Component, HostListener, inject, OnInit} from '@angular/core';
+import {Router} from '@angular/router';
+import {LessonService} from '../../services/lesson.service';
+import {AuthService} from '../../../../auth/auth.service';
+import {Lesson, LessonStatus} from '../../models/lesson.interface';
+import {CourseWithLessons} from '../../models/course.interface';
 
 @Component({
   selector: 'app-home',
@@ -36,7 +36,7 @@ export class HomeComponent implements OnInit {
   async ngOnInit() {
     this.isAdmin = this.authService.getIsAdmin();
     this.isContentCreator = this.authService.getIsContentCreator();
-    this.loadCoursesFromApi();
+    await this.loadCoursesFromApi();
     await this.loadUserXp();
   }
 
@@ -68,26 +68,24 @@ export class HomeComponent implements OnInit {
     try {
       const coursesFromApi = await this.lessonService.getCourses();
 
-      const coursesWithLessons: CourseWithLessons[] = await Promise.all(
-        coursesFromApi.map(async (course, index) => {
-          const lessonsFromApi = await this.lessonService.getLessonsByCourse(course.courseId);
+      this.courses = await Promise.all(
+          coursesFromApi.map(async (course, index) => {
+            const lessonsFromApi = await this.lessonService.getLessonsByCourse(course.courseId);
 
-          // Derive status from progress fields for each lesson
-          const lessonsWithStatus = lessonsFromApi.map((lesson, lessonIndex) => ({
-            ...lesson,
-            status: this.deriveLessonStatus(lesson),
-            icon: this.lessonIcons[lessonIndex % this.lessonIcons.length]
-          }));
+            // Derive status from progress fields for each lesson
+            const lessonsWithStatus = lessonsFromApi.map((lesson, lessonIndex) => ({
+              ...lesson,
+              status: this.deriveLessonStatus(lesson),
+              icon: this.lessonIcons[lessonIndex % this.lessonIcons.length]
+            }));
 
-          return {
-            ...course,
-            color: this.courseColors[index % this.courseColors.length],
-            lessons: lessonsWithStatus
-          };
-        })
+            return {
+              ...course,
+              color: this.courseColors[index % this.courseColors.length],
+              lessons: lessonsWithStatus
+            };
+          })
       );
-
-      this.courses = coursesWithLessons;
 
       // Set current lesson to first non-locked lesson
       this.setCurrentLesson();
