@@ -31,9 +31,11 @@
 .home-grid {
   display: flex;
   gap: 2rem;
-  max-width: 90vw;  // Fluid max-width
-  width: 100%;      // Fill available space up to max-width
-  // Centered by parent .content-wrapper's align-items: center
+  align-items: flex-start;
+  width: 100%;
+  max-width: 70vw;
+  margin: 0 auto;
+  padding-top: 1rem;
 }
 
 .sidebar {
@@ -41,11 +43,9 @@
   flex-direction: column;
   gap: 1rem;
   position: sticky;
-  top: 0;
-  align-self: flex-start;  
-  flex: 1 2 auto;
-  min-width: 25rem;
-  max-width: 30rem; 
+  top: 2rem;
+  align-self: flex-start;
+  flex: 1 1 0;
 }
 
 .sidebar-row {
@@ -161,7 +161,7 @@
 }
 
 .courses-container {
-  flex: 2 1 auto;
+  flex: 2 1 0;
 }
 
 .add-unit-button {
