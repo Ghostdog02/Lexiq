@@ -31,6 +31,9 @@
 .home-grid {
   display: flex;
   gap: 2rem;
+  max-width: 90vw;  // Fluid max-width
+  width: 100%;      // Fill available space up to max-width
+  // Centered by parent .content-wrapper's align-items: center
 }
 
 .sidebar {
@@ -38,7 +41,7 @@
   flex-direction: column;
   gap: 1rem;
   position: sticky;
-  top: 1rem; 
+  top: 0;
   align-self: flex-start;  
   flex: 1 2 auto;
   min-width: 25rem;
@@ -130,7 +133,7 @@
   }
 
   .quest-progress {
-    height: 20px;
+    height: 1.25rem;
     background: rgba(0,0,0,0.25);
     border-radius: 10px;
     overflow: hidden;
@@ -307,8 +310,8 @@
 
 .lesson-icon-wrapper {
   position: relative;
-  width: 90px;
-  height: 90px;
+  width: 5.625rem;
+  height: 5.625rem;
   flex-shrink: 0;
   margin-top: .5em;
   display: flex;
@@ -330,8 +333,8 @@
   position: absolute;
   bottom: -5px;
   right: -4px;
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   border-radius: 50%;
   align-items: center;
@@ -378,7 +381,7 @@
 
   .progress-track {
     flex: 1;
-    height: 5px;
+    height: 0.3125rem;
     background: rgba(255, 255, 255, 0.06);
     border-radius: 3px;
     overflow: hidden;
@@ -448,13 +451,13 @@
     top: 0;
     flex: 0 0 auto;
     width: 100%;
-    max-width: 600px;
+    max-width: 37.5rem;
     order: -1;
   }
 
   .courses-container {
     width: 100%;
-    max-width: 800px;
+    max-width: 50rem;
   }
 }
 
@@ -471,8 +474,8 @@
   }
 
   .lesson-icon-wrapper {
-    width: 70px;
-    height: 70px;
+    width: 4.375rem;
+    height: 4.375rem;
     margin-top: 0;
   }
 
