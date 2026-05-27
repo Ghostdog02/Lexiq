@@ -84,7 +84,6 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   isLoading = true;
   isAdmin = false;
   isSubmitting = false;
-  isExiting = false;
   lessonSubmitResult: LessonSubmitResult | null = null;
 
   // Keyboard navigation state
@@ -279,10 +278,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   }
 
   onBackToContent(): void {
-    this.isExiting = true;
-    setTimeout(() => {
-      this.router.navigate(['/lesson', this.lessonId]);
-    }, 400);
+    this.router.navigate(['/lesson', this.lessonId]);
   }
 
   async finishLesson(): Promise<void> {
