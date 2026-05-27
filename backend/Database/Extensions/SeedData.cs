@@ -91,8 +91,8 @@ public class SeedData
     private static async Task SeedContentAsync(BackendDbContext context, string adminUserId)
     {
         var languageId = await LanguageSeeder.SeedAsync(context);
-        var courseId = await CourseSeeder.SeedAsync(context, languageId);
-        var lessonIds = await LessonSeeder.SeedAsync(context, courseId);
+        var courseIds = await CourseSeeder.SeedAsync(context, languageId);
+        var lessonIds = await LessonSeeder.SeedAsync(context, courseIds[0]);
         await ExerciseSeeder.SeedAsync(context, lessonIds);
         await AchievementSeeder.SeedAsync(context);
     }
