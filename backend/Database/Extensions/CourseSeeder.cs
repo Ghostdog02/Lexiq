@@ -12,7 +12,7 @@ public static class CourseSeeder
     private static readonly List<CourseData> Courses = new()
     {
         new(
-            Title: "Italian for Beginners",
+            Title: "Beginners",
             Description: "A structured introduction to Italian covering greetings, essential vocabulary, present tense verbs, and everyday conversation. Designed for Bulgarian speakers learning Italian from scratch.",
             EstimatedDurationHours: 12,
             OrderIndex: 0
@@ -24,13 +24,13 @@ public static class CourseSeeder
             OrderIndex: 1
         ),
         new(
-            Title: "Italian Grammar Essentials",
+            Title: "Grammar Essentials",
             Description: "Deep dive into Italian grammar: verb conjugations, articles, prepositions, and sentence structure. Strengthen your grammatical foundation.",
             EstimatedDurationHours: 15,
             OrderIndex: 2
         ),
         new(
-            Title: "Italian Culture & Idioms",
+            Title: "Culture & Idioms",
             Description: "Explore Italian culture through idiomatic expressions, traditions, and regional variations. Understand the context behind the language.",
             EstimatedDurationHours: 8,
             OrderIndex: 3
