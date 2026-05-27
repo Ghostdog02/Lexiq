@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { trigger, transition, query, style, animate, group } from '@angular/animations';
+import { trigger, transition, query, style, animate } from '@angular/animations';
 import { NavBarComponent } from './nav-bar/nav-bar.component';
 
 @Component({
@@ -13,18 +13,16 @@ import { NavBarComponent } from './nav-bar/nav-bar.component';
     trigger('pageTransition', [
       transition('* <=> *', [
         query(':enter', [
-          style({ opacity: 0, transform: 'translateY(14px)' }),
+          style({ opacity: 0, transform: 'translateY(32px)' }),
         ], { optional: true }),
-        group([
-          query(':leave', [
-            animate('280ms cubic-bezier(0.4, 0, 0.2, 1)',
-              style({ opacity: 0, transform: 'translateY(10px)' }))
-          ], { optional: true }),
-          query(':enter', [
-            animate('360ms cubic-bezier(0.4, 0, 0.2, 1)',
-              style({ opacity: 1, transform: 'translateY(0)' }))
-          ], { optional: true }),
-        ]),
+        query(':leave', [
+          animate('500ms cubic-bezier(0.4, 0, 1, 1)',
+            style({ opacity: 0, transform: 'translateY(20px)' }))
+        ], { optional: true }),
+        query(':enter', [
+          animate('650ms cubic-bezier(0.0, 0.0, 0.2, 1)',
+            style({ opacity: 1, transform: 'translateY(0)' }))
+        ], { optional: true }),
       ])
     ])
   ]

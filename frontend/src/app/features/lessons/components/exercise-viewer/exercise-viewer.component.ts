@@ -51,19 +51,19 @@ import { TrueFalseExerciseComponent } from './true-false-exercise/true-false-exe
   animations: [
     trigger('exerciseSwitch', [
       transition(':increment', [
-        animate('380ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
-          style({ opacity: 1, transform: 'translateX(0)',     offset: 0   }),
-          style({ opacity: 0, transform: 'translateX(-24px)', offset: 0.4 }),
-          style({ opacity: 0, transform: 'translateX(24px)',  offset: 0.6 }),
-          style({ opacity: 1, transform: 'translateX(0)',     offset: 1   }),
+        animate('700ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
+          style({ opacity: 1, transform: 'translateX(0)',     offset: 0    }),
+          style({ opacity: 0, transform: 'translateX(-40px)', offset: 0.38 }),
+          style({ opacity: 0, transform: 'translateX(40px)',  offset: 0.55 }),
+          style({ opacity: 1, transform: 'translateX(0)',     offset: 1    }),
         ]))
       ]),
       transition(':decrement', [
-        animate('380ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
-          style({ opacity: 1, transform: 'translateX(0)',    offset: 0   }),
-          style({ opacity: 0, transform: 'translateX(24px)', offset: 0.4 }),
-          style({ opacity: 0, transform: 'translateX(-24px)', offset: 0.6 }),
-          style({ opacity: 1, transform: 'translateX(0)',    offset: 1   }),
+        animate('700ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
+          style({ opacity: 1, transform: 'translateX(0)',     offset: 0    }),
+          style({ opacity: 0, transform: 'translateX(40px)',  offset: 0.38 }),
+          style({ opacity: 0, transform: 'translateX(-40px)', offset: 0.55 }),
+          style({ opacity: 1, transform: 'translateX(0)',     offset: 1    }),
         ]))
       ]),
     ])
