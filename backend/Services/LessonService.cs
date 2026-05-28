@@ -1,4 +1,5 @@
 using Backend.Api.Dtos;
+using Backend.Api.Services.Clock;
 using Backend.Database;
 using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
@@ -6,10 +7,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class LessonService(BackendDbContext context, ExerciseService exerciseService)
+public class LessonService(BackendDbContext context, ExerciseService exerciseService, IClock clock)
 {
     private readonly BackendDbContext _context = context;
     private readonly ExerciseService _exerciseService = exerciseService;
+    private readonly IClock _clock = clock;
 
     /// <summary>
     /// Lightweight projection used internally for cross-course navigation queries.
@@ -141,8 +143,8 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             EstimatedDurationMinutes = dto.EstimatedDurationMinutes ?? 30,
             OrderIndex = orderIndex,
             LessonContent = dto.Content,
-            IsLocked = true,
-            CreatedAt = DateTime.UtcNow,
+            IsLocked = false,
+            CreatedAt = _clock.UtcNow,
         };
 
         _context.Lessons.Add(lesson);
@@ -156,7 +158,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
                     exerciseDto,
                     lesson.LessonId
                 );
-                exercise.CreatedAt = DateTime.UtcNow.AddSeconds(i); // Maintain order via CreatedAt
+                exercise.CreatedAt = _clock.UtcNow.AddSeconds(i); // Maintain order via CreatedAt
                 lesson.Exercises.Add(exercise);
             }
         }

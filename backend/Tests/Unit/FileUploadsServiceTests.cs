@@ -1,4 +1,5 @@
 using Backend.Api.Services;
+using Backend.Api.Services.Clock;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -39,7 +40,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
         mockEnv.Setup(e => e.WebRootPath).Returns(_testUploadPath);
         mockEnv.Setup(e => e.ContentRootPath).Returns(_testUploadPath);
 
-        _sut = new FileUploadsService(mockEnv.Object, NullLogger<FileUploadsService>.Instance);
+        _sut = new FileUploadsService(mockEnv.Object, NullLogger<FileUploadsService>.Instance, null!, new SystemClock());
 
         await Task.CompletedTask;
     }

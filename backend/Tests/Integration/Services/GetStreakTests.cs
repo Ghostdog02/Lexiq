@@ -54,7 +54,7 @@ public class GetStreakTests(DatabaseFixture fixture)
             _exerciseIds.Add(id);
         }
 
-        _service = new LeaderboardService(_ctx, CreateAvatarService(_ctx));
+        _service = new LeaderboardService(_ctx, CreateAvatarService(_ctx), new Backend.Api.Services.Clock.SystemClock());
     }
 
     public async ValueTask DisposeAsync()

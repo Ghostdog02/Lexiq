@@ -25,8 +25,8 @@ public class LessonNavigationTests(DatabaseFixture fixture) : IClassFixture<Data
     {
         _ctx = fixture.CreateDbContext();
 
-        var exerciseService = new ExerciseService(_ctx);
-        _sut = new LessonService(_ctx, exerciseService);
+        var exerciseService = new ExerciseService(_ctx, new Moq.Mock<Backend.Api.Services.IFileUploadsService>().Object);
+        _sut = new LessonService(_ctx, exerciseService, new Backend.Api.Services.Clock.SystemClock());
 
         // Derive course and language from the fixture lesson — immune to leftover courses from other test classes
         var fixtureLesson = await _ctx

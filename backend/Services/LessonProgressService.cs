@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Backend.Api.Dtos;
+using Backend.Api.Services.Clock;
 using Backend.Database;
 using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
@@ -13,13 +14,17 @@ public class LessonProgressService(
     BackendDbContext context,
     LessonService lessonService,
     UserManager<User> userManager,
-    AchievementService achievementService
+    AchievementService achievementService,
+    IClock clock,
+    HeartsService heartsService
 )
 {
     private readonly BackendDbContext _context = context;
     private readonly LessonService _lessonService = lessonService;
     private readonly UserManager<User> _userManager = userManager;
     private readonly AchievementService _achievementService = achievementService;
+    private readonly IClock _clock = clock;
+    private readonly HeartsService _heartsService = heartsService;
 
     public async Task<LessonProgressResult> GetFullLessonProgressAsync(
         string userId,
@@ -130,8 +135,8 @@ public class LessonProgressService(
 
         var canBypassLocks = await user.CanBypassLocksAsync(_userManager);
 
-        if (lesson.IsLocked && !canBypassLocks)
-            throw new InvalidOperationException("Cannot submit answers for a locked lesson");
+        if (!canBypassLocks && user.Hearts <= 0)
+            throw new NoHeartsException();
 
         var exerciseLookup = exercises.ToDictionary(e => e.ExerciseId);
         var exerciseResults = new List<ExerciseResultDto>();
@@ -163,7 +168,7 @@ public class LessonProgressService(
                     ExerciseId = exercise.ExerciseId,
                     IsCompleted = isCorrect,
                     PointsEarned = pointsEarned,
-                    CompletedAt = isCorrect ? DateTime.UtcNow : null,
+                    CompletedAt = isCorrect ? _clock.UtcNow : null,
                     User = null!,
                     Exercise = null!,
                 };
@@ -173,7 +178,7 @@ public class LessonProgressService(
             {
                 existing.IsCompleted = isCorrect;
                 existing.PointsEarned = pointsEarned;
-                existing.CompletedAt = isCorrect ? (existing.CompletedAt ?? DateTime.UtcNow) : null;
+                existing.CompletedAt = isCorrect ? (existing.CompletedAt ?? _clock.UtcNow) : null;
             }
 
             // Accumulate XP only on first correct submission
@@ -202,7 +207,7 @@ public class LessonProgressService(
         // Decrement hearts for wrong answers (non-bypass users)
         if (!canBypassLocks)
         {
-            user.Hearts = Math.Max(0, user.Hearts - wrongCount);
+            _heartsService.DecrementHearts(user, wrongCount);
         }
 
         await _context.SaveChangesAsync();
@@ -234,16 +239,11 @@ public class LessonProgressService(
         lessonProgress.CompletionPercentage = summary.CompletionPercentage;
         lessonProgress.IsCompleted = summary.MeetsCompletionThreshold;
         lessonProgress.CompletedAt = summary.MeetsCompletionThreshold
-            ? (lessonProgress.CompletedAt ?? DateTime.UtcNow)
+            ? lessonProgress.CompletedAt ?? _clock.UtcNow
             : null;
-        lessonProgress.UpdatedAt = DateTime.UtcNow;
+        lessonProgress.UpdatedAt = _clock.UtcNow;
 
         await _context.SaveChangesAsync();
-
-        if (summary.MeetsCompletionThreshold)
-        {
-            await _lessonService.UnlockNextLessonAsync(lessonId);
-        }
 
         return new LessonSubmitResult(exerciseResults, summary, user.Hearts);
     }
@@ -289,7 +289,7 @@ public class LessonProgressService(
             EarnedXp: earnedXp,
             TotalPossibleXp: totalPossibleXp,
             CompletionPercentage: Math.Round(completionPct, 2),
-            MeetsCompletionThreshold: completionPct >= ExerciseProgressService.DefaultCompletionThreshold
+            MeetsCompletionThreshold: completedCount == items.Count
         );
     }
 

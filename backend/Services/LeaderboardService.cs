@@ -1,13 +1,15 @@
 using Backend.Api.Dtos;
+using Backend.Api.Services.Clock;
 using Backend.Database;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class LeaderboardService(BackendDbContext context, AvatarService avatarService)
+public class LeaderboardService(BackendDbContext context, AvatarService avatarService, IClock clock)
 {
     private readonly BackendDbContext _context = context;
     private readonly AvatarService _avatarService = avatarService;
+    private readonly IClock _clock = clock;
     private const int MaxLeaderboardEntries = 50;
 
     /// <summary>
@@ -40,7 +42,7 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         if (activeDates.Count == 0)
             return (0, 0);
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(_clock.UtcNow);
         var currentStreak = 0;
         var longestStreak = 0;
         var streak = 1;
@@ -121,7 +123,45 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
             currentUserEntry = await GetUserEntryAsync(currentUserId, timeFrame, previousRanks);
         }
 
+        // Increment TimesOnTop for AllTime rank-1 user (once per UTC day)
+        if (timeFrame == TimeFrame.AllTime && currentEntries.Count > 0)
+        {
+            await IncrementTimesOnTopAsync(currentEntries);
+        }
+
         return new LeaderboardResponse(enrichedEntries, currentUserEntry);
+    }
+
+    /// <summary>
+    /// Increments TimesOnTop for the rank-1 user at most once per UTC day.
+    /// Tie broken by lowest UserId (lexicographic).
+    /// </summary>
+    private async Task IncrementTimesOnTopAsync(List<RawLeaderboardEntry> entries)
+    {
+        var today = DateOnly.FromDateTime(_clock.UtcNow);
+
+        // Determine rank-1: highest XP; tie broken by lowest UserId
+        var topXp = entries[0].TotalXp;
+        var rank1UserId = entries
+            .Where(e => e.TotalXp == topXp)
+            .OrderBy(e => e.UserId)
+            .First()
+            .UserId;
+
+        var rank1User = await _context.Users.FindAsync(rank1UserId);
+        if (rank1User == null)
+            return;
+
+        var lastAt = rank1User.LastTimesOnTopAt.HasValue
+            ? DateOnly.FromDateTime(rank1User.LastTimesOnTopAt.Value)
+            : DateOnly.MinValue;
+
+        if (lastAt >= today)
+            return;
+
+        rank1User.TimesOnTop++;
+        rank1User.LastTimesOnTopAt = _clock.UtcNow;
+        await _context.SaveChangesAsync();
     }
 
     private async Task<List<RawLeaderboardEntry>> GetRankedEntriesAsync(TimeFrame timeFrame)
@@ -129,10 +169,10 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         return timeFrame switch
         {
             TimeFrame.Weekly => await GetTimeFilteredLeaderboardAsync(
-                DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7)
+                DateOnly.FromDateTime(_clock.UtcNow).AddDays(-7)
             ),
             TimeFrame.Monthly => await GetTimeFilteredLeaderboardAsync(
-                DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30)
+                DateOnly.FromDateTime(_clock.UtcNow).AddDays(-30)
             ),
             _ => await GetAllTimeLeaderboardAsync(),
         };
@@ -147,16 +187,16 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         return timeFrame switch
         {
             TimeFrame.Weekly => await GetTimeWindowedLeaderboardAsync(
-                DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-14),
-                DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7)
+                DateOnly.FromDateTime(_clock.UtcNow).AddDays(-14),
+                DateOnly.FromDateTime(_clock.UtcNow).AddDays(-7)
             ),
             TimeFrame.Monthly => await GetTimeWindowedLeaderboardAsync(
-                DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-60),
-                DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30)
+                DateOnly.FromDateTime(_clock.UtcNow).AddDays(-60),
+                DateOnly.FromDateTime(_clock.UtcNow).AddDays(-30)
             ),
             _ => await GetTimeWindowedLeaderboardAsync(
-                DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-14),
-                DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7)
+                DateOnly.FromDateTime(_clock.UtcNow).AddDays(-14),
+                DateOnly.FromDateTime(_clock.UtcNow).AddDays(-7)
             ),
         };
     }
@@ -296,6 +336,10 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
     {
         var (currentStreak, longestStreak) = await GetStreakAsync(entry.UserId);
         var level = CalculateLevel(entry.TotalXp);
+        var timesOnTop = await _context.Users
+            .Where(u => u.Id == entry.UserId)
+            .Select(u => u.TimesOnTop)
+            .FirstOrDefaultAsync();
 
         return new LeaderboardEntryDto(
             Rank: rank,
@@ -307,7 +351,8 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
             LongestStreak: longestStreak,
             Level: level,
             Change: change,
-            IsCurrentUser: isCurrentUser
+            IsCurrentUser: isCurrentUser,
+            TimesOnTop: timesOnTop
         );
     }
 
@@ -324,6 +369,7 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
                 u.UserName,
                 u.Email,
                 u.TotalPointsEarned,
+                u.TimesOnTop,
             })
             .FirstOrDefaultAsync();
 
@@ -339,8 +385,8 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         {
             var since =
                 timeFrame == TimeFrame.Weekly
-                    ? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7)
-                    : DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30);
+                    ? DateOnly.FromDateTime(_clock.UtcNow).AddDays(-7)
+                    : DateOnly.FromDateTime(_clock.UtcNow).AddDays(-30);
             var sinceDateTime = since.ToDateTime(TimeOnly.MinValue);
 
             totalXp = await _context
@@ -368,8 +414,8 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         {
             var since =
                 timeFrame == TimeFrame.Weekly
-                    ? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-7)
-                    : DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-30);
+                    ? DateOnly.FromDateTime(_clock.UtcNow).AddDays(-7)
+                    : DateOnly.FromDateTime(_clock.UtcNow).AddDays(-30);
             var sinceDateTime = since.ToDateTime(TimeOnly.MinValue);
 
             rank =
@@ -393,7 +439,8 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
             LongestStreak: longestStreak,
             Level: level,
             Change: change,
-            IsCurrentUser: true
+            IsCurrentUser: true,
+            TimesOnTop: user.TimesOnTop
         );
     }
 
