@@ -1,15 +1,22 @@
 using Backend.Api.Models;
+using Backend.Api.Services.Clock;
+using Backend.Database;
+using Microsoft.EntityFrameworkCore;
 using FileInfo = Backend.Api.Models.FileInfo;
 
 namespace Backend.Api.Services
 {
     public class FileUploadsService(
         IWebHostEnvironment environment,
-        ILogger<FileUploadsService> logger
+        ILogger<FileUploadsService> logger,
+        BackendDbContext context,
+        IClock clock
     ) : IFileUploadsService
     {
         private readonly IWebHostEnvironment _environment = environment;
         private readonly ILogger<FileUploadsService> _logger = logger;
+        private readonly BackendDbContext _context = context;
+        private readonly IClock _clock = clock;
         private readonly Dictionary<string, FileTypeConfig> _fileTypeConfigs =
             InitializeFileTypeConfigs();
 
@@ -489,6 +496,88 @@ namespace Backend.Api.Services
             catch
             {
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Deletes audio files in wwwroot/uploads/audio that are not referenced by any
+        /// ListeningExercise.AudioUrl or AudioMatchPair.AudioUrl, skipping files newer than graceWindow.
+        /// Returns the number of files deleted.
+        /// </summary>
+        public async Task<int> DeleteOrphanedAudioAsync(TimeSpan graceWindow)
+        {
+            var basePath =
+                _environment.WebRootPath
+                ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+            var audioFolder = Path.Combine(basePath, "uploads", "audio");
+
+            if (!Directory.Exists(audioFolder))
+                return 0;
+
+            var listeningUrls = await _context.Exercises
+                .OfType<Database.Entities.Exercises.ListeningExercise>()
+                .Select(e => e.AudioUrl)
+                .ToListAsync();
+
+            var matchPairUrls = await _context.Set<Database.Entities.Exercises.AudioMatchPair>()
+                .Select(p => p.AudioUrl)
+                .ToListAsync();
+
+            var referencedFilenames = new HashSet<string>(
+                listeningUrls.Concat(matchPairUrls)
+                    .Select(url => Path.GetFileName(url))
+                    .Where(f => !string.IsNullOrEmpty(f))!,
+                StringComparer.OrdinalIgnoreCase
+            );
+
+            var cutoff = _clock.UtcNow - graceWindow;
+            var deleted = 0;
+
+            foreach (var file in Directory.EnumerateFiles(audioFolder))
+            {
+                var filename = Path.GetFileName(file);
+                if (referencedFilenames.Contains(filename))
+                    continue;
+
+                try
+                {
+                    var fi = new System.IO.FileInfo(file);
+                    if (fi.CreationTimeUtc > cutoff)
+                        continue;
+
+                    fi.Delete();
+                    deleted++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete orphaned audio file {File}", file);
+                }
+            }
+
+            return deleted;
+        }
+
+        /// <summary>
+        /// Deletes the physical audio file referenced by the given URL (best-effort, logs on failure).
+        /// </summary>
+        public void DeleteAudioFile(string audioUrl)
+        {
+            if (string.IsNullOrEmpty(audioUrl))
+                return;
+
+            try
+            {
+                var filename = Path.GetFileName(audioUrl);
+                if (string.IsNullOrEmpty(filename))
+                    return;
+
+                var path = GetFilePhysicalPath(filename, "audio");
+                if (path != null)
+                    System.IO.File.Delete(path);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete audio file {AudioUrl}", audioUrl);
             }
         }
     }

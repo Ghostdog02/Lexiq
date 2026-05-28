@@ -5,9 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class ExerciseService(BackendDbContext context)
+public class ExerciseService(BackendDbContext context, IFileUploadsService fileUploadsService)
 {
     private readonly BackendDbContext _context = context;
+    private readonly IFileUploadsService _fileUploadsService = fileUploadsService;
 
     public async Task<List<Exercise>> GetExercisesByLessonIdAsync(string lessonId)
     {
@@ -169,9 +170,24 @@ public class ExerciseService(BackendDbContext context)
 
     public async Task<bool> DeleteExerciseAsync(string id)
     {
-        var exercise = await _context.Exercises.FindAsync(id);
+        var exercise = await _context
+            .Exercises
+            .Include(e => (e as AudioMatchingExercise)!.Pairs)
+            .FirstOrDefaultAsync(e => e.ExerciseId == id);
+
         if (exercise == null)
             return false;
+
+        // Cascade-delete audio files before removing from DB
+        if (exercise is ListeningExercise listening)
+        {
+            _fileUploadsService.DeleteAudioFile(listening.AudioUrl);
+        }
+        else if (exercise is AudioMatchingExercise matching)
+        {
+            foreach (var pair in matching.Pairs)
+                _fileUploadsService.DeleteAudioFile(pair.AudioUrl);
+        }
 
         _context.Exercises.Remove(exercise);
         await _context.SaveChangesAsync();
