@@ -29,15 +29,12 @@ export class LessonFormService {
       }),
       description: this.fb.control('', {
         validators: [
-          Validators.required,
-          Validators.minLength(10),
           Validators.maxLength(500),
         ],
       }),
       estimatedDuration: this.fb.control(30, {
-        validators: [Validators.min(1), Validators.max(300)],
+        validators: [Validators.min(10), Validators.max(120)],
       }),
-      mediaUrl: this.fb.control(''),
       content: this.fb.control('', { validators: Validators.required }),
       courseId: this.fb.control('', {
         validators: [Validators.required, Validators.minLength(1)],

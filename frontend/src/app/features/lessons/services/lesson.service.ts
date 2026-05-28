@@ -110,7 +110,7 @@ export class LessonService {
       courseId: lesson.courseId,
       title: lesson.title,
       description: lesson.description ?? null,
-      estimatedDurationMinutes: lesson.estimatedDuration ?? null,
+      estimatedDurationMinutes: lesson.estimatedDurationMinutes ?? null,
       orderIndex: null,
       content: lesson.content,
       exercises: lesson.exercises.map((ex, i) => this.mapFormToCreateDto(ex, i)),
