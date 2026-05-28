@@ -53,16 +53,16 @@ import { TrueFalseExerciseComponent } from './true-false-exercise/true-false-exe
       transition(':increment', [
         animate('700ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
           style({ opacity: 1, transform: 'translateX(0)',     offset: 0    }),
-          style({ opacity: 0, transform: 'translateX(-40px)', offset: 0.38 }),
-          style({ opacity: 0, transform: 'translateX(40px)',  offset: 0.55 }),
+          style({ opacity: 0, transform: 'translateX(-32px)', offset: 0.45 }),
+          style({ opacity: 0, transform: 'translateX(32px)',  offset: 0.50 }),
           style({ opacity: 1, transform: 'translateX(0)',     offset: 1    }),
         ]))
       ]),
       transition(':decrement', [
         animate('700ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
           style({ opacity: 1, transform: 'translateX(0)',     offset: 0    }),
-          style({ opacity: 0, transform: 'translateX(40px)',  offset: 0.38 }),
-          style({ opacity: 0, transform: 'translateX(-40px)', offset: 0.55 }),
+          style({ opacity: 0, transform: 'translateX(32px)',  offset: 0.45 }),
+          style({ opacity: 0, transform: 'translateX(-32px)', offset: 0.50 }),
           style({ opacity: 1, transform: 'translateX(0)',     offset: 1    }),
         ]))
       ]),
