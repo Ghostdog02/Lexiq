@@ -693,6 +693,10 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         gap: 0.5rem;
         animation: buttonFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
+        &.submitted {
+          animation: buttonFadeIn 0.2s 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+        }
+
         .keyboard-hint {
           font-size: 0.6875rem;
           color: var(--muted);

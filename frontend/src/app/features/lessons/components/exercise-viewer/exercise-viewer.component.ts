@@ -89,6 +89,8 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   // Keyboard navigation state
   focusedOptionIndex = 0;
 
+  continueButtonEnabled = false;
+
   // Expose enum to template
   readonly ExerciseType = ExerciseType;
 
@@ -253,11 +255,13 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   // ── Navigation ────────────────────────────────────────────────────────────
 
   nextExercise(): void {
+    this.continueButtonEnabled = false;
     this.state.goToNext();
     this.focusedOptionIndex = 0;
   }
 
   previousExercise(): void {
+    this.continueButtonEnabled = false;
     this.state.goToPrevious();
     this.focusedOptionIndex = 0;
   }
@@ -275,6 +279,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   checkAnswer(): void {
     if (!this.currentExercise?.id || !this.state.currentHasSelection) return;
     this.state.submitAnswer(this.currentExercise.id);
+    setTimeout(() => { this.continueButtonEnabled = true; }, 400);
   }
 
   onBackToContent(): void {
