@@ -5,7 +5,6 @@ import {
   inject,
   DestroyRef,
 } from '@angular/core';
-import { trigger, transition, animate, keyframes, style } from '@angular/animations';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
@@ -48,26 +47,6 @@ import { TrueFalseExerciseComponent } from './true-false-exercise/true-false-exe
   providers: [ExerciseViewerStateService],
   templateUrl: './exercise-viewer.component.html',
   styleUrl: './exercise-viewer.component.scss',
-  animations: [
-    trigger('exerciseSwitch', [
-      transition(':increment', [
-        animate('600ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
-          style({ opacity: 1, transform: 'translateX(0)',     offset: 0    }),
-          style({ opacity: 0, transform: 'translateX(-24px)', offset: 0.25 }),
-          style({ opacity: 0, transform: 'translateX(24px)',  offset: 0.75 }),
-          style({ opacity: 1, transform: 'translateX(0)',     offset: 1    }),
-        ]))
-      ]),
-      transition(':decrement', [
-        animate('600ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
-          style({ opacity: 1, transform: 'translateX(0)',     offset: 0    }),
-          style({ opacity: 0, transform: 'translateX(24px)',  offset: 0.25 }),
-          style({ opacity: 0, transform: 'translateX(-24px)', offset: 0.75 }),
-          style({ opacity: 1, transform: 'translateX(0)',     offset: 1    }),
-        ]))
-      ]),
-    ])
-  ],
 })
 export class ExerciseViewerComponent implements OnInit, OnDestroy {
   private router = inject(Router);
@@ -90,6 +69,8 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   focusedOptionIndex = 0;
 
   continueButtonEnabled = false;
+  exerciseSwitchState = '';
+  private isSwitching = false;
 
   // Expose enum to template
   readonly ExerciseType = ExerciseType;
@@ -241,12 +222,6 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     return this.state.viewModels.every((vm) => vm.isSubmitted);
   }
 
-  get currentExerciseIndex(): number {
-    return this.state.viewModels.findIndex(
-      (vm) => vm.exercise.id === this.state.currentExerciseId
-    );
-  }
-
   // Converts exercise type enum to readable label
   getExerciseTypeLabel(type: ExerciseType): string {
     return type.replace(/([A-Z])/g, ' $1').trim();
@@ -254,16 +229,18 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   // ── Navigation ────────────────────────────────────────────────────────────
 
-  nextExercise(): void {
+  async nextExercise(): Promise<void> {
+    if (this.isSwitching) return;
+    this.isSwitching = true;
     this.continueButtonEnabled = false;
+    this.exerciseSwitchState = 'exit-left';
+    await new Promise<void>(r => setTimeout(r, 150));
     this.state.goToNext();
     this.focusedOptionIndex = 0;
-  }
-
-  previousExercise(): void {
-    this.continueButtonEnabled = false;
-    this.state.goToPrevious();
-    this.focusedOptionIndex = 0;
+    this.exerciseSwitchState = 'enter-right';
+    await new Promise<void>(r => setTimeout(r, 150));
+    this.exerciseSwitchState = '';
+    this.isSwitching = false;
   }
 
   goToExercise(exerciseId: string): void {

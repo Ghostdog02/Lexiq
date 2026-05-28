@@ -54,7 +54,7 @@
       </div>
 
       <!-- Exercise card -->
-      <div class="exercise-card card" [@exerciseSwitch]="currentExerciseIndex">
+      <div class="exercise-card card" [attr.data-switch]="exerciseSwitchState || null">
         <!-- Exercise header -->
         <div class="exercise-header">
           @if (currentExercise.points) {
