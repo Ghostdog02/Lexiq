@@ -238,7 +238,7 @@ All shared keyframes live in `styles.scss`. Reference them by name in any compon
 | `optionSlideIn` | 400ms | elastic | Answer option slides in from left (staggered) |
 | `letterBounce` | — | elastic | Option letter scale pulse on selection |
 | `letterCorrectBounce` | 600ms | elastic | Celebratory letter rotate + scale on correct answer |
-| `correctShake` | 500ms | elastic | Gentle 5-step horizontal wobble on correct answer card |
+| `correctGlow` | 450ms | `ease-out` | Green box-shadow blooms and fades on correct answer card |
 | `incorrectShake` | 350ms | `ease-out` | Rapid 8-step snap shake on wrong answer card |
 | `iconPop` | 400ms | elastic | Result icon scales from 0 → 1.3 → 1 |
 | `focusPulse` | 1500ms∞ | ease-in-out | Box-shadow ring pulses on keyboard-focused option |
