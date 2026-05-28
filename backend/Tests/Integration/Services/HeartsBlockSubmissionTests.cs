@@ -89,6 +89,7 @@ public class HeartsBlockSubmissionTests(DatabaseFixture fixture)
 
         var user = new UserBuilder().WithUserName(username).WithEmail($"{username}@test.com").Build();
         user.Hearts = hearts;
+        user.LastHeartResetAt = _clock.UtcNow;
         await DbSeeder.AddUserAsync(_ctx, user);
 
         if (role != null)

@@ -97,6 +97,7 @@ public class LessonHeartsGateTests(DatabaseFixture fixture)
             .WithEmail($"{username}@test.com")
             .Build();
         user.Hearts = hearts;
+        user.LastHeartResetAt = _clock.UtcNow;
         await DbSeeder.AddUserAsync(_ctx, user);
         if (role != null)
             await _userManager.AddToRoleAsync(user, role);
