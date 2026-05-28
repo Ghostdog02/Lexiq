@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, DestroyRef, inject, OnInit, ViewChild } from '@angular/core';
+import { Component, DestroyRef, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import { FormArray, ReactiveFormsModule, FormGroup, AbstractControl } from '@angular/forms';
-import { CreateLessonDto, Lesson, LessonForm } from '../../models/lesson.interface';
+import { CreateLessonDto, LessonForm } from '../../models/lesson.interface';
 import {
   DifficultyLevel,
   ExerciseForm,
@@ -11,11 +11,11 @@ import {
 import { LessonService } from '../../services/lesson.service';
 import { LessonFormService } from '../../services/lesson-form.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { debounceTime } from 'rxjs/operators';
 import { EditorComponent } from '../../../../shared/components/editor/editor.component';
-import { ContentParserService } from '../../../../shared/services/content-parser.service';
 import { Course } from '../../models/course.interface';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 
 @Component({
   selector: 'app-lesson-editor',
@@ -24,18 +24,23 @@ import { Course } from '../../models/course.interface';
   templateUrl: './lesson-editor.component.html',
   styleUrl: './lesson-editor.component.scss'
 })
-export class LessonEditorComponent implements OnInit {
+export class LessonEditorComponent implements OnInit, OnDestroy {
   @ViewChild(EditorComponent) private editorComponent!: EditorComponent;
+  @ViewChild('globalAudioInput') private globalAudioInput!: ElementRef<HTMLInputElement>;
+
   readonly formService = inject(LessonFormService);
   private readonly lessonService = inject(LessonService);
   private readonly destroyRef = inject(DestroyRef);
-  private readonly sanitizer = inject(DomSanitizer);
-  private readonly contentParser = inject(ContentParserService);
   private readonly router = inject(Router);
+  private readonly httpClient = inject(HttpClient);
+
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[] = [];
   courses: Course[] = [];
   ExerciseType = ExerciseType;
+
+  private pendingAudioIndex = -1;
+  private pendingAudioFiles = new Map<string, File>();
 
   ngOnInit(): void {
     this.exerciseTypeDictionary = Object.entries(ExerciseType).map(
@@ -44,6 +49,11 @@ export class LessonEditorComponent implements OnInit {
     this.initializeForm();
     this.setupFormValueChanges();
     this.loadCourses();
+  }
+
+  ngOnDestroy(): void {
+    this.pendingAudioFiles.forEach((_, blobUrl) => URL.revokeObjectURL(blobUrl));
+    this.pendingAudioFiles.clear();
   }
 
   private async loadCourses(): Promise<void> {
@@ -63,36 +73,18 @@ export class LessonEditorComponent implements OnInit {
   }
 
   getErrorMessage(control: AbstractControl | null): string {
-    if (!control || !control.errors || !control.touched) {
-      return '';
-    }
-
+    if (!control || !control.errors || !control.touched) return '';
     const errors = control.errors;
-
-    if (errors['required']) {
-      return 'This field is required';
-    }
-    if (errors['minlength']) {
-      return `Minimum length is ${errors['minlength'].requiredLength} characters`;
-    }
-    if (errors['maxlength']) {
-      return `Maximum length is ${errors['maxlength'].requiredLength} characters`;
-    }
-    if (errors['min']) {
-      return `Minimum value is ${errors['min'].min}`;
-    }
-    if (errors['max']) {
-      return `Maximum value is ${errors['max'].max}`;
-    }
+    if (errors['required']) return 'This field is required';
+    if (errors['minlength']) return `Minimum length is ${errors['minlength'].requiredLength} characters`;
+    if (errors['maxlength']) return `Maximum length is ${errors['maxlength'].requiredLength} characters`;
+    if (errors['min']) return `Minimum value is ${errors['min'].min}`;
+    if (errors['max']) return `Maximum value is ${errors['max'].max}`;
     if (errors['pattern']) {
-      // Check if this is a language code pattern error
       const pattern = errors['pattern'].requiredPattern;
-      if (pattern === '[a-z]{2}') {
-        return 'Language code must be 2 lowercase letters (e.g. en, es, fr)';
-      }
+      if (pattern === '[a-z]{2}') return 'Language code must be 2 lowercase letters (e.g. en, es, fr)';
       return 'Invalid format';
     }
-
     return 'Invalid value';
   }
 
@@ -102,29 +94,14 @@ export class LessonEditorComponent implements OnInit {
 
   onDifficultyChange(event: Event, exerciseForm: any): void {
     const rangeValue = +(event.target as HTMLInputElement).value;
-
     const difficultyMap: { [key: string]: DifficultyLevel } = {
       '1': DifficultyLevel.Beginner,
       '2': DifficultyLevel.Intermediate,
       '3': DifficultyLevel.Advanced
     };
-
     if (exerciseForm && exerciseForm.get) {
       exerciseForm.get('difficultyLevel')?.setValue(difficultyMap[rangeValue]);
     }
-  }
-
-  parseContent(content: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(this.contentParser.parse(content));
-  }
-
-  replaceFillInBlank(question: string, answer: string): string {
-    if (!question) return question;
-    if (!answer) {
-      return question.replace(/{%special%}/g, '');
-    }
-    const underscores = '_'.repeat(answer.length);
-    return question.replace(/{%special%}/g, underscores);
   }
 
   addExercise(type: ExerciseType | ''): void {
@@ -136,20 +113,75 @@ export class LessonEditorComponent implements OnInit {
 
   removeExercise(index: number): void {
     if (this.confirmRemoval('exercise')) {
+      const ctrl = this.exercises.at(index).get('audioUrl');
+      const url = ctrl?.value as string;
+      if (url?.startsWith('blob:')) {
+        URL.revokeObjectURL(url);
+        this.pendingAudioFiles.delete(url);
+      }
       this.formService.removeExerciseFromForm(this.exercises, index);
     }
   }
+
+  // ── Audio upload ──────────────────────────────────────────────────────────
+
+  triggerAudioUpload(index: number): void {
+    this.pendingAudioIndex = index;
+    this.globalAudioInput.nativeElement.value = '';
+    this.globalAudioInput.nativeElement.click();
+  }
+
+  onAudioFileSelected(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file || this.pendingAudioIndex < 0) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Audio file must be under 10 MB');
+      return;
+    }
+    const blobUrl = URL.createObjectURL(file);
+    this.pendingAudioFiles.set(blobUrl, file);
+    this.exercises.at(this.pendingAudioIndex).get('audioUrl')?.setValue(blobUrl);
+    this.pendingAudioIndex = -1;
+  }
+
+  removeAudio(index: number): void {
+    const ctrl = this.exercises.at(index).get('audioUrl');
+    const url = ctrl?.value as string;
+    if (url?.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+      this.pendingAudioFiles.delete(url);
+    }
+    ctrl?.setValue('');
+  }
+
+  isBlobUrl(url: string | null | undefined): boolean {
+    return !!url?.startsWith('blob:');
+  }
+
+  getAudioFileName(blobUrl: string): string {
+    return this.pendingAudioFiles.get(blobUrl)?.name ?? 'audio file';
+  }
+
+  getAudioFileSize(blobUrl: string): string {
+    const bytes = this.pendingAudioFiles.get(blobUrl)?.size ?? 0;
+    return bytes > 1024 * 1024
+      ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+      : `${Math.round(bytes / 1024)} KB`;
+  }
+
+  // ── Form submission ───────────────────────────────────────────────────────
 
   async onSubmit(): Promise<void> {
     if (this.lessonForm.invalid) {
       this.markFormGroupTouched();
       return;
     }
-
     try {
       const rawContent = this.lessonForm.controls.content.value ?? '';
       const finalContent = await this.editorComponent.uploadPendingFiles(rawContent);
       this.lessonForm.controls.content.setValue(finalContent, { emitEvent: false });
+
+      await this.uploadPendingAudioFiles();
 
       const lessonData = this.buildLessonPayload();
       const created = await this.lessonService.createLesson(lessonData);
@@ -163,25 +195,40 @@ export class LessonEditorComponent implements OnInit {
   }
 
   onDiscard(): void {
-    const hasContent = this.lessonForm.dirty;
-
-    if (hasContent) {
-      const confirmed = confirm('Are you sure you want to discard all changes? This cannot be undone.');
-      if (!confirmed) {
-        return;
-      }
+    if (this.lessonForm.dirty) {
+      if (!confirm('Are you sure you want to discard all changes? This cannot be undone.')) return;
     }
-
     this.router.navigate(['/']);
+  }
+
+  // ── Private ───────────────────────────────────────────────────────────────
+
+  private async uploadPendingAudioFiles(): Promise<void> {
+    for (let i = 0; i < this.exercises.length; i++) {
+      const ctrl = this.exercises.at(i).get('audioUrl');
+      const url = ctrl?.value as string;
+      if (!url?.startsWith('blob:')) continue;
+      const file = this.pendingAudioFiles.get(url);
+      if (!file) continue;
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await firstValueFrom(
+        this.httpClient.post<{ success: number; file: { url: string } }>(
+          '/api/uploads/audio', fd, { withCredentials: true }
+        )
+      );
+      URL.revokeObjectURL(url);
+      this.pendingAudioFiles.delete(url);
+      ctrl!.setValue(res.file.url);
+    }
   }
 
   private buildLessonPayload(): CreateLessonDto {
     const formValue = this.lessonForm.getRawValue();
-
     return {
       title: formValue.title,
       description: formValue.description,
-      estimatedDuration: formValue.estimatedDuration,
+      estimatedDurationMinutes: formValue.estimatedDuration,
       content: formValue.content,
       courseId: formValue.courseId,
       exercises: this.exercises.controls.map(ex => ex.getRawValue())
@@ -194,46 +241,21 @@ export class LessonEditorComponent implements OnInit {
 
   private setupFormValueChanges(): void {
     this.lessonForm.controls.content.valueChanges
-      .pipe(
-        debounceTime(500),
-        takeUntilDestroyed(this.destroyRef)
-      )
+      .pipe(debounceTime(500), takeUntilDestroyed(this.destroyRef))
       .subscribe((contentJson) => {
         console.log('📝 Editor content changed (length):', contentJson?.length || 0);
-        try {
-          if (contentJson) {
-            const parsed = JSON.parse(contentJson);
-            console.log('📦 Editor.js blocks:', parsed.blocks?.length || 0);
-          }
-        } catch (e) {
-          // Not valid JSON yet
-        }
-      });
-
-    this.lessonForm.valueChanges
-      .pipe(
-        debounceTime(1000),
-        distinctUntilChanged(),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((value) => {
-        console.log('Form changed - Title:', value.title, '| Content length:', value.content?.length || 0);
       });
   }
 
   private markFormGroupTouched(): void {
     const markTouched = (control: AbstractControl): void => {
       control.markAsTouched();
-
       if (control instanceof FormGroup) {
-        Object.keys(control.controls).forEach(key => {
-          markTouched(control.get(key)!);
-        });
+        Object.keys(control.controls).forEach(key => markTouched(control.get(key)!));
       } else if (control instanceof FormArray) {
         control.controls.forEach(c => markTouched(c));
       }
     };
-
     markTouched(this.lessonForm);
   }
 
