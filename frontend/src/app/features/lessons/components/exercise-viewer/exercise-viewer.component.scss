@@ -119,6 +119,22 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       animation: exerciseFadeOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     }
 
+    &[data-switch='exit-left'] {
+      animation: cardExitLeft 150ms ease-in forwards;
+    }
+
+    &[data-switch='exit-right'] {
+      animation: cardExitRight 150ms ease-in forwards;
+    }
+
+    &[data-switch='enter-right'] {
+      animation: cardEnterRight 150ms ease-out;
+    }
+
+    &[data-switch='enter-left'] {
+      animation: cardEnterLeft 150ms ease-out;
+    }
+
     &.locked {
       .exercise-content,
       .exercise-title {
@@ -324,7 +340,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
               padding: 0.25rem 0.625rem 0.375rem;
               font-size: 1.875rem;
               color: var(--white);
-              font-family: var(--font-family);
+              font-family: var(--font-family), serif;
               font-weight: 500;
               min-width: 11.25rem;
               text-align: left;
