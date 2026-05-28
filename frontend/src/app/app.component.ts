@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { trigger, transition, query, style, animate } from '@angular/animations';
+import { trigger, transition, query, style, animate, group } from '@angular/animations';
 import { NavBarComponent } from './nav-bar/nav-bar.component';
 
 @Component({
@@ -13,16 +13,19 @@ import { NavBarComponent } from './nav-bar/nav-bar.component';
     trigger('pageTransition', [
       transition('* <=> *', [
         query(':enter', [
-          style({ opacity: 0, transform: 'translateY(32px)' }),
+          style({ opacity: 0, transform: 'translateY(28px)' }),
         ], { optional: true }),
-        query(':leave', [
-          animate('500ms cubic-bezier(0.4, 0, 1, 1)',
-            style({ opacity: 0, transform: 'translateY(20px)' }))
-        ], { optional: true }),
-        query(':enter', [
-          animate('650ms cubic-bezier(0.0, 0.0, 0.2, 1)',
-            style({ opacity: 1, transform: 'translateY(0)' }))
-        ], { optional: true }),
+        group([
+          query(':leave', [
+            style({ position: 'absolute', top: 0, left: 0, width: '100%' }),
+            animate('420ms cubic-bezier(0.4, 0, 1, 1)',
+              style({ opacity: 0, transform: 'translateY(16px)' }))
+          ], { optional: true }),
+          query(':enter', [
+            animate('750ms cubic-bezier(0.0, 0.0, 0.2, 1)',
+              style({ opacity: 1, transform: 'translateY(0)' }))
+          ], { optional: true }),
+        ]),
       ])
     ])
   ]
