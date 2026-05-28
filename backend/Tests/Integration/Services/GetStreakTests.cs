@@ -312,6 +312,171 @@ public class GetStreakTests(DatabaseFixture fixture)
         longest.Should().Be(0);
     }
 
+    // ──────────────────────────────────────────────────────────────────────
+    // Edge case tests (FakeClock to control "today")
+    // ──────────────────────────────────────────────────────────────────────
+
+    private LeaderboardService BuildServiceWithClock(FakeClock clock) =>
+        new(_ctx, CreateAvatarService(_ctx), clock);
+
+    [Fact]
+    public async Task SameDayMultipleSolves_CurrentStreakIs1_NotHigher()
+    {
+        // Arrange — two completed rows on the same UTC date
+        var clock = new FakeClock { UtcNow = new DateTime(2026, 6, 15, 12, 0, 0, DateTimeKind.Utc) };
+        var service = BuildServiceWithClock(clock);
+
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[0], true, 10, clock.UtcNow.AddHours(-3));
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[1], true, 10, clock.UtcNow);
+
+        // Act
+        var (current, _) = await service.GetStreakAsync(_userId);
+
+        // Assert
+        current.Should().Be(1, because: "two completions on the same calendar day count as a single streak day");
+    }
+
+    [Fact]
+    public async Task FullSkippedDay_CurrentStreakIsZero_LongestPreserved()
+    {
+        // Arrange — activity on days -5, -6, -7 (3-day run), nothing yesterday or today
+        var clock = new FakeClock { UtcNow = new DateTime(2026, 6, 20, 10, 0, 0, DateTimeKind.Utc) };
+        var service = BuildServiceWithClock(clock);
+
+        for (var i = 0; i < 3; i++)
+        {
+            await DbSeeder.AddProgressAsync(
+                _ctx, _userId, _exerciseIds[i], true, 10,
+                clock.UtcNow.AddDays(-(5 + i))
+            );
+        }
+
+        // Act
+        var (current, longest) = await service.GetStreakAsync(_userId);
+
+        // Assert
+        current.Should().Be(0, because: "last activity was 5+ days ago — no current streak");
+        longest.Should().Be(3, because: "longest run is the 3-day block ending on day -5");
+    }
+
+    [Fact]
+    public async Task MonthBoundary_Jan31ToFeb1_CurrentStreak2()
+    {
+        // Arrange
+        var clock = new FakeClock { UtcNow = new DateTime(2026, 2, 1, 12, 0, 0, DateTimeKind.Utc) };
+        var service = BuildServiceWithClock(clock);
+
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[0], true, 10,
+            new DateTime(2026, 1, 31, 12, 0, 0, DateTimeKind.Utc));
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[1], true, 10,
+            new DateTime(2026, 2, 1, 12, 0, 0, DateTimeKind.Utc));
+
+        // Act
+        var (current, longest) = await service.GetStreakAsync(_userId);
+
+        // Assert
+        current.Should().Be(2, because: "Jan 31 and Feb 1 are consecutive UTC days");
+    }
+
+    [Fact]
+    public async Task YearBoundary_Dec31ToJan1_CurrentStreak2()
+    {
+        // Arrange
+        var clock = new FakeClock { UtcNow = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc) };
+        var service = BuildServiceWithClock(clock);
+
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[0], true, 10,
+            new DateTime(2025, 12, 31, 12, 0, 0, DateTimeKind.Utc));
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[1], true, 10,
+            new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc));
+
+        // Act
+        var (current, longest) = await service.GetStreakAsync(_userId);
+
+        // Assert
+        current.Should().Be(2, because: "Dec 31 and Jan 1 are consecutive UTC calendar days");
+    }
+
+    [Fact]
+    public async Task DstAffectedDates_UtcBased_StreakUnaffected()
+    {
+        // Arrange — EU DST transitions: last Sunday of March (2026-03-29 02:00 local → 03:00)
+        // UTC timestamps span the DST boundary; UTC-date logic must be unaffected
+        var clock = new FakeClock { UtcNow = new DateTime(2026, 3, 30, 0, 0, 0, DateTimeKind.Utc) };
+        var service = BuildServiceWithClock(clock);
+
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[0], true, 10,
+            new DateTime(2026, 3, 29, 1, 30, 0, DateTimeKind.Utc)); // before DST switch
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[1], true, 10,
+            new DateTime(2026, 3, 29, 23, 0, 0, DateTimeKind.Utc)); // after DST switch, same UTC day
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[2], true, 10,
+            new DateTime(2026, 3, 30, 0, 0, 0, DateTimeKind.Utc));
+
+        // Act
+        var (current, longest) = await service.GetStreakAsync(_userId);
+
+        // Assert
+        current.Should().Be(2, because: "UTC-date grouping is immune to DST — both UTC-day 29 and 30 have activity");
+    }
+
+    [Fact]
+    public async Task FiveDayRun_ThreeDayGap_OneDay_CurrentIs1_LongestIs5()
+    {
+        // Arrange
+        var clock = new FakeClock { UtcNow = new DateTime(2026, 6, 25, 10, 0, 0, DateTimeKind.Utc) };
+        var service = BuildServiceWithClock(clock);
+
+        // 5-day run ending 10 days ago
+        for (var i = 0; i < 5; i++)
+        {
+            await DbSeeder.AddProgressAsync(
+                _ctx, _userId, _exerciseIds[i], true, 10,
+                clock.UtcNow.AddDays(-(10 + i))
+            );
+        }
+
+        // 3-day gap, then 1 day yesterday
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[5], true, 10, clock.UtcNow.AddDays(-1));
+
+        // Act
+        var (current, longest) = await service.GetStreakAsync(_userId);
+
+        // Assert
+        current.Should().Be(1, because: "only yesterday has activity — that's the current streak");
+        longest.Should().Be(5, because: "the 5-day block is the longest run");
+    }
+
+    [Fact]
+    public async Task MultipleShortStreaksWithGaps_LongestEqualsMaxRunLength()
+    {
+        // Arrange — runs of 2, 3, 1 days with gaps between them
+        var clock = new FakeClock { UtcNow = new DateTime(2026, 6, 30, 10, 0, 0, DateTimeKind.Utc) };
+        var service = BuildServiceWithClock(clock);
+
+        // Run of 2 (days -20, -19)
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[0], true, 10, clock.UtcNow.AddDays(-20));
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[1], true, 10, clock.UtcNow.AddDays(-19));
+
+        // Gap day -18
+
+        // Run of 3 (days -17, -16, -15)
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[2], true, 10, clock.UtcNow.AddDays(-17));
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[3], true, 10, clock.UtcNow.AddDays(-16));
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[4], true, 10, clock.UtcNow.AddDays(-15));
+
+        // Gap days -14 through -3
+
+        // Run of 1 (day -2)
+        await DbSeeder.AddProgressAsync(_ctx, _userId, _exerciseIds[5], true, 10, clock.UtcNow.AddDays(-2));
+
+        // Act
+        var (current, longest) = await service.GetStreakAsync(_userId);
+
+        // Assert
+        current.Should().Be(0, because: "last activity was 2 days ago — outside the grace period");
+        longest.Should().Be(3, because: "the 3-day run is the maximum");
+    }
+
     private static AvatarService CreateAvatarService(BackendDbContext ctx)
     {
         var factory = new ServiceCollection()
