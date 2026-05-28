@@ -184,14 +184,11 @@ select {
   100% { transform: scale(1) rotate(0deg); }
 }
 
-// Correct answer wobble - quick gentle bounce
-@keyframes correctShake {
-  0%   { transform: translateX(0); }
-  20%  { transform: translateX(-3px); }
-  40%  { transform: translateX(3px); }
-  60%  { transform: translateX(-2px); }
-  80%  { transform: translateX(2px); }
-  100% { transform: translateX(0); }
+// Correct answer glow pulse - border blooms green then fades back
+@keyframes correctGlow {
+  0%   { box-shadow: 0 0 0 0.3rem rgba(var(--color-correct-rgb), 0.2), 0 8px 32px rgba(var(--color-correct-rgb), 0.35); }
+  40%  { box-shadow: 0 0 0 0.7rem rgba(var(--color-correct-rgb), 0.35), 0 8px 40px rgba(var(--color-correct-rgb), 0.55); }
+  100% { box-shadow: 0 0 0 0.3rem rgba(var(--color-correct-rgb), 0.2), 0 8px 32px rgba(var(--color-correct-rgb), 0.35); }
 }
 
 // Incorrect answer shake - rapid multi-step snap for impact
