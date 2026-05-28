@@ -51,18 +51,18 @@ import { TrueFalseExerciseComponent } from './true-false-exercise/true-false-exe
   animations: [
     trigger('exerciseSwitch', [
       transition(':increment', [
-        animate('700ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
+        animate('600ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
           style({ opacity: 1, transform: 'translateX(0)',     offset: 0    }),
-          style({ opacity: 0, transform: 'translateX(-32px)', offset: 0.45 }),
-          style({ opacity: 0, transform: 'translateX(32px)',  offset: 0.50 }),
+          style({ opacity: 0, transform: 'translateX(-24px)', offset: 0.25 }),
+          style({ opacity: 0, transform: 'translateX(24px)',  offset: 0.75 }),
           style({ opacity: 1, transform: 'translateX(0)',     offset: 1    }),
         ]))
       ]),
       transition(':decrement', [
-        animate('700ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
+        animate('600ms cubic-bezier(0.4, 0, 0.2, 1)', keyframes([
           style({ opacity: 1, transform: 'translateX(0)',     offset: 0    }),
-          style({ opacity: 0, transform: 'translateX(32px)',  offset: 0.45 }),
-          style({ opacity: 0, transform: 'translateX(-32px)', offset: 0.50 }),
+          style({ opacity: 0, transform: 'translateX(24px)',  offset: 0.25 }),
+          style({ opacity: 0, transform: 'translateX(-24px)', offset: 0.75 }),
           style({ opacity: 1, transform: 'translateX(0)',     offset: 1    }),
         ]))
       ]),
