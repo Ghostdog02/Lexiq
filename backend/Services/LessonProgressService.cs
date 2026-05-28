@@ -176,15 +176,15 @@ public class LessonProgressService(
                 existing.CompletedAt = isCorrect ? (existing.CompletedAt ?? DateTime.UtcNow) : null;
             }
 
-            // Accumulate XP only on first correct submission
-            if (isCorrect && !wasAlreadyCompleted)
+            switch (isCorrect)
             {
-                user.TotalPointsEarned += exercise.Points;
-            }
-
-            if (!isCorrect && !canBypassLocks)
-            {
-                wrongCount++;
+                // Accumulate XP only on first correct submission
+                case true when !wasAlreadyCompleted:
+                    user.TotalPointsEarned += exercise.Points;
+                    break;
+                case false when !canBypassLocks:
+                    wrongCount++;
+                    break;
             }
 
             var correctOptionId = GetCorrectOptionIdForExercise(exercise);
