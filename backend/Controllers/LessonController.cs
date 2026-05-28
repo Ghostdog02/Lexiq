@@ -3,18 +3,26 @@ using Backend.Api.Mapping;
 using Backend.Api.Middleware;
 using Backend.Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Backend.Database.Entities.Users;
 
 namespace Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]s")]
 [Authorize]
-public class LessonController(LessonService lessonService, LessonProgressService lessonProgressService)
-    : ControllerBase
+public class LessonController(
+    LessonService lessonService,
+    LessonProgressService lessonProgressService,
+    HeartsService heartsService,
+    UserManager<User> userManager
+) : ControllerBase
 {
     private readonly LessonService _lessonService = lessonService;
     private readonly LessonProgressService _lessonProgressService = lessonProgressService;
+    private readonly HeartsService _heartsService = heartsService;
+    private readonly UserManager<User> _userManager = userManager;
 
     /// <summary>
     /// Submits all exercise answers for a lesson at once, updates progress, and unlocks the next lesson if threshold is met.
@@ -29,6 +37,10 @@ public class LessonController(LessonService lessonService, LessonProgressService
         {
             var result = await _lessonProgressService.SubmitLessonAsync(currentUser.Id, lessonId, request.Answers);
             return Ok(result);
+        }
+        catch (NoHeartsException)
+        {
+            return NoHeartsResult();
         }
         catch (ArgumentException ex)
         {
@@ -81,7 +93,8 @@ public class LessonController(LessonService lessonService, LessonProgressService
     }
 
     /// <summary>
-    /// Gets a lesson with full details, including user progress
+    /// Gets a lesson with full details, including user progress.
+    /// Returns 403 if user has no hearts (bypass roles exempt).
     /// </summary>
     /// <param name="lessonId">The lesson ID</param>
     [HttpGet("{lessonId}")]
@@ -95,6 +108,14 @@ public class LessonController(LessonService lessonService, LessonProgressService
         }
 
         var currentUser = HttpContext.GetCurrentUser()!;
+
+        if (!await currentUser.CanBypassLocksAsync(_userManager))
+        {
+            await _heartsService.RefillAndGetHeartsAsync(currentUser);
+            if (currentUser.Hearts <= 0)
+                return NoHeartsResult();
+        }
+
         var progress = await _lessonProgressService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
 
         return OkPolymorphic<LessonDto>(lesson.ToDto(progress.Summary, progress.ExerciseProgress));
@@ -188,6 +209,12 @@ public class LessonController(LessonService lessonService, LessonProgressService
         var submissions = await _lessonProgressService.GetLessonSubmissionsAsync(user.Id, lessonId);
         return Ok(submissions);
     }
+
+    private static ObjectResult NoHeartsResult() =>
+        new(new { code = "NoHearts", message = "You need at least one heart to play. Hearts refill every 4 hours." })
+        {
+            StatusCode = 403,
+        };
 
     /// <summary>
     /// Returns 200 OK with DeclaredType set to T, ensuring System.Text.Json serializes
