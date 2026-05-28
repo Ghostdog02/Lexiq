@@ -1,7 +1,6 @@
 using Backend.Api.Dtos;
 using Backend.Api.Middleware;
 using Backend.Api.Services;
-using Backend.Database;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,13 +12,13 @@ public class UserController(
     UserXpService userXpService,
     UserService userService,
     AvatarService avatarService,
-    BackendDbContext context
+    HeartsService heartsService
 ) : ControllerBase
 {
     private readonly UserXpService _userXpService = userXpService;
     private readonly UserService _userService = userService;
     private readonly AvatarService _avatarService = avatarService;
-    private readonly BackendDbContext _context = context;
+    private readonly HeartsService _heartsService = heartsService;
 
     /// <summary>
     /// Get current authenticated user's total XP and stats
@@ -40,8 +39,8 @@ public class UserController(
     }
 
     /// <summary>
-    /// Get current authenticated user's remaining hearts
-    /// Increments hearts by 1 (up to max 3) if 4 hours have passed since last increment
+    /// Get current authenticated user's remaining hearts.
+    /// Refills hearts using floor(elapsedHours / 4) formula, capped at 5.
     /// </summary>
     [HttpGet("hearts")]
     [Authorize]
@@ -51,16 +50,8 @@ public class UserController(
         if (currentUser == null)
             return Unauthorized(new { message = "User is not authorized." });
 
-        // Check if 4 hours have passed since last heart increment
-        var hoursSinceReset = (DateTime.UtcNow - currentUser.LastHeartResetAt).TotalHours;
-        if (hoursSinceReset >= 4 && currentUser.Hearts < 3)
-        {
-            currentUser.Hearts = Math.Min(currentUser.Hearts + 1, 3);
-            currentUser.LastHeartResetAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-        }
-
-        return Ok(new { hearts = currentUser.Hearts });
+        var hearts = await _heartsService.RefillAndGetHeartsAsync(currentUser);
+        return Ok(new { hearts });
     }
 
     /// <summary>
