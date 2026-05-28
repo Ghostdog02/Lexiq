@@ -213,6 +213,81 @@ Sidebar example: see `nav-bar` component.
 
 ## Animations
 
+### Easing curves
+
+Two curves cover all motion in the app. Extract whichever you need as a `$_ease` Sass variable at the top of the file.
+
+| Name | Value | Use |
+|------|-------|-----|
+| Standard | `cubic-bezier(0.4, 0, 0.2, 1)` | All UI transitions — hover, slide, fade, page switch |
+| Elastic | `cubic-bezier(0.34, 1.56, 0.64, 1)` | Celebratory / gamified moments — correct answer, icon pop, badge bounce |
+
+```scss
+// At the top of each component SCSS file:
+$_ease:    cubic-bezier(0.4, 0, 0.2, 1);
+$_elastic: cubic-bezier(0.34, 1.56, 0.64, 1);
+```
+
+### Global keyframes (defined in `src/styles.scss`)
+
+All shared keyframes live in `styles.scss`. Reference them by name in any component — do **not** redefine them locally.
+
+| Keyframe | Duration (canonical) | Easing | Purpose |
+|----------|---------------------|--------|---------|
+| `questionSlideIn` | 300ms | elastic | Question text enters from above on exercise load |
+| `optionSlideIn` | 400ms | elastic | Answer option slides in from left (staggered) |
+| `letterBounce` | — | elastic | Option letter scale pulse on selection |
+| `letterCorrectBounce` | 600ms | elastic | Celebratory letter rotate + scale on correct answer |
+| `correctShake` | 500ms | elastic | Gentle 5-step horizontal wobble on correct answer card |
+| `incorrectShake` | 350ms | `ease-out` | Rapid 8-step snap shake on wrong answer card |
+| `iconPop` | 400ms | elastic | Result icon scales from 0 → 1.3 → 1 |
+| `focusPulse` | 1500ms∞ | ease-in-out | Box-shadow ring pulses on keyboard-focused option |
+| `fadeInDown` | — | standard | Generic fade + downward slide entrance |
+
+### Exercise transition (Angular animation)
+
+The `@exerciseSwitch` trigger lives in `exercise-viewer.component.ts`. It animates the exercise card when `currentExerciseIndex` increments or decrements:
+
+```
+Total: 600ms  |  Exit: 0–25% (150ms)  |  Pause: 25–75% (300ms)  |  Enter: 75–100% (150ms)
+```
+
+The 300 ms opacity-0 gap gives the new exercise content time to render before it fades in, preventing a flash of stale content.
+
+### Component-level animation durations
+
+| Element | Keyframe | Duration |
+|---------|----------|----------|
+| Exercise card entrance | `exerciseFadeIn` | 250ms |
+| Exercise card exit | `exerciseFadeOut` | 400ms forwards |
+| Correct / incorrect feedback bar | `feedbackSlideUp` | 250ms |
+| Feedback icon | `iconScale` | 300ms |
+| Correct answer reveal banner | `slideUp` | 200ms |
+| Footer button entrance | `buttonFadeIn` | 200ms |
+| Correct answer option card | `correctShake` | 500ms elastic |
+| Incorrect answer option card | `incorrectShake` | 350ms ease-out |
+| "Coming up" achievement card | `achievement-enter` | 400ms standard, staggered 60 / 140 / 220ms |
+
+### Option entrance stagger
+
+Answer option cards slide in with `optionSlideIn` and staggered `animation-delay`. Pattern in `base-exercise.component.scss`:
+
+```scss
+@for $i from 1 through 6 {
+  &[data-index="#{$i - 1}"] {
+    animation-delay: #{0.05 + $i * 0.05}s;
+  }
+}
+```
+
+### Rules
+
+- **Never `transition: all`** — enumerate only the properties that change.
+- **Never redefine a global keyframe locally** — import from `styles.scss` by naming it.
+- **No `transition` inside a mixin** — the caller owns animation timing, the mixin owns appearance.
+- Prefer `opacity + transform` for enter/exit — GPU-composited, no layout recalc.
+- Decorative background pulse: `animation: pulse 8s ease-in-out infinite` on `::before` radial gradient.
+
 ```scss
 &::before {
   content: '';
