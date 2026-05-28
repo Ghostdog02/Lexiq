@@ -214,3 +214,48 @@ select {
   50% { transform: scale(1.3); }
   100% { transform: scale(1); opacity: 1; }
 }
+
+// ── View Transitions ─────────────────────────────────────────────────────────
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: vtPageExit 400ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  ::view-transition-new(root) {
+    animation: vtPageEnter 550ms 150ms cubic-bezier(0.0, 0.0, 0.2, 1) both;
+  }
+
+  @keyframes vtPageExit {
+    to { opacity: 0; transform: translateY(24px); }
+  }
+
+  @keyframes vtPageEnter {
+    from { opacity: 0; transform: translateY(-16px); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+// ── Exercise card switch ──────────────────────────────────────────────────────
+
+@keyframes cardExitLeft {
+  to { opacity: 0; transform: translateX(-24px); }
+}
+
+@keyframes cardExitRight {
+  to { opacity: 0; transform: translateX(24px); }
+}
+
+@keyframes cardEnterRight {
+  from { opacity: 0; transform: translateX(24px); }
+}
+
+@keyframes cardEnterLeft {
+  from { opacity: 0; transform: translateX(-24px); }
+}
