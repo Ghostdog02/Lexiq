@@ -20,7 +20,8 @@ public record LeaderboardEntryDto(
     int LongestStreak,
     int Level,
     int Change,
-    bool IsCurrentUser
+    bool IsCurrentUser,
+    int TimesOnTop = 0
 );
 
 public record LeaderboardResponse(
