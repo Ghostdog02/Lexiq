@@ -591,7 +591,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
       display: flex;
       align-items: center;
       gap: 0.875rem;
-      animation: feedbackSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: feedbackSlideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 
       &.correct {
         background: rgba(111, 179, 127, 0.12);
@@ -694,7 +694,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         animation: buttonFadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
         &.submitted {
-          animation: buttonFadeIn 0.2s 0.4s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+          animation: buttonFadeIn 0.2s 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
         }
 
         .keyboard-hint {

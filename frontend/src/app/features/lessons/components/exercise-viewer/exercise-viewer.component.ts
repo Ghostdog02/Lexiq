@@ -279,7 +279,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   checkAnswer(): void {
     if (!this.currentExercise?.id || !this.state.currentHasSelection) return;
     this.state.submitAnswer(this.currentExercise.id);
-    setTimeout(() => { this.continueButtonEnabled = true; }, 400);
+    setTimeout(() => { this.continueButtonEnabled = true; }, 600);
   }
 
   onBackToContent(): void {
