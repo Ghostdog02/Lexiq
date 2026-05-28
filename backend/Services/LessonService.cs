@@ -143,7 +143,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             EstimatedDurationMinutes = dto.EstimatedDurationMinutes ?? 30,
             OrderIndex = orderIndex,
             LessonContent = dto.Content,
-            IsLocked = false,
+            IsLocked = true,
             CreatedAt = _clock.UtcNow,
         };
 
