@@ -1,5 +1,7 @@
 import {Component, HostListener, inject, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
+import {HttpClient} from '@angular/common/http';
+import {firstValueFrom} from 'rxjs';
 import {LessonService} from '../../services/lesson.service';
 import {AuthService} from '../../../../auth/auth.service';
 import {Lesson, LessonStatus} from '../../models/lesson.interface';
@@ -17,11 +19,13 @@ export class HomeComponent implements OnInit {
   currentLessonId: string = '';
   totalXp: number = 0;
   currentStreak: number = 0;
+  hearts: number = 0;
   isUserBelowLesson: boolean = false;
   isLoading: boolean = true;
   error: string | null = null;
   isAdmin: boolean = false;
   isContentCreator: boolean = false;
+  userIsAuthenticated: boolean = false;
 
   // Color palette for courses (cycles if more courses than colors)
   private readonly courseColors = ['#7c5cff', '#9178ff', '#5a3ce6', '#a78bfa', '#8b5cf6', '#7c3aed'];
@@ -32,18 +36,32 @@ export class HomeComponent implements OnInit {
   private router = inject(Router);
   private lessonService = inject(LessonService);
   private authService = inject(AuthService);
+  private http = inject(HttpClient);
 
   async ngOnInit() {
     this.isAdmin = this.authService.getIsAdmin();
     this.isContentCreator = this.authService.getIsContentCreator();
+    this.userIsAuthenticated = this.authService.getIsAuth();
     await this.loadCoursesFromApi();
-    await this.loadUserXp();
+    await Promise.all([this.loadUserXp(), this.loadHearts()]);
   }
 
   private async loadUserXp(): Promise<void> {
     const xpData = await this.lessonService.getCurrentUserXp();
     if (xpData) {
       this.totalXp = xpData.totalXp;
+    }
+  }
+
+  private async loadHearts(): Promise<void> {
+    if (this.isAdmin || this.isContentCreator || !this.userIsAuthenticated) return;
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ hearts: number }>('/api/user/hearts', { withCredentials: true })
+      );
+      this.hearts = response.hearts;
+    } catch {
+      // Non-critical — sidebar badge stays 0
     }
   }
 
