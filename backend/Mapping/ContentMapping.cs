@@ -45,7 +45,7 @@ public static class ContentMappingExtensions
             CompletedExercises: progress?.CompletedExercises,
             EarnedXp: progress?.EarnedXp,
             TotalPossibleXp: progress?.TotalPossibleXp,
-            IsCompleted: progress?.MeetsCompletionThreshold
+            IsCompleted: progress?.IsCompleted
         );
     }
 

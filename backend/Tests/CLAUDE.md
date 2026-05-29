@@ -128,15 +128,45 @@ public class MyTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, 
 
 | Helper                                                                              | Use                          |
 |-------------------------------------------------------------------------------------|------------------------------|
-| `CreateFillInBlankExerciseAsync(ctx, lessonId, orderIndex, isLocked, points)`       | Correct answer is `"answer"` |
-| `CreateMultipleChoiceExerciseAsync(ctx, lessonId, orderIndex, isLocked, points)`    | 3 options, 1 correct         |
+| `CreateFillInBlankExerciseAsync(ctx, lessonId, orderIndex, isLocked, points)`       | Correct answer via ExerciseOption (IsCorrect=true) |
 | `CreateListeningExerciseAsync(...)`                                                 | Same signature               |
-| `CreateTranslationExerciseAsync(...)`                                               | Same signature               |
 | `AddProgressAsync(ctx, userId, exerciseId, isCompleted, pointsEarned, completedAt)` | Single progress row          |
 | `AddConsecutiveDaysActivityAsync(ctx, userId, exerciseIds, days, startDaysAgo)`     | Streak setup                 |
 | `AddAvatarAsync(ctx, userId)`                                                       | Avatar binary row            |
+| `GetCorrectOptionIdAsync(ctx, exerciseId)`                                          | Returns the ExerciseOption.ExerciseOptionId where IsCorrect=true |
 
 `fixture.ExerciseIds` is FK-enforced on INSERT (`DeleteBehavior.NoAction`) — always use IDs from your test's seeded list.
+
+## FakeClock — hearts and time-dependent tests
+
+Hearts tests control time via `FakeClock` which implements `IClock` (`Backend.Api/Services/Clock/`):
+
+```csharp
+var clock = new FakeClock(DateTimeOffset.UtcNow);
+_factory = new WebApplicationFactory<Program>().WithWebHostBuilder(b =>
+    b.ConfigureServices(s => s.AddSingleton<IClock>(clock)));
+
+// Advance to trigger heart refill (4-hour interval)
+clock.Advance(TimeSpan.FromHours(4));
+```
+
+`FakeClock.Advance` moves the internal clock forward; `HeartsService.RefillAndGetHeartsAsync` reads from `IClock` so it picks up the simulated time. Do **not** replace `IClock` after the factory is created — swap it before `CreateClient`.
+
+## Audio file tests — real temp directory
+
+`AudioCascadeDeleteTests` and `DeleteOrphanedAudioTests` seed actual files in a temp directory and verify deletion. `FileUploadsService` is **not** mocked in these tests:
+
+```csharp
+var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+Directory.CreateDirectory(Path.Combine(tempDir, "audio"));
+// seed a dummy file
+File.WriteAllText(Path.Combine(tempDir, "audio", "test.mp3"), "fake");
+
+// Override StaticFilesPath in factory
+services.Configure<FileUploadOptions>(o => o.BasePath = tempDir);
+```
+
+`EnsureUploadDirectoriesExist()` in `ControllerTestBase` creates `wwwroot/uploads` locally (gitignored) — required before the first upload controller test.
 
 ## UserBuilder
 
@@ -332,13 +362,39 @@ For `private static` production helpers (e.g. `UserMapping.CleanUsername`), dupl
 
 ## E2E test files
 
-| File                                     | Verifies                                       | Tests |
-|------------------------------------------|------------------------------------------------|------:|
-| `StudentExerciseProgressJourneyTests.cs` | Completion, XP, sequential unlocking, retries  |     7 |
-| `StudentSessionPersistenceTests.cs`      | Restoration, state consistency, XP idempotency |     6 |
-| `ExerciseSubmissionSecurityTests.cs`     | Lock enforcement, role bypass, MultipleChoice  |     9 |
-| `LeaderboardAndStreaksTests.cs`          | Rankings, streaks, avatar integration          |     5 |
-| `AdminContentManagementJourneyTests.cs`  | Admin/Creator CRUD, role authz, lifecycle      |     6 |
+| File                                     | Verifies                                          | Tests |
+|------------------------------------------|---------------------------------------------------|------:|
+| `StudentExerciseProgressJourneyTests.cs` | Completion, XP, sequential unlocking, retries     |     7 |
+| `StudentSessionPersistenceTests.cs`      | Restoration, state consistency, XP idempotency   |     6 |
+| `ExerciseSubmissionSecurityTests.cs`     | Lock enforcement, role bypass, option validation  |     9 |
+| `LeaderboardAndStreaksTests.cs`          | Rankings, streaks, avatar integration             |     5 |
+| `AdminContentManagementJourneyTests.cs`  | Admin/Creator CRUD, role authz, lifecycle         |     6 |
+
+## Full test class inventory
+
+**Unit tests** (no Docker required):
+- `CalculateLevelTests` — level formula validation
+- `JwtServiceTests` — token generation and expiration
+- `FileUploadsServiceTests` — file validation, upload, audio orphan detection (57 tests)
+
+**Integration — Services:**
+- `AchievementServiceTests`, `AvatarServiceTests`, `CourseCrudTests`, `LanguageCrudTests`
+- `LessonCrudTests`, `LessonNavigationTests`, `LessonQueryTests`, `LessonUnlockingTests`
+- `UserLanguageServiceTests`, `ProfileServiceTests`
+- `GetStreakTests`, `TimesOnTopTrackingTests`, `LoginUserTests`
+- `HeartsDecrementTests`, `HeartsRefillTests`, `HeartsBlockSubmissionTests`, `LessonHeartsGateTests`
+- `AudioCascadeDeleteTests`, `DeleteOrphanedAudioTests`
+- `ExerciseValidationTests`
+
+**Integration — Controllers:**
+- `AuthControllerTests`, `AuthorizationTests`
+- `ExerciseControllerTests`, `UserAvatarUploadTests`
+- `UserManagementControllerTests`, `RoleManagementControllerTests`
+
+**E2E:**
+- `StudentExerciseProgressJourneyTests`, `StudentSessionPersistenceTests`
+- `ExerciseSubmissionSecurityTests`, `LeaderboardAndStreaksTests`
+- `AdminContentManagementJourneyTests`
 
 ## Misc gotchas
 

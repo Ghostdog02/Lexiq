@@ -13,17 +13,24 @@ Language
   └── Course (multiple courses per language)
        └── Lesson (multiple lessons per course)
             └── Exercise (multiple exercises per lesson, polymorphic via TPH)
-                 ├── MultipleChoiceExercise
-                 │    └── ExerciseOption (multiple options)
                  ├── FillInBlankExercise
+                 │    └── ExerciseOption (options with IsCorrect flag)
                  ├── ListeningExercise
-                 └── TranslationExercise
+                 │    └── ExerciseOption (options with IsCorrect flag)
+                 ├── TrueFalseExercise
+                 │    └── ExerciseOption (True / False options)
+                 ├── ImageChoiceExercise
+                 │    └── ImageOption (image-based answer choices)
+                 └── AudioMatchingExercise
+                      └── AudioMatchPair (audio-to-image pairs)
 ```
 
 Additionally:
 - **Many-to-many** between Users and Languages through the `UserLanguage` junction table.
-- **One-to-many** from User and Exercise to `UserExerciseProgress` for progress tracking.
-- **One-to-one** between User and `UserAvatar` (shared PK: `UserId`); avatar binary stored in a separate table to avoid loading bytes via `UserContextMiddleware` on every request.
+- **One-to-many** from User to `UserExerciseProgress` (per-exercise tracking).
+- **One-to-many** from User/Lesson to `UserLessonProgress` (per-lesson summary).
+- **One-to-one** between User and `UserAvatar` (shared PK: `UserId`); avatar binary stored separately to avoid loading bytes via `UserContextMiddleware` on every request.
+- **Many-to-many** between Users and Achievements through `UserAchievement`.
 
 ---
 
@@ -39,21 +46,26 @@ Additionally:
 
 #### Properties
 
-| Property          | Type                         | Description                                                                                                                                                                                                                                                     |
-|-------------------|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Id                | string                       | Primary key (inherited from IdentityUser)                                                                                                                                                                                                                       |
-| RegistrationDate  | DateTime                     | Timestamp when user created their account                                                                                                                                                                                                                       |
-| LastLoginDate     | DateTime                     | Timestamp of user's most recent login                                                                                                                                                                                                                           |
-| Avatar            | UserAvatar?                  | Navigation property to `UserAvatars` table (1:1, shared PK). Binary avatar data stored separately to avoid loading bytes on every request. Served via `GET /api/user/{id}/avatar`. Auto-populated from Google on login; overridable via `PUT /api/user/avatar`. |
-| TotalPointsEarned | int                          | Materialized XP aggregate; incremented on first correct exercise submission to avoid full re-aggregation for leaderboard queries                                                                                                                                |
-| UserLanguages     | List\<UserLanguage\>         | Navigation property: Languages this user is learning                                                                                                                                                                                                            |
-| ExerciseProgress  | List\<UserExerciseProgress\> | Navigation property: Exercise progress records for this user                                                                                                                                                                                                    |
+| Property            | Type                         | Default       | Description                                                                                                                                                                                                                                                     |
+|---------------------|------------------------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Id                  | string                       | —             | Primary key (inherited from IdentityUser)                                                                                                                                                                                                                       |
+| RegistrationDate    | DateTime                     | —             | Timestamp when user created their account                                                                                                                                                                                                                       |
+| LastLoginDate       | DateTime                     | —             | Timestamp of user's most recent login                                                                                                                                                                                                                           |
+| TotalPointsEarned   | int                          | 0             | Materialized XP aggregate; incremented on first correct exercise submission to avoid full re-aggregation for leaderboard queries                                                                                                                                |
+| Hearts              | int                          | 5             | Current heart count (0–5). Decremented on wrong answers; blocked at 0. Refilled automatically every 4 hours                                                                                                                                                   |
+| LastHeartResetAt    | DateTime                     | UtcNow        | Timestamp of the last heart refill cycle; used by `HeartsService` to compute elapsed time                                                                                                                                                                      |
+| TimesOnTop          | int                          | 0             | Counter incremented each time the user holds the #1 rank on the AllTime leaderboard                                                                                                                                                                            |
+| LastTimesOnTopAt    | DateTime?                    | null          | Timestamp of the most recent #1 rank increment                                                                                                                                                                                                                  |
+| Avatar              | UserAvatar?                  | null          | Navigation property to `UserAvatars` table (1:1, shared PK). Binary avatar data stored separately to avoid loading bytes on every request. Served via `GET /api/user/{id}/avatar`. Auto-populated from Google on login; overridable via `PUT /api/user/avatar`. |
+| UserLanguages       | List\<UserLanguage\>         | []            | Navigation property: Languages this user is learning                                                                                                                                                                                                            |
+| ExerciseProgress    | List\<UserExerciseProgress\> | []            | Navigation property: Exercise progress records for this user                                                                                                                                                                                                    |
 
 #### Relationships
 
 - **One-to-Many** with UserLanguage: A user can learn multiple languages
 - **One-to-Many** with UserExerciseProgress: A user has progress records per exercise
 - **One-to-One** with UserAvatar: A user optionally has a stored avatar (shared PK: `UserId`)
+- **Many-to-Many** with Achievement via UserAchievement
 
 ---
 
@@ -83,6 +95,48 @@ Additionally:
 - Served via `GET /api/user/{id}/avatar` (`[AllowAnonymous]`, `Cache-Control: public, max-age=86400`)
 - Leaderboard queries batch-check existence via `AvatarService.GetUsersWithAvatarsAsync` (returns a `HashSet<string>`) without loading `Data` bytes — only IDs are fetched
 - If avatar download or upsert fails, login still succeeds (avatar is non-critical)
+
+---
+
+### Achievement
+
+**Purpose**: Defines an achievement or badge that users can unlock by reaching an XP milestone.
+
+**File**: [Entities/Users/Achievement.cs](../Database/Entities/Users/Achievement.cs)
+
+#### Properties
+
+| Property        | Type                       | Constraints                    | Description                                   |
+|-----------------|----------------------------|--------------------------------|-----------------------------------------------|
+| AchievementId   | string                     | Primary Key (Guid)             | Unique identifier                             |
+| AchievementName | string                     | Required, MaxLength(100)       | Display name                                  |
+| Description     | string                     | Required, MaxLength(500)       | Description of how to earn the achievement    |
+| XpRequired      | int                        | Required, Range(0, int.MaxValue) | XP threshold to unlock                       |
+| Icon            | string                     | Required, MaxLength(10)        | Emoji or short icon string                    |
+| OrderIndex      | int                        | Required                       | Display order                                 |
+| UserAchievements | ICollection\<UserAchievement\> | Navigation                | Junction records for users who earned this    |
+
+---
+
+### UserAchievement
+
+**Purpose**: Junction table recording which achievements each user has unlocked.
+
+**File**: [Entities/Users/UserAchievement.cs](../Database/Entities/Users/UserAchievement.cs)
+
+#### Properties
+
+| Property      | Type        | Constraints                     | Description                        |
+|---------------|-------------|---------------------------------|------------------------------------|
+| UserId        | string      | Required, Composite PK, FK → User | User who earned the achievement  |
+| AchievementId | string      | Required, Composite PK, FK → Achievement | The achievement earned      |
+| UnlockedAt    | DateTime    | Required                        | When the achievement was unlocked  |
+| User          | User?       | Navigation                      | Owning user                        |
+| Achievement   | Achievement? | Navigation                     | Earned achievement                 |
+
+#### Composite Primary Key
+
+Composite PK on `(UserId, AchievementId)`.
 
 ---
 
@@ -128,12 +182,7 @@ Additionally:
 
 #### Composite Primary Key
 
-This entity uses a composite primary key consisting of `UserId` and `LanguageId`.
-
-#### Relationships
-
-- **Many-to-One** with User: Links to the user learning the language
-- **Many-to-One** with Language: Links to the language being learned
+Composite PK on `(UserId, LanguageId)`.
 
 ---
 
@@ -162,23 +211,16 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 | CreatedBy              | User           | Navigation                | Creator user                                         |
 | Lessons                | List\<Lesson\> | Navigation                | Child lessons (direct, no intermediate module layer) |
 
-#### Relationships
-
-- **Many-to-One** with Language: Course belongs to one language
-- **Many-to-One** with User: Course has one creator
-- **One-to-Many** with Lesson: Course directly contains multiple lessons
-
 #### Business Rules
 
 - Courses are ordered within a language using `OrderIndex`
 - Duration can range from 1 to 300 hours
-- Courses track creation and update timestamps for audit purposes
 
 ---
 
 ### Lesson
 
-**Purpose**: Individual learning unit within a course, containing content and exercises (e.g., "Introduction to Pronouns", "Conjugating -ARE verbs").
+**Purpose**: Individual learning unit within a course, containing content and exercises.
 
 **File**: [Lesson.cs](../Database/Entities/Lesson.cs)
 
@@ -186,206 +228,243 @@ This entity uses a composite primary key consisting of `UserId` and `LanguageId`
 
 | Property                 | Type                    | Constraints               | Description                              |
 |--------------------------|-------------------------|---------------------------|------------------------------------------|
-| Id                       | string                  | Primary Key (Guid)        | Unique identifier                        |
+| LessonId                 | string                  | Primary Key (Guid)        | Unique identifier                        |
 | CourseId                 | string                  | Required, Foreign Key     | Parent course                            |
 | Title                    | string                  | Required, MaxLength(200)  | Lesson title                             |
-| Description              | string?                 | MaxLength(1000), Optional | Lesson description                       |
-| EstimatedDurationMinutes | int?                    | Range(10, 40), Optional   | Expected completion time in minutes      |
+| EstimatedDurationMinutes | int                     | Range(10, 120)            | Expected completion time in minutes      |
 | OrderIndex               | int                     | Required                  | Position within course (0, 1, 2, ...)    |
-| LessonContent            | string                  | Required                  | Editor.js JSON content stored as text    |
-| IsLocked                 | bool                    | Required, Default: false  | Whether lesson is accessible to the user |
+| LessonContent            | string                  | Required, nvarchar(max)   | Editor.js JSON content stored as text    |
+| IsLocked                 | bool                    | Required, Default: true   | Whether lesson is accessible to the user |
 | CreatedAt                | DateTime                | Default: UtcNow           | Creation timestamp                       |
 | Course                   | Course                  | Navigation                | Parent course                            |
-| Exercises                | ICollection\<Exercise\> | Navigation                | Child exercises                          |
-
-#### Relationships
-
-- **Many-to-One** with Course: Lesson belongs to one course
-- **One-to-Many** with Exercise: Lesson contains multiple exercises
+| Exercises                | List\<Exercise\>        | Navigation                | Child exercises                          |
 
 #### Business Rules
 
 - Lessons are ordered within a course using `OrderIndex`
-- Duration ranges from 10 to 40 minutes
-- Lessons can be locked to enforce sequential learning
-- Content is stored inline as Editor.js JSON (not via external URL)
-- Completing 70%+ of a lesson's exercises unlocks the next lesson
+- Duration ranges from 10 to 120 minutes
+- `IsLocked = true` by default; first lesson in a course is unlocked by the admin
+- Lesson completion is determined by `UserLessonProgress.IsCompleted` (hearts-based — see Hearts System below)
 
 ---
 
-### Exercise (Abstract Base)
+## Exercise Entities
 
-**Purpose**: Abstract base class for all practice activities within a lesson. Uses Table-Per-Hierarchy (TPH) with a discriminator column to represent all exercise subtypes in a single `Exercises` table.
+### Exercise (Base)
+
+**Purpose**: Base class for all practice activities within a lesson. Uses Table-Per-Hierarchy (TPH) with a discriminator column (`ExerciseType`) to store all subtypes in a single `Exercises` table.
 
 **File**: [Exercise.cs](../Database/Entities/Exercises/Exercise.cs)
 
 #### Enumerations
 
-**ExerciseType**: Discriminator that identifies the concrete exercise subtype
-- `MultipleChoice` — Select from predefined options
-- `FillInTheBlank` — Type the correct word(s) into a blank
-- `Listening` — Listen to audio and provide an answer
-- `Translation` — Translate text between languages
+**ExerciseType** — discriminator that identifies the concrete subtype:
+- `FillInBlank` — Fill in a blank in a sentence; correct answer via ExerciseOption
+- `Listening` — Listen to audio and select/type an answer; correct answer via ExerciseOption
+- `TrueFalse` — True/False statement; options are pre-filled True and False ExerciseOptions
+- `ImageChoice` — Select the correct image from a set of ImageOptions
+- `AudioMatching` — Match audio clips to images via AudioMatchPairs
 
-**DifficultyLevel**: Complexity level
+**DifficultyLevel**:
 - `Beginner` (0)
 - `Intermediate` (1)
 - `Advanced` (2)
 
 #### Base Properties
 
-| Property                 | Type                         | Constraints               | Description                                                                                           |
-|--------------------------|------------------------------|---------------------------|-------------------------------------------------------------------------------------------------------|
-| Id                       | string                       | Primary Key (Guid)        | Unique identifier                                                                                     |
-| LessonId                 | string                       | Required, Foreign Key     | Parent lesson                                                                                         |
-| Title                    | string                       | Required, MaxLength(200)  | Exercise title                                                                                        |
-| Instructions             | string?                      | MaxLength(1000), Optional | Instructions for completing the exercise                                                              |
-| EstimatedDurationMinutes | int?                         | Range(5, 20), Optional    | Expected completion time                                                                              |
-| DifficultyLevel          | DifficultyLevel              | Required                  | Complexity level                                                                                      |
-| Points                   | int                          | Range(1, int.MaxValue)    | Points earned for correct completion                                                                  |
-| OrderIndex               | int                          | Required                  | Position within lesson                                                                                |
-| Explanation              | string?                      | MaxLength(1000), Optional | Educational feedback shown after answering                                                            |
-| CreatedAt                | DateTime                     | Default: UtcNow           | Creation timestamp                                                                                    |
-| Lesson                   | Lesson?                      | Navigation                | Parent lesson                                                                                         |
-| ExerciseProgress         | List\<UserExerciseProgress\> | Navigation                | User progress records for this exercise                                                               |
-
-#### Relationships
-
-- **Many-to-One** with Lesson: Exercise belongs to one lesson
-- **One-to-Many** with UserExerciseProgress: Exercise tracks progress per user
+| Property        | Type                         | Constraints               | Description                                      |
+|-----------------|------------------------------|---------------------------|--------------------------------------------------|
+| ExerciseId      | string                       | Primary Key (Guid)        | Unique identifier                                |
+| LessonId        | string                       | Required, Foreign Key     | Parent lesson                                    |
+| Instructions    | string                       | Required, MaxLength(2000) | Instructions for completing the exercise         |
+| DifficultyLevel | DifficultyLevel              | Required                  | Complexity level                                 |
+| Points          | int                          | Required, Range(1, ∞)     | Points earned for correct completion             |
+| CreatedAt       | DateTime                     | Default: UtcNow           | Creation timestamp                               |
+| Lesson          | Lesson?                      | Navigation                | Parent lesson                                    |
+| Options         | List\<ExerciseOption\>       | Navigation                | Answer options (used by FillInBlank, Listening, TrueFalse) |
+| ExerciseProgress | List\<UserExerciseProgress\> | Navigation                | User progress records for this exercise          |
 
 #### Business Rules
 
-- Exercises are ordered within a lesson using `OrderIndex`
-- Duration ranges from 5 to 20 minutes
 - Access is gated at the lesson level via `Lesson.IsLocked`; there is no per-exercise lock
-- Wrong answers allow infinite retries without penalty
-- Points system feeds leaderboard via `User.TotalPointsEarned`
-
----
-
-### MultipleChoiceExercise
-
-**Purpose**: Exercise subtype where the user selects the correct answer from a set of options.
-
-**File**: [Exercises/MultipleChoiceExercise.cs](../Database/Entities/Exercises/MultipleChoiceExercise.cs)
-
-#### Additional Properties
-
-| Property | Type                   | Constraints | Description                      |
-|----------|------------------------|-------------|----------------------------------|
-| Options  | List\<ExerciseOption\> | Navigation  | Answer choices for this exercise |
-
-#### Relationships
-
-- **One-to-Many** with ExerciseOption: Exercise has multiple answer options
+- Points feed the leaderboard via `User.TotalPointsEarned`
+- Wrong answers decrement the user's hearts; submissions blocked when `Hearts = 0`
 
 ---
 
 ### FillInBlankExercise
 
-**Purpose**: Exercise subtype where the user types the correct word or phrase into a blank.
+**Purpose**: User completes a sentence by selecting or typing the correct word. The sentence with a blank is stored in `Text`; correct/incorrect answers are modelled as `ExerciseOption` records on the base `Options` collection.
 
 **File**: [Exercises/FillInBlankExercise.cs](../Database/Entities/Exercises/FillInBlankExercise.cs)
 
 #### Additional Properties
 
-| Property        | Type    | Constraints               | Description                                                      |
-|-----------------|---------|---------------------------|------------------------------------------------------------------|
-| Text            | string  | Required                  | The sentence containing the blank to fill                        |
-| CorrectAnswer   | string  | Required, MaxLength(500)  | The expected answer                                              |
-| AcceptedAnswers | string? | MaxLength(1000), Optional | Comma-separated list of alternative accepted answers             |
-| CaseSensitive   | bool    | Required, Default: false  | Whether answer matching is case-sensitive                        |
-| TrimWhitespace  | bool    | Required, Default: true   | Whether leading/trailing whitespace is ignored before comparison |
+| Property | Type   | Constraints               | Description                               |
+|----------|--------|---------------------------|-------------------------------------------|
+| Text     | string | Required, MaxLength(5000) | The sentence containing the blank to fill |
 
 ---
 
 ### ListeningExercise
 
-**Purpose**: Exercise subtype where the user listens to audio and provides an answer (transcription or comprehension).
+**Purpose**: User listens to audio and selects the correct answer from `ExerciseOption` records.
 
 **File**: [Exercises/ListeningExercise.cs](../Database/Entities/Exercises/ListeningExercise.cs)
 
 #### Additional Properties
 
-| Property        | Type    | Constraints               | Description                                           |
-|-----------------|---------|---------------------------|-------------------------------------------------------|
-| AudioUrl        | string  | Required, MaxLength(500)  | URL to the audio file                                 |
-| CorrectAnswer   | string  | Required, MaxLength(500)  | Expected transcription or answer text                 |
-| AcceptedAnswers | string? | MaxLength(1000), Optional | Comma-separated alternative accepted answers          |
-| CaseSensitive   | bool    | Default: false            | Whether answer matching is case-sensitive             |
-| MaxReplays      | int     | Range(1, 10), Default: 3  | Maximum number of times the user may replay the audio |
+| Property   | Type   | Constraints               | Description                                           |
+|------------|--------|---------------------------|-------------------------------------------------------|
+| AudioUrl   | string | Required, MaxLength(500)  | URL to the audio file (stored in `/static/uploads/audio`) |
+| MaxReplays | int    | Range(1, 10), Default: 3  | Maximum number of times the user may replay the audio |
 
 ---
 
-### TranslationExercise
+### TrueFalseExercise
 
-**Purpose**: Exercise subtype where the user translates text from one language to another.
+**Purpose**: User evaluates a statement and selects True or False. The two answer options are stored as `ExerciseOption` records (one with `IsCorrect = true`).
 
-**File**: [Exercises/TranslationExercise.cs](../Database/Entities/Exercises/TranslationExercise.cs)
+**File**: [Exercises/TrueFalseExercise.cs](../Database/Entities/Exercises/TrueFalseExercise.cs)
 
 #### Additional Properties
 
-| Property           | Type   | Constraints                    | Description                                                          |
-|--------------------|--------|--------------------------------|----------------------------------------------------------------------|
-| SourceText         | string | Required, MaxLength(1000)      | The text to translate                                                |
-| TargetText         | string | Required, MaxLength(1000)      | The correct translation                                              |
-| SourceLanguageCode | string | Required, MaxLength(10)        | BCP 47 language code of the source (e.g., "bg", "en")                |
-| TargetLanguageCode | string | Required, MaxLength(10)        | BCP 47 language code of the target (e.g., "it", "es")                |
-| MatchingThreshold  | double | Range(0.0, 1.0), Default: 0.85 | Fuzzy-match tolerance; lower values accept less precise translations |
+| Property  | Type    | Constraints               | Description                                  |
+|-----------|---------|---------------------------|----------------------------------------------|
+| Statement | string  | Required, MaxLength(1000) | The statement to evaluate as true or false   |
+| ImageUrl  | string? | MaxLength(500), Optional  | Optional supporting image URL                |
+
+---
+
+### ImageChoiceExercise
+
+**Purpose**: User selects the correct image from a set of image options. Uses `ImageOption` instead of `ExerciseOption`.
+
+**File**: [Exercises/ImageChoiceExercise.cs](../Database/Entities/Exercises/ImageChoiceExercise.cs)
+
+#### Additional Properties
+
+| Property | Type                  | Description                                          |
+|----------|-----------------------|------------------------------------------------------|
+| Options  | List\<ImageOption\>   | Image-based answer choices (shadows base `Options`)  |
+
+---
+
+### AudioMatchingExercise
+
+**Purpose**: User matches audio clips to corresponding images. Uses `AudioMatchPair` records.
+
+**File**: [Exercises/AudioMatchingExercise.cs](../Database/Entities/Exercises/AudioMatchingExercise.cs)
+
+#### Additional Properties
+
+| Property | Type                   | Description                     |
+|----------|------------------------|---------------------------------|
+| Pairs    | List\<AudioMatchPair\> | Audio-to-image matching pairs   |
 
 ---
 
 ### ExerciseOption
 
-**Purpose**: Individual answer choice for `MultipleChoiceExercise` questions.
+**Purpose**: Individual answer choice for `FillInBlankExercise`, `ListeningExercise`, and `TrueFalseExercise`. FK points to the base `Exercise`.
 
 **File**: [Exercises/ExerciseOption.cs](../Database/Entities/Exercises/ExerciseOption.cs)
 
 #### Properties
 
-| Property   | Type                   | Constraints              | Description                        |
-|------------|------------------------|--------------------------|------------------------------------|
-| Id         | string                 | Primary Key (Guid)       | Unique identifier                  |
-| ExerciseId | string                 | Required, Foreign Key    | Parent MultipleChoiceExercise      |
-| OptionText | string                 | Required, MaxLength(500) | Display text of this answer option |
-| IsCorrect  | bool                   | Required, Default: false | Whether this is the correct answer |
-| OrderIndex | int                    | Required                 | Display order (0=A, 1=B, 2=C, 3=D) |
-| Exercise   | MultipleChoiceExercise | Navigation               | Parent exercise                    |
-
-#### Relationships
-
-- **Many-to-One** with MultipleChoiceExercise: Option belongs to one exercise
+| Property         | Type      | Constraints              | Description                                    |
+|------------------|-----------|--------------------------|------------------------------------------------|
+| ExerciseOptionId | string    | Primary Key (Guid)       | Unique identifier                              |
+| ExerciseId       | string    | Required, Foreign Key    | Parent Exercise (base class FK)                |
+| OptionText       | string    | Required, MaxLength(500) | Display text of this answer option             |
+| IsCorrect        | bool      | Required, Default: false | Whether this is the correct answer             |
+| Explanation      | string    | Required, MaxLength(1000)| Feedback shown after the user answers          |
+| Exercise         | Exercise  | Navigation               | Parent exercise                                |
 
 #### Business Rules
 
-- Options are ordered by `OrderIndex` for consistent display
-- Exactly one option should have `IsCorrect=true` for single-answer questions
-- `OrderIndex` determines letter labelling (0=A, 1=B, 2=C, 3=D)
+- Exactly one option per exercise should have `IsCorrect = true`
+- `Explanation` is shown to the user after they answer (correct or incorrect)
 
 ---
 
+### ImageOption
+
+**Purpose**: Image-based answer choice for `ImageChoiceExercise`.
+
+**File**: [Exercises/ImageOption.cs](../Database/Entities/Exercises/ImageOption.cs)
+
+#### Properties
+
+| Property              | Type                 | Constraints               | Description                                      |
+|-----------------------|----------------------|---------------------------|--------------------------------------------------|
+| ImageOptionId         | string               | Primary Key (Guid)        | Unique identifier                                |
+| ImageChoiceExerciseId | string               | Required, Foreign Key     | Parent ImageChoiceExercise                       |
+| ImageUrl              | string               | Required, MaxLength(500)  | URL of the image to display                      |
+| AltText               | string               | Required, MaxLength(200)  | Accessibility alt text                           |
+| IsCorrect             | bool                 | Required, Default: false  | Whether this is the correct option               |
+| Explanation           | string               | Required, MaxLength(1000) | Feedback shown after the user answers            |
+| Exercise              | ImageChoiceExercise  | Navigation                | Parent exercise                                  |
+
+#### Business Rules
+
+- Indexed on `ImageChoiceExerciseId` for efficient FK queries
+- Exactly one option per exercise should have `IsCorrect = true`
+
+---
+
+### AudioMatchPair
+
+**Purpose**: A single audio-to-image pairing within an `AudioMatchingExercise`. Each pair has an audio clip and an image; `IsCorrect` marks the pair(s) the user should select.
+
+**File**: [Exercises/AudioMatchPair.cs](../Database/Entities/Exercises/AudioMatchPair.cs)
+
+#### Properties
+
+| Property               | Type                  | Constraints               | Description                                    |
+|------------------------|-----------------------|---------------------------|------------------------------------------------|
+| AudioMatchPairId       | string                | Primary Key (Guid)        | Unique identifier                              |
+| AudioMatchingExerciseId | string               | Required, Foreign Key     | Parent AudioMatchingExercise                   |
+| AudioUrl               | string                | Required, MaxLength(500)  | URL of the audio clip                          |
+| ImageUrl               | string                | Required, MaxLength(500)  | URL of the image to match                      |
+| IsCorrect              | bool                  | Required, Default: false  | Whether this pair is a correct match           |
+| Explanation            | string                | Required, MaxLength(1000) | Feedback shown after the user answers          |
+| Exercise               | AudioMatchingExercise | Navigation                | Parent exercise                                |
+
+#### Business Rules
+
+- Indexed on `AudioMatchingExerciseId` for efficient FK queries
+
+---
+
+## Progress Entities
+
 ### UserExerciseProgress
 
-**Purpose**: Tracks each user's progress on individual exercises. Used for sequential exercise unlocking, lesson completion thresholds, and leaderboard XP aggregation.
+**Purpose**: Tracks each user's progress on individual exercises, including spaced-repetition scheduling data.
 
 **File**: [UserExerciseProgress.cs](../Database/Entities/UserExerciseProgress.cs)
 
 #### Properties
 
-| Property     | Type      | Constraints                         | Description                                                    |
-|--------------|-----------|-------------------------------------|----------------------------------------------------------------|
-| UserId       | string    | Required, Foreign Key, Composite PK | Reference to User                                              |
-| ExerciseId   | string    | Required, Foreign Key, Composite PK | Reference to Exercise                                          |
-| IsCompleted  | bool      | Required                            | Whether the user has answered correctly at least once          |
-| PointsEarned | int       | Required                            | Points awarded for correct completion (0 if not yet completed) |
-| CompletedAt  | DateTime? | Optional                            | Timestamp of first correct answer; null if not yet completed   |
-| User         | User      | Navigation                          | User entity                                                    |
-| Exercise     | Exercise  | Navigation                          | Exercise entity                                                |
+| Property       | Type      | Constraints                         | Description                                                    |
+|----------------|-----------|-------------------------------------|----------------------------------------------------------------|
+| UserId         | string    | Required, Composite PK, FK → User   | Reference to User                                              |
+| ExerciseId     | string    | Required, Composite PK, FK → Exercise | Reference to Exercise                                        |
+| IsCompleted    | bool      | Required                            | Whether the user has answered correctly at least once          |
+| PointsEarned   | int       | Required, Range(0, ∞)               | Points awarded for correct completion (0 if not yet completed) |
+| CompletedAt    | DateTime? | Optional                            | Timestamp of first correct answer; null if not yet completed   |
+| EaseFactor     | double    | Range(1.3, 2.5), Default: 2.5       | SM-2 ease factor for spaced repetition scheduling             |
+| Interval       | int       | Range(0, ∞), Default: 0             | SM-2 interval in days until next review                       |
+| Repetitions    | int       | Range(0, ∞), Default: 0             | SM-2 consecutive correct repetition count                     |
+| NextReviewDate | DateTime? | Optional                            | Scheduled next review date (SM-2)                             |
+| LastReviewedAt | DateTime? | Optional                            | Timestamp of the most recent review attempt                   |
+| User           | User?     | Navigation                          | User entity                                                    |
+| Exercise       | Exercise? | Navigation                          | Exercise entity                                                |
 
 #### Composite Primary Key
 
-Uses a composite primary key consisting of `(UserId, ExerciseId)` — ensures one progress record per user per exercise.
+`(UserId, ExerciseId)` — one progress record per user per exercise.
 
 #### Relationships
 
@@ -396,9 +475,44 @@ Uses a composite primary key consisting of `(UserId, ExerciseId)` — ensures on
 
 - Upsert pattern: first submission creates the record, subsequent correct submissions update it
 - `CompletedAt` is set only once (on first correct answer) and never overwritten
-- Lesson completion check: `SUM(PointsEarned) / totalLessonPoints >= 0.70`
 - `User.TotalPointsEarned` is incremented at submission time to avoid full re-aggregation on leaderboard queries
 - Streak calculation derives from distinct `CompletedAt` dates (consecutive days backward from today)
+- SM-2 fields (`EaseFactor`, `Interval`, `Repetitions`, `NextReviewDate`, `LastReviewedAt`) are reserved for future spaced-repetition scheduling
+
+---
+
+### UserLessonProgress
+
+**Purpose**: Per-user, per-lesson summary of completion state. Upserted by `LessonProgressService` on every lesson-load and lesson-submit call.
+
+**File**: [UserLessonProgress.cs](../Database/Entities/UserLessonProgress.cs)
+
+#### Properties
+
+| Property             | Type      | Constraints                        | Description                                                  |
+|----------------------|-----------|------------------------------------|--------------------------------------------------------------|
+| UserId               | string    | Required, Composite PK, FK → User  | Reference to User                                            |
+| LessonId             | string    | Required, Composite PK, FK → Lesson | Reference to Lesson                                         |
+| CompletedExercises   | int       | —                                  | Number of exercises answered correctly                       |
+| TotalExercises       | int       | —                                  | Total exercises in the lesson                                |
+| EarnedXp             | int       | —                                  | XP earned in this lesson                                     |
+| TotalPossibleXp      | int       | —                                  | Maximum XP available in this lesson                          |
+| CompletionPercentage | double    | —                                  | `CompletedExercises / TotalExercises * 100`                  |
+| IsCompleted          | bool      | —                                  | True when user still has hearts at lesson submission time    |
+| CompletedAt          | DateTime? | Optional                           | Timestamp when `IsCompleted` first became true               |
+| UpdatedAt            | DateTime  | Default: UtcNow                    | Last update timestamp                                        |
+| User                 | User?     | Navigation                         | User entity                                                  |
+| Lesson               | Lesson?   | Navigation                         | Lesson entity                                                |
+
+#### Composite Primary Key
+
+`(UserId, LessonId)`.
+
+#### Business Rules
+
+- `IsCompleted = true` when the user submits a lesson with at least 1 heart remaining
+- Unlocking the next lesson is gated on `IsCompleted = true`
+- Indexed separately on `UserId` and `LessonId`
 
 ---
 
@@ -408,21 +522,29 @@ Uses a composite primary key consisting of `(UserId, ExerciseId)` — ensures on
 User (1) ──────────────────< (M) UserLanguage (M) >──────────── (1) Language
   │  │                                                                    │
   │  └── (1:1) UserAvatar  [shared PK: UserId]                           │
+  │  └──────< (M) UserAchievement (M) >──── (1) Achievement              │
   │                                                                       │
   │ CreatedBy                                                             │
   └──────< (M) Course (M) >───────────────────────────────────────────────┘
                    │
                    └──────< (M) Lesson
                                   │
-                                  └──────< (M) Exercise  ←─────────────────────────── User (1)
-                                               │  (TPH)                                    │
-                                               ├─ MultipleChoiceExercise                   │
-                                               │    └──────< (M) ExerciseOption             │
-                                               ├─ FillInBlankExercise                      │
-                                               ├─ ListeningExercise                        │
-                                               └─ TranslationExercise                      │
-                                                          │                                 │
-                                                          └──< (M) UserExerciseProgress >───┘
+                                  └──< (M) UserLessonProgress >── (1) User
+                                  │
+                                  └──────< (M) Exercise  ←─────────────────── User (1)
+                                               │  (TPH)                            │
+                                               ├─ FillInBlankExercise              │
+                                               │    └──────< (M) ExerciseOption    │
+                                               ├─ ListeningExercise                │
+                                               │    └──────< (M) ExerciseOption    │
+                                               ├─ TrueFalseExercise                │
+                                               │    └──────< (M) ExerciseOption    │
+                                               ├─ ImageChoiceExercise              │
+                                               │    └──────< (M) ImageOption       │
+                                               └─ AudioMatchingExercise            │
+                                                    └──────< (M) AudioMatchPair    │
+                                                          │                        │
+                                                          └──< (M) UserExerciseProgress >─┘
 ```
 
 ---
@@ -431,14 +553,15 @@ User (1) ──────────────────< (M) UserLanguag
 
 ### Flat Content Hierarchy
 - The original `Module` layer between Course and Lesson was removed to simplify the content hierarchy
-- Courses now contain Lessons directly, reducing join depth for common queries
+- Courses contain Lessons directly, reducing join depth for common queries
 
 ### Table-Per-Hierarchy (TPH) for Exercises
 - All exercise subtypes share the `Exercises` table with a discriminator column (`ExerciseType`)
 - Type-specific columns are nullable for non-owning subtypes
 - Enables polymorphic queries and eager loading via EF Core cast patterns:
   ```csharp
-  .ThenInclude(e => (e as MultipleChoiceExercise)!.Options)
+  .ThenInclude(e => (e as ImageChoiceExercise)!.Options)
+  .ThenInclude(e => (e as AudioMatchingExercise)!.Pairs)
   ```
 
 ### UUID Primary Keys
@@ -447,14 +570,27 @@ User (1) ──────────────────< (M) UserLanguag
 
 ### Ordering and Sequencing
 - All hierarchical entities use `OrderIndex` to maintain consistent ordering
-- OrderIndex starts at 0 and increments for each sibling
-- Allows flexible reordering without renumbering all siblings
 - Auto-calculated when not provided: `MAX(OrderIndex) + 1` within the parent
+- Exercises within a lesson do **not** use `OrderIndex` on the entity — ordering is determined by insertion/API order
 
 ### Progressive Locking
-- `Lesson.IsLocked` controls lesson accessibility (default: `false` at schema level, `true` in seed data)
+- `Lesson.IsLocked` controls lesson accessibility (default: `true`)
 - Exercise access is gated solely by the parent lesson's `IsLocked` flag — there is no per-exercise lock
-- All unlock methods are idempotent (check `IsLocked` before writing)
+- All unlock methods are idempotent (check `IsLocked` before mutation)
+- Admins and ContentCreators bypass the lock via `UserExtensions.CanBypassLocksAsync`
+
+### Hearts System
+- `User.Hearts` starts at 5 (max); decremented by `HeartsService.DecrementHearts` on each wrong answer
+- When `Hearts = 0`, all submissions (including correct answers) are blocked with `NoHeartsException`
+- Refill formula: `floor(elapsedHours / 4)` hearts per interval, capped at `MaxHearts - currentHearts`
+- Refill timer freezes when `Hearts == MaxHearts` (no-op until a wrong answer is submitted)
+- `LastHeartResetAt` advances by `granted * 4` hours to maintain the refill schedule
+- Admins and ContentCreators bypass the hearts check
+
+### Lesson Completion (Hearts-Based)
+- A lesson is marked `IsCompleted = true` in `UserLessonProgress` when the user submits with `Hearts > 0`
+- The next lesson is unlocked on `IsCompleted = true`
+- `CompletionPercentage` is tracked for UI display but does **not** gate completion
 
 ### XP Caching
 - `User.TotalPointsEarned` is a materialized aggregate incremented at submission time
@@ -465,64 +601,74 @@ User (1) ──────────────────< (M) UserLanguag
 - Most entities include `CreatedAt` for audit trails
 - Course includes `UpdatedAt` for tracking content modifications
 - `UserExerciseProgress.CompletedAt` records the first correct answer timestamp (used for streak calculation)
+- `UserLessonProgress.UpdatedAt` is refreshed on every upsert
 
 ### Inline Content Storage
-- `Lesson.LessonContent` stores Editor.js JSON directly as a database text column
+- `Lesson.LessonContent` stores Editor.js JSON directly as a database `nvarchar(max)` column
 - Avoids external URL dependencies; content updates go through the API
 
-### Fuzzy Answer Matching
-- `TranslationExercise.MatchingThreshold` (default 0.85) allows slight variations
-- `FillInBlankExercise` and `ListeningExercise` support comma-separated `AcceptedAnswers` for alternative correct responses
-- Case sensitivity and whitespace trimming are configurable per exercise
+### Audio File Management
+- `ListeningExercise.AudioUrl` and `AudioMatchPair.AudioUrl` point to files in `/static/uploads/audio`
+- `FileUploadsService.DeleteOrphanedAudioAsync(graceWindow)` removes audio files not referenced by any exercise, respecting a grace window for recently uploaded files
+- Cascade delete: deleting an exercise triggers `FileUploadsService` to remove the associated audio file before the DB row is deleted
 
 ---
 
 ## Validation Constraints Summary
 
 ### String Length Constraints
-- **10 characters**: Language codes (SourceLanguageCode, TargetLanguageCode)
-- **100 characters**: Language.Name, Course.Title
-- **200 characters**: Lesson.Title, Exercise.Title
+- **10 characters**: Language codes (BCP 47)
+- **100 characters**: Language.Name, Course.Title, Achievement.AchievementName
+- **200 characters**: Lesson.Title, Exercise base fields, ImageOption.AltText
 - **255 characters**: Language.FlagIconUrl
-- **500 characters**: ExerciseOption.OptionText, CorrectAnswer fields, Audio/Image URLs
-- **1000 characters**: Description fields, Explanation, Instructions, AcceptedAnswers, SourceText, TargetText
+- **500 characters**: ExerciseOption.OptionText, AudioUrl/ImageUrl fields, Achievement.Description
+- **1000 characters**: Explanation fields (ExerciseOption, ImageOption, AudioMatchPair), Instructions (up to 2000), TrueFalseExercise.Statement
+- **2000 characters**: Exercise.Instructions
+- **5000 characters**: FillInBlankExercise.Text
 
 ### Numeric Range Constraints
 - **Course Duration**: 1–300 hours
-- **Lesson Duration**: 10–40 minutes
-- **Exercise Duration**: 5–20 minutes
+- **Lesson Duration**: 10–120 minutes
 - **Exercise Points**: 1–int.MaxValue
 - **ListeningExercise.MaxReplays**: 1–10
-- **TranslationExercise.MatchingThreshold**: 0.0–1.0
+- **User.Hearts**: 0–5 (enforced by service, not DB constraint)
+- **Achievement.XpRequired**: 0–int.MaxValue
+- **SM-2 EaseFactor**: 1.3–2.5
 
 ### Required Fields
 - All primary keys and foreign keys
 - Titles across all content entities
 - Course.CreatedById (audit trail)
 - Lesson.LessonContent (inline content must exist)
-- Exercise.DifficultyLevel (required for all subtypes)
-- Exercise.ExerciseType (TPH discriminator)
-- ExerciseOption.IsCorrect (answer correctness flag)
+- Exercise.DifficultyLevel, Exercise.Instructions (required for all subtypes)
+- ExerciseOption.OptionText, ExerciseOption.Explanation
+- ImageOption.ImageUrl, ImageOption.AltText, ImageOption.Explanation
+- AudioMatchPair.AudioUrl, AudioMatchPair.ImageUrl, AudioMatchPair.Explanation
+- TrueFalseExercise.Statement
+- ListeningExercise.AudioUrl
+- FillInBlankExercise.Text
 
 ---
 
 ## Database Considerations
 
-### Indexing Recommendations
+### Indexing
 - Foreign keys (configured automatically by EF Core)
-- `OrderIndex` fields for sorting performance
-- `User.Email` and `User.UserName` (inherited from IdentityUser)
-- `Language.Name` for lookups
-- `Course.LanguageId` and `Course.CreatedById` for filtering
-- `UserExerciseProgress.(UserId, ExerciseId)` composite index (composite PK covers this)
+- `Lesson (CourseId, OrderIndex)` — composite index for sort performance
+- `Exercise (LessonId)` — index for lesson exercise queries
+- `ImageOption (ImageChoiceExerciseId)` — index for child lookup
+- `AudioMatchPair (AudioMatchingExerciseId)` — index for child lookup
+- `UserExerciseProgress (UserId)` and `(ExerciseId)` — separate indexes
+- `UserLessonProgress (UserId)` and `(LessonId)` — separate indexes
+- `UserAchievement (UserId)` — index for user achievement queries
 - `UserExerciseProgress.CompletedAt` for streak and leaderboard date range queries
 
 ### Cascade Delete Behavior
 - Deleting a Language cascades to UserLanguage records
 - Deleting a Course cascades to Lessons
 - Deleting a Lesson cascades to Exercises
-- Deleting a MultipleChoiceExercise cascades to ExerciseOptions
-- Deleting a User cascades to UserExerciseProgress (`DeleteBehavior.Cascade` on UserId FK)
+- Deleting an Exercise triggers `FileUploadsService` to remove associated audio files, then cascades to ExerciseOptions / ImageOptions / AudioMatchPairs
+- Deleting a User cascades to UserExerciseProgress and UserLessonProgress (`DeleteBehavior.Cascade` on UserId FK)
 - Deleting an Exercise does **not** cascade to UserExerciseProgress (`DeleteBehavior.NoAction` on ExerciseId FK — SQL Server multiple cascade path constraint)
 
 ### Performance Considerations
@@ -538,21 +684,6 @@ User (1) ──────────────────< (M) UserLanguag
 
 ---
 
-## Future Extension Points
-
-The current schema supports future enhancements:
-
-1. **Course Enrollment**: Formal enrollment system for access control beyond `UserLanguage`
-2. **Achievements/Badges**: Leverage `UserExerciseProgress` and `TotalPointsEarned` for gamification milestones
-3. **Social Features**: Comments, ratings, and user-generated content layers
-4. **Adaptive Learning**: Use `DifficultyLevel` and per-user performance to personalise exercise selection
-5. **Content Versioning**: Track `Course.UpdatedAt` for content change management
-6. **Media Library**: Centralise media asset management instead of per-exercise URLs
-7. **Certification**: Track lesson/course completion for certificates using `UserExerciseProgress`
-8. **Streak Persistence**: Materialise daily streaks to avoid recalculating from `CompletedAt` dates on every leaderboard query
-
----
-
-**Last Updated**: 2026-03-02
-**Database Version**: 2.0
-**EF Core Version**: Compatible with EF Core 9.0+
+**Last Updated**: 2026-05-29
+**Database Version**: 3.0
+**EF Core Version**: Compatible with EF Core 10.0+

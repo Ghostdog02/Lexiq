@@ -27,8 +27,8 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
     {
         _ctx = fixture.CreateDbContext();
 
-        var exerciseService = new ExerciseService(_ctx);
-        _sut = new LessonService(_ctx, exerciseService);
+        var exerciseService = new ExerciseService(_ctx, new Moq.Mock<Backend.Api.Services.IFileUploadsService>().Object);
+        _sut = new LessonService(_ctx, exerciseService, new Backend.Api.Services.Clock.SystemClock());
 
         var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
         _languageId = language.LanguageId;

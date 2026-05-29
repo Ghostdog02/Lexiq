@@ -23,7 +23,7 @@ public record LessonProgressSummary(
     int EarnedXp,
     int TotalPossibleXp,
     double CompletionPercentage,
-    bool MeetsCompletionThreshold
+    bool IsCompleted
 );
 
 public record CompleteLessonResponse(

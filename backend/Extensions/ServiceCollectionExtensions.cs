@@ -1,5 +1,6 @@
 using System.Text;
 using Backend.Api.Services;
+using Backend.Api.Services.Clock;
 using Backend.Database;
 using Backend.Database.Entities.Users;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -79,6 +80,8 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
+        services.AddSingleton<IClock, SystemClock>();
+        services.AddScoped<HeartsService>();
         services.AddScoped<IGoogleAuthService, GoogleAuthService>();
         services.AddScoped<CourseService>();
         services.AddScoped<LessonService>();

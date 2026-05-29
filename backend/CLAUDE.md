@@ -56,7 +56,7 @@ API reference docs: [`/docs/backend/api/`](../docs/backend/api) (error handling,
 ### EF Core query rules
 
 - `.Include()` / `.ThenInclude()` for full graphs.
-- For polymorphic children: `.ThenInclude(e => (e as MultipleChoiceExercise)!.Options)`.
+- For polymorphic children: `.ThenInclude(e => (e as ImageChoiceExercise)!.Options)` / `.ThenInclude(e => (e as AudioMatchingExercise)!.Pairs)`.
 - Project to a `private record` when only scalar FKs are needed (cheaper than `Include`).
 - `.OrderBy(e => e.OrderIndex)` for every collection.
 - `GroupJoin` for left-join in a single round-trip (see `ExerciseProgressService`).
@@ -82,10 +82,11 @@ API reference docs: [`/docs/backend/api/`](../docs/backend/api) (error handling,
 
 ```csharp
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
-[JsonDerivedType(typeof(MultipleChoiceExerciseDto), "MultipleChoice")]
-[JsonDerivedType(typeof(FillInBlankExerciseDto), "FillInBlank")]
-[JsonDerivedType(typeof(ListeningExerciseDto), "Listening")]
-[JsonDerivedType(typeof(TranslationExerciseDto), "Translation")]
+[JsonDerivedType(typeof(FillInBlankExerciseDto),    "FillInBlank")]
+[JsonDerivedType(typeof(ListeningExerciseDto),      "Listening")]
+[JsonDerivedType(typeof(TrueFalseExerciseDto),      "TrueFalse")]
+[JsonDerivedType(typeof(ImageChoiceExerciseDto),    "ImageChoice")]
+[JsonDerivedType(typeof(AudioMatchingExerciseDto),  "AudioMatching")]
 public abstract record ExerciseDto(...);
 ```
 
@@ -150,23 +151,38 @@ Listens on `:8080`. Don't set `ASPNETCORE_URLS` — base image sets `ASPNETCORE_
 ## File uploads
 
 - Static files served at `/static/uploads`. Max 100 MB. CORS enabled. 1-year cache.
-- Endpoints: `POST /api/uploads/{fileType}`, `POST /api/uploads/any`, `GET /api/uploads/{fileType}/{filename}`, `GET /api/uploads/list/{fileType}`.
+- Endpoints: `POST /api/uploads/{fileType}`, `POST /api/uploads/any`, `POST /api/uploads/{fileType}-by-url`, `GET /api/uploads/{fileType}/{filename}`, `GET /api/uploads/{filename}`, `GET /api/uploads/list/{fileType}`, `GET /api/uploads/list/all`.
 - All exceptions caught → `FileUploadResult.Failure()` with a generic message; full detail logged via `ILogger`. Never expose raw exception messages.
+
+### Audio-specific upload rules
+
+- Audio files stored at `/static/uploads/audio`. Accepted formats: `.mp3`, `.wav`, `.ogg`, `.m4a`, `.flac`.
+- `FileUploadsService.DeleteOrphanedAudioAsync(graceWindow)` — deletes audio files not referenced by any exercise, respecting a grace window for recently uploaded files.
+- Cascade delete: `ExerciseService.DeleteAsync` calls `FileUploadsService` to remove the associated audio file **before** deleting the exercise entity.
+
+## Hearts system
+
+- `User.Hearts` starts at 5 (max). Each wrong answer costs 1 heart via `HeartsService.DecrementHearts`.
+- When `Hearts = 0`, **all** submissions (including correct answers) are blocked; `LessonProgressService` throws `NoHeartsException`.
+- Refill via `HeartsService.RefillAndGetHeartsAsync`: formula `floor(elapsedHours / 4)` hearts granted per 4-hour interval, capped at `MaxHearts - currentHearts`. Refill timer advances by `granted * 4` hours to stay aligned.
+- Timer freezes at `Hearts == MaxHearts` (no elapsed time accrued until a heart is lost).
+- Admins and ContentCreators bypass the hearts check via `UserExtensions.CanBypassLocksAsync`.
 
 ## API endpoints
 
-| Controller                 | Base route                                            | Auth                                                                              |
-|----------------------------|-------------------------------------------------------|-----------------------------------------------------------------------------------|
-| `AuthController`           | `/api/auth`                                           | Mixed — `POST /google-login`, `POST /logout`, `GET /auth-status`, `GET /is-admin` |
-| `CourseController`         | `/api/courses`                                        | Public read; Admin/Creator mutations                                              |
-| `LessonController`         | `/api/lessons`                                        | Public read; Admin/Creator mutations                                              |
-| `ExerciseController`       | `/api/exercises`                                      | Mutations Admin/Creator; `POST /{id}/submit` any user                             |
-| `LanguageController`       | `/api/languages`                                      | Public read; Admin write                                                          |
-| `UserLanguageController`   | `/api/userLanguages`                                  | Authenticated                                                                     |
-| `UserManagementController` | `/api/userManagement`                                 | Admin only                                                                        |
-| `UploadsController`        | `/api/uploads`                                        | Authenticated                                                                     |
-| `LeaderboardController`    | `/api/leaderboard?timeFrame=Weekly\|Monthly\|AllTime` | Public (includes self if authed)                                                  |
-| `UserController`           | `/api/user`                                           | `GET /{userId}/avatar` public; `PUT /avatar` auth                                 |
+| Controller                 | Base route                                            | Key endpoints / Auth                                                                                                                                               |
+|----------------------------|-------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `AuthController`           | `/api/auth`                                           | `POST /google-login` (anon), `POST /logout` (auth), `GET /auth-status` (auth), `GET /is-admin` (auth)                                                             |
+| `CourseController`         | `/api/courses`                                        | `GET` / `GET {id}` (public); mutations Admin/Creator                                                                                                               |
+| `LessonController`         | `/api/lessons`                                        | `GET {id}`, `GET course/{courseId}`, `GET {id}/exercises`, `GET {id}/progress`, `GET {id}/submissions`, `GET {id}/next` (auth); `POST {id}/submit` (auth); `POST {id}/unlock` (Admin); CRUD (Creator) |
+| `ExerciseController`       | `/api/exercises`                                      | `GET {id}` (auth); `GET {id}/correct-answer` (auth); `POST {id}/submit` (auth); CRUD Admin/Creator                                                                |
+| `LanguageController`       | `/api/languages`                                      | Public read; Admin write                                                                                                                                           |
+| `UserLanguageController`   | `/api/userLanguages`                                  | Authenticated                                                                                                                                                      |
+| `UserManagementController` | `/api/userManagement`                                 | Admin only                                                                                                                                                         |
+| `RoleManagementController` | `/api/roleManagement`                                 | Admin only                                                                                                                                                         |
+| `UploadsController`        | `/api/uploads`                                        | `POST {fileType}`, `POST any`, `POST {fileType}-by-url`, `GET {fileType}/{filename}`, `GET {filename}`, `GET list/{fileType}`, `GET list/all` (auth)                |
+| `LeaderboardController`    | `/api/leaderboard?timeFrame=Weekly\|Monthly\|AllTime` | Public (includes self if authed)                                                                                                                                   |
+| `UserController`           | `/api/user`                                           | `GET xp` (auth), `GET hearts` (auth), `GET {userId}/xp` (anon), `GET {userId}/avatar` (anon), `PUT avatar` (auth)                                                 |
 
 ## Workflows
 
@@ -191,7 +207,7 @@ Listens on `:8080`. Don't set `ASPNETCORE_URLS` — base image sets `ASPNETCORE_
 
 - No DTO validation layer — validation happens in entities.
 - `Lesson.status` is **not** returned by the API; frontend derives it from `isLocked`, `isCompleted`, `completedExercises`.
-- Lesson completion threshold: 70% XP (`ExerciseProgressService.DefaultCompletionThreshold`).
+- `DefaultCompletionThreshold = 0.70` is defined in `ExerciseProgressService` but lesson completion is now hearts-based (`Hearts > 0` at submit time), not XP-threshold-based.
 - `UserExerciseProgress.ExerciseId` FK uses `DeleteBehavior.NoAction` (SQL Server multiple-cascade-path constraint).
 - Exercise access: gated by `Lesson.IsLocked` only — no per-exercise lock.
-- **Hearts**: users start with 3 hearts. Each wrong answer costs 1 heart. When hearts reach 0, all further submissions are blocked (including correct answers) until hearts are replenished. Admins and ContentCreators bypass the hearts check.
+- SM-2 fields (`EaseFactor`, `Interval`, `Repetitions`, `NextReviewDate`, `LastReviewedAt`) on `UserExerciseProgress` are persisted but not yet used for scheduling.

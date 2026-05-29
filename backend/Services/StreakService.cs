@@ -1,11 +1,13 @@
+using Backend.Api.Services.Clock;
 using Backend.Database;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class StreakService(BackendDbContext context)
+public class StreakService(BackendDbContext context, IClock clock)
 {
     private readonly BackendDbContext _context = context;
+    private readonly IClock _clock = clock;
 
     /// <summary>
     /// Calculates current and longest streak from exercise completion dates.
@@ -26,7 +28,7 @@ public class StreakService(BackendDbContext context)
         if (activeDates.Count == 0)
             return (0, 0);
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(_clock.UtcNow);
         var currentStreak = 0;
         var longestStreak = 0;
         var streak = 1;

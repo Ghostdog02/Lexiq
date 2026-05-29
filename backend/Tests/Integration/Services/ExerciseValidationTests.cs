@@ -268,15 +268,19 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
         var sp = services.BuildServiceProvider();
         var userManager = sp.GetRequiredService<UserManager<User>>();
 
-        var exerciseService = new ExerciseService(ctx);
-        var lessonService = new LessonService(ctx, exerciseService);
+        var clock = new Backend.Api.Services.Clock.SystemClock();
+        var exerciseService = new ExerciseService(ctx, new Moq.Mock<Backend.Api.Services.IFileUploadsService>().Object);
+        var lessonService = new LessonService(ctx, exerciseService, clock);
         var achievementService = new AchievementService(ctx);
+        var heartsService = new HeartsService(ctx, clock);
 
         return new LessonProgressService(
             ctx,
             lessonService,
             userManager,
-            achievementService
+            achievementService,
+            clock,
+            heartsService
         );
     }
 

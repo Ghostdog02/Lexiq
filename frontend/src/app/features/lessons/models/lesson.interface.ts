@@ -91,7 +91,7 @@ export interface UpdateLessonApiResponse {
 export interface CreateLessonDto {
   title: string;
   description: string;
-  estimatedDuration: number;
+  estimatedDurationMinutes: number;
   content: string;
   courseId: string;
   exercises: ExerciseFormValue[];
@@ -101,7 +101,6 @@ export interface LessonFormControls {
   title: FormControl<string>;
   description: FormControl<string>;
   estimatedDuration: FormControl<number>;
-  mediaUrl: FormControl<string>;
   content: FormControl<string>;
   courseId: FormControl<string>;
   exercises: FormArray<ExerciseForm>;

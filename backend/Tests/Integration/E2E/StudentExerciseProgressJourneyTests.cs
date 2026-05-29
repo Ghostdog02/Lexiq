@@ -86,8 +86,8 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
         result.Exercises.Should().AllSatisfy(e => e.IsCorrect.Should().BeTrue());
         result.Summary.EarnedXp.Should().Be(50, "5 exercises × 10 points");
         result.Summary.TotalPossibleXp.Should().Be(50);
-        result.Summary.MeetsCompletionThreshold.Should().BeTrue(
-            because: "100% completion exceeds 70% threshold");
+        result.Summary.IsCompleted.Should().BeTrue(
+            because: "student submitted with hearts remaining");
     }
 
     [Fact]
@@ -205,7 +205,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
 
         // Assert
         result.Should().NotBeNull();
-        result!.Summary.MeetsCompletionThreshold.Should().BeTrue();
+        result!.Summary.IsCompleted.Should().BeTrue(because: "student submitted with hearts remaining");
         result.Summary.EarnedXp.Should().Be(280, "28 exercises × 10 points");
         result.Summary.TotalPossibleXp.Should().Be(400, "40 exercises × 10 points");
         result.Summary.CompletionPercentage.Should().Be(0.70, "28 out of 40 exercises completed");
@@ -321,7 +321,7 @@ public class StudentExerciseProgressJourneyTests(DatabaseFixture fixture)
 
         // Assert
         result.Should().NotBeNull();
-        result!.Summary.MeetsCompletionThreshold.Should().BeFalse("67.5% is below 70% threshold");
+        result!.Summary.IsCompleted.Should().BeTrue(because: "student still has hearts when submitting");
         result.Summary.CompletionPercentage.Should().Be(0.68, "27 out of 40 exercises completed");
     }
 

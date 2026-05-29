@@ -117,7 +117,7 @@ public class ProfileServiceTests(DatabaseFixture fixture)
 
         // Wire up services
         var avatarService = CreateAvatarService(_ctx);
-        var streakService = new StreakService(_ctx);
+        var streakService = new StreakService(_ctx, new Backend.Api.Services.Clock.SystemClock());
         var achievementService = new AchievementService(_ctx);
 
         _service = new ProfileService(_ctx, streakService, achievementService, avatarService);
