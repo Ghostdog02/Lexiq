@@ -70,6 +70,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   continueButtonEnabled = false;
   exerciseSwitchState = '';
+  outOfHearts = false;
   private isSwitching = false;
 
   // Expose enum to template
@@ -257,6 +258,11 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     if (!this.currentExercise?.id || !this.state.currentHasSelection)
       return;
     this.state.submitAnswer(this.currentExercise.id);
+    if (this.state.hearts === 0) {
+      this.outOfHearts = true;
+      this.lessonService.submitLesson(this.lessonId, this.state.buildSubmitPayload())
+        .catch(err => console.error('Failed to sync hearts to backend:', err));
+    }
     setTimeout(() => { this.continueButtonEnabled = true; }, 600);
   }
 
