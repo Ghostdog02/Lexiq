@@ -37,6 +37,26 @@
       </button>
     </div>
   </div>
+} @else if (outOfHearts) {
+  <!-- Out of hearts full-screen card -->
+  <div class="exercises-view fade-in">
+    <div class="results-card card out-of-hearts-card">
+      <div class="results-header">
+        <span class="results-icon out-of-hearts-icon">&#x2764;&#xFE0F;</span>
+        <h2 class="results-title">Out of Hearts!</h2>
+      </div>
+      <p class="out-of-hearts-message">Don't worry, you'll get them next time.</p>
+      <p class="out-of-hearts-refill">Hearts refill every 4 hours.</p>
+      <div class="out-of-hearts-actions">
+        <button class="btn primary" (click)="dismissResults()" aria-label="Go to home">
+          Go Home
+        </button>
+        <button class="btn" (click)="onBackToContent()" aria-label="Back to lesson">
+          Back to Lesson
+        </button>
+      </div>
+    </div>
+  </div>
 } @else {
   <div class="exercises-view fade-in">
     @if (currentExercise) {
@@ -134,13 +154,7 @@
               </button>
             </div>
           } @else if (isCurrentSubmitted) {
-            @if (!isCurrentCorrect && state.hearts <= 0) {
-              <div class="check-button-wrapper submitted">
-                <button class="btn danger" (click)="onBackToContent()" [disabled]="!continueButtonEnabled" aria-label="Back to lesson">
-                  Back to Lesson
-                </button>
-              </div>
-            } @else if (isLastExercise) {
+            @if (isLastExercise) {
               <div class="check-button-wrapper submitted">
                 <button
                   class="btn primary"
