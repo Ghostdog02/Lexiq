@@ -54,7 +54,7 @@
       </div>
 
       <!-- Exercise card -->
-      <div class="exercise-card card" [class.exiting]="isExiting">
+      <div class="exercise-card card" [attr.data-switch]="exerciseSwitchState || null">
         <!-- Exercise header -->
         <div class="exercise-header">
           @if (currentExercise.points) {
@@ -135,29 +135,29 @@
             </div>
           } @else if (isCurrentSubmitted) {
             @if (!isCurrentCorrect && state.hearts <= 0) {
-              <div class="check-button-wrapper">
-                <button class="btn danger" (click)="onBackToContent()" aria-label="Back to lesson">
+              <div class="check-button-wrapper submitted">
+                <button class="btn danger" (click)="onBackToContent()" [disabled]="!continueButtonEnabled" aria-label="Back to lesson">
                   Back to Lesson
                 </button>
               </div>
             } @else if (isLastExercise) {
-              <div class="check-button-wrapper">
+              <div class="check-button-wrapper submitted">
                 <button
                   class="btn primary"
-                  [disabled]="isSubmitting"
+                  [disabled]="isSubmitting || !continueButtonEnabled"
                   (click)="finishLesson()"
                   aria-label="Finish lesson">
                   {{ isSubmitting ? 'Submitting...' : 'Finish' }}
                 </button>
               </div>
             } @else {
-              <div class="check-button-wrapper">
+              <div class="check-button-wrapper submitted">
                 <button
                   class="btn"
                   [class.success]="isCurrentCorrect"
                   [class.danger]="!isCurrentCorrect"
                   (click)="nextExercise()"
-                  [disabled]="!state.canGoNext"
+                  [disabled]="!state.canGoNext || !continueButtonEnabled"
                   aria-label="Continue to next exercise">
                   Continue
                 </button>

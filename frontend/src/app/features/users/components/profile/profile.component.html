@@ -1,143 +1,190 @@
-@if (profile) {
-<div class="profile-container">
-  <div class="profile-header">
-    <div class="user-info">
-      <img id="profile-icon" [src]="profile.avatarUrl || 'assets/default-avatar.svg'" [alt]="profile.userName" class="avatar">
-      <div class="user-details">
-        <h1 class="title">{{ profile.userName }}</h1>
-        <p class="join-date">Member since {{ formatDate(profile.joinDate) }} • {{ getDaysSinceJoined() }} days</p>
-      </div>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">⚡</div>
-        <div class="stat-content">
-          <div class="stat-value">{{ profile.totalXp.toLocaleString() }}</div>
-          <div class="stat-label">Total XP</div>
-        </div>
-      </div>
-
-      <div class="stat-card streak">
-        <div class="stat-icon">🔥</div>
-        <div class="stat-content">
-          <div class="stat-value">{{ profile.currentStreak }}</div>
-          <div class="stat-label">Day Streak</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">🏆</div>
-        <div class="stat-content">
-          <div class="stat-value">{{ profile.longestStreak }}</div>
-          <div class="stat-label">Best Streak</div>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">🏅</div>
-        <div class="stat-content">
-          <div class="stat-value">{{ unlockedAchievements.length }}/{{ profile.achievements.length }}</div>
-          <div class="stat-label">Achievements</div>
-        </div>
-      </div>
-    </div>
+@if (isLoading) {
+  <div class="loading-state" aria-live="polite" aria-label="Loading profile">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">Loading profile…</p>
   </div>
-
-  <div class="content-grid">
-    <section class="languages-section">
-      <span class="section-header">
-        <h2 class="section-title">Enrolled Languages</h2>
-        <p>See more</p>
-      </span>
-      <div class="languages-list">
-        @for (language of enrolledLanguages.slice(0, 3); track language.id) {
-        <div class="language-card">
-          <div class="language-header">
-            <div class="language-info">
-              <span class="flag">{{ language.flag }}</span>
-              <div class="language-details">
-                <h3 class="language-name">{{ language.name }}</h3>
-                <div class="level-badge">Level {{ language.level }}</div>
-              </div>
-            </div>
-            <div class="language-xp">
-              <div class="xp-value">{{ language.totalXp.toLocaleString() }} XP</div>
-            </div>
-          </div>
-
-          <div class="progress-section">
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="language.progress"></div>
-            </div>
-            <div class="progress-text">{{ language.xp }}/{{ (language.level + 1) * 500 }} XP to level {{ language.level + 1 }}</div>
-          </div>
-        </div>
-        }
-      </div>
-    </section>
-
-    <section class="achievements-section">
-      <span class="section-header">
-        <h2 class="section-title">Achievements</h2>
-        <p>See all</p>
-      </span>
-      <div class="achievements-subsection">
-        <div class="achievements-grid">
-          @for (achievement of unlockedAchievements.slice(0, 3); track achievement.id) {
-          <div class="achievement-card unlocked">
-            <div class="achievement-icon">{{ achievement.icon }}</div>
-            <div class="achievement-content">
-              <h4 class="achievement-name">{{ achievement.name }}</h4>
-              <p class="achievement-description">{{ achievement.description }}</p>
-              <div class="achievement-meta">
-                <span class="achievement-xp">{{ achievement.xpRequired.toLocaleString() }} XP</span>
-                <span class="achievement-date">{{ formatDate(achievement.unlockedAt!) }}</span>
-              </div>
-            </div>
-          </div>
-          }
-        </div>
-      </div>
-    </section>
-  </div>
-  <div class="content-grid">
-    <section class="achievements-section">
-      @if (lockedAchievements.length > 0) {
-      <div class="achievements-subsection">
-        <h3 class="subsection-title">Locked Achievements ({{ lockedAchievements.length }})</h3>
-        <div class="locked-achievements-grid">
-          @for (achievement of lockedAchievements.slice(0, 3); track achievement.id) {
-          <div class="achievement-card locked">
-            <div class="achievement-icon locked-icon">{{ achievement.icon }}</div>
-            <div class="achievement-content">
-              <h4 class="achievement-name">{{ achievement.name }}</h4>
-              <p class="achievement-description">{{ achievement.description }}</p>
-              <div class="achievement-meta">
-                <span class="achievement-xp">{{ achievement.xpRequired.toLocaleString() }} XP</span>
-              </div>
-              <div class="progress-section">
-                <div class="progress-bar locked-progress">
-                  <div class="progress-fill" [style.width.%]="getXpProgress(achievement)"></div>
-                </div>
-                <div class="progress-text">{{ profile.totalXp.toLocaleString() }}/{{ achievement.xpRequired.toLocaleString() }} XP</div>
-              </div>
-            </div>
-          </div>
-          }
-        </div>
-      </div>
-      }
-    </section>
-  </div>
-</div>
-} @else if (isLoading) {
-<div class="loading-state">
-  <div class="loading-spinner"></div>
-  <p>Loading profile...</p>
-</div>
 } @else if (error) {
-<div class="error-state">
-  <p>{{ error }}</p>
-</div>
+  <div class="error-state" role="alert">
+    <span class="error-icon">⚠</span>
+    <p class="error-message">{{ error }}</p>
+  </div>
+} @else if (profile) {
+  <div class="profile-page">
+
+    <!-- HERO CARD -->
+    <div class="hero-card card">
+      <div class="avatar-wrapper">
+        <img
+          class="avatar"
+          [src]="profile.avatarUrl || 'assets/default-avatar.svg'"
+          [alt]="profile.userName + ' avatar'"
+        />
+        <button
+          class="avatar-edit-overlay"
+          (click)="triggerAvatarUpload()"
+          aria-label="Change avatar"
+          type="button"
+        >
+          @if (isUploadingAvatar) {
+            <svg class="spinner-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2.5" stroke-dasharray="31.4" stroke-dashoffset="10" stroke-linecap="round"/>
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" width="20" height="20">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+              <circle cx="12" cy="13" r="4"/>
+            </svg>
+          }
+        </button>
+      </div>
+      <input
+        #avatarInput
+        type="file"
+        accept="image/*"
+        class="avatar-file-input"
+        (change)="onAvatarFileSelected($event)"
+        aria-label="Avatar file input"
+      />
+
+      <div class="hero-info">
+        <div class="hero-top">
+          <h1 class="username">{{ profile.userName }}</h1>
+          <span class="level-pill" aria-label="Level {{ profile.level }}">Lv. {{ profile.level }}</span>
+        </div>
+        <p class="hero-meta">
+          Member since {{ formattedJoinDate }} &middot; {{ daysSinceJoined }} days
+        </p>
+      </div>
+    </div>
+
+    <!-- STATS ROW -->
+    <div class="stats-row" aria-label="Profile statistics">
+      <div class="stat-card xp" aria-label="Total XP: {{ profile.totalXp }}">
+        <span class="stat-icon" aria-hidden="true">⚡</span>
+        <span class="stat-value">{{ profile.totalXp.toLocaleString() }}</span>
+        <span class="stat-label">Total XP</span>
+      </div>
+
+      <div class="stat-card level" aria-label="Level {{ profile.level }}">
+        <span class="stat-icon" aria-hidden="true">🎖</span>
+        <span class="stat-value">{{ profile.level }}</span>
+        <span class="stat-label">Level</span>
+      </div>
+
+      <div class="stat-card streak" aria-label="Current streak: {{ profile.currentStreak }} days">
+        <span class="stat-icon" aria-hidden="true">🔥</span>
+        <span class="stat-value">{{ profile.currentStreak }}</span>
+        <span class="stat-label">Streak</span>
+      </div>
+
+      <div class="stat-card longest" aria-label="Longest streak: {{ profile.longestStreak }} days">
+        <span class="stat-icon" aria-hidden="true">🏆</span>
+        <span class="stat-value">{{ profile.longestStreak }}</span>
+        <span class="stat-label">Best Streak</span>
+      </div>
+
+      <div class="stat-card on-top" aria-label="Times on top: {{ profile.timesOnTop ?? 0 }}">
+        <span class="stat-icon" aria-hidden="true">👑</span>
+        <span class="stat-value">{{ profile.timesOnTop ?? 0 }}</span>
+        <span class="stat-label">Times on Top</span>
+      </div>
+    </div>
+
+    <!-- CONTENT GRID -->
+    <div class="content-grid">
+
+      <!-- LEFT: LANGUAGES -->
+      <section class="languages-section card" aria-labelledby="languages-heading">
+        <h2 class="section-title" id="languages-heading">Languages</h2>
+
+        @if (enrolledLanguages.length === 0) {
+          <div class="empty-state" aria-label="No languages enrolled">
+            <span class="empty-icon" aria-hidden="true">🌍</span>
+            <p>No languages enrolled yet</p>
+          </div>
+        } @else {
+          @for (lang of enrolledLanguages; track lang.id) {
+            <div class="language-card">
+              <div class="language-header">
+                <div class="language-left">
+                  <span class="flag" aria-hidden="true">{{ lang.flag }}</span>
+                  <div class="language-meta">
+                    <span class="language-name">{{ lang.name }}</span>
+                    <span class="level-badge" aria-label="Level {{ lang.level }}">Lv. {{ lang.level }}</span>
+                  </div>
+                </div>
+                <span class="language-xp" aria-label="{{ lang.totalXp }} total XP">{{ lang.totalXp.toLocaleString() }} XP</span>
+              </div>
+              <div class="progress-track" role="progressbar" [attr.aria-valuenow]="lang.progress" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-fill" [style.width.%]="lang.progress"></div>
+              </div>
+              <p class="progress-text">{{ lang.xp.toLocaleString() }} / {{ ((lang.level + 1) * 500).toLocaleString() }} XP to level {{ lang.level + 1 }}</p>
+            </div>
+          }
+        }
+      </section>
+
+      <!-- RIGHT: ACHIEVEMENTS -->
+      <section class="achievements-section card" aria-labelledby="achievements-heading">
+        <h2 class="section-title" id="achievements-heading">Achievements</h2>
+
+        @if (unlockedAchievements.length > 0) {
+          <div class="earned-group">
+            <span class="group-label" aria-hidden="true">EARNED</span>
+            @for (a of unlockedAchievements; track a.id) {
+              <div class="achievement-card earned" role="listitem">
+                <span class="achievement-icon" aria-hidden="true">{{ a.icon }}</span>
+                <div class="achievement-body">
+                  <span class="achievement-name">{{ a.name }}</span>
+                  <span class="achievement-desc">{{ a.description }}</span>
+                  <div class="achievement-meta">
+                    <span class="achievement-date">{{ unlockedDateMap.get(a.id) }}</span>
+                    <span class="achievement-xp">{{ a.xpRequired.toLocaleString() }} XP</span>
+                  </div>
+                </div>
+                <span class="earned-check" aria-label="Earned" role="img">✓</span>
+              </div>
+            }
+          </div>
+        }
+
+        @if (nextLockedAchievements.length > 0) {
+          <div class="coming-up-group">
+            <span class="group-label coming-up-label" aria-hidden="true">COMING UP</span>
+            @for (a of nextLockedAchievements; track a.id; let i = $index) {
+              <div class="achievement-card locked" [attr.data-index]="i" role="listitem" aria-label="{{ a.name }}, locked">
+                <span class="achievement-icon locked-icon" aria-hidden="true">{{ a.icon }}</span>
+                <div class="achievement-body">
+                  <span class="achievement-name">{{ a.name }}</span>
+                  <span class="achievement-desc">{{ a.description }}</span>
+                  <div class="xp-progress">
+                    <div
+                      class="xp-progress-track"
+                      role="progressbar"
+                      [attr.aria-valuenow]="xpProgressMap.get(a.id)"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    >
+                      <div class="xp-progress-fill" [style.width.%]="xpProgressMap.get(a.id)"></div>
+                    </div>
+                    <span class="xp-progress-label">
+                      {{ profile.totalXp.toLocaleString() }} / {{ a.xpRequired.toLocaleString() }} XP
+                    </span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        @if (unlockedAchievements.length === 0 && nextLockedAchievements.length === 0) {
+          <div class="empty-state" aria-label="No achievements yet">
+            <span class="empty-icon" aria-hidden="true">🏅</span>
+            <p>No achievements yet — keep learning!</p>
+          </div>
+        }
+      </section>
+
+    </div>
+  </div>
 }

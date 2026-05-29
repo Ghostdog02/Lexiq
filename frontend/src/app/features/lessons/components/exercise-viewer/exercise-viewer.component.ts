@@ -63,11 +63,14 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   isLoading = true;
   isAdmin = false;
   isSubmitting = false;
-  isExiting = false;
   lessonSubmitResult: LessonSubmitResult | null = null;
 
   // Keyboard navigation state
   focusedOptionIndex = 0;
+
+  continueButtonEnabled = false;
+  exerciseSwitchState = '';
+  private isSwitching = false;
 
   // Expose enum to template
   readonly ExerciseType = ExerciseType;
@@ -226,14 +229,18 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   // ── Navigation ────────────────────────────────────────────────────────────
 
-  nextExercise(): void {
+  async nextExercise(): Promise<void> {
+    if (this.isSwitching) return;
+    this.isSwitching = true;
+    this.continueButtonEnabled = false;
+    this.exerciseSwitchState = 'exit-left';
+    await new Promise<void>(r => setTimeout(r, 300));
     this.state.goToNext();
     this.focusedOptionIndex = 0;
-  }
-
-  previousExercise(): void {
-    this.state.goToPrevious();
-    this.focusedOptionIndex = 0;
+    this.exerciseSwitchState = 'enter-right';
+    await new Promise<void>(r => setTimeout(r, 300));
+    this.exerciseSwitchState = 'done';
+    this.isSwitching = false;
   }
 
   goToExercise(exerciseId: string): void {
@@ -247,15 +254,14 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   // ── Actions ───────────────────────────────────────────────────────────────
 
   checkAnswer(): void {
-    if (!this.currentExercise?.id || !this.state.currentHasSelection) return;
+    if (!this.currentExercise?.id || !this.state.currentHasSelection)
+      return;
     this.state.submitAnswer(this.currentExercise.id);
+    setTimeout(() => { this.continueButtonEnabled = true; }, 600);
   }
 
   onBackToContent(): void {
-    this.isExiting = true;
-    setTimeout(() => {
-      this.router.navigate(['/lesson', this.lessonId]);
-    }, 400);
+    this.router.navigate(['/lesson', this.lessonId]);
   }
 
   async finishLesson(): Promise<void> {

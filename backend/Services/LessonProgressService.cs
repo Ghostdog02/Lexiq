@@ -188,8 +188,7 @@ public class LessonProgressService(
                 existing.CompletedAt = isCorrect ? (existing.CompletedAt ?? _clock.UtcNow) : null;
             }
 
-            // Accumulate XP only on first correct submission
-            if (isCorrect && !wasAlreadyCompleted)
+            switch (isCorrect)
             {
                 user.TotalPointsEarned += exercise.Points;
             }

@@ -72,6 +72,9 @@ body {
   --color-xp: #ffd700;                // XP / points highlight (true gold)
   --color-xp-rgb: 255, 215, 0;
 
+  --color-streak: #ff6b35;            // Streak / fire orange
+  --color-streak-rgb: 255, 107, 53;
+
   --color-error: #ff4b4b;             // Duolingo vibrant red
   --color-error-rgb: 255, 75, 75;
   --color-error-light: #ffb5b5;       // Lighter red for text
@@ -181,19 +184,24 @@ select {
   100% { transform: scale(1) rotate(0deg); }
 }
 
-// Correct answer shake - gentle 3-step horizontal wobble
-@keyframes correctShake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-4px); }
-  75% { transform: translateX(4px); }
+// Correct answer glow pulse - border blooms green then fades back
+@keyframes correctGlow {
+  0%   { box-shadow: 0 0 0 0.3rem rgba(var(--color-correct-rgb), 0.2), 0 8px 32px rgba(var(--color-correct-rgb), 0.35); }
+  40%  { box-shadow: 0 0 0 0.7rem rgba(var(--color-correct-rgb), 0.35), 0 8px 40px rgba(var(--color-correct-rgb), 0.55); }
+  100% { box-shadow: 0 0 0 0.3rem rgba(var(--color-correct-rgb), 0.2), 0 8px 32px rgba(var(--color-correct-rgb), 0.35); }
 }
 
-// Incorrect answer shake - same rhythm as correct but slightly more movement
-// Both use 3-step timing (0%, 25%, 75%, 100%) for equal animation speed
+// Incorrect answer shake - rapid multi-step snap for impact
 @keyframes incorrectShake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-6px); }
-  75% { transform: translateX(6px); }
+  0%   { transform: translateX(0); }
+  12%  { transform: translateX(-8px); }
+  25%  { transform: translateX(8px); }
+  37%  { transform: translateX(-7px); }
+  50%  { transform: translateX(7px); }
+  62%  { transform: translateX(-4px); }
+  75%  { transform: translateX(4px); }
+  87%  { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
 }
 
 @keyframes focusPulse {
@@ -205,4 +213,53 @@ select {
   0% { transform: scale(0); opacity: 0; }
   50% { transform: scale(1.3); }
   100% { transform: scale(1); opacity: 1; }
+}
+
+// ── View Transitions ─────────────────────────────────────────────────────────
+
+::view-transition {
+  background-color: var(--background-color);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: vtPageExit 400ms cubic-bezier(0.4, 0, 1, 1) both;
+  }
+
+  ::view-transition-new(root) {
+    animation: vtPageEnter 550ms 150ms cubic-bezier(0.0, 0.0, 0.2, 1) both;
+  }
+
+  @keyframes vtPageExit {
+    to { opacity: 0; transform: translateY(24px); }
+  }
+
+  @keyframes vtPageEnter {
+    from { opacity: 0; transform: translateY(-16px); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
+}
+
+// ── Exercise card switch ──────────────────────────────────────────────────────
+
+@keyframes cardExitLeft {
+  to { opacity: 0; transform: translateX(-24px); }
+}
+
+@keyframes cardExitRight {
+  to { opacity: 0; transform: translateX(24px); }
+}
+
+@keyframes cardEnterRight {
+  from { opacity: 0; transform: translateX(24px); }
+}
+
+@keyframes cardEnterLeft {
+  from { opacity: 0; transform: translateX(-24px); }
 }

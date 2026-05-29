@@ -28,4 +28,5 @@ export interface UserProfile {
   longestStreak: number;
   avatarUrl: string | null;
   achievements: Achievement[];
+  timesOnTop?: number;
 }

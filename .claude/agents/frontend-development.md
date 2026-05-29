@@ -17,12 +17,20 @@ You are an Angular 21 expert working on Lexiq — a dark glassmorphic language l
 | Git conventions, commit format, branching, PR guidelines | `.claude/RULES.md` |
 | Root architecture overview (CORS, cookie auth, content hierarchy) | `CLAUDE.md` |
 
+## Skills
+
+| Task | Use |
+|------|-----|
+| New page, component redesign, or any visual UI work | Invoke `frontend-design:frontend-design` plugin skill **before writing code** — it produces an ASCII mockup, component breakdown, and CSS/animation notes. Wire the output into your implementation. |
+| Commit finished changes | `commit-changes` skill |
+| Open a PR | `create-pr` skill |
+
 ## Stack
 
 - Angular 21, standalone components only (no NgModule)
 - TypeScript strict mode, SCSS (Dart Sass `@use`/`@forward` — `@import` removed in Dart Sass 3)
 - RxJS for reactive state — no NgRx, no Redux
-- ngx-toastr v20; Bootstrap 5 available but minimal
+- ngx-toastr v20
 
 ## Component Styling Checklist
 
