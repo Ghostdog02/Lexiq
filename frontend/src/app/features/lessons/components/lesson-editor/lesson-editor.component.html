@@ -220,10 +220,6 @@
                             (click)="triggerAudioUpload($index)">
                             ♪ Upload Audio File
                           </button>
-                          <span class="audio-or">or</span>
-                          <input type="url" formControlName="audioUrl"
-                            placeholder="https://example.com/audio.mp3"
-                            [class.invalid]="hasError(exercise.get('audioUrl'))">
                         </div>
                       } @else if (isBlobUrl(exercise.get('audioUrl')?.value)) {
                         <div class="audio-staged">
@@ -234,13 +230,11 @@
                             <button type="button" class="btn icon-only small delete-btn"
                               (click)="removeAudio($index)">❌</button>
                           </div>
-                          <audio [src]="exercise.get('audioUrl')?.value" controls
-                            class="audio-preview" preload="metadata"></audio>
+                          <app-audio-player [src]="exercise.get('audioUrl')!.value" />
                         </div>
                       } @else {
                         <div class="audio-staged">
-                          <audio [src]="exercise.get('audioUrl')?.value" controls
-                            class="audio-preview" preload="metadata"></audio>
+                          <app-audio-player [src]="exercise.get('audioUrl')!.value" />
                           <button type="button" class="btn link-btn"
                             (click)="removeAudio($index)">Replace audio</button>
                         </div>

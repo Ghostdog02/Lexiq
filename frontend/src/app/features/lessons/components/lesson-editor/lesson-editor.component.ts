@@ -13,14 +13,16 @@ import { LessonFormService } from '../../services/lesson-form.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { debounceTime } from 'rxjs/operators';
 import { EditorComponent } from '../../../../shared/components/editor/editor.component';
+import { AudioPlayerComponent } from '../../../../shared/components/audio-player/audio-player.component';
 import { Course } from '../../models/course.interface';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-lesson-editor',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, EditorComponent],
+  imports: [CommonModule, ReactiveFormsModule, EditorComponent, AudioPlayerComponent],
   templateUrl: './lesson-editor.component.html',
   styleUrl: './lesson-editor.component.scss'
 })
@@ -33,6 +35,7 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly httpClient = inject(HttpClient);
+  private readonly toastr = inject(ToastrService);
 
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[] = [];
@@ -135,7 +138,7 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file || this.pendingAudioIndex < 0) return;
     if (file.size > 10 * 1024 * 1024) {
-      alert('Audio file must be under 10 MB');
+      this.toastr.error('Audio file must be under 10 MB', 'Upload error', { toastClass: 'ngx-toastr toast-auth' });
       return;
     }
     const blobUrl = URL.createObjectURL(file);
@@ -190,7 +193,7 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
       this.router.navigate(['/']);
     } catch (error) {
       console.error('❌ Error creating lesson:', error);
-      alert('Failed to upload one or more files. Please try again.');
+      this.toastr.error('Failed to upload audio. Please try again.', 'Upload error', { toastClass: 'ngx-toastr toast-auth' });
     }
   }
 
