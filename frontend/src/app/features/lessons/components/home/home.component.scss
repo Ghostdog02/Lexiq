@@ -51,7 +51,22 @@
 .sidebar-row {
   display: flex;
   flex-direction: row;
+  align-items: center;
   gap: 1rem;
+}
+
+.hearts-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  background: rgba(208, 117, 99, 0.12);
+  border: 0.0625rem solid rgba(208, 117, 99, 0.3);
+  border-radius: 2rem;
+  color: #ff8a7a;
+  font-weight: 700;
+  font-size: 1rem;
+  white-space: nowrap;
 }
 
 .stat-card {

@@ -112,6 +112,10 @@
     </header>
 
     <section class="sidebar-row">
+      @if (!isAdmin && !isContentCreator && userIsAuthenticated) {
+        <span class="hearts-pill">&#x2764;&#xFE0F; &times; {{ hearts }}</span>
+      }
+
       <button class="jump-button" (click)="scrollToCurrentLesson()" aria-label="Jump to current lesson">
         @if (!isUserBelowLesson) {
           <span aria-hidden="true">↓</span>
