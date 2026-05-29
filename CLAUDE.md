@@ -30,7 +30,9 @@ docker compose up --build
 
 ## Architecture invariants
 
-- **Content hierarchy**: `Language → Course → Lesson → Exercise` (TPH: MultipleChoice / FillInBlank / Listening / Translation).
+- **Content hierarchy**: `Language → Course → Lesson → Exercise` (TPH: FillInBlank / Listening / TrueFalse / ImageChoice / AudioMatching). Progress tracked via `UserExerciseProgress` (per-exercise) and `UserLessonProgress` (per-lesson summary).
+- **Hearts**: `User.Hearts` starts at 5. Each wrong answer costs 1. At 0 all submissions blocked. Refill: `floor(hoursElapsed / 4)` per 4h window, max 5. Admins/ContentCreators bypass.
+- **Lesson completion**: hearts-based — lesson marked complete when user submits with `Hearts > 0`. Triggers next-lesson unlock.
 - **XP**: `SUM(UserExerciseProgress.PointsEarned)`. `User.TotalPointsEarned` is a materialized cache, incremented on first correct submission.
 - **Levels**: `floor((1 + sqrt(1 + totalXp/25)) / 2)` — backend-computed.
 - **Streaks**: distinct dates from `UserExerciseProgress.CompletedAt`, consecutive days backward from today.
