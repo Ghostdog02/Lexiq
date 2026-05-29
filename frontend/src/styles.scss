@@ -217,6 +217,10 @@ select {
 
 // ── View Transitions ─────────────────────────────────────────────────────────
 
+::view-transition {
+  background-color: var(--background-color);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root) {
     animation: vtPageExit 400ms cubic-bezier(0.4, 0, 1, 1) both;

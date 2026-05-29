@@ -234,12 +234,12 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     this.isSwitching = true;
     this.continueButtonEnabled = false;
     this.exerciseSwitchState = 'exit-left';
-    await new Promise<void>(r => setTimeout(r, 150));
+    await new Promise<void>(r => setTimeout(r, 300));
     this.state.goToNext();
     this.focusedOptionIndex = 0;
     this.exerciseSwitchState = 'enter-right';
-    await new Promise<void>(r => setTimeout(r, 150));
-    this.exerciseSwitchState = '';
+    await new Promise<void>(r => setTimeout(r, 300));
+    this.exerciseSwitchState = 'done';
     this.isSwitching = false;
   }
 
@@ -254,7 +254,8 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   // ── Actions ───────────────────────────────────────────────────────────────
 
   checkAnswer(): void {
-    if (!this.currentExercise?.id || !this.state.currentHasSelection) return;
+    if (!this.currentExercise?.id || !this.state.currentHasSelection)
+      return;
     this.state.submitAnswer(this.currentExercise.id);
     setTimeout(() => { this.continueButtonEnabled = true; }, 600);
   }
