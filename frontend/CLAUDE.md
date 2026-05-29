@@ -24,7 +24,8 @@ ng generate service   <name>
 frontend/src/app/
 ├── auth/                # AuthService (BehaviorSubject), Google login
 ├── features/
-│   ├── lessons/         # home, lesson-editor (lazy), lesson-viewer (lazy)
+│   ├── lessons/         # home, lesson-editor (lazy), lesson-viewer (lazy), exercise-viewer
+│   │   └── services/    # ExerciseViewerStateService — single source of truth for lesson session state
 │   └── users/           # leaderboard, profile
 ├── help/
 ├── nav-bar/
@@ -95,6 +96,8 @@ Form names diverge from backend DTOs:
 - `question` (FillInBlank form) ↔ `text` (DTO).
 - No `orderIndex` in form; backend auto-calculates from array index.
 
+Exercise types supported in the lesson-editor form: `FillInBlank`, `Listening`, `TrueFalse`. (`ImageChoice` and `AudioMatching` are backend entity types but not yet in the lesson-editor form.)
+
 Architecture in `exercise.interface.ts`:
 
 - `ExerciseFormValue` — discriminated union keyed on `exerciseType`.
@@ -104,6 +107,54 @@ Architecture in `exercise.interface.ts`:
 - `buildLessonPayload()` in `lesson-editor` calls `getRawValue()` per form.
 
 When restoring from backend submissions: backend returns a response for **every** exercise; distinguish "never attempted" from "attempted incorrectly" via `correctAnswer !== null` (see [`troubleshooting.md`](../.claude/rules/troubleshooting.md)).
+
+## Hearts system (frontend)
+
+- `ExerciseViewerStateService` holds the current heart count, fetched from `GET /api/user/hearts` during exercise-viewer init.
+- Hearts are decremented in the state service on wrong answers (only when `hearts > 0`).
+- The header badge displays the live count: `❤️ × {{ state.hearts }}`.
+- `LessonSubmitResult` from `POST /api/lessons/{id}/submit` includes `heartsRemaining` — the UI reads this to show the final heart count on the results screen.
+- When `hearts === 0`, the "Check" button is disabled and submission is blocked client-side (backend also enforces this).
+
+## Audio upload flow (lesson-editor)
+
+`lesson-editor.component.ts` manages audio uploads for `ListeningExercise` fields:
+
+1. Hidden `<input type="file" accept=".mp3,.wav,.ogg,.m4a,.flac">` triggers on button click.
+2. `onAudioFileSelected()` validates the file (max 10 MB client-side), creates a blob URL for preview, and stores the `File` in `pendingAudioFiles: Map<controlName, File>`.
+3. The audio preview uses a `<audio controls>` element bound to the blob URL.
+4. On form submit: `uploadPendingAudioFiles()` POSTs each pending file to `POST /api/uploads/audio` with `FormData` (field name `"file"` — must match the backend `IFormFile` parameter name).
+5. The blob URL in the form control is replaced with the real server URL from the upload response before the lesson payload is sent.
+6. Alternatively, users can paste a URL directly into the audio URL field (skips upload).
+
+## Exercise viewer state service
+
+`ExerciseViewerStateService` (`features/lessons/services/exercise-viewer-state.service.ts`) is the single source of truth for a lesson session:
+
+- Tracks: exercises array, current index, and a `ViewModel` per exercise (`selectedOption`, `isCorrect`, `isSubmitted`, `isAccessible`).
+- **Local validation**: `option.isCorrect` is used immediately on "Check" — no per-exercise backend call. Answers are validated client-side using the `isCorrect` flag from the exercise DTO.
+- **Batch submit**: all answers are sent together via `POST /api/lessons/{id}/submit` when the user finishes the last exercise.
+- **Hearts**: wrong answers call `decrementHearts()` on the state service, which updates the local count and the `User.Hearts` on the backend.
+
+## Lesson completion logic
+
+After `POST /api/lessons/{id}/submit`:
+
+- `LessonSubmitResult.meetsCompletionThreshold` (boolean) drives the results UI: `true` → "Lesson Complete!" with a green checkmark; `false` → "Keep Practicing" with a warning icon.
+- Threshold is decided **server-side** based on hearts: the lesson is complete if the user has `hearts > 0` at submission time.
+- `LessonSubmitResult.nextLesson` carries the next lesson's ID and unlock state.
+- Both outcomes display earned XP, correct/total exercise count, and hearts remaining.
+
+## CSS animation pattern (exercise transitions)
+
+Exercise transitions use a flag-based animation pattern rather than the browser View Transition API:
+
+- `isExiting = true` triggers the exit keyframe animation (`exerciseFadeOut`) via CSS class binding.
+- After `400ms`, the router navigates or the next exercise is loaded.
+- Pattern: `isExiting = true` → `setTimeout(400ms)` → navigate / advance index.
+- Keyframes (`exerciseFadeIn`, `exerciseFadeOut`) live in `exercise-viewer.component.scss`.
+
+> **TODO**: Browser-native View Transition API (`document.startViewTransition`) is implemented in a separate worktree and not yet merged. Document the pattern here when it lands.
 
 ## Editor.js
 
@@ -157,3 +208,5 @@ Quick rules — full catalog in [`/docs/frontend/design-system.md`](../docs/fron
 - Help service returns mock data (not yet backend-integrated).
 - Frontend/backend property-name mismatches fail **silently** — `@switch` doesn't match, expressions return `undefined` with no error. Always verify the API response matches your interface.
 - `submitExerciseAnswer` returns `SubmitAnswerResponse` (includes `lessonProgress`), **not** `ExerciseSubmitResult`. Type the call and the `submissionResults` map accordingly to avoid TS2322 on `currentSubmission`.
+- `ImageChoice` and `AudioMatching` exercise types exist on the backend but the lesson-editor form does not yet support creating them.
+- View Transition API is implemented in a separate worktree and not yet merged into this branch.
