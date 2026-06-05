@@ -9,7 +9,7 @@ When and how to use specific skills, MCP tools, agents, and subagents in Lexiq.
 
 ## Project Skills (Anthropic Agent Skills)
 
-Located at `.claude/skills/<name>/SKILL.md`. Auto-discovered, triggered on description match.
+Located at `~/.claude/skills/<name>/SKILL.md` (global — available in all projects). Auto-discovered, triggered on description match.
 
 | Skill | Use for |
 |-------|---------|

@@ -45,16 +45,16 @@ docker compose up --build
 
 ## Project rules & skills
 
-| File                                                                               | Covers                                                               |
-|------------------------------------------------------------------------------------|----------------------------------------------------------------------|
-| [`.claude/rules/agent-principles.md`](.claude/rules/agent-principles.md)           | Plan mode, subagents, verify-before-done, autonomous bug fixing      |
-| [`.claude/rules/rules.md`](.claude/rules/rules.md)                                 | Git conventions, commit format, branching, PR rules, commit grouping |
-| [`.claude/rules/skills.md`](.claude/rules/skills.md)                               | Project & plugin skills, MCP tools, agent strategies, workflows      |
-| [`.claude/rules/troubleshooting.md`](.claude/rules/troubleshooting.md)             | 401s, cookies, 400s, Docker, CI/CD, migrations, OpenAPI              |
-| [`.claude/rules/common-gotchas.md`](.claude/rules/common-gotchas.md)               | EF Core, JWT, polymorphic DTOs, nginx/IPv6, Sass, Angular            |
-| [`.claude/skills/commit-changes/SKILL.md`](.claude/skills/commit-changes/SKILL.md) | Group changes, commit, push (with confirmation)                      |
-| [`.claude/skills/create-pr/SKILL.md`](.claude/skills/create-pr/SKILL.md)           | Open PR with strict template, no Claude attribution                  |
-| [`.claude/agents/test-generator.md`](.claude/agents/test-generator.md)             | xUnit + Testcontainers / Jest / Playwright standards                 |
+| File                                                                     | Covers                                                               |
+|--------------------------------------------------------------------------|----------------------------------------------------------------------|
+| [`.claude/rules/agent-principles.md`](.claude/rules/agent-principles.md) | Plan mode, subagents, verify-before-done, autonomous bug fixing      |
+| [`.claude/rules/rules.md`](.claude/rules/rules.md)                       | Git conventions, commit format, branching, PR rules, commit grouping |
+| [`.claude/rules/skills.md`](.claude/rules/skills.md)                     | Project & plugin skills, MCP tools, agent strategies, workflows      |
+| [`.claude/rules/troubleshooting.md`](.claude/rules/troubleshooting.md)   | 401s, cookies, 400s, Docker, CI/CD, migrations, OpenAPI              |
+| [`.claude/rules/common-gotchas.md`](.claude/rules/common-gotchas.md)     | EF Core, JWT, polymorphic DTOs, nginx/IPv6, Sass, Angular            |
+| `~/.claude/skills/commit-changes/SKILL.md`                               | Group changes, commit, push (with confirmation) — global skill       |
+| `~/.claude/skills/create-pr/SKILL.md`                                    | Open PR with strict template, no Claude attribution — global skill   |
+| [`.claude/agents/test-generator.md`](.claude/agents/test-generator.md)   | xUnit + Testcontainers / Jest / Playwright standards                 |
 
 ## Commit & docs cadence
 
