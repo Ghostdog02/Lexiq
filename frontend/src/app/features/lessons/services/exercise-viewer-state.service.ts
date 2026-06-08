@@ -25,6 +25,7 @@ export class ExerciseViewerStateService {
   viewModels: ExerciseViewModel[] = [];
   currentExerciseId: string | null = null;
   hearts = 0;
+  isAdmin = false;
 
   /**
    * Initialize state with exercises.
@@ -35,6 +36,7 @@ export class ExerciseViewerStateService {
    */
   initialize(exercises: AnyExercise[], isAdmin: boolean, hearts: number): void {
     this.hearts = hearts;
+    this.isAdmin = isAdmin;
 
     this.viewModels = exercises.map((exercise) => ({
       exercise: { ...exercise },
@@ -77,7 +79,7 @@ export class ExerciseViewerStateService {
     vm.isCorrect = isCorrect;
     vm.isSubmitted = true;
 
-    if (!isCorrect && this.hearts > 0) {
+    if (!isCorrect && !this.isAdmin && this.hearts > 0) {
       this.hearts--;
     }
   }
@@ -129,6 +131,7 @@ export class ExerciseViewerStateService {
     this.viewModels = [];
     this.currentExerciseId = null;
     this.hearts = 0;
+    this.isAdmin = false;
   }
 
   // ── Computed getters ──────────────────────────────────────────────────────

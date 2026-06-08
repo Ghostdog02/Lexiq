@@ -166,7 +166,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
             if (
               this.isCurrentSubmitted &&
               this.state.canGoNext &&
-              this.state.hearts > 0
+              (this.isAdmin || this.state.hearts > 0)
             ) {
               this.nextExercise();
             }
@@ -258,7 +258,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     if (!this.currentExercise?.id || !this.state.currentHasSelection)
       return;
     this.state.submitAnswer(this.currentExercise.id);
-    if (this.state.hearts === 0) {
+    if (!this.isAdmin && this.state.hearts === 0) {
       this.outOfHearts = true;
       this.lessonService.submitLesson(this.lessonId, this.state.buildSubmitPayload())
         .catch(err => console.error('Failed to sync hearts to backend:', err));
