@@ -5,13 +5,11 @@ set -eEuo pipefail
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-readonly ENVIRONMENT_FILE="/tmp/.deploy.env"
 LOG_DIR="/var/log/lexiq/deployment"
-LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"  
+LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"
 
 # Exit codes
 readonly EXIT_SUCCESS=0
-readonly EXIT_FILE_NOT_FOUND=1
 readonly EXIT_DOCKER_PULL_FAILED=3
 readonly EXIT_DOCKER_AUTH_FAILED=3
 readonly EXIT_DOCKER_START_FAILED=4
@@ -81,40 +79,6 @@ end_group() {
 }
 
 # ============================================================================
-# LOAD ENVIRONMENT VARIABLES
-# ============================================================================
-
-load_env() {
-  start_group "Loading Environment Variables"
-
-  if [ ! -d "$LOG_DIR" ]; then
-    sudo mkdir -p "$LOG_DIR"
-    log_info "Created log directory: ${LOG_DIR}"
-  fi
-
-  if [ -f "$ENVIRONMENT_FILE" ]; then
-    . "$ENVIRONMENT_FILE"
-    log_info "Loaded environment variables from $ENVIRONMENT_FILE"
-
-    export REGISTRY
-    export REPO_LOWER
-    export BRANCH
-    export EVENT
-
-    log_info "REGISTRY=${REGISTRY}"
-    log_info "REPO_LOWER=${REPO_LOWER}"
-    log_info "BRANCH=${BRANCH}"
-    log_info "Docker image will be: ${REGISTRY}/${REPO_LOWER}-backend:${BRANCH}"
-    
-  else
-    log_error "Environment file $ENVIRONMENT_FILE not found"
-    exit $EXIT_FILE_NOT_FOUND
-  fi
-
-  end_group
-}
-
-# ============================================================================
 # ERROR HANDLING
 # ============================================================================
 
@@ -144,12 +108,10 @@ trap trap_error ERR
 
 initialize() {
   start_group "Initialization"
-  
+
+  mkdir -p "$LOG_DIR"
+
   log_info "Branch: ${BRANCH}"
-  log_info "Commit: ${COMMIT}"
-  log_info "Triggered by: ${ACTOR}"
-  log_info "Event: ${EVENT}"
-  
   log_info "Log file: ${LOG_FILE}"
 
   end_group
@@ -168,7 +130,7 @@ install_dependencies() {
   else
       log_error "Docker is not installed"
       end_group
-      exit $EXIT_FILE_NOT_FOUND
+      exit 1
   fi   
 
   end_group
@@ -239,8 +201,6 @@ deploy_containers() {
 main() {
   local start_time
   start_time=$(date +%s)
-
-  load_env
 
   initialize
   
