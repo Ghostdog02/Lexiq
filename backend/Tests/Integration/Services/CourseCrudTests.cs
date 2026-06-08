@@ -28,6 +28,16 @@ public class CourseCrudTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
         _ctx = fixture.CreateDbContext();
         await DbSeeder.ClearLeaderboardDataAsync(_ctx, fixture.SystemUserId);
 
+        // Delete courses created by previous tests — keep only the fixture course
+        var fixtureCourseId = await _ctx.Lessons
+            .Where(l => l.LessonId == fixture.LessonId)
+            .Select(l => l.CourseId)
+            .FirstAsync(TestContext.Current.CancellationToken);
+
+        await _ctx.Courses
+            .Where(c => c.CourseId != fixtureCourseId)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+
         _sut = new CourseService(_ctx);
 
         // Get the fixture's Italian language
