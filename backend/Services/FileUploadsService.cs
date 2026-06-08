@@ -179,6 +179,16 @@ namespace Backend.Api.Services
             }
         }
 
+        private static string SanitizeForLog(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return string.Empty;
+            }
+
+            return value.Replace("\r", "").Replace("\n", "");
+        }
+
         public async Task<FileUploadResult> UploadFileByUrlAsync(
             string url,
             string fileType,
@@ -248,11 +258,12 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
+                var safeUrlForLog = SanitizeForLog(url);
                 _logger.LogError(
                     ex,
                     "File upload from URL failed for type {FileType}, URL {Url}",
                     fileType,
-                    url
+                    safeUrlForLog
                 );
                 return FileUploadResult.Failure(
                     "Upload from URL failed. Please check the URL and try again."
