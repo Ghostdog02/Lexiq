@@ -42,6 +42,8 @@ jobs:
       - name: Setup cloudflared and SSH
         env:
           SSH_KEY_PASSPHRASE: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
           curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o cloudflared.deb
           sudo dpkg -i cloudflared.deb
@@ -65,7 +67,7 @@ jobs:
 
           cat >> ~/.ssh/config << SSHEOF
           Host ${{ secrets.HETZNER_PROD_HOST }}
-            ProxyCommand cloudflared access ssh --hostname %h
+            ProxyCommand cloudflared access ssh --hostname %h --id ${CF_ACCESS_CLIENT_ID} --secret ${CF_ACCESS_CLIENT_SECRET}
             StrictHostKeyChecking no
             UserKnownHostsFile /dev/null
           SSHEOF
