@@ -7,7 +7,7 @@
   .option-btn {
     background: var(--glass-soft);
     border: 0.1875rem solid var(--border-light);
-    border-radius: var(--radius);
+    border-radius: var(--radius-pill);
     padding: 1.25rem 1.75rem;
     display: flex;
     align-items: center;
@@ -33,7 +33,7 @@
       content: '';
       position: absolute;
       inset: 0;
-      border-radius: 1rem;
+      border-radius: var(--radius-pill);
       opacity: 0;
       background: radial-gradient(circle at center, rgba(139, 110, 255, 0.08), transparent 70%);
       transition: opacity 0.25s ease;
@@ -42,7 +42,7 @@
     .option-letter {
       width: 3.5rem;
       height: 3.5rem;
-      border-radius: var(--radius-lg);
+      border-radius: 50%;
       background: var(--glass-medium);
       border: 0.1875rem solid var(--border-medium);
       display: flex;
@@ -159,6 +159,7 @@
       border-color: var(--color-error);
       box-shadow: 0 0 0 0.3rem rgba(var(--color-error-rgb), 0.18), 0 8px 32px rgba(var(--color-error-rgb), 0.25);
       animation: incorrectShake 0.35s ease-out;
+      animation-delay: 150ms;
 
       .option-letter {
         background: linear-gradient(135deg, var(--color-error) 0%, var(--color-error-light) 100%);
