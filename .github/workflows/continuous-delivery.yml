@@ -9,8 +9,6 @@ on:
     secrets:
       HETZNER_PROD_PRIVATE_SSH_KEY:
         required: true
-      HETZNER_PROD_SSH_KEY_PASSPHRASE:
-        required: true
       HETZNER_PROD_HOST:
         required: true
       HETZNER_PROD_USERNAME:
@@ -41,7 +39,6 @@ jobs:
 
       - name: Setup cloudflared and SSH
         env:
-          SSH_KEY_PASSPHRASE: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
         run: |
@@ -58,12 +55,7 @@ jobs:
           echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
           echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
 
-          cat > /tmp/ssh-askpass.sh << EOF
-          #!/bin/sh
-          echo "${SSH_KEY_PASSPHRASE}"
-          EOF
-          chmod +x /tmp/ssh-askpass.sh
-          SSH_ASKPASS=/tmp/ssh-askpass.sh SSH_ASKPASS_REQUIRE=force ssh-add ~/.ssh/deploy_key
+          ssh-add ~/.ssh/deploy_key
 
           cat >> ~/.ssh/config << SSHEOF
           Host ${{ secrets.HETZNER_PROD_HOST }}
