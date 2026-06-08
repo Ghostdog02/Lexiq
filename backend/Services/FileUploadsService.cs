@@ -259,10 +259,11 @@ namespace Backend.Api.Services
             catch (Exception ex)
             {
                 var safeUrlForLog = SanitizeForLog(url);
+                var safeFileTypeForLog = SanitizeForLog(fileType);
                 _logger.LogError(
                     ex,
                     "File upload from URL failed for type {FileType}, URL {Url}",
-                    fileType,
+                    safeFileTypeForLog,
                     safeUrlForLog
                 );
                 return FileUploadResult.Failure(
