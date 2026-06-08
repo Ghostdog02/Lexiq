@@ -80,7 +80,9 @@
             }
           },
           "defaultConfiguration": "development",
-          "options": {}
+          "options": {
+            "proxyConfig": "proxy.conf.json"
+          }
         },
         "extract-i18n": {
           "builder": "@ngx-env/builder:extract-i18n",
