@@ -20,6 +20,11 @@ namespace Backend.Api.Services
         private readonly Dictionary<string, FileTypeConfig> _fileTypeConfigs =
             InitializeFileTypeConfigs();
 
+        private static string SanitizeForLog(string? value) =>
+            string.IsNullOrEmpty(value)
+                ? string.Empty
+                : value.Replace("\r", string.Empty).Replace("\n", string.Empty);
+
         private static string SanitizeFilename(string filename)
         {
             if (string.IsNullOrWhiteSpace(filename))
@@ -169,8 +174,8 @@ namespace Backend.Api.Services
                 _logger.LogError(
                     ex,
                     "File upload failed for type {FileType}, filename {FileName}",
-                    fileType,
-                    file.FileName
+                    SanitizeForLog(fileType),
+                    SanitizeForLog(file.FileName)
                 );
                 return FileUploadResult.Failure(
                     "Upload failed. Please check the file and try again."
@@ -250,8 +255,8 @@ namespace Backend.Api.Services
                 _logger.LogError(
                     ex,
                     "File upload from URL failed for type {FileType}, URL {Url}",
-                    fileType,
-                    url
+                    SanitizeForLog(fileType),
+                    SanitizeForLog(url)
                 );
                 return FileUploadResult.Failure(
                     "Upload from URL failed. Please check the URL and try again."
