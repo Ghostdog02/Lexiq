@@ -166,10 +166,11 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
+                var safeFileType = fileType?.Replace("\r", "").Replace("\n", "");
                 _logger.LogError(
                     ex,
                     "File upload failed for type {FileType}, filename {FileName}",
-                    fileType,
+                    safeFileType,
                     file.FileName
                 );
                 return FileUploadResult.Failure(
