@@ -15,7 +15,9 @@ on:
         required: true
       HETZNER_PROD_USERNAME:
         required: true
-      HETZNER_PROD_SSH_PORT:
+      CF_ACCESS_CLIENT_ID:
+        required: true
+      CF_ACCESS_CLIENT_SECRET:
         required: true
 
 env:
@@ -37,70 +39,97 @@ jobs:
           BRANCH="${{ github.ref_name }}"
           echo "BRANCH=${BRANCH//\//-}" >> $GITHUB_ENV
 
+      - name: Setup cloudflared and SSH
+        env:
+          SSH_KEY_PASSPHRASE: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
+        run: |
+          curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o cloudflared.deb
+          sudo dpkg -i cloudflared.deb
+          rm cloudflared.deb
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          echo "${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          eval "$(ssh-agent -s)"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> $GITHUB_ENV
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> $GITHUB_ENV
+
+          cat > /tmp/ssh-askpass.sh << EOF
+          #!/bin/sh
+          echo "${SSH_KEY_PASSPHRASE}"
+          EOF
+          chmod +x /tmp/ssh-askpass.sh
+          SSH_ASKPASS=/tmp/ssh-askpass.sh SSH_ASKPASS_REQUIRE=force ssh-add ~/.ssh/deploy_key
+
+          cat >> ~/.ssh/config << SSHEOF
+          Host ${{ secrets.HETZNER_PROD_HOST }}
+            ProxyCommand cloudflared access ssh --hostname %h
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+          SSHEOF
+
       - name: Copy deployment assets to server
-        uses: appleboy/scp-action@v1.0.0
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          source: "scripts/deploy.sh,scripts/verify-deployment.sh,docker-compose.prod.yml"
-          target: "/tmp/deploy_assets_${{ github.run_id }}"
-          strip_components: 0
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          HOST="${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}"
+          ASSETS="/tmp/deploy_assets_${{ github.run_id }}"
+
+          cat > /tmp/.deploy.env << 'ENVEOF'
+          HOME_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}"
+          BRANCH="${{ env.BRANCH }}"
+          REPO="${{ github.repository }}"
+          COMMIT="${{ github.sha }}"
+          ACTOR="${{ github.actor }}"
+          DOCKER_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
+          DOCKER_USERNAME="${{ github.actor }}"
+          DEPLOY_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+          REGISTRY="ghcr.io"
+          REPO_LOWER="${{ env.REPO_LOWER }}"
+          EVENT="${{ github.event_name }}"
+          ENVEOF
+
+          ssh "$HOST" "mkdir -p $ASSETS/scripts"
+          scp scripts/deploy.sh scripts/verify-deployment.sh "$HOST:$ASSETS/scripts/"
+          scp docker-compose.prod.yml /tmp/.deploy.env "$HOST:$ASSETS/"
 
       - name: Deploy and Verify
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          command_timeout: 30m
-          script: |
-            set -e
-            ASSETS="/tmp/deploy_assets_${{ github.run_id }}"
-            TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          HOST="${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}"
+          ASSETS="/tmp/deploy_assets_${{ github.run_id }}"
+          TARGET_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
 
-            mkdir -p "$TARGET_DIR/scripts"
-            cp "$ASSETS/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
-
-            # Create environment file
-            cat > /tmp/.deploy.env << ENVEOF
-            HOME_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}"
-            BRANCH="${{ env.BRANCH }}"
-            REPO="${{ github.repository }}"
-            COMMIT="${{ github.sha }}"
-            ACTOR="${{ github.actor }}"
-            DOCKER_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
-            DOCKER_USERNAME="${{ github.actor }}"
-            DEPLOY_DIR="$TARGET_DIR"
-            REGISTRY="${{ env.REGISTRY }}"
-            REPO_LOWER="${{ env.REPO_LOWER }}"
-            EVENT="${{ github.event_name }}"
-            ENVEOF
-
-            chmod 600 /tmp/.deploy.env
-            bash "$ASSETS/scripts/deploy.sh"
-
-            export DEPLOY_DIR="$TARGET_DIR"
-            bash "$ASSETS/scripts/verify-deployment.sh"
+          ssh "$HOST" bash << ENDSSH
+          set -e
+          mkdir -p "$TARGET_DIR/scripts"
+          cp "$ASSETS/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
+          cp "$ASSETS/.deploy.env" /tmp/.deploy.env
+          chmod 600 /tmp/.deploy.env
+          bash "$ASSETS/scripts/deploy.sh"
+          export DEPLOY_DIR="$TARGET_DIR"
+          bash "$ASSETS/scripts/verify-deployment.sh"
+          ENDSSH
 
       - name: Cleanup Server
         if: always()
-        uses: appleboy/ssh-action@v1.2.5
-        with:
-          host: ${{ secrets.HETZNER_PROD_HOST }}
-          username: ${{ secrets.HETZNER_PROD_USERNAME }}
-          key: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-          passphrase: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
-          port: ${{ secrets.HETZNER_PROD_SSH_PORT }}
-          script: |
-            rm -rf "/tmp/deploy_assets_${{ github.run_id }}"
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          HOST="${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}"
+          ASSETS="/tmp/deploy_assets_${{ github.run_id }}"
+          ssh "$HOST" "
+            rm -rf $ASSETS
             rm -f /tmp/.deploy.env
             docker image prune -f
             docker volume prune -f
+          "
 
       - name: Final Status Notices
         if: always()
@@ -110,4 +139,3 @@ jobs:
           else
             echo "::error::❌ Deployment failed!"
           fi
-
