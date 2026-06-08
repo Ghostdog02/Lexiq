@@ -12,13 +12,15 @@ public class UserController(
     UserXpService userXpService,
     UserService userService,
     AvatarService avatarService,
-    HeartsService heartsService
+    HeartsService heartsService,
+    ProfileService profileService
 ) : ControllerBase
 {
     private readonly UserXpService _userXpService = userXpService;
     private readonly UserService _userService = userService;
     private readonly AvatarService _avatarService = avatarService;
     private readonly HeartsService _heartsService = heartsService;
+    private readonly ProfileService _profileService = profileService;
 
     /// <summary>
     /// Get current authenticated user's total XP and stats
@@ -104,5 +106,23 @@ public class UserController(
 
         var avatarUrl = $"/api/user/{currentUser.Id}/avatar";
         return Ok(new { avatarUrl });
+    }
+
+    /// <summary>
+    /// Get the current authenticated user's full profile
+    /// </summary>
+    [HttpGet("profile")]
+    [Authorize]
+    public async Task<ActionResult<UserProfileDto>> GetMyProfile()
+    {
+        var currentUser = HttpContext.GetCurrentUser();
+        if (currentUser == null)
+            return Unauthorized(new { message = "User is not authorized." });
+
+        var profile = await _profileService.GetUserProfileAsync(currentUser.Id);
+        if (profile == null)
+            return NotFound(new { message = "Profile not found." });
+
+        return Ok(profile);
     }
 }
