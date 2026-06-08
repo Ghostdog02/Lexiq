@@ -12,7 +12,7 @@ docker compose up                        # dev
 docker compose up --build
 docker compose up -d
 docker compose down
-docker compose logs <service>            # backend | frontend | db | certbot
+docker compose logs <service>            # backend | frontend | db
 
 # Production-mode local build
 TAG=latest docker compose -f docker-compose.prod.yml up --build
@@ -33,13 +33,12 @@ Local secrets required:
 | `continuous-delivery.yml` | SSHes to Hetzner and runs `scripts/deploy.sh` |
 | `pr-validation.yml` | Build checks on PRs |
 | `codeql.yml` | GitHub Advanced Security scans (push / PR / schedule) |
-| `infrastructure-update.yml` | Weekly OS + image refresh — Sundays 02:00 UTC |
 
 All support `workflow_dispatch`. Trigger via UI or:
 
 ```bash
-gh workflow run infrastructure-update.yml --ref master
-gh run list --workflow=infrastructure-update.yml
+gh workflow run release.yml --ref master
+gh run list --workflow=release.yml
 gh run watch
 ```
 
@@ -62,27 +61,31 @@ gh run watch
 - Logs to `/var/log/lexiq/deployment/`.
 - Exit codes: `1` file not found · `3` auth/pull failed · `4` container start failed.
 
-## SSH efficiency in CD
+## SSH via Cloudflare Tunnel
 
-Three connections per run, no more:
+SSH goes through Cloudflare Access (`cloudflared access ssh`). The CD workflow installs `cloudflared` on the runner, adds a `ProxyCommand` entry to `~/.ssh/config`, and authenticates using a Cloudflare service token (`CF_ACCESS_CLIENT_ID` + `CF_ACCESS_CLIENT_SECRET`). `appleboy/scp-action` and `appleboy/ssh-action` are **not used** — they have no `ProxyCommand` support.
 
-1. **SCP** — `scripts/deploy.sh`, `scripts/verify-deployment.sh`, `docker-compose.prod.yml` to `/tmp/deploy_assets_<run_id>/`.
-2. **SSH deploy + verify** — runs both scripts in one connection; compose file `cp`'d into the production directory inside the same step.
-3. **SSH cleanup** (`always`) — removes temp assets, prunes dangling images.
+Required GitHub Actions secrets:
+
+| Secret | Purpose |
+|--------|---------|
+| `HETZNER_PROD_HOST` | Cloudflare Access hostname for SSH (e.g. `ssh.relexiq.com`) |
+| `HETZNER_PROD_USERNAME` | Server user |
+| `HETZNER_PROD_PRIVATE_SSH_KEY` | Private key (PEM) |
+| `HETZNER_PROD_SSH_KEY_PASSPHRASE` | Passphrase for the key |
+| `CF_ACCESS_CLIENT_ID` | Cloudflare Access service token ID |
+| `CF_ACCESS_CLIENT_SECRET` | Cloudflare Access service token secret |
+
+Four steps per run:
+
+1. **Setup** — install cloudflared, start ssh-agent, add key, write SSH config with ProxyCommand.
+2. **SCP** — copy `scripts/deploy.sh`, `scripts/verify-deployment.sh`, `docker-compose.prod.yml`, `.deploy.env` to `/tmp/deploy_assets_<run_id>/`.
+3. **SSH deploy + verify** — runs both scripts in one connection; compose file `cp`'d into production dir.
+4. **SSH cleanup** (`always`) — removes temp assets, prunes dangling images.
 
 ## Build cache
 
-`docker/setup-buildx-action` is **required** — without it the GHA cache driver silently does nothing. `cache-from` / `cache-to` use `type=gha` with `scope=frontend` and `scope=backend` (isolated). BuildKit auto-invalidates the install layer when `package.json` / `package-lock.json` / `*.csproj` change. `no-cache` is `false` everywhere except `infrastructure-update.yml`.
-
-## `infrastructure-update.yml`
-
-Sundays 02:00 UTC (also `workflow_dispatch`). Three sequential jobs:
-
-1. **`update-infrastructure`** — `apt-get upgrade` + `docker compose pull db certbot` + recreate + prune.
-2. **`rebuild-app-images`** — calls `build-and-push-docker.yml` with `no-cache: true` to refresh base images (`node:*-alpine`, `nginx-unprivileged`, `dotnet/aspnet`).
-3. **`deploy-fresh-images`** — calls `continuous-delivery.yml`.
-
-Only place `no-cache: true` is used. Base-image security patches land here weekly, not on every push.
+`docker/setup-buildx-action` is **required** — without it the GHA cache driver silently does nothing. `cache-from` / `cache-to` use `type=gha` with `scope=frontend` and `scope=backend` (isolated). BuildKit auto-invalidates the install layer when `package.json` / `package-lock.json` / `*.csproj` change. `no-cache` is `false` by default.
 
 ## Services
 
@@ -90,8 +93,7 @@ Only place `no-cache: true` is used. Base-image security patches land here weekl
 |---------|-------|-------|
 | `db` | `mssql/server:2022-latest` | Health-checked |
 | `backend` | `aspnet:10.0-alpine` (~120 MB) | Plain HTTP :8080 internally |
-| `frontend` | `nginx-unprivileged:stable-alpine` | TLS terminator, runs as non-root |
-| `certbot` | LE renewal sidecar | One-shot permission fix on startup |
+| `frontend` | `nginx-unprivileged:stable-alpine` | Plain HTTP :80 → cloudflared on host; runs as non-root |
 
 ### Backend Alpine ICU requirement
 
@@ -130,32 +132,18 @@ BusyBox `wget` flags only — see [`common-gotchas.md`](../../.claude/rules/comm
 - `db_password` ← `backend/Database/password.txt`
 - `backend_env` ← `backend/.env` (loaded from `/run/secrets/backend_env` in production)
 
-## Production HTTPS / Let's Encrypt
+## Production TLS — Cloudflare Tunnel
 
-- `letsencrypt-certs` is a Docker named volume — unrelated to host `/etc/letsencrypt/`. Always write via `docker compose run`.
-- `certbot --webroot` does NOT write `options-ssl-nginx.conf` (only `--nginx` plugin does). `init-letsencrypt.sh` downloads it explicitly into the volume.
-- HTTP-first bootstrap: missing certs → frontend `docker-entrypoint.sh` starts nginx with `nginx.acme-only.conf` (HTTP-only, ACME challenges). After `init-letsencrypt.sh` issues certs, switches to `nginx.prod.conf` via `nginx -s reload` — no container restart.
-- `init-letsencrypt.sh` is **one-time**, manual. Subsequent CD runs use HTTPS directly because certs persist in the named volume across `down/up`.
-- Re-running burns LE quota (5 issuances per domain per 7 days). Don't.
-- Staging mode: `STAGING=1 scripts/init-letsencrypt.sh`.
-- **Two separate cert issuances** are mandatory:
-  - Frontend: `-d lexiqlanguage.eu -d www.lexiqlanguage.eu` → `live/lexiqlanguage.eu/`
-  - API: `-d api.lexiqlanguage.eu` (alone) → `live/api.lexiqlanguage.eu/`
-  Combining all three into one command creates a single SAN cert under `live/lexiqlanguage.eu/`; the API cert directory is never created and `nginx.prod.conf` reload fails.
+TLS is terminated by Cloudflare at their edge. The server does **not** need inbound port 80/443 open to the internet.
+
+- `cloudflared` runs as a host service on the Hetzner box, tunnelling to `localhost:3000` (the `frontend` container's host port).
+- nginx serves plain HTTP on `:80` inside the container. No certs, no ACME, no certbot.
+- Cloudflare forwards `CF-Connecting-IP` with the real client IP and `X-Forwarded-Proto: https`. nginx passes these to the backend.
+- Domain: `relexiq.com` / `www.relexiq.com`.
 
 ### Compose-file naming
 
-- CI copies `docker-compose.prod.yml` → `docker-compose.yml` on the server (`continuous-delivery.yml` line 67).
-- All server scripts (`deploy.sh`, `init-letsencrypt.sh`) reference `docker-compose.yml`, NOT `docker-compose.prod.yml`.
-- `init-letsencrypt.sh` resolves its own dir: `SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"`.
-
-### Cert permissions for nginx-unprivileged
-
-- `nginxinc/nginx-unprivileged` runs as non-root.
-- Certbot creates `archive/` with `0700` — nginx can't follow `live/` → `archive/` symlinks.
-- `init-letsencrypt.sh` step 3.5 `chmod 755` on archive dirs and `644` on cert files after issuance.
-- `infrastructure-update.yml` renewal uses `--deploy-hook` to re-apply permissions after each renewal.
-- Symptom of breakage: `BIO_new_file() failed (Permission denied)` on `nginx -s reload`.
+CI copies `docker-compose.prod.yml` → `docker-compose.yml` on the server (`continuous-delivery.yml` line 67). All server scripts reference `docker-compose.yml`, NOT `docker-compose.prod.yml`.
 
 ## Backend test pipeline (`test.yml`)
 

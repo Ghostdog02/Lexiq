@@ -108,7 +108,7 @@ Registered first in the pipeline. Maps exceptions to HTTP statuses, sanitizes pa
 
 - `AddJwtAuthentication()` reads the cookie via `OnMessageReceived`.
 - `UserContextMiddleware` runs **after** `UseAuthentication()`, **before** `UseAuthorization()`. Loads User + `UserLanguages` + `Language` and stashes in `HttpContext.Items["CurrentUser"]`.
-- `Secure` flag on the cookie is auto-set when the request is HTTPS. nginx terminates TLS; backend is plain HTTP internally.
+- `Secure` flag on the cookie is auto-set when the request is HTTPS (Cloudflare sets `X-Forwarded-Proto: https`). Cloudflare terminates TLS externally; nginx and backend are plain HTTP inside the Docker network.
 
 ## Database init
 
@@ -118,7 +118,7 @@ Connection string is built from env vars (`DB_SERVER`, `DB_NAME`, `DB_USER_ID`, 
 
 ## Data Protection
 
-Keys persisted to `/app/dataprotection-keys` (Docker volume `backend-dataprotection`). Override path with `DATA_PROTECTION_KEYS_PATH`. Keys are intentionally **not encrypted at rest** (Google-OAuth-only app, no antiforgery flow). **Do NOT encrypt with the LE cert** — 90-day rotation invalidates all keys.
+Keys persisted to `/app/dataprotection-keys` (Docker volume `backend-dataprotection`). Override path with `DATA_PROTECTION_KEYS_PATH`. Keys are intentionally **not encrypted at rest** (Google-OAuth-only app, no antiforgery flow). **Do NOT encrypt with a rotating TLS cert** — rotation invalidates all keys.
 
 ## Authorization roles
 
