@@ -61,6 +61,15 @@
   }
 }
 
+.hearts-row {
+  justify-content: flex-start;
+
+  .stat-card {
+    flex: 0 0 auto;
+    min-width: 10rem;
+  }
+}
+
 .stat-card {
   @include mixins.glass-card;
   @include hover-lift;
