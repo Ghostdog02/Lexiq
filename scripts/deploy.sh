@@ -202,6 +202,11 @@ main() {
   local start_time
   start_time=$(date +%s)
 
+  local server_env="$HOME/production/.env"
+  if [ -f "$server_env" ]; then
+    . "$server_env"
+  fi
+
   initialize
   
   export TAG="${BRANCH}"
