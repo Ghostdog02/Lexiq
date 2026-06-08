@@ -37,7 +37,7 @@ docker compose up --build
 - **Levels**: `floor((1 + sqrt(1 + totalXp/25)) / 2)` — backend-computed.
 - **Streaks**: distinct dates from `UserExerciseProgress.CompletedAt`, consecutive days backward from today.
 - **Auth**: JWT in HttpOnly `AuthToken` cookie. HS256, 24h default. ASP.NET Core maps JWT `sub` → `ClaimTypes.NameIdentifier` — always use `NameIdentifier`. Access user via `HttpContext.GetCurrentUser()`.
-- **TLS**: nginx in the frontend container is the **sole** TLS terminator for both `lexiqlanguage.eu` and `api.lexiqlanguage.eu`. Backend speaks plain HTTP on `:8080` inside the Docker network.
+- **TLS**: Cloudflare Tunnel terminates TLS externally. nginx (inside the `frontend` container) speaks plain HTTP on `:80` to cloudflared (host service). Backend speaks plain HTTP on `:8080` inside the Docker network. Domain: `relexiq.com`.
 - **Dev cookies**: nginx proxies `/api` → `backend:8080` so requests are same-origin. CORS uses `AllowCredentials()` + specific origin. Frontend sends `withCredentials: true`. `SameSite=Lax` works through the proxy.
 - **Sass**: `@use` only, never `@import`. Namespace: `@use 'path/styles.scss' as styles;`.
 
