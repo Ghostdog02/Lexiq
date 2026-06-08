@@ -17,9 +17,9 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  max-width: 900px;
+  max-width: 56.25rem;
   margin: 0 auto;
-  padding: 40px 20px;
+  padding: 2.5rem 1.25rem;
   min-height: 100vh;
   font-family: var(--font-family);
   position: relative;
@@ -30,13 +30,13 @@
 
 .help-header {
   text-align: center;
-  margin-bottom: 48px;
+  margin-bottom: 3rem;
 
   .title {
-    font-size: 42px;
+    font-size: 2.5rem;
     font-weight: 800;
     letter-spacing: -0.5px;
-    margin-bottom: 12px;
+    margin-bottom: 0.75rem;
     // Gradient Text
     background: linear-gradient(135deg, var(--white) 0%, rgba(255,255,255,0.9) 100%);
     -webkit-background-clip: text;
@@ -46,36 +46,36 @@
 
   .subtitle {
     color: var(--text-secondary);
-    font-size: 18px;
-    margin-bottom: 32px;
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
   }
 }
 
 .search-wrapper {
   position: relative;
-  max-width: 600px;
+  max-width: 37.5rem;
   margin: 0 auto;
 
   .search-icon {
     position: absolute;
-    left: 20px;
+    left: 1.25rem;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 20px;
+    font-size: var(--icon-size-md);
     opacity: 0.7;
     z-index: 2;
   }
 
   .search-input {
     width: 100%;
-    padding: 18px 20px 18px 54px;
-    font-size: 16px;
+    padding: 1.125rem 1.25rem 1.125rem 3.375rem;
+    font-size: 1.125rem;
     color: var(--white);
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--border);
-    border-radius: 100px; // Pill shape for search
+    border-radius: 6.25rem; // Pill shape for search
     outline: none;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     backdrop-filter: blur(5px);
 
     &::placeholder {
@@ -85,7 +85,7 @@
     &:focus {
       background: rgba(255, 255, 255, 0.08);
       border-color: var(--accent);
-      box-shadow: 0 0 0 4px rgba(124, 92, 255, 0.15);
+      box-shadow: 0 0 0 0.25rem rgba(124, 92, 255, 0.15);
     }
   }
 }
@@ -94,22 +94,22 @@
 
 .categories-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); 
-  gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
   width: 100%;
-  margin-bottom: 60px;
+  margin-bottom: 3.75rem;
 
   @media (max-width: 600px) {
     display: flex;
     overflow-x: auto;
-    padding-bottom: 15px;
+    padding-bottom: 0.9375rem;
     scroll-snap-type: x mandatory;
-    
-    &::-webkit-scrollbar { height: 4px; }
-    &::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-    
+
+    &::-webkit-scrollbar { height: 0.25rem; }
+    &::-webkit-scrollbar-thumb { background: var(--border); border-radius: 0.625rem; }
+
     .category-card {
-      min-width: 160px;
+      min-width: 10rem;
       scroll-snap-align: start;
     }
   }
@@ -117,7 +117,7 @@
 
 .category-card {
   @include mixins.glass-card;
-  padding: 24px;
+  padding: 1.5rem;
   text-align: center;
   cursor: pointer;
   display: flex;
@@ -134,26 +134,26 @@
   &.active {
     background: linear-gradient(135deg, rgba(124, 92, 255, 0.15) 0%, rgba(124, 92, 255, 0.05) 100%);
     border-color: var(--accent);
-    
+
     .cat-icon { transform: scale(1.1); }
   }
 
   .cat-icon {
-    font-size: 36px;
-    margin-bottom: 16px;
+    font-size: 2.25rem;
+    margin-bottom: 1rem;
     transition: transform 0.2s ease;
   }
 
   .cat-name {
     color: var(--white);
     font-weight: 700;
-    font-size: 18px;
-    margin: 0 0 8px 0;
+    font-size: 1.25rem;
+    margin: 0 0 0.5rem 0;
   }
 
   .cat-desc {
     color: var(--muted);
-    font-size: 14px;
+    font-size: 1rem;
     margin: 0;
     line-height: 1.4;
   }
@@ -162,26 +162,26 @@
 // --- FAQ ACCORDION ---
 
 .faq-section {
-  margin-bottom: 48px;
+  margin-bottom: 3rem;
 
   .section-title {
-    font-size: 24px;
+    font-size: 1.5rem;
     font-weight: 800;
     color: var(--white);
-    margin-bottom: 24px;
+    margin-bottom: 1.5rem;
   }
 }
 
 .faq-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .no-results {
   text-align: center;
   color: var(--muted);
-  padding: 40px;
+  padding: 2.5rem;
   background: rgba(255, 255, 255, 0.02);
   border-radius: var(--radius);
 }
@@ -194,10 +194,10 @@
   // Accordion Logic
   &.open {
     .chevron { transform: rotate(180deg); }
-    
+
     .faq-answer-wrapper {
       grid-template-rows: 1fr;
-      padding-bottom: 20px;
+      padding-bottom: 1.25rem;
     }
 
     .faq-question {
@@ -210,11 +210,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px;
+    padding: 1.25rem 1.5rem;
     background: transparent;
     border: none;
     color: var(--white);
-    font-size: 16px;
+    font-size: 1.125rem;
     font-weight: 600;
     font-family: var(--font-family);
     cursor: pointer;
@@ -227,7 +227,7 @@
 
     .chevron {
       color: var(--muted);
-      font-size: 12px;
+      font-size: 0.875rem;
       transition: transform 0.3s ease;
     }
   }
@@ -237,26 +237,26 @@
     display: grid;
     grid-template-rows: 0fr;
     transition: grid-template-rows 0.3s ease-out, padding-bottom 0.3s ease;
-    padding: 0 24px;
+    padding: 0 1.5rem;
   }
 
   .faq-answer {
     overflow: hidden;
     color: var(--text-secondary);
     line-height: 1.6;
-    font-size: 15px;
+    font-size: 1rem;
   }
 }
 
 // --- CONTACT CTA ---
 
 .contact-section {
-  margin-top: 60px;
+  margin-top: 3.75rem;
 }
 
 .contact-card {
   @include mixins.glass-card;
-  padding: 40px;
+  padding: 2.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -265,15 +265,15 @@
   @media (max-width: 600px) {
     flex-direction: column;
     text-align: center;
-    gap: 24px;
+    gap: 1.5rem;
   }
 
   .contact-content {
     h2 {
-      font-size: 24px;
+      font-size: 1.5rem;
       font-weight: 700;
       color: var(--white);
-      margin: 0 0 8px 0;
+      margin: 0 0 0.5rem 0;
     }
     p {
       color: var(--text-secondary);
@@ -284,19 +284,18 @@
   // Primary Button
   .btn.primary {
     background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
-    box-shadow: 0 8px 24px rgba(124, 92, 255, 0.25);
+    box-shadow: 0 0.5rem 1.5rem rgba(124, 92, 255, 0.25);
     border-radius: var(--radius-sm);
-    padding: 14px 28px;
+    padding: 0.875rem 1.75rem;
     font-weight: 700;
     color: var(--white);
     border: 1px solid rgba(255,255,255,0.1);
     cursor: pointer;
-    transition: all 200ms ease;
+    transition: transform 200ms ease, box-shadow 200ms ease;
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 12px 32px rgba(124, 92, 255, 0.35);
+      box-shadow: 0 0.75rem 2rem rgba(124, 92, 255, 0.35);
     }
   }
 }
-
