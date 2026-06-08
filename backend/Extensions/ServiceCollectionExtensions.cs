@@ -97,6 +97,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<LeaderboardService>();
         services.AddScoped<AvatarService>();
         services.AddScoped<AchievementService>();
+        services.AddScoped<StreakService>();
         services.AddScoped<ProfileService>();
         services.AddHttpClient(
             "GoogleAvatar",
