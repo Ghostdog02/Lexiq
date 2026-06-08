@@ -14,8 +14,8 @@ public class HeartsService(BackendDbContext context, IClock clock)
 
     /// <summary>
     /// Applies the refill formula and saves. Returns the current heart count after refill.
-    /// Formula: granted = floor(elapsedHours / 4) capped at (MaxHearts - hearts).
-    /// LastHeartResetAt advances by granted * 4h so carry-over minutes persist.
+    /// Grants at most 1 heart per call: if at least one full 4-hour interval has elapsed,
+    /// increments by 1 and advances LastHeartResetAt by 4h to preserve carry-over minutes.
     /// Timer is frozen when hearts == MaxHearts.
     /// </summary>
     public async Task<int> RefillAndGetHeartsAsync(User user)
@@ -23,15 +23,11 @@ public class HeartsService(BackendDbContext context, IClock clock)
         if (user.Hearts < MaxHearts)
         {
             var elapsed = _clock.UtcNow - user.LastHeartResetAt;
-            var granted = Math.Min(
-                (int)Math.Floor(elapsed.TotalHours / RefillIntervalHours),
-                MaxHearts - user.Hearts
-            );
 
-            if (granted > 0)
+            if (elapsed >= TimeSpan.FromHours(RefillIntervalHours))
             {
-                user.Hearts += granted;
-                user.LastHeartResetAt = user.LastHeartResetAt.AddHours(granted * RefillIntervalHours);
+                user.Hearts = Math.Min(user.Hearts + 1, MaxHearts);
+                user.LastHeartResetAt = user.LastHeartResetAt.AddHours(RefillIntervalHours);
                 await _context.SaveChangesAsync();
             }
         }
