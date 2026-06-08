@@ -71,8 +71,7 @@ Required GitHub Actions secrets:
 |--------|---------|
 | `HETZNER_PROD_HOST` | Cloudflare Access hostname for SSH (e.g. `ssh.relexiq.com`) |
 | `HETZNER_PROD_USERNAME` | Server user |
-| `HETZNER_PROD_PRIVATE_SSH_KEY` | Private key (PEM) |
-| `HETZNER_PROD_SSH_KEY_PASSPHRASE` | Passphrase for the key |
+| `HETZNER_PROD_PRIVATE_SSH_KEY` | Private key (PEM, no passphrase) |
 | `CF_ACCESS_CLIENT_ID` | Cloudflare Access service token ID |
 | `CF_ACCESS_CLIENT_SECRET` | Cloudflare Access service token secret |
 
