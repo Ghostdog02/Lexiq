@@ -19,12 +19,12 @@ services:
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
-        export MSSQL_SA_PASSWORD=$$(cat /run/secrets/db_password)
-        /opt/mssql/bin/sqlservr
+        export MSSQL_SA_PASSWORD=$(tr -d '\n' < /run/secrets/db_password)
+        exec /opt/mssql/bin/sqlservr
     healthcheck:
       test: >
-        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa 
-        -P "$$(cat /run/secrets/db_password)" 
+        /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa
+        -P "$(tr -d '\n' < /run/secrets/db_password)"
         -Q "SELECT 1" -C || exit 1
       interval: 10s
       retries: 10
