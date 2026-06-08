@@ -46,8 +46,8 @@ body {
   --shadow-hover: 0 24px 70px rgba(124, 92, 255, 0.15);
 
   --radius: 1rem;
-  --radius-sm: 6.25rem;
-  --radius-lg: 0.875rem;  // Larger rounded corners for buttons
+  --radius-pill: 6.25rem;
+  --radius-sm: 0.875rem;  // Larger rounded corners for buttons
 
   --icon-size-md: 1.5rem;
   --icon-size-lg: 2.3rem;
@@ -79,6 +79,10 @@ body {
   --color-error-rgb: 255, 75, 75;
   --color-error-light: #ffb5b5;       // Lighter red for text
   --color-error-dark: #9c5446;        // Darker red for shadows
+
+  --color-hearts: #ff8a7a;
+  --color-rank-up: #4ade80;
+  --color-rank-down: #f87171;
 }
 
 // Force dark OS palette for native select popups globally
