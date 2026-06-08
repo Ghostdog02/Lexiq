@@ -314,7 +314,11 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving files of type {FileType}", fileType);
+                var safeFileType = (fileType ?? string.Empty)
+                    .Replace("\r", string.Empty)
+                    .Replace("\n", string.Empty);
+
+                _logger.LogError(ex, "Error retrieving files of type {FileType}", safeFileType);
                 return new FileListResult
                 {
                     IsSuccess = false,
