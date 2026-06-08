@@ -72,23 +72,9 @@ jobs:
           HOST="${{ secrets.HETZNER_PROD_USERNAME }}@${{ secrets.HETZNER_PROD_HOST }}"
           ASSETS="/tmp/deploy_assets_${{ github.run_id }}"
 
-          cat > /tmp/.deploy.env << 'ENVEOF'
-          HOME_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}"
-          BRANCH="${{ env.BRANCH }}"
-          REPO="${{ github.repository }}"
-          COMMIT="${{ github.sha }}"
-          ACTOR="${{ github.actor }}"
-          DOCKER_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
-          DOCKER_USERNAME="${{ github.actor }}"
-          DEPLOY_DIR="/home/${{ secrets.HETZNER_PROD_USERNAME }}/production"
-          REGISTRY="ghcr.io"
-          REPO_LOWER="${{ env.REPO_LOWER }}"
-          EVENT="${{ github.event_name }}"
-          ENVEOF
-
           ssh "$HOST" "mkdir -p $ASSETS/scripts"
           scp scripts/deploy.sh scripts/verify-deployment.sh "$HOST:$ASSETS/scripts/"
-          scp docker-compose.prod.yml /tmp/.deploy.env "$HOST:$ASSETS/"
+          scp docker-compose.prod.yml "$HOST:$ASSETS/"
 
       - name: Deploy and Verify
         env:
@@ -101,12 +87,13 @@ jobs:
 
           ssh "$HOST" bash << ENDSSH
           set -e
+          export BRANCH="${{ env.BRANCH }}"
+          export DOCKER_USERNAME="${{ github.actor }}"
+          export DOCKER_PASSWORD="${{ secrets.GITHUB_TOKEN }}"
+          export DEPLOY_DIR="$TARGET_DIR"
           mkdir -p "$TARGET_DIR/scripts"
           cp "$ASSETS/docker-compose.prod.yml" "$TARGET_DIR/docker-compose.yml"
-          cp "$ASSETS/.deploy.env" /tmp/.deploy.env
-          chmod 600 /tmp/.deploy.env
           bash "$ASSETS/scripts/deploy.sh"
-          export DEPLOY_DIR="$TARGET_DIR"
           bash "$ASSETS/scripts/verify-deployment.sh"
           ENDSSH
 
@@ -120,7 +107,6 @@ jobs:
           ASSETS="/tmp/deploy_assets_${{ github.run_id }}"
           ssh "$HOST" "
             rm -rf $ASSETS
-            rm -f /tmp/.deploy.env
             docker image prune -f
             docker volume prune -f
           "
