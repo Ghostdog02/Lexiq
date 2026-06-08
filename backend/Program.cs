@@ -54,7 +54,7 @@ public class Program
 
         app.UseRouting();
         app.UseCors("AllowAngular");
-        app.UseStaticFiles();
+        app.ConfigureStaticFiles();
         app.UseOpenApiEndpoint();
         app.UseAuthentication();
         app.UseUserContext(); // Extract user entity from JWT
