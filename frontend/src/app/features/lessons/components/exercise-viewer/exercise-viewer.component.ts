@@ -1,397 +1,310 @@
-import { Component, OnInit, OnDestroy, inject, DestroyRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  inject,
+  DestroyRef,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, NonNullableFormBuilder } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, fromEvent, filter } from 'rxjs';
 import {
   AnyExercise,
+  Exercise,
   ExerciseType,
-  MultipleChoiceExercise,
   FillInBlankExercise,
-  TranslationExercise,
-  ListeningExercise
+  ListeningExercise,
+  TrueFalseExercise,
 } from '../../models/exercise.interface';
+import { LessonSubmitResult } from '../../models/lesson.interface';
 import { LessonService } from '../../services/lesson.service';
-import { ExerciseService } from '../../services/exercise.service';
 import { ExerciseViewerStateService } from '../../services/exercise-viewer-state.service';
 import { AuthService } from '../../../../auth/auth.service';
+import { MultipleChoiceExerciseComponent } from './multiple-choice-exercise/multiple-choice-exercise.component';
+import { FillInBlankExerciseComponent } from './fill-in-blank-exercise/fill-in-blank-exercise.component';
+import { ListeningExerciseComponent } from './listening-exercise/listening-exercise.component';
+import { TrueFalseExerciseComponent } from './true-false-exercise/true-false-exercise.component';
 
 /**
  * Container component for the exercise-solving flow.
- * Uses ExerciseViewerStateService to manage all state (view models, form controls, submissions).
- * Handles answer submission via ExerciseService and lesson completion via LessonService.
  *
- * All four exercise types (MultipleChoice, FillInBlank, Translation, Listening)
- * are rendered within this single component — the template switches UI controls
- * based on `exerciseType`.
+ * Answers are validated locally — no per-exercise backend call.
+ * The lesson is submitted once at the end via LessonService.submitLesson().
+ * ExerciseViewerStateService is the single source of truth for all exercise state.
  */
 @Component({
   selector: 'app-exercise-viewer',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
-  providers: [ExerciseViewerStateService], // Component-scoped service
+  imports: [
+    CommonModule,
+    MultipleChoiceExerciseComponent,
+    FillInBlankExerciseComponent,
+    ListeningExerciseComponent,
+    TrueFalseExerciseComponent,
+  ],
+  providers: [ExerciseViewerStateService],
   templateUrl: './exercise-viewer.component.html',
-  styleUrl: './exercise-viewer.component.scss'
+  styleUrl: './exercise-viewer.component.scss',
 })
 export class ExerciseViewerComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private fb = inject(NonNullableFormBuilder);
   private lessonService = inject(LessonService);
-  private exerciseService = inject(ExerciseService);
   private authService = inject(AuthService);
   private destroyRef = inject(DestroyRef);
   private http = inject(HttpClient);
 
-  // State service manages all exercise state
   readonly state = inject(ExerciseViewerStateService);
 
   exercises: AnyExercise[] = [];
-  lessonId: string = '';
+  lessonId = '';
   isLoading = true;
-
   isAdmin = false;
   isSubmitting = false;
-  hearts: number = 0;
+  lessonSubmitResult: LessonSubmitResult | null = null;
 
-  // Audio player state
-  audioElement: HTMLAudioElement | null = null;
-  isPlaying = false;
-  currentTime = 0;
-  duration = 0;
-  progressPercentage = 0;
+  // Keyboard navigation state
+  focusedOptionIndex = 0;
 
-  ExerciseType = ExerciseType;
+  continueButtonEnabled = false;
+  exerciseSwitchState = '';
+  outOfHearts = false;
+  nextRefillAt: Date | null = null;
+  private isSwitching = false;
 
-  async ngOnInit() {
-    // Subscribe to admin status
-    this.authService.getAdminStatusListener()
+  // Expose enum to template
+  readonly ExerciseType = ExerciseType;
+
+  async ngOnInit(): Promise<void> {
+    this.authService
+      .getAdminStatusListener()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((isAdmin) => this.isAdmin = isAdmin);
+      .subscribe((isAdmin) => (this.isAdmin = isAdmin));
 
-    // Fetch user hearts
-    await this.fetchHearts();
+    this.setupKeyboardNavigation();
 
-    // Get lessonId from route params
+    const { hearts, nextRefillAt } = await this.fetchHearts();
+
     const lessonId = this.route.snapshot.paramMap.get('id');
     if (!lessonId) {
-      console.error('❌ No lesson ID in route params');
-      this.router.navigate(['/']);
+      console.error('No lesson ID in route params');
+      await this.router.navigate(['/']);
       return;
     }
 
     this.lessonId = lessonId;
 
-    // Load lesson to get exercises
-    await this.loadLesson();
+    if (!this.isAdmin && hearts === 0) {
+      this.nextRefillAt = nextRefillAt;
+      this.outOfHearts = true;
+      this.isLoading = false;
+      return;
+    }
 
-    // Initialize state and build forms
-    await this.initializeState();
-    this.buildForms();
-  }
-
-  private async loadLesson(): Promise<void> {
     this.isLoading = true;
-
     try {
-      const lesson = await this.lessonService.getLesson(this.lessonId);
-
-      if (!lesson) {
-        console.error('❌ Lesson not found');
-        this.router.navigate(['/']);
-        return;
-      }
-
-      this.exercises = lesson.exercises as AnyExercise[];
+      this.exercises = await this.lessonService.getExercisesByLesson(lessonId);
     } catch (err) {
-      console.error('❌ Error loading lesson:', err);
-      this.router.navigate(['/']);
+      console.error('Error loading exercises:', err);
+      await this.router.navigate(['/']);
+      return;
     } finally {
       this.isLoading = false;
     }
+
+    this.state.initialize(this.exercises, this.isAdmin, hearts);
   }
 
-  ngOnDestroy() {
+  ngOnDestroy(): void {
     this.state.reset();
-    if (this.audioElement) {
-      this.audioElement.pause();
-      this.audioElement = null;
-    }
   }
 
-  /**
-   * Initialize the state service with exercises and restore previous progress.
-   */
-  private async initializeState() {
-    const submissions = await this.lessonService.getLessonSubmissions(this.lessonId);
-    this.state.initialize(this.exercises, submissions, this.isAdmin);
-  }
-
-  /**
-   * Build reactive form controls for all exercises.
-   * Disables controls for already-submitted exercises.
-   */
-  private buildForms() {
-    this.state.viewModels.forEach(vm => {
-      const control = this.fb.control('');
-
-      // Disable if already submitted
-      if (vm.isSubmitted) {
-        control.disable();
-      }
-
-      vm.formControl = control;
-    });
-  }
-
-  /**
-   * Fetch user's current hearts count from backend
-   */
-  private async fetchHearts(): Promise<void> {
+  private async fetchHearts(): Promise<{ hearts: number; nextRefillAt: Date | null }> {
     try {
       const response = await firstValueFrom(
-        this.http.get<{ hearts: number }>('/api/user/hearts', { withCredentials: true })
+        this.http.get<{ hearts: number; nextRefillAt: string | null }>('/api/user/hearts', {
+          withCredentials: true,
+        })
       );
-      this.hearts = response.hearts;
+      return {
+        hearts: response.hearts,
+        nextRefillAt: response.nextRefillAt ? new Date(response.nextRefillAt) : null,
+      };
     } catch (err) {
-      console.error('❌ Failed to fetch hearts:', err);
-      this.hearts = 0;
+      console.error('Failed to fetch hearts:', err);
+      return { hearts: 0, nextRefillAt: null };
     }
   }
 
-  // Getters that delegate to state service
+  private setupKeyboardNavigation(): void {
+    fromEvent<KeyboardEvent>(document, 'keydown')
+      .pipe(
+        filter(
+          () => this.currentExercise?.type === ExerciseType.MultipleChoice
+        ),
+        filter(() => !this.isCurrentSubmitted),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((event) => {
+        const options = this.currentExercise?.options ?? [];
+        if (options.length === 0) return;
+
+        switch (event.key) {
+          case 'ArrowDown':
+            event.preventDefault();
+            this.focusedOptionIndex =
+              (this.focusedOptionIndex + 1) % options.length;
+            this.state.selectOption(
+              this.state.currentExerciseId!,
+              options[this.focusedOptionIndex].id
+            );
+            break;
+
+          case 'ArrowUp':
+            event.preventDefault();
+            this.focusedOptionIndex =
+              (this.focusedOptionIndex - 1 + options.length) % options.length;
+            this.state.selectOption(
+              this.state.currentExerciseId!,
+              options[this.focusedOptionIndex].id
+            );
+            break;
+
+          case 'Enter':
+            event.preventDefault();
+            if (
+              this.isCurrentSubmitted &&
+              this.state.canGoNext &&
+              (this.isAdmin || this.state.hearts > 0)
+            ) {
+              this.nextExercise();
+            }
+            break;
+        }
+      });
+  }
+
+  // ── Getters ───────────────────────────────────────────────────────────────
 
   get currentExercise(): AnyExercise | null {
-    return this.state.currentViewModel?.exercise || null;
+    return this.state.currentViewModel?.exercise ?? null;
   }
 
-  get currentSubmission() {
-    return this.state.currentViewModel?.submission || null;
-  }
-
-  /** True only when the current exercise was answered correctly. Wrong attempts keep the form enabled for retry. */
   get isCurrentSubmitted(): boolean {
-    return this.state.currentViewModel?.isSubmitted || false;
+    return this.state.currentViewModel?.isSubmitted ?? false;
   }
 
-  get isCurrentLocked(): boolean {
-    const exercise = this.currentExercise;
-    return !!exercise?.isLocked && !this.isAdmin;
+  get isCurrentCorrect(): boolean {
+    return this.state.currentViewModel?.isCorrect ?? false;
   }
 
-  // Type-safe getters for specific exercise types
-
-  get currentMultipleChoice(): MultipleChoiceExercise | null {
-    const exercise = this.currentExercise;
-    return exercise?.type === ExerciseType.MultipleChoice
-      ? exercise as MultipleChoiceExercise
-      : null;
+  get currentMultipleChoice(): Exercise | null {
+    const ex = this.currentExercise;
+    return ex?.type === ExerciseType.MultipleChoice ? (ex as Exercise) : null;
   }
 
   get currentFillInBlank(): FillInBlankExercise | null {
-    const exercise = this.currentExercise;
-    return exercise?.type === ExerciseType.FillInBlank
-      ? exercise as FillInBlankExercise
-      : null;
-  }
-
-  get currentTranslation(): TranslationExercise | null {
-    const exercise = this.currentExercise;
-    return exercise?.type === ExerciseType.Translation
-      ? exercise as TranslationExercise
+    const ex = this.currentExercise;
+    return ex?.type === ExerciseType.FillInBlank
+      ? (ex as FillInBlankExercise)
       : null;
   }
 
   get currentListening(): ListeningExercise | null {
-    const exercise = this.currentExercise;
-    return exercise?.type === ExerciseType.Listening
-      ? exercise as ListeningExercise
+    const ex = this.currentExercise;
+    return ex?.type === ExerciseType.Listening
+      ? (ex as ListeningExercise)
       : null;
   }
 
-  // Navigation methods
-
-  previousExercise() {
-    this.state.goToPrevious();
+  get currentTrueFalse(): TrueFalseExercise | null {
+    const ex = this.currentExercise;
+    return ex?.type === ExerciseType.TrueFalse
+      ? (ex as TrueFalseExercise)
+      : null;
   }
 
-  nextExercise() {
+  get isLastExercise(): boolean {
+    return !this.state.canGoNext;
+  }
+
+  get allSubmitted(): boolean {
+    return this.state.viewModels.every((vm) => vm.isSubmitted);
+  }
+
+  // Converts exercise type enum to readable label
+  getExerciseTypeLabel(type: ExerciseType): string {
+    return type.replace(/([A-Z])/g, ' $1').trim();
+  }
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+
+  async nextExercise(): Promise<void> {
+    if (this.isSwitching) return;
+    this.isSwitching = true;
+    this.continueButtonEnabled = false;
+    this.exerciseSwitchState = 'exit-left';
+    await new Promise<void>(r => setTimeout(r, 300));
     this.state.goToNext();
+    this.focusedOptionIndex = 0;
+    this.exerciseSwitchState = 'enter-right';
+    await new Promise<void>(r => setTimeout(r, 300));
+    this.exerciseSwitchState = 'done';
+    this.isSwitching = false;
   }
 
-  goToExercise(exerciseId: string) {
+  goToExercise(exerciseId: string): void {
     this.state.setCurrentExercise(exerciseId);
   }
 
   isExerciseAccessible(exerciseId: string): boolean {
-    const viewModel = this.state.getViewModelById(exerciseId);
-    return viewModel?.isAccessible || false;
+    return this.state.getViewModelById(exerciseId)?.isAccessible ?? false;
   }
 
-  // User interaction methods
+  // ── Actions ───────────────────────────────────────────────────────────────
 
-  selectMultipleChoiceOption(optionId: string) {
-    if (!this.isCurrentSubmitted && !this.isCurrentLocked) {
-      this.state.updateAnswer(this.state.currentExerciseId!, optionId);
+  checkAnswer(): void {
+    if (!this.currentExercise?.id || !this.state.currentHasSelection)
+      return;
+    this.state.submitAnswer(this.currentExercise.id);
+    if (!this.isAdmin && this.state.hearts === 0) {
+      this.outOfHearts = true;
+      this.lessonService.submitLesson(this.lessonId, this.state.buildSubmitPayload())
+        .catch(err => console.error('Failed to sync hearts to backend:', err));
     }
+    setTimeout(() => { this.continueButtonEnabled = true; }, 600);
   }
 
-  async submitAnswer() {
-    const exercise = this.currentExercise;
-    if (!exercise || this.isCurrentSubmitted || this.isSubmitting || this.isCurrentLocked) return;
+  onBackToContent(): void {
+    this.router.navigate(['/lesson', this.lessonId]);
+  }
 
-    const answerValue = this.state.currentAnswer;
-    if (!answerValue) return;
-
+  async finishLesson(): Promise<void> {
+    if (this.isSubmitting) return;
     this.isSubmitting = true;
 
     try {
-      const result = await this.exerciseService.submitExerciseAnswer(exercise.id, answerValue);
-      this.state.submitAnswer(exercise.id, result);
-
-      // Refetch hearts after submission (especially if wrong answer)
-      await this.fetchHearts();
+      const payload = this.state.buildSubmitPayload();
+      this.lessonSubmitResult = await this.lessonService.submitLesson(
+        this.lessonId,
+        payload
+      );
     } catch (err) {
-      console.error('❌ Failed to submit answer:', err);
+      console.error('Failed to submit lesson:', err);
     } finally {
       this.isSubmitting = false;
     }
   }
 
-  /**
-   * Handle Enter key press on input fields to submit answer or continue.
-   */
-  onInputKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-
-      if (this.isCurrentSubmitted && this.state.canGoNext) {
-        // Continue to next exercise
-        this.nextExercise();
-      } else if (!this.isCurrentSubmitted && this.state.currentAnswer) {
-        // Submit current answer
-        this.submitAnswer();
-      }
-    }
+  dismissResults(): void {
+    this.router.navigate(['/']);
   }
 
-  async finishLesson() {
-    try {
-      const result = await this.lessonService.completeLesson(this.lessonId);
-
-      if (result.isCompleted) {
-        this.router.navigate(['/']);
-      } else {
-        alert(
-          `You need ${Math.round(result.requiredThreshold * 100)}% to complete this lesson. ` +
-          `You scored ${Math.round(result.completionPercentage * 100)}%.`
-        );
-      }
-    } catch (err) {
-      console.error('❌ Failed to complete lesson:', err);
-    }
-  }
-
-  onBackToContent() {
-    this.router.navigate(['/lesson', this.lessonId]);
-  }
-
-  // Helper methods for multiple choice options
-
-  isOptionSelected(optionId: string): boolean {
-    return this.state.currentAnswer === optionId;
-  }
-
-  getOptionClass(optionId: string, isCorrect: boolean): string {
-    if (!this.currentSubmission) {
-      return this.isOptionSelected(optionId) ? 'selected' : '';
-    }
-
-    const isUserSelection = this.isOptionSelected(optionId);
-    const submissionCorrect = this.currentSubmission.isCorrect;
-
-    if (isUserSelection) {
-      return submissionCorrect ? 'correct' : 'incorrect';
-    }
-
-    if (!submissionCorrect && isCorrect) {
-      return 'correct';
-    }
-
-    return '';
-  }
-
-  getSubmission(exerciseId: string) {
-    return this.state.getViewModelById(exerciseId)?.submission;
-  }
-
-  // Audio player methods
-
-  onAudioLoaded(audio: HTMLAudioElement) {
-    this.audioElement = audio;
-    this.duration = audio.duration;
-  }
-
-  togglePlayPause() {
-    if (!this.audioElement) return;
-
-    if (this.isPlaying) {
-      this.audioElement.pause();
-      this.isPlaying = false;
-    } else {
-      this.audioElement.play();
-      this.isPlaying = true;
-    }
-  }
-
-  onTimeUpdate(audio: HTMLAudioElement) {
-    this.currentTime = audio.currentTime;
-    this.progressPercentage = (audio.currentTime / audio.duration) * 100;
-  }
-
-  seekAudio(event: MouseEvent) {
-    if (!this.audioElement) return;
-
-    const progressBar = event.currentTarget as HTMLElement;
-    const rect = progressBar.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const percentage = clickX / rect.width;
-
-    this.audioElement.currentTime = percentage * this.audioElement.duration;
-  }
-
-  formatTime(seconds: number): string {
-    if (isNaN(seconds)) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }
-
-  /**
-   * Parse FillInBlank text to extract parts before and after the blank placeholder.
-   * Assumes the placeholder is "____" (four underscores).
-   */
-  parseFillInBlankText(text: string): { before: string; after: string; hasBlank: boolean } {
-    const placeholder = '____';
-    const index = text.indexOf(placeholder);
-
-    if (index === -1) {
-      return { before: text, after: '', hasBlank: false };
-    }
-
-    return {
-      before: text.substring(0, index),
-      after: text.substring(index + placeholder.length),
-      hasBlank: true
-    };
-  }
-
-  /**
-   * Convert exercise type enum to readable label.
-   */
-  getExerciseTypeLabel(type: ExerciseType): string {
-    return type.replace(/([A-Z])/g, ' $1').trim();
+  get hoursUntilRefill(): number {
+    if (!this.nextRefillAt) return 4;
+    const ms = this.nextRefillAt.getTime() - Date.now();
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60)));
   }
 }

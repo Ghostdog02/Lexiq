@@ -8,14 +8,13 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services.LessonServiceTests;
+namespace Backend.Tests.Integration.Services.LessonServiceTests;
 
 /// <summary>
 /// Tests for lesson unlocking: automatic and manual unlocking with exercise cascade behavior.
 /// </summary>
-public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
     private BackendDbContext _ctx = null!;
     private LessonService _sut = null!;
 
@@ -24,29 +23,28 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
     private string _thirdCourseId = null!;
     private string _languageId = null!;
 
-    public LessonUnlockingTests(DatabaseFixture fixture) => _fixture = fixture;
-
     public async ValueTask InitializeAsync()
     {
-        _ctx = _fixture.CreateDbContext();
+        _ctx = fixture.CreateDbContext();
 
-        var exerciseService = new ExerciseService(_ctx);
-        _sut = new LessonService(_ctx, exerciseService);
+        var exerciseService = new ExerciseService(_ctx, new Moq.Mock<Backend.Api.Services.IFileUploadsService>().Object);
+        _sut = new LessonService(_ctx, exerciseService, new Backend.Api.Services.Clock.SystemClock());
 
         var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
-        _languageId = language.Id;
+        _languageId = language.LanguageId;
 
         var course = await _ctx.Courses.FirstAsync(TestContext.Current.CancellationToken);
-        _courseId = course.Id;
+        _courseId = course.CourseId;
 
         _secondCourseId = Guid.NewGuid().ToString();
         _ctx.Courses.Add(
             new Course
             {
-                Id = _secondCourseId,
+                CourseId = _secondCourseId,
                 LanguageId = _languageId,
                 Title = "Second Course",
-                CreatedById = _fixture.SystemUserId,
+                Description = "Second test course for lesson unlocking tests.",
+
                 OrderIndex = 1,
             }
         );
@@ -55,10 +53,11 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Courses.Add(
             new Course
             {
-                Id = _thirdCourseId,
+                CourseId = _thirdCourseId,
                 LanguageId = _languageId,
                 Title = "Third Course",
-                CreatedById = _fixture.SystemUserId,
+                Description = "Third test course for lesson unlocking tests.",
+
                 OrderIndex = 2,
             }
         );
@@ -85,7 +84,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = firstLessonId,
+                LessonId = firstLessonId,
                 CourseId = _courseId,
                 Title = "Lesson 1",
                 LessonContent = "{}",
@@ -96,7 +95,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = secondLessonId,
+                LessonId = secondLessonId,
                 CourseId = _courseId,
                 Title = "Lesson 2",
                 LessonContent = "{}",
@@ -107,17 +106,22 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Exercises.Add(
             new FillInBlankExercise
             {
-                Id = exerciseId,
+                ExerciseId = exerciseId,
                 LessonId = secondLessonId,
-                Title = "Exercise 1",
+                Instructions = "Exercise 1",
                 Text = "Test",
-                CorrectAnswer = "answer",
-                CaseSensitive = false,
-                TrimWhitespace = true,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 0,
-                IsLocked = true,
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        ExerciseId = exerciseId,
+                        OptionText = "answer",
+                        IsCorrect = true,
+                        Explanation = "Correct answer explanation.",
+                    },
+                ],
             }
         );
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -129,18 +133,17 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         result.Should().Be(UnlockStatus.Unlocked);
 
         var unlockedLesson = await _ctx.Lessons.FindAsync(
-            new object[] { secondLessonId },
+            [secondLessonId],
             TestContext.Current.CancellationToken
         );
         unlockedLesson.Should().NotBeNull();
         unlockedLesson.IsLocked.Should().BeFalse();
 
         var unlockedExercise = await _ctx.Exercises.FindAsync(
-            new object[] { exerciseId },
+            [exerciseId],
             TestContext.Current.CancellationToken
         );
         unlockedExercise.Should().NotBeNull();
-        unlockedExercise.IsLocked.Should().BeFalse();
     }
 
     [Fact]
@@ -153,7 +156,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = firstLessonId,
+                LessonId = firstLessonId,
                 CourseId = _courseId,
                 Title = "Lesson 1",
                 LessonContent = "{}",
@@ -164,7 +167,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = secondLessonId,
+                LessonId = secondLessonId,
                 CourseId = _courseId,
                 Title = "Lesson 2",
                 LessonContent = "{}",
@@ -189,7 +192,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lastLessonId,
+                LessonId = lastLessonId,
                 CourseId = _thirdCourseId,
                 Title = "Last Lesson",
                 LessonContent = "{}",
@@ -233,7 +236,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Test Lesson",
                 LessonContent = "{}",
@@ -244,31 +247,41 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Exercises.AddRange(
             new FillInBlankExercise
             {
-                Id = exercise1Id,
+                ExerciseId = exercise1Id,
                 LessonId = lessonId,
-                Title = "Exercise 1",
+                Instructions = "Exercise 1",
                 Text = "Test",
-                CorrectAnswer = "answer",
-                CaseSensitive = false,
-                TrimWhitespace = true,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 0,
-                IsLocked = true,
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        ExerciseId = exercise1Id,
+                        OptionText = "answer",
+                        IsCorrect = true,
+                        Explanation = "Correct answer explanation.",
+                    },
+                ],
             },
             new FillInBlankExercise
             {
-                Id = exercise2Id,
+                ExerciseId = exercise2Id,
                 LessonId = lessonId,
-                Title = "Exercise 2",
+                Instructions = "Exercise 2",
                 Text = "Test",
-                CorrectAnswer = "answer",
-                CaseSensitive = false,
-                TrimWhitespace = true,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 1,
-                IsLocked = true,
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        ExerciseId = exercise2Id,
+                        OptionText = "answer",
+                        IsCorrect = true,
+                        Explanation = "Correct answer explanation.",
+                    },
+                ],
             }
         );
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -278,25 +291,23 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
 
         // Assert
         var lesson = await _ctx.Lessons.FindAsync(
-            new object[] { lessonId },
+            [lessonId],
             TestContext.Current.CancellationToken
         );
         lesson.Should().NotBeNull();
         lesson.IsLocked.Should().BeFalse();
 
         var exercise1 = await _ctx.Exercises.FindAsync(
-            new object[] { exercise1Id },
+            [exercise1Id],
             TestContext.Current.CancellationToken
         );
         exercise1.Should().NotBeNull();
-        exercise1.IsLocked.Should().BeFalse();
 
         var exercise2 = await _ctx.Exercises.FindAsync(
-            new object[] { exercise2Id },
+            [exercise2Id],
             TestContext.Current.CancellationToken
         );
         exercise2.Should().NotBeNull();
-        exercise2.IsLocked.Should().BeTrue("second exercise should remain locked");
     }
 
     [Fact]
@@ -307,7 +318,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Test Lesson",
                 LessonContent = "{}",
@@ -323,7 +334,7 @@ public class LessonUnlockingTests : IClassFixture<DatabaseFixture>, IAsyncLifeti
 
         // Assert
         var lesson = await _ctx.Lessons.FindAsync(
-            new object[] { lessonId },
+            [lessonId],
             TestContext.Current.CancellationToken
         );
         lesson.Should().NotBeNull();

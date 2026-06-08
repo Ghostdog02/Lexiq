@@ -33,7 +33,7 @@ public static class UserMapping
             Email = validPayload.Email,
             EmailConfirmed = true,
             NormalizedEmail = userManager.NormalizeEmail(validPayload.Email),
-            NormalizedUserName = userManager.NormalizeEmail(validPayload.Name),
+            NormalizedUserName = userManager.NormalizeName(validPayload.Name),
             RegistrationDate = DateTime.UtcNow,
         };
     }

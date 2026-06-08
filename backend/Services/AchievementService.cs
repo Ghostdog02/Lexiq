@@ -18,7 +18,7 @@ public class AchievementService(BackendDbContext context)
         // Load all achievement IDs where xpRequired <= totalXp
         var qualifyingIds = await _context.Achievements
             .Where(a => a.XpRequired <= totalXp)
-            .Select(a => a.Id)
+            .Select(a => a.AchievementId)
             .ToListAsync();
 
         if (qualifyingIds.Count == 0)
@@ -40,6 +40,8 @@ public class AchievementService(BackendDbContext context)
             UserId = userId,
             AchievementId = achievementId,
             UnlockedAt = DateTime.UtcNow,
+            User = null!,
+            Achievement = null!,
         });
 
         await _context.UserAchievements.AddRangeAsync(records);
@@ -65,10 +67,10 @@ public class AchievementService(BackendDbContext context)
 
         return definitions.Select(a =>
         {
-            var isUnlocked = unlockMap.TryGetValue(a.Id, out var unlockedAt);
+            var isUnlocked = unlockMap.TryGetValue(a.AchievementId, out var unlockedAt);
             return new AchievementDto(
-                Id: a.Id,
-                Name: a.Name,
+                Id: a.AchievementId,
+                Name: a.AchievementName,
                 Description: a.Description,
                 XpRequired: a.XpRequired,
                 Icon: a.Icon,

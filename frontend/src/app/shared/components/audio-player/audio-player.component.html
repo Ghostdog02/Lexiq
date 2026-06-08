@@ -1,0 +1,74 @@
+<audio
+  #audioEl
+  [src]="src"
+  (loadedmetadata)="onAudioLoaded(audioEl)"
+  (timeupdate)="onTimeUpdate(audioEl)"
+  (ended)="onEnded()">
+</audio>
+
+<div class="audio-widget" [style.--pct]="scrubValue + '%'">
+  <div class="controls-row">
+    <div class="wave-section">
+      <div class="track-top">
+        <span class="track-label">Audio track</span>
+        <span class="timer">
+          {{ formatTime(currentTime) }}<span class="timer-sep"> / {{ formatTime(duration) }}</span>
+        </span>
+      </div>
+
+      <div class="waveform-wrap" aria-hidden="true">
+        <div class="waveform-muted"></div>
+        <div class="waveform-played"></div>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      class="play-btn"
+      (click)="togglePlayPause()"
+      [attr.aria-label]="isPlaying ? 'Pause audio' : 'Play audio'">
+      @if (isPlaying) {
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <rect x="4" y="3" width="3.5" height="12" rx="1.5" fill="currentColor"/>
+          <rect x="10.5" y="3" width="3.5" height="12" rx="1.5" fill="currentColor"/>
+        </svg>
+      } @else {
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <path d="M5 3L15 9L5 15V3Z" fill="currentColor"/>
+        </svg>
+      }
+    </button>
+
+    <button
+      type="button"
+      class="replay-btn"
+      (click)="replay()"
+      [disabled]="replaysExhausted"
+      aria-label="Replay audio">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M3 8a5 5 0 1 0 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+        <path d="M8 3L5.5 5.5M8 3L10.5 5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <input
+    type="range"
+    class="scrub-track"
+    min="0"
+    max="100"
+    [value]="scrubValue"
+    (input)="onScrub($event)"
+    aria-label="Audio seek"
+    [attr.aria-valuenow]="currentTime"
+    [attr.aria-valuemin]="0"
+    [attr.aria-valuemax]="duration"
+  />
+
+  @if (maxReplays > 0) {
+    <div class="replays-remaining">
+      {{ replaysRemaining }}
+      {{ replaysRemaining === 1 ? 'replay' : 'replays' }} remaining
+    </div>
+  }
+</div>

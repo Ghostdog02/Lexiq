@@ -136,7 +136,7 @@ Add FileUploadsService file type, URL, and path tests  ← all file types, URL u
 
 ## Testing
 
-See [`backend/Tests/CLAUDE.md`](../backend/Tests/CLAUDE.md) for full test project documentation.
+See [`backend/Tests/CLAUDE.md`](../../backend/Tests/CLAUDE.md) for full test project documentation.
 
 ### Quick Commands
 

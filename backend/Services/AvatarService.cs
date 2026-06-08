@@ -90,6 +90,7 @@ public class AvatarService(
                     UserId = userId,
                     Data = data,
                     ContentType = contentType,
+                    User = null!,
                 }
             );
         }

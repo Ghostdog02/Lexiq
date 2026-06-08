@@ -11,16 +11,16 @@ public static class LanguageSeeder
 {
     public static async Task<string> SeedAsync(BackendDbContext context)
     {
-        var italian = await context.Languages.FirstOrDefaultAsync(l => l.Name == "Italian");
+        var italian = await context.Languages.FirstOrDefaultAsync(l => l.LanguageName == "Italian");
 
         if (italian != null)
         {
-            return italian.Id;
+            return italian.LanguageId;
         }
 
         italian = new Language
         {
-            Name = "Italian",
+            LanguageName = "Italian",
             FlagIconUrl = "https://flagcdn.com/w40/it.png",
             CreatedAt = DateTime.UtcNow,
         };
@@ -28,6 +28,6 @@ public static class LanguageSeeder
         context.Languages.Add(italian);
         await context.SaveChangesAsync();
 
-        return italian.Id;
+        return italian.LanguageId;
     }
 }

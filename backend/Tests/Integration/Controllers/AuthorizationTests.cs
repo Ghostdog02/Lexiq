@@ -11,7 +11,7 @@ using FluentAssertions;
 using Microsoft.IdentityModel.Tokens;
 using Xunit;
 
-namespace Backend.Tests.Controllers;
+namespace Backend.Tests.Integration.Controllers;
 
 /// <summary>
 /// HTTP-level integration tests for authorization policy enforcement across all controllers.
@@ -66,13 +66,12 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("POST", "/api/lessons")]
     [InlineData("PUT", "/api/lessons/test-id")]
     [InlineData("DELETE", "/api/lessons/test-id")]
-    [InlineData("POST", "/api/lessons/test-id/complete")]
+    [InlineData("POST", "/api/lessons/test-id/submit")]
     [InlineData("POST", "/api/lessons/test-id/unlock")]
     [InlineData("GET", "/api/lessons/test-id/exercises")]
     [InlineData("POST", "/api/exercises")]
     [InlineData("PUT", "/api/exercises/test-id")]
     [InlineData("DELETE", "/api/exercises/test-id")]
-    [InlineData("POST", "/api/exercises/test-id/submit")]
     [InlineData("GET", "/api/userlanguage")]
     [InlineData("GET", "/api/user/xp")]
     [InlineData("GET", "/api/auth/is-admin")]
@@ -278,7 +277,7 @@ public class AuthorizationTests(DatabaseFixture fixture)
     [InlineData("GET", "/api/lessons/test-id/exercises")]
     [InlineData("POST", "/api/exercises")]
     [InlineData("PUT", "/api/exercises/test-id")]
-    [InlineData("POST", "/api/exercises/test-id/submit")]
+    [InlineData("POST", "/api/lessons/test-id/submit")]
     [InlineData("GET", "/api/user/xp")]
     [InlineData("GET", "/api/auth/is-admin")]
     [InlineData("GET", "/api/usermanagement")]

@@ -1,16 +1,14 @@
 using System.Net;
 using System.Net.Http.Json;
 using Backend.Api.Dtos;
-using Backend.Database;
 using Backend.Database.Entities.Users;
-using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Backend.Tests.Controllers;
+namespace Backend.Tests.Integration.Controllers;
 
 /// <summary>
 /// Integration tests for UserManagementController endpoints.
@@ -96,7 +94,7 @@ public class UserManagementControllerTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
         users.Should().NotBeNull();
-        users!
+        users
             .Should()
             .HaveCountGreaterThanOrEqualTo(
                 3,
@@ -159,7 +157,7 @@ public class UserManagementControllerTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
         user.Should().NotBeNull();
-        user!.Email.Should().Be("testuser@test.com");
+        user.Email.Should().Be("testuser@test.com");
         user.FullName.Should().Be("testuser");
     }
 
@@ -212,7 +210,7 @@ public class UserManagementControllerTests(DatabaseFixture fixture)
             cancellationToken: TestContext.Current.CancellationToken
         );
         user.Should().NotBeNull();
-        user!.Email.Should().Be("testuser@test.com");
+        user.Email.Should().Be("testuser@test.com");
     }
 
     [Fact]
@@ -356,7 +354,13 @@ public class UserManagementControllerTests(DatabaseFixture fixture)
     public async Task Update_Admin_ValidDto_UpdatesUser()
     {
         // Arrange
-        var updateDto = new UserManagementUpdateDto(_testUserId, "Updated User", "testuser@test.com", "555-1234", DateTime.UtcNow);
+        var updateDto = new UserManagementUpdateDto(
+            _testUserId,
+            "Updated User",
+            "testuser@test.com",
+            "555-1234",
+            DateTime.UtcNow
+        );
 
         // Act
         var response = await _adminClient.PutAsJsonAsync(
@@ -373,7 +377,7 @@ public class UserManagementControllerTests(DatabaseFixture fixture)
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
         var updatedUser = await userManager.FindByIdAsync(_testUserId);
         updatedUser.Should().NotBeNull();
-        updatedUser!.UserName.Should().Be("Updated User");
+        updatedUser.UserName.Should().Be("Updated User");
         updatedUser.Email.Should().Be("testuser@test.com");
         updatedUser.PhoneNumber.Should().Be("555-1234");
     }
@@ -458,7 +462,7 @@ public class UserManagementControllerTests(DatabaseFixture fixture)
         var verifyUserManager = verifyScope.ServiceProvider.GetRequiredService<UserManager<User>>();
         var updatedUser = await verifyUserManager.FindByIdAsync(_testUserId);
         updatedUser.Should().NotBeNull();
-        updatedUser!
+        updatedUser
             .LastLoginDate.Should()
             .BeAfter(originalDate, because: "UpdateLastLoginDate sets LastLoginDate to UtcNow");
     }
@@ -533,9 +537,7 @@ public class UserManagementControllerTests(DatabaseFixture fixture)
 
         // Verify deletion with a fresh scope
         using var verifyScope = Factory.Services.CreateScope();
-        var verifyUserManager = verifyScope
-            .ServiceProvider
-            .GetRequiredService<UserManager<User>>();
+        var verifyUserManager = verifyScope.ServiceProvider.GetRequiredService<UserManager<User>>();
         var deletedUser = await verifyUserManager.FindByIdAsync(userIdToDelete);
         deletedUser.Should().BeNull();
     }

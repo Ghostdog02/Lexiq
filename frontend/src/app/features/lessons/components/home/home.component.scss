@@ -5,7 +5,7 @@
 @include loading.system;
 
 @mixin hover-lift {
-  transition: all 200ms ease-in-out;
+  transition: transform 200ms ease-in-out, box-shadow 200ms ease-in-out;
   cursor: pointer;
 
   &:hover {
@@ -24,13 +24,18 @@
   box-shadow: 0 10px 30px rgba(0,0,0,0.30);
 
   span {
-    font-size: 1.4em;
+    font-size: 1.5rem;
   }
 }
 
 .home-grid {
   display: flex;
   gap: 2rem;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 70vw;
+  margin: 0 auto;
+  padding-top: 1rem;
 }
 
 .sidebar {
@@ -38,17 +43,31 @@
   flex-direction: column;
   gap: 1rem;
   position: sticky;
-  top: 1rem; 
-  align-self: flex-start;  
-  flex: 1 2 auto;
-  min-width: 25rem;
-  max-width: 30rem; 
+  top: 2rem;
+  align-self: flex-start;
+  flex: 1 1 0;
 }
 
 .sidebar-row {
   display: flex;
   flex-direction: row;
+  align-items: center;
   gap: 1rem;
+}
+
+.hearts-card {
+  .hearts-value {
+    color: var(--color-hearts);
+  }
+}
+
+.hearts-row {
+  justify-content: flex-start;
+
+  .stat-card {
+    flex: 0 0 auto;
+    min-width: 10rem;
+  }
 }
 
 .stat-card {
@@ -81,7 +100,7 @@
   }
 
   .stat-label {
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: var(--muted);
     text-transform: uppercase;
@@ -126,11 +145,11 @@
   .quest-description {
     margin: 0 0 0.6rem;
     color: var(--text-secondary);
-    font-size: 0.94rem;
+    font-size: 1rem;
   }
 
   .quest-progress {
-    height: 20px;
+    height: 1.25rem;
     background: rgba(0,0,0,0.25);
     border-radius: 10px;
     overflow: hidden;
@@ -158,7 +177,7 @@
 }
 
 .courses-container {
-  flex: 2 1 auto;
+  flex: 2 1 0;
 }
 
 .add-unit-button {
@@ -191,7 +210,7 @@
     padding: 0.625rem 1.75rem;
     background: var(--unit-color, var(--accent));
     color: var(--white);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-pill);
     font-weight: 700;
     font-size: 1.1rem;
     text-transform: uppercase;
@@ -200,7 +219,7 @@
   }
 
   .unit-description {
-    font-size: 1.12rem;
+    font-size: 1.125rem;
     font-weight: 500;
     color: var(--text-secondary);
     margin: 0;
@@ -218,13 +237,13 @@
 .lesson-node {
   display: flex;
   align-items: center;
-  gap: 3rem;
-  padding: 1rem 4rem;
+  gap: 1.75rem;
+  padding: 1.25rem 2.5rem;
   background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 100%);
   border-radius: var(--radius);
   border: 1px solid var(--border);
   box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  transition: all 200ms ease-in-out;
+  transition: transform 200ms ease-in-out, box-shadow 200ms ease-in-out;
   cursor: pointer;
   position: relative;
 
@@ -307,8 +326,8 @@
 
 .lesson-icon-wrapper {
   position: relative;
-  width: 90px;
-  height: 90px;
+  width: 5.625rem;
+  height: 5.625rem;
   flex-shrink: 0;
   margin-top: .5em;
   display: flex;
@@ -318,7 +337,7 @@
   border-radius: 50%;
   border: 2px solid var(--border);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-  transition: all 300ms ease-in-out;
+  transition: transform 300ms ease-in-out, border-color 300ms ease-in-out;
 }
 
 .lesson-icon {
@@ -330,8 +349,8 @@
   position: absolute;
   bottom: -5px;
   right: -4px;
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   border-radius: 50%;
   align-items: center;
@@ -358,31 +377,29 @@
 }
 
 .lesson-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
   align-self: center;
 }
 
 .lesson-title {
-  margin: 0 0 1rem 0;
+  margin: 0;
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--white);
-}
-
-.lesson-description {
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin: 0 0 0.75rem;
 }
 
 .lesson-progress {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-top: 0.625rem;
 
   .progress-track {
-    flex: 1;
-    height: 5px;
+    flex: 1 1 0;
+    min-width: 5rem;
+    max-width: 14rem;
+    height: 0.375rem;
     background: rgba(255, 255, 255, 0.06);
     border-radius: 3px;
     overflow: hidden;
@@ -399,7 +416,7 @@
   }
 
   .xp-label {
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     color: var(--muted);
     white-space: nowrap;
@@ -421,10 +438,10 @@
 .xp-badge {
   padding: 0.375rem 0.875rem;
   background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 160, 0, 0.1) 100%);
-  color: #ffc107;
-  border-radius: var(--radius-sm);
+  color: var(--color-warning);
+  border-radius: var(--radius-pill);
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 1rem;
   border: 1px solid rgba(255, 193, 7, 0.3);
   display: inline-flex;
   gap: 0.25rem;
@@ -452,13 +469,13 @@
     top: 0;
     flex: 0 0 auto;
     width: 100%;
-    max-width: 600px;
+    max-width: 37.5rem;
     order: -1;
   }
 
   .courses-container {
     width: 100%;
-    max-width: 800px;
+    max-width: 50rem;
   }
 }
 
@@ -475,8 +492,8 @@
   }
 
   .lesson-icon-wrapper {
-    width: 70px;
-    height: 70px;
+    width: 4.375rem;
+    height: 4.375rem;
     margin-top: 0;
   }
 

@@ -41,6 +41,16 @@ export const routes: Routes = [
         title: "Help"
     },
     {
+        path: 'terms',
+        loadComponent: () => import('./terms/terms.component').then(m => m.TermsComponent),
+        title: "Terms of Service"
+    },
+    {
+        path: 'privacy',
+        loadComponent: () => import('./privacy/privacy.component').then(m => m.PrivacyComponent),
+        title: "Privacy Policy"
+    },
+    {
         path: 'lesson/:id',
         loadComponent: () => import('./features/lessons/components/lesson-viewer/lesson-viewer.component').then(m => m.LessonViewerComponent),
         title: "Lesson Details",

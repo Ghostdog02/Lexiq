@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Integration.Services;
 
 /// <summary>
 /// Integration tests for GoogleAuthService.LoginUser.

@@ -6,7 +6,7 @@ using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Xunit;
 
-namespace Backend.Tests.EndToEnd;
+namespace Backend.Tests.Integration.E2E;
 
 /// <summary>
 /// HTTP-level E2E tests for admin and content creator CRUD workflows.
@@ -66,89 +66,92 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
         // Arrange
         var courseId = await GetExistingCourseIdAsync();
 
-        var createLessonDto = new CreateLessonDto(
-            CourseId: courseId,
-            Title: "Admin Test Lesson",
-            Description: "Created by admin",
-            EstimatedDurationMinutes: 30,
-            OrderIndex: 99, // High index to avoid conflicts
-            Content: "{}",
-            Exercises:
-            [
-                new CreateFillInBlankExerciseDto(
-                    LessonId: null,
-                    Title: "Test Exercise 1",
-                    Instructions: "Fill in",
-                    EstimatedDurationMinutes: 5,
-                    DifficultyLevel: DifficultyLevel.Beginner,
-                    Points: 10,
-                    OrderIndex: 0,
-                    Explanation: "Good job",
-                    Text: "Test _",
-                    CorrectAnswer: "answer",
-                    AcceptedAnswers: null,
-                    CaseSensitive: false,
-                    TrimWhitespace: true
-                ),
-            ]
-        );
+        if (courseId != null)
+        {
+            var createLessonDto = new CreateLessonDto(
+                CourseId: courseId,
+                Title: "Admin Test Lesson",
+                Description: "Created by admin",
+                EstimatedDurationMinutes: 30,
+                OrderIndex: 99, // High index to avoid conflicts
+                Content: "{}",
+                Exercises:
+                [
+                    new CreateFillInBlankExerciseDto(
+                        LessonId: null,
+                        Instructions: "Fill in the blank",
+                        DifficultyLevel: DifficultyLevel.Beginner,
+                        Points: 10,
+                        Explanation: "Good job",
+                        Text: "Test _",
+                        Options:
+                        [
+                            new CreateExerciseOptionDto("answer", IsCorrect: true, "Correct answer"),
+                        ]
+                    ),
+                ]
+            );
 
-        // Act
-        var createResponse = await _adminClient.PostAsJsonAsync(
-            "/api/lessons",
-            createLessonDto,
-            JsonOptions,
-            TestContext.Current.CancellationToken
-        );
+            // Act
+            var createResponse = await _adminClient.PostAsJsonAsync(
+                "/api/lessons",
+                createLessonDto,
+                JsonOptions,
+                TestContext.Current.CancellationToken
+            );
 
-        var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
-            cancellationToken: TestContext.Current.CancellationToken
-        );
+            var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
+                cancellationToken: TestContext.Current.CancellationToken
+            );
 
-        var unlockResponse = await _adminClient.PostAsync(
-            $"/api/lessons/{createdLesson!.LessonId}/unlock",
-            null,
-            TestContext.Current.CancellationToken
-        );
+            var unlockResponse = await _adminClient.PostAsync(
+                $"/api/lessons/{createdLesson!.LessonId}/unlock",
+                null,
+                TestContext.Current.CancellationToken
+            );
 
-        var studentFetchResponse = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
-            TestContext.Current.CancellationToken
-        );
+            var studentFetchResponse = await _studentClient.GetAsync(
+                $"/api/lessons/{createdLesson.LessonId}",
+                TestContext.Current.CancellationToken
+            );
 
-        var studentLesson = await studentFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
-            cancellationToken: TestContext.Current.CancellationToken
-        );
+            var studentLesson = await studentFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
+                JsonOptions,
+                TestContext.Current.CancellationToken
+            );
 
-        var exerciseId = studentLesson!.Exercises[0].Id;
-        var submitResponse = await _studentClient.PostAsJsonAsync(
-            $"/api/exercises/{exerciseId}/submit",
-            new SubmitAnswerRequest("answer"),
-            TestContext.Current.CancellationToken
-        );
+            var exercise = studentLesson!.Exercises[0] as FillInBlankExerciseDto;
+            var correctOptionId = exercise!.Options.First(o => o.IsCorrect).Id;
+            var submitResponse = await _studentClient.PostAsJsonAsync(
+                $"/api/lessons/{createdLesson!.LessonId}/submit",
+                new SubmitLessonRequest([new ExerciseAnswerDto(exercise!.Id, correctOptionId)]),
+                TestContext.Current.CancellationToken
+            );
 
-        var submitResult = await submitResponse.Content.ReadFromJsonAsync<ExerciseSubmitResult>(
-            cancellationToken: TestContext.Current.CancellationToken
-        );
+            var submitResult = await submitResponse.Content.ReadFromJsonAsync<LessonSubmitResult>(
+                cancellationToken: TestContext.Current.CancellationToken
+            );
 
-        // Assert
-        courseId.Should().NotBeNull();
-        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        createdLesson.Should().NotBeNull();
-        createdLesson!.Title.Should().Be("Admin Test Lesson");
-        createdLesson.IsLocked.Should().BeTrue("new lessons are locked by default");
+            // Assert
+            courseId.Should().NotBeNull();
+            createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+            createdLesson.Should().NotBeNull();
+            createdLesson.Title.Should().Be("Admin Test Lesson");
+            createdLesson.IsLocked.Should().BeTrue("new lessons are locked by default");
 
-        unlockResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+            unlockResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        studentFetchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        studentLesson.Should().NotBeNull();
-        studentLesson!.IsLocked.Should().BeFalse("admin unlocked it");
-        studentLesson.Exercises.Should().HaveCount(1);
+            studentFetchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+            studentLesson.Should().NotBeNull();
+            studentLesson.IsLocked.Should().BeFalse("admin unlocked it");
+            studentLesson.Exercises.Should().HaveCount(1);
 
-        submitResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        submitResult.Should().NotBeNull();
-        submitResult!.IsCorrect.Should().BeTrue();
-        submitResult.PointsEarned.Should().Be(10);
+            submitResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+            submitResult.Should().NotBeNull();
+            var exerciseResult = submitResult!.Exercises.First(e => e.ExerciseId == exercise!.Id);
+            exerciseResult.IsCorrect.Should().BeTrue();
+            exerciseResult.PointsEarned.Should().Be(10);
+        }
     }
 
     [Fact]
@@ -156,64 +159,66 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
     {
         // Arrange
         var courseId = await GetExistingCourseIdAsync();
-        var createLessonDto = new CreateLessonDto(
-            CourseId: courseId,
-            Title: "Original Title",
-            Description: "Original description",
-            EstimatedDurationMinutes: 30,
-            OrderIndex: 100,
-            Content: "{}",
-            Exercises: null
-        );
+        if (courseId != null)
+        {
+            var createLessonDto = new CreateLessonDto(
+                CourseId: courseId,
+                Title: "Original Title",
+                Description: "Original description",
+                EstimatedDurationMinutes: 30,
+                OrderIndex: 100,
+                Content: "{}",
+                Exercises: null
+            );
 
-        var createResponse = await _adminClient.PostAsJsonAsync(
-            "/api/lessons",
-            createLessonDto,
-            TestContext.Current.CancellationToken
-        );
-        
-        var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
-            cancellationToken: TestContext.Current.CancellationToken
-        );
+            var createResponse = await _adminClient.PostAsJsonAsync(
+                "/api/lessons",
+                createLessonDto,
+                TestContext.Current.CancellationToken
+            );
 
-        await _adminClient.PostAsync(
-            $"/api/lessons/{createdLesson!.LessonId}/unlock",
-            null,
-            TestContext.Current.CancellationToken
-        );
+            var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
+                cancellationToken: TestContext.Current.CancellationToken
+            );
 
-        // Act
-        var updateDto = new UpdateLessonDto(
-            CourseId: null,
-            Title: "Updated Title",
-            Description: "Updated description",
-            EstimatedDurationMinutes: 45,
-            OrderIndex: null,
-            LessonContent: "{\"updated\": true}"
-        );
+            await _adminClient.PostAsync(
+                $"/api/lessons/{createdLesson!.LessonId}/unlock",
+                null,
+                TestContext.Current.CancellationToken
+            );
 
-        var updateResponse = await _adminClient.PutAsJsonAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
-            updateDto,
-            TestContext.Current.CancellationToken
-        );
+            // Act
+            var updateDto = new UpdateLessonDto(
+                CourseId: null,
+                Title: "Updated Title",
+                Description: "Updated description",
+                EstimatedDurationMinutes: 45,
+                OrderIndex: null,
+                LessonContent: "{\"updated\": true}"
+            );
 
-        var studentFetchResponse = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
-            TestContext.Current.CancellationToken
-        );
+            var updateResponse = await _adminClient.PutAsJsonAsync(
+                $"/api/lessons/{createdLesson.LessonId}",
+                updateDto,
+                TestContext.Current.CancellationToken
+            );
 
-        var updatedLesson = await studentFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
-            cancellationToken: TestContext.Current.CancellationToken
-        );
+            var studentFetchResponse = await _studentClient.GetAsync(
+                $"/api/lessons/{createdLesson.LessonId}",
+                TestContext.Current.CancellationToken
+            );
 
-        // Assert
-        courseId.Should().NotBeNull();
-        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        updatedLesson.Should().NotBeNull();
-        updatedLesson!.Title.Should().Be("Updated Title");
-        updatedLesson.Description.Should().Be("Updated description");
-        updatedLesson.EstimatedDurationMinutes.Should().Be(45);
+            var updatedLesson = await studentFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
+                cancellationToken: TestContext.Current.CancellationToken
+            );
+
+            // Assert
+            courseId.Should().NotBeNull();
+            updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+            updatedLesson.Should().NotBeNull();
+            updatedLesson.Title.Should().Be("Updated Title");
+            updatedLesson.EstimatedDurationMinutes.Should().Be(45);
+        }
     }
 
     [Fact]
@@ -221,53 +226,56 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
     {
         // Arrange
         var courseId = await GetExistingCourseIdAsync();
-        var createLessonDto = new CreateLessonDto(
-            CourseId: courseId,
-            Title: "To Be Deleted",
-            Description: null,
-            EstimatedDurationMinutes: 30,
-            OrderIndex: 101,
-            Content: "{}",
-            Exercises: null
-        );
+        if (courseId != null)
+        {
+            var createLessonDto = new CreateLessonDto(
+                CourseId: courseId,
+                Title: "To Be Deleted",
+                Description: null,
+                EstimatedDurationMinutes: 30,
+                OrderIndex: 101,
+                Content: "{}",
+                Exercises: null
+            );
 
-        var createResponse = await _adminClient.PostAsJsonAsync(
-            "/api/lessons",
-            createLessonDto,
-            TestContext.Current.CancellationToken
-        );
-        
-        var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
-            cancellationToken: TestContext.Current.CancellationToken
-        );
+            var createResponse = await _adminClient.PostAsJsonAsync(
+                "/api/lessons",
+                createLessonDto,
+                TestContext.Current.CancellationToken
+            );
 
-        await _adminClient.PostAsync(
-            $"/api/lessons/{createdLesson!.LessonId}/unlock",
-            null,
-            TestContext.Current.CancellationToken
-        );
+            var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
+                cancellationToken: TestContext.Current.CancellationToken
+            );
 
-        var initialFetch = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
-            TestContext.Current.CancellationToken
-        );
+            await _adminClient.PostAsync(
+                $"/api/lessons/{createdLesson!.LessonId}/unlock",
+                null,
+                TestContext.Current.CancellationToken
+            );
 
-        // Act
-        var deleteResponse = await _adminClient.DeleteAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
-            TestContext.Current.CancellationToken
-        );
+            var initialFetch = await _studentClient.GetAsync(
+                $"/api/lessons/{createdLesson.LessonId}",
+                TestContext.Current.CancellationToken
+            );
 
-        var studentFetchAfterDelete = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
-            TestContext.Current.CancellationToken
-        );
+            // Act
+            var deleteResponse = await _adminClient.DeleteAsync(
+                $"/api/lessons/{createdLesson.LessonId}",
+                TestContext.Current.CancellationToken
+            );
 
-        // Assert
-        courseId.Should().NotBeNull();
-        initialFetch.StatusCode.Should().Be(HttpStatusCode.OK);
-        deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        studentFetchAfterDelete.StatusCode.Should().Be(HttpStatusCode.NotFound);
+            var studentFetchAfterDelete = await _studentClient.GetAsync(
+                $"/api/lessons/{createdLesson.LessonId}",
+                TestContext.Current.CancellationToken
+            );
+
+            // Assert
+            courseId.Should().NotBeNull();
+            initialFetch.StatusCode.Should().Be(HttpStatusCode.OK);
+            deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+            studentFetchAfterDelete.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
     }
 
     [Fact]
@@ -283,50 +291,53 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
 
         var courseId = await GetExistingCourseIdAsync();
 
-        var createLessonDto = new CreateLessonDto(
-            CourseId: courseId,
-            Title: "Creator Lesson",
-            Description: "Created by ContentCreator",
-            EstimatedDurationMinutes: 30,
-            OrderIndex: 102,
-            Content: "{}",
-            Exercises: null
-        );
-
-        // Act
-        var createResponse = await creatorClient.PostAsJsonAsync(
-            "/api/lessons",
-            createLessonDto,
-            TestContext.Current.CancellationToken
-        );
-
-        var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
-            cancellationToken: TestContext.Current.CancellationToken
-        );
-
-        var studentFetchResponse = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson!.LessonId}",
-            TestContext.Current.CancellationToken
-        );
-
-        // Assert
-        courseId.Should().NotBeNull();
-        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        createdLesson.Should().NotBeNull();
-        createdLesson!.IsLocked.Should().BeTrue("new lessons are locked by default");
-
-        if (studentFetchResponse.StatusCode == HttpStatusCode.OK)
+        if (courseId != null)
         {
-            var studentLesson = await studentFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
+            var createLessonDto = new CreateLessonDto(
+                CourseId: courseId,
+                Title: "Creator Lesson",
+                Description: "Created by ContentCreator",
+                EstimatedDurationMinutes: 30,
+                OrderIndex: 102,
+                Content: "{}",
+                Exercises: null
+            );
+
+            // Act
+            var createResponse = await creatorClient.PostAsJsonAsync(
+                "/api/lessons",
+                createLessonDto,
+                TestContext.Current.CancellationToken
+            );
+
+            var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
                 cancellationToken: TestContext.Current.CancellationToken
             );
-            studentLesson!.IsLocked.Should().BeTrue();
-        }
-        else
-        {
-            studentFetchResponse
-                .StatusCode.Should()
-                .Be(HttpStatusCode.Forbidden, "student cannot access locked lesson");
+
+            var studentFetchResponse = await _studentClient.GetAsync(
+                $"/api/lessons/{createdLesson!.LessonId}",
+                TestContext.Current.CancellationToken
+            );
+
+            // Assert
+            courseId.Should().NotBeNull();
+            createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+            createdLesson.Should().NotBeNull();
+            createdLesson.IsLocked.Should().BeTrue("new lessons are locked by default");
+
+            if (studentFetchResponse.StatusCode == HttpStatusCode.OK)
+            {
+                var studentLesson = await studentFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
+                    cancellationToken: TestContext.Current.CancellationToken
+                );
+                studentLesson!.IsLocked.Should().BeTrue();
+            }
+            else
+            {
+                studentFetchResponse
+                    .StatusCode.Should()
+                    .Be(HttpStatusCode.Forbidden, "student cannot access locked lesson");
+            }
         }
 
         creatorClient.Dispose();
@@ -337,89 +348,86 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
     {
         // Arrange
         var courseId = await GetExistingCourseIdAsync();
-        var createLessonDto = new CreateLessonDto(
-            CourseId: courseId,
-            Title: "Expandable Lesson",
-            Description: null,
-            EstimatedDurationMinutes: 30,
-            OrderIndex: 103,
-            Content: "{}",
-            Exercises:
-            [
-                new CreateFillInBlankExerciseDto(
-                    LessonId: null,
-                    Title: "Exercise 1",
-                    Instructions: null,
-                    EstimatedDurationMinutes: 5,
-                    DifficultyLevel: DifficultyLevel.Beginner,
-                    Points: 10,
-                    OrderIndex: 0,
-                    Explanation: null,
-                    Text: "First",
-                    CorrectAnswer: "one",
-                    AcceptedAnswers: null,
-                    CaseSensitive: false,
-                    TrimWhitespace: true
-                ),
-            ]
-        );
+        if (courseId != null)
+        {
+            var createLessonDto = new CreateLessonDto(
+                CourseId: courseId,
+                Title: "Expandable Lesson",
+                Description: null,
+                EstimatedDurationMinutes: 30,
+                OrderIndex: 103,
+                Content: "{}",
+                Exercises:
+                [
+                    new CreateFillInBlankExerciseDto(
+                        LessonId: null,
+                        Instructions: "Exercise 1",
+                        DifficultyLevel: DifficultyLevel.Beginner,
+                        Points: 10,
+                        Explanation: null,
+                        Text: "First",
+                        Options:
+                        [
+                            new CreateExerciseOptionDto("one", IsCorrect: true, "Correct answer"),
+                        ]
+                    ),
+                ]
+            );
 
-        var createResponse = await _adminClient.PostAsJsonAsync(
-            "/api/lessons",
-            createLessonDto,
-            JsonOptions,
-            TestContext.Current.CancellationToken
-        );
-        var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
-            cancellationToken: TestContext.Current.CancellationToken
-        );
+            var createResponse = await _adminClient.PostAsJsonAsync(
+                "/api/lessons",
+                createLessonDto,
+                JsonOptions,
+                TestContext.Current.CancellationToken
+            );
+            var createdLesson = await createResponse.Content.ReadFromJsonAsync<LessonDto>(
+                cancellationToken: TestContext.Current.CancellationToken
+            );
 
-        await _adminClient.PostAsync(
-            $"/api/lessons/{createdLesson!.LessonId}/unlock",
-            null,
-            TestContext.Current.CancellationToken
-        );
+            await _adminClient.PostAsync(
+                $"/api/lessons/{createdLesson!.LessonId}/unlock",
+                null,
+                TestContext.Current.CancellationToken
+            );
 
-        // Act
-        CreateExerciseDto addExerciseDto = new CreateFillInBlankExerciseDto(
-            LessonId: createdLesson.LessonId,
-            Title: "Exercise 2",
-            Instructions: null,
-            EstimatedDurationMinutes: 5,
-            DifficultyLevel: DifficultyLevel.Beginner,
-            Points: 10,
-            OrderIndex: 1,
-            Explanation: null,
-            Text: "Second",
-            CorrectAnswer: "two",
-            AcceptedAnswers: null,
-            CaseSensitive: false,
-            TrimWhitespace: true
-        );
+            // Act
+            CreateExerciseDto addExerciseDto = new CreateFillInBlankExerciseDto(
+                LessonId: createdLesson.LessonId,
+                Instructions: "Exercise 2",
+                DifficultyLevel: DifficultyLevel.Beginner,
+                Points: 10,
+                Explanation: null,
+                Text: "Second",
+                Options:
+                [
+                    new CreateExerciseOptionDto("two", IsCorrect: true, "Correct answer"),
+                ]
+            );
 
-        var addExerciseResponse = await _adminClient.PostAsJsonAsync(
-            "/api/exercises",
-            addExerciseDto,
-            JsonOptions,
-            TestContext.Current.CancellationToken
-        );
+            var addExerciseResponse = await _adminClient.PostAsJsonAsync(
+                "/api/exercises",
+                addExerciseDto,
+                JsonOptions,
+                TestContext.Current.CancellationToken
+            );
 
-        var studentFetchResponse = await _studentClient.GetAsync(
-            $"/api/lessons/{createdLesson.LessonId}",
-            TestContext.Current.CancellationToken
-        );
+            var studentFetchResponse = await _studentClient.GetAsync(
+                $"/api/lessons/{createdLesson.LessonId}",
+                TestContext.Current.CancellationToken
+            );
 
-        var lessonWithExercises = await studentFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
-            cancellationToken: TestContext.Current.CancellationToken
-        );
+            var lessonWithExercises = await studentFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
+                cancellationToken: TestContext.Current.CancellationToken
+            );
 
-        // Assert
-        courseId.Should().NotBeNull();
-        addExerciseResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-        lessonWithExercises.Should().NotBeNull();
-        lessonWithExercises!.Exercises.Should().HaveCount(2);
-        lessonWithExercises.Exercises.Should().Contain(e => e.Title == "Exercise 1");
-        lessonWithExercises.Exercises.Should().Contain(e => e.Title == "Exercise 2");
+            // Assert
+            courseId.Should().NotBeNull();
+            addExerciseResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+            lessonWithExercises.Should().NotBeNull();
+            lessonWithExercises.Exercises.Should().HaveCount(2);
+            lessonWithExercises.Exercises.Should().Contain(e => e.Instructions == "Exercise 1");
+            lessonWithExercises.Exercises.Should().Contain(e => e.Instructions == "Exercise 2");
+        }
     }
 
     [Fact]
@@ -462,9 +470,6 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
                 cancellationToken: TestContext.Current.CancellationToken
             ) ?? [];
 
-        if (courses.Count == 0)
-            return null;
-
-        return courses.First().CourseId;
+        return courses.Count == 0 ? null : courses.First().CourseId;
     }
 }

@@ -1,0 +1,33 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+
+namespace Backend.Database.Entities.Exercises;
+
+[Index(nameof(AudioMatchingExerciseId))]
+public class AudioMatchPair
+{
+    [Key]
+    public string AudioMatchPairId { get; set; } = Guid.NewGuid().ToString();
+
+    [Required]
+    public string AudioMatchingExerciseId { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(500)]
+    public required string AudioUrl { get; set; }
+
+    [Required]
+    [MaxLength(500)]
+    public required string ImageUrl { get; set; }
+
+    [Required]
+    [MaxLength(1000)]
+    public required string Explanation { get; set; }
+
+    [Required]
+    public bool IsCorrect { get; set; } = false;
+
+    [ForeignKey(nameof(AudioMatchingExerciseId))]
+    public AudioMatchingExercise Exercise { get; set; } = null!;
+}

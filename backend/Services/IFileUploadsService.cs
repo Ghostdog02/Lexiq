@@ -22,4 +22,6 @@ public interface IFileUploadsService
     );
     string? GetFilePhysicalPath(string filename, string fileType);
     string? FindFilePhysicalPath(string filename);
+    Task<int> DeleteOrphanedAudioAsync(TimeSpan graceWindow);
+    void DeleteAudioFile(string audioUrl);
 }

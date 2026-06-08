@@ -7,14 +7,13 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services.LessonServiceTests;
+namespace Backend.Tests.Integration.Services.LessonServiceTests;
 
 /// <summary>
 /// Tests for lesson queries: listing lessons and fetching detailed lesson data with includes.
 /// </summary>
-public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LessonQueryTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
     private BackendDbContext _ctx = null!;
     private LessonService _sut = null!;
 
@@ -22,29 +21,28 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     private string _secondCourseId = null!;
     private string _languageId = null!;
 
-    public LessonQueryTests(DatabaseFixture fixture) => _fixture = fixture;
-
     public async ValueTask InitializeAsync()
     {
-        _ctx = _fixture.CreateDbContext();
+        _ctx = fixture.CreateDbContext();
 
-        var exerciseService = new ExerciseService(_ctx);
-        _sut = new LessonService(_ctx, exerciseService);
+        var exerciseService = new ExerciseService(_ctx, new Moq.Mock<Backend.Api.Services.IFileUploadsService>().Object);
+        _sut = new LessonService(_ctx, exerciseService, new Backend.Api.Services.Clock.SystemClock());
 
         var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
-        _languageId = language.Id;
+        _languageId = language.LanguageId;
 
         var course = await _ctx.Courses.FirstAsync(TestContext.Current.CancellationToken);
-        _courseId = course.Id;
+        _courseId = course.CourseId;
 
         _secondCourseId = Guid.NewGuid().ToString();
         _ctx.Courses.Add(
             new Course
             {
-                Id = _secondCourseId,
+                CourseId = _secondCourseId,
                 LanguageId = _languageId,
                 Title = "Second Course",
-                CreatedById = _fixture.SystemUserId,
+                Description = "Second test course for lesson query tests.",
+
                 OrderIndex = 1,
             }
         );
@@ -72,7 +70,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.AddRange(
             new Lesson
             {
-                Id = lesson2Id,
+                LessonId = lesson2Id,
                 CourseId = _secondCourseId,
                 Title = "Lesson 2",
                 LessonContent = "{}",
@@ -80,7 +78,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
             },
             new Lesson
             {
-                Id = lesson3Id,
+                LessonId = lesson3Id,
                 CourseId = _secondCourseId,
                 Title = "Lesson 3",
                 LessonContent = "{}",
@@ -88,7 +86,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
             },
             new Lesson
             {
-                Id = lesson1Id,
+                LessonId = lesson1Id,
                 CourseId = _secondCourseId,
                 Title = "Lesson 1",
                 LessonContent = "{}",
@@ -103,9 +101,9 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // Assert
         result.Should().NotBeNull();
         result.Should().HaveCount(3);
-        result![0].Id.Should().Be(lesson1Id);
-        result[1].Id.Should().Be(lesson2Id);
-        result[2].Id.Should().Be(lesson3Id);
+        result[0].LessonId.Should().Be(lesson1Id);
+        result[1].LessonId.Should().Be(lesson2Id);
+        result[2].LessonId.Should().Be(lesson3Id);
     }
 
     [Fact]
@@ -147,7 +145,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Test Lesson",
                 LessonContent = "{}",
@@ -155,25 +153,24 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
             }
         );
 
-        var exercise = new MultipleChoiceExercise
+        var exercise = new FillInBlankExercise
         {
-            Id = exerciseId,
+            ExerciseId = exerciseId,
             LessonId = lessonId,
-            Title = "MC Exercise",
-            Instructions = "What is the answer?",
+            Instructions = "Fill in the blank",
+            Text = "The answer is ___",
             DifficultyLevel = DifficultyLevel.Beginner,
             Points = 10,
-            OrderIndex = 0,
-            Options = new List<ExerciseOption>
-            {
-                new()
+            Options =
+            [
+                new ExerciseOption
                 {
-                    Id = optionId,
                     ExerciseId = exerciseId,
                     OptionText = "Option A",
                     IsCorrect = true,
+                    Explanation = "Correct answer.",
                 },
-            },
+            ],
         };
 
         _ctx.Exercises.Add(exercise);
@@ -184,17 +181,17 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Assert
         result.Should().NotBeNull();
-        result.Id.Should().Be(lessonId);
+        result.LessonId.Should().Be(lessonId);
         result.Course.Should().NotBeNull();
-        result.Course.Id.Should().Be(_courseId);
+        result.Course.CourseId.Should().Be(_courseId);
         result.Course.Language.Should().NotBeNull();
-        result.Course.Language.Name.Should().Be("Italian");
+        result.Course.Language.LanguageName.Should().Be("Italian");
 
         result.Exercises.Should().HaveCount(1);
-        var mcExercise = result.Exercises[0] as MultipleChoiceExercise;
-        mcExercise.Should().NotBeNull();
-        mcExercise.Options.Should().HaveCount(1);
-        mcExercise.Options[0].OptionText.Should().Be("Option A");
+        var fibExercise = result.Exercises[0] as FillInBlankExercise;
+        fibExercise.Should().NotBeNull();
+        fibExercise.Options.Should().HaveCount(1);
+        fibExercise.Options[0].OptionText.Should().Be("Option A");
     }
 
     [Fact]
@@ -218,7 +215,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Empty Lesson",
                 LessonContent = "{}",
@@ -248,7 +245,7 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Mixed Exercise Lesson",
                 LessonContent = "{}",
@@ -259,43 +256,42 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Exercises.AddRange(
             new FillInBlankExercise
             {
-                Id = fillInBlankId,
+                ExerciseId = fillInBlankId,
                 LessonId = lessonId,
-                Title = "FillInBlank Exercise",
+                Instructions = "FillInBlank Exercise",
                 Text = "Fill ___",
-                CorrectAnswer = "blank",
-                CaseSensitive = false,
-                TrimWhitespace = true,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = 10,
-                OrderIndex = 0,
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        ExerciseId = fillInBlankId,
+                        OptionText = "blank",
+                        IsCorrect = true,
+                        Explanation = "Correct answer.",
+                    },
+                ],
             },
             new ListeningExercise
             {
-                Id = listeningId,
+                ExerciseId = listeningId,
                 LessonId = lessonId,
-                Title = "Listening Exercise",
+                Instructions = "Listening Exercise",
                 AudioUrl = "https://example.com/audio.mp3",
-                CorrectAnswer = "listen",
-                CaseSensitive = false,
                 MaxReplays = 3,
                 DifficultyLevel = DifficultyLevel.Intermediate,
                 Points = 15,
-                OrderIndex = 1,
-            },
-            new TranslationExercise
-            {
-                Id = translationId,
-                LessonId = lessonId,
-                Title = "Translation Exercise",
-                SourceText = "Hello",
-                TargetText = "Ciao",
-                SourceLanguageCode = "en",
-                TargetLanguageCode = "it",
-                MatchingThreshold = 0.85,
-                DifficultyLevel = DifficultyLevel.Advanced,
-                Points = 20,
-                OrderIndex = 2,
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        ExerciseId = listeningId,
+                        OptionText = "listen",
+                        IsCorrect = true,
+                        Explanation = "Correct answer.",
+                    },
+                ],
             }
         );
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -305,19 +301,15 @@ public class LessonQueryTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
 
         // Assert
         result.Should().NotBeNull();
-        result.Exercises.Should().HaveCount(3);
+        result.Exercises.Should().HaveCount(2);
 
         var fillInBlank = result.Exercises[0] as FillInBlankExercise;
         fillInBlank.Should().NotBeNull();
-        fillInBlank.Title.Should().Be("FillInBlank Exercise");
+        fillInBlank.Instructions.Should().Be("FillInBlank Exercise");
 
         var listening = result.Exercises[1] as ListeningExercise;
         listening.Should().NotBeNull();
-        listening.Title.Should().Be("Listening Exercise");
-
-        var translation = result.Exercises[2] as TranslationExercise;
-        translation.Should().NotBeNull();
-        translation.Title.Should().Be("Translation Exercise");
+        listening.Instructions.Should().Be("Listening Exercise");
     }
 
     #endregion

@@ -6,14 +6,13 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services.LessonServiceTests;
+namespace Backend.Tests.Integration.Services.LessonServiceTests;
 
 /// <summary>
 /// Tests for lesson navigation: finding next lessons, first lessons, and boundary detection.
 /// </summary>
-public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LessonNavigationTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
     private BackendDbContext _ctx = null!;
     private LessonService _sut = null!;
 
@@ -22,29 +21,38 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
     private string _thirdCourseId = null!;
     private string _languageId = null!;
 
-    public LessonNavigationTests(DatabaseFixture fixture) => _fixture = fixture;
-
     public async ValueTask InitializeAsync()
     {
-        _ctx = _fixture.CreateDbContext();
+        _ctx = fixture.CreateDbContext();
 
-        var exerciseService = new ExerciseService(_ctx);
-        _sut = new LessonService(_ctx, exerciseService);
+        var exerciseService = new ExerciseService(_ctx, new Moq.Mock<Backend.Api.Services.IFileUploadsService>().Object);
+        _sut = new LessonService(_ctx, exerciseService, new Backend.Api.Services.Clock.SystemClock());
 
-        var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
-        _languageId = language.Id;
+        // Derive course and language from the fixture lesson — immune to leftover courses from other test classes
+        var fixtureLesson = await _ctx
+            .Lessons.Where(l => l.LessonId == fixture.LessonId)
+            .Select(l => new { l.CourseId, l.Course.LanguageId })
+            .FirstAsync(TestContext.Current.CancellationToken);
+        _courseId = fixtureLesson.CourseId;
+        _languageId = fixtureLesson.LanguageId;
 
-        var course = await _ctx.Courses.FirstAsync(TestContext.Current.CancellationToken);
-        _courseId = course.Id;
+        // Clean up test data from previous runs — keep only fixture course and its seeded lesson
+        await _ctx
+            .Lessons.Where(l => l.LessonId != fixture.LessonId)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+        await _ctx
+            .Courses.Where(c => c.CourseId != _courseId)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
 
         _secondCourseId = Guid.NewGuid().ToString();
         _ctx.Courses.Add(
             new Course
             {
-                Id = _secondCourseId,
+                CourseId = _secondCourseId,
                 LanguageId = _languageId,
                 Title = "Second Course",
-                CreatedById = _fixture.SystemUserId,
+                Description = "Second test course for lesson navigation tests.",
+                EstimatedDurationHours = 10,
                 OrderIndex = 1,
             }
         );
@@ -53,10 +61,11 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Courses.Add(
             new Course
             {
-                Id = _thirdCourseId,
+                CourseId = _thirdCourseId,
                 LanguageId = _languageId,
                 Title = "Third Course",
-                CreatedById = _fixture.SystemUserId,
+                Description = "Third test course for lesson navigation tests.",
+                EstimatedDurationHours = 10,
                 OrderIndex = 2,
             }
         );
@@ -82,7 +91,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = firstLessonId,
+                LessonId = firstLessonId,
                 CourseId = _courseId,
                 Title = "Lesson 1",
                 LessonContent = "{}",
@@ -92,7 +101,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = secondLessonId,
+                LessonId = secondLessonId,
                 CourseId = _courseId,
                 Title = "Lesson 2",
                 LessonContent = "{}",
@@ -106,7 +115,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
 
         // Assert
         result.Should().NotBeNull();
-        result.Id.Should().Be(secondLessonId);
+        result.LessonId.Should().Be(secondLessonId);
         result.Title.Should().Be("Lesson 2");
     }
 
@@ -121,7 +130,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lastLessonSecondCourseId,
+                LessonId = lastLessonSecondCourseId,
                 CourseId = _secondCourseId,
                 Title = "Last Lesson Course 2",
                 LessonContent = "{}",
@@ -131,7 +140,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = firstLessonThirdCourseId,
+                LessonId = firstLessonThirdCourseId,
                 CourseId = _thirdCourseId,
                 Title = "First Lesson Course 3",
                 LessonContent = "{}",
@@ -146,7 +155,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
 
         // Assert
         result.Should().NotBeNull();
-        result.Id.Should().Be(firstLessonThirdCourseId);
+        result.LessonId.Should().Be(firstLessonThirdCourseId);
         result.Title.Should().Be("First Lesson Course 3");
     }
 
@@ -158,7 +167,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lastLessonId,
+                LessonId = lastLessonId,
                 CourseId = _thirdCourseId,
                 Title = "Last Lesson",
                 LessonContent = "{}",
@@ -197,7 +206,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lesson1Id,
+                LessonId = lesson1Id,
                 CourseId = _courseId,
                 Title = "Lesson 1",
                 LessonContent = "{}",
@@ -207,7 +216,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lesson3Id,
+                LessonId = lesson3Id,
                 CourseId = _courseId,
                 Title = "Lesson 3",
                 LessonContent = "{}",
@@ -221,7 +230,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
 
         // Assert
         result.Should().NotBeNull();
-        result.Id.Should().Be(lesson3Id);
+        result.LessonId.Should().Be(lesson3Id);
         result.OrderIndex.Should().Be(2);
     }
 
@@ -239,7 +248,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lesson1Id,
+                LessonId = lesson1Id,
                 CourseId = _courseId,
                 Title = "Lesson 1",
                 LessonContent = "{}",
@@ -249,7 +258,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lesson2Id,
+                LessonId = lesson2Id,
                 CourseId = _courseId,
                 Title = "Lesson 2",
                 LessonContent = "{}",
@@ -275,7 +284,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lesson1Id,
+                LessonId = lesson1Id,
                 CourseId = _courseId,
                 Title = "Lesson 1",
                 LessonContent = "{}",
@@ -285,7 +294,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lesson2Id,
+                LessonId = lesson2Id,
                 CourseId = _courseId,
                 Title = "Lesson 2",
                 LessonContent = "{}",
@@ -322,7 +331,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId = lessonId,
                 CourseId = _secondCourseId,
                 Title = "Only Lesson",
                 LessonContent = "{}",
@@ -353,7 +362,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lesson2Id,
+                LessonId = lesson2Id,
                 CourseId = _secondCourseId,
                 Title = "Second Lesson",
                 LessonContent = "{}",
@@ -363,7 +372,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lesson1Id,
+                LessonId = lesson1Id,
                 CourseId = _secondCourseId,
                 Title = "First Lesson",
                 LessonContent = "{}",
@@ -377,7 +386,7 @@ public class LessonNavigationTests : IClassFixture<DatabaseFixture>, IAsyncLifet
 
         // Assert
         result.Should().NotBeNull();
-        result.Id.Should().Be(lesson1Id);
+        result.LessonId.Should().Be(lesson1Id);
         result.OrderIndex.Should().Be(0);
     }
 

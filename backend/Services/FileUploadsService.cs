@@ -1,13 +1,29 @@
 using Backend.Api.Models;
+using Backend.Api.Services.Clock;
+using Backend.Database;
+using Microsoft.EntityFrameworkCore;
 using FileInfo = Backend.Api.Models.FileInfo;
 
 namespace Backend.Api.Services
 {
-    public class FileUploadsService(IWebHostEnvironment environment) : IFileUploadsService
+    public class FileUploadsService(
+        IWebHostEnvironment environment,
+        ILogger<FileUploadsService> logger,
+        BackendDbContext context,
+        IClock clock
+    ) : IFileUploadsService
     {
         private readonly IWebHostEnvironment _environment = environment;
+        private readonly ILogger<FileUploadsService> _logger = logger;
+        private readonly BackendDbContext _context = context;
+        private readonly IClock _clock = clock;
         private readonly Dictionary<string, FileTypeConfig> _fileTypeConfigs =
             InitializeFileTypeConfigs();
+
+        private static string SanitizeForLog(string? value) =>
+            string.IsNullOrEmpty(value)
+                ? string.Empty
+                : value.Replace("\r", string.Empty).Replace("\n", string.Empty);
 
         private static string SanitizeFilename(string filename)
         {
@@ -155,7 +171,15 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
-                return FileUploadResult.Failure($"Upload failed: {ex.Message}");
+                _logger.LogError(
+                    ex,
+                    "File upload failed for type {FileType}, filename {FileName}",
+                    SanitizeForLog(fileType),
+                    SanitizeForLog(file.FileName)
+                );
+                return FileUploadResult.Failure(
+                    "Upload failed. Please check the file and try again."
+                );
             }
         }
 
@@ -228,7 +252,15 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
-                return FileUploadResult.Failure($"Upload failed: {ex.Message}");
+                _logger.LogError(
+                    ex,
+                    "File upload from URL failed for type {FileType}, URL {Url}",
+                    SanitizeForLog(fileType),
+                    SanitizeForLog(url)
+                );
+                return FileUploadResult.Failure(
+                    "Upload from URL failed. Please check the URL and try again."
+                );
             }
         }
 
@@ -282,10 +314,15 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
+                var safeFileType = (fileType ?? string.Empty)
+                    .Replace("\r", string.Empty)
+                    .Replace("\n", string.Empty);
+
+                _logger.LogError(ex, "Error retrieving files of type {FileType}", safeFileType);
                 return new FileListResult
                 {
                     IsSuccess = false,
-                    Message = $"Error retrieving files: {ex.Message}",
+                    Message = "Error retrieving files. Please try again later.",
                 };
             }
         }
@@ -320,10 +357,11 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error retrieving all files");
                 return new FileListResult
                 {
                     IsSuccess = false,
-                    Message = $"Error retrieving files: {ex.Message}",
+                    Message = "Error retrieving files. Please try again later.",
                 };
             }
         }
@@ -400,7 +438,13 @@ namespace Backend.Api.Services
             }
             catch (Exception ex)
             {
-                return FileUploadResult.Failure($"Error retrieving file: {ex.Message}");
+                _logger.LogError(
+                    ex,
+                    "Error retrieving file {FileName} of type {FileType}",
+                    filename,
+                    fileType ?? "unknown"
+                );
+                return FileUploadResult.Failure("Error retrieving file. Please try again later.");
             }
         }
 
@@ -461,6 +505,88 @@ namespace Backend.Api.Services
             catch
             {
                 return null;
+            }
+        }
+
+        /// <summary>
+        /// Deletes audio files in wwwroot/uploads/audio that are not referenced by any
+        /// ListeningExercise.AudioUrl or AudioMatchPair.AudioUrl, skipping files newer than graceWindow.
+        /// Returns the number of files deleted.
+        /// </summary>
+        public async Task<int> DeleteOrphanedAudioAsync(TimeSpan graceWindow)
+        {
+            var basePath =
+                _environment.WebRootPath
+                ?? Path.Combine(_environment.ContentRootPath, "wwwroot");
+            var audioFolder = Path.Combine(basePath, "uploads", "audio");
+
+            if (!Directory.Exists(audioFolder))
+                return 0;
+
+            var listeningUrls = await _context.Exercises
+                .OfType<Database.Entities.Exercises.ListeningExercise>()
+                .Select(e => e.AudioUrl)
+                .ToListAsync();
+
+            var matchPairUrls = await _context.Set<Database.Entities.Exercises.AudioMatchPair>()
+                .Select(p => p.AudioUrl)
+                .ToListAsync();
+
+            var referencedFilenames = new HashSet<string>(
+                listeningUrls.Concat(matchPairUrls)
+                    .Select(url => Path.GetFileName(url))
+                    .Where(f => !string.IsNullOrEmpty(f))!,
+                StringComparer.OrdinalIgnoreCase
+            );
+
+            var cutoff = _clock.UtcNow - graceWindow;
+            var deleted = 0;
+
+            foreach (var file in Directory.EnumerateFiles(audioFolder))
+            {
+                var filename = Path.GetFileName(file);
+                if (referencedFilenames.Contains(filename))
+                    continue;
+
+                try
+                {
+                    var fi = new System.IO.FileInfo(file);
+                    if (fi.CreationTimeUtc > cutoff)
+                        continue;
+
+                    fi.Delete();
+                    deleted++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to delete orphaned audio file {File}", file);
+                }
+            }
+
+            return deleted;
+        }
+
+        /// <summary>
+        /// Deletes the physical audio file referenced by the given URL (best-effort, logs on failure).
+        /// </summary>
+        public void DeleteAudioFile(string audioUrl)
+        {
+            if (string.IsNullOrEmpty(audioUrl))
+                return;
+
+            try
+            {
+                var filename = Path.GetFileName(audioUrl);
+                if (string.IsNullOrEmpty(filename))
+                    return;
+
+                var path = GetFilePhysicalPath(filename, "audio");
+                if (path != null)
+                    System.IO.File.Delete(path);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to delete audio file {AudioUrl}", audioUrl);
             }
         }
     }

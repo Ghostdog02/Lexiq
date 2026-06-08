@@ -1,0 +1,12 @@
+<div class="listening">
+  @if (exercise.audioUrl) {
+    <app-audio-player [src]="exercise.audioUrl" [maxReplays]="exercise.maxReplays" />
+  } @else {
+    <div class="no-audio">
+      <span class="no-audio-icon">🔇</span>
+      <p>No audio available</p>
+    </div>
+  }
+
+  <app-base-exercise [exerciseId]="exercise.id" />
+</div>

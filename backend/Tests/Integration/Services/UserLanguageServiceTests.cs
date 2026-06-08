@@ -9,7 +9,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Integration.Services;
 
 /// <summary>
 /// Integration tests for UserLanguageService: enrollment, unenrollment, composite key behavior.
@@ -41,7 +41,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Get existing language from fixture
         var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
-        _languageId = language.Id;
+        _languageId = language.LanguageId;
         _userId = user.Id;
 
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -66,7 +66,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
             .NotBeNull(
                 because: "enrolling in a valid language should create a UserLanguage record"
             );
-        result!.UserId.Should().Be(_userId);
+        result.UserId.Should().Be(_userId);
         result.LanguageId.Should().Be(_languageId);
         result
             .EnrolledAt.Should()
@@ -78,7 +78,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Verify in database
         var dbRecord = await _ctx.UserLanguages.FindAsync(
-            new object[] { _userId, _languageId },
+            [_userId, _languageId],
             TestContext.Current.CancellationToken
         );
         dbRecord.Should().NotBeNull();
@@ -99,7 +99,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Assert
         secondEnrollment.Should().NotBeNull();
-        secondEnrollment!.UserId.Should().Be(_userId);
+        secondEnrollment.UserId.Should().Be(_userId);
         secondEnrollment.LanguageId.Should().Be(_languageId);
         secondEnrollment
             .EnrolledAt.Should()
@@ -134,7 +134,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Verify no record was created
         var dbRecord = await _ctx.UserLanguages.FindAsync(
-            new object[] { _userId, nonExistentLanguageId },
+            [_userId, nonExistentLanguageId],
             TestContext.Current.CancellationToken
         );
         dbRecord.Should().BeNull();
@@ -152,7 +152,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Assert
         result.Should().NotBeNull();
-        result!.EnrolledAt.Should().BeOnOrAfter(beforeEnrollment).And.BeOnOrBefore(afterEnrollment);
+        result.EnrolledAt.Should().BeOnOrAfter(beforeEnrollment).And.BeOnOrBefore(afterEnrollment);
     }
 
     #endregion
@@ -173,7 +173,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
 
         // Verify record was deleted
         var dbRecord = await _ctx.UserLanguages.FindAsync(
-            new object[] { _userId, _languageId },
+            [_userId, _languageId],
             TestContext.Current.CancellationToken
         );
         dbRecord.Should().BeNull(because: "unenrollment should delete the UserLanguage record");
@@ -214,7 +214,8 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
             .NotBeNull(
                 because: "GetUserLanguagesAsync should eager-load the Language navigation property"
             );
-        result[0].Language.Id.Should().Be(_languageId);
+        
+        result[0].Language!.LanguageId.Should().Be(_languageId);
     }
 
     [Fact]
@@ -232,12 +233,12 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
     {
         // Arrange
         // Create a second language
-        var secondLanguage = new Language { Name = "Spanish", FlagIconUrl = null };
+        var secondLanguage = new Language { LanguageId = Guid.NewGuid().ToString(), LanguageName = "Spanish", FlagIconUrl = "https://example.com/es.png" };
         _ctx.Languages.Add(secondLanguage);
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         await _sut.EnrollUserAsync(_userId, _languageId);
-        await _sut.EnrollUserAsync(_userId, secondLanguage.Id);
+        await _sut.EnrollUserAsync(_userId, secondLanguage.LanguageId);
 
         // Act
         var result = await _sut.GetUserLanguagesAsync(_userId);
@@ -253,7 +254,7 @@ public class UserLanguageServiceTests(DatabaseFixture fixture)
         result
             .Should()
             .Contain(
-                ul => ul.LanguageId == secondLanguage.Id,
+                ul => ul.LanguageId == secondLanguage.LanguageId,
                 because: "second enrollment should be in result"
             );
     }

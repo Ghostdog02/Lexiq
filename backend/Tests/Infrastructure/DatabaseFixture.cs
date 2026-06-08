@@ -1,6 +1,5 @@
 using Backend.Database;
 using Backend.Database.Entities;
-using Backend.Database.Entities.Exercises;
 using Backend.Database.Entities.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -27,8 +26,7 @@ public class DatabaseFixture : IAsyncLifetime
     public string ConnectionString => _container.GetConnectionString();
 
     /// <summary>
-    /// ID of the system user created to satisfy Course.CreatedById FK.
-    /// Excluded from per-test teardown so the content hierarchy survives.
+    /// ID of the system user excluded from per-test teardown so the content hierarchy survives.
     /// </summary>
     public string SystemUserId { get; } = Guid.NewGuid().ToString();
 
@@ -62,7 +60,7 @@ public class DatabaseFixture : IAsyncLifetime
 
     private async ValueTask SeedContentHierarchyAsync(BackendDbContext ctx)
     {
-        // System user satisfies Course.CreatedById FK — never deleted during tests
+        // System user excluded from ClearLeaderboardDataAsync — never deleted during tests
         var systemUser = new User
         {
             Id = SystemUserId,
@@ -81,17 +79,17 @@ public class DatabaseFixture : IAsyncLifetime
         await ctx.SaveChangesAsync();
 
         var languageId = Guid.NewGuid().ToString();
-        ctx.Languages.Add(new Language { Id = languageId, Name = "Italian" });
+        ctx.Languages.Add(new Language { LanguageId = languageId, LanguageName = "Italian", FlagIconUrl = "https://example.com/it.png" });
         await ctx.SaveChangesAsync();
 
         var courseId = Guid.NewGuid().ToString();
         ctx.Courses.Add(
             new Course
             {
-                Id = courseId,
+                CourseId = courseId,
                 LanguageId = languageId,
                 Title = "Test Course",
-                CreatedById = SystemUserId,
+                Description = "Test course for integration tests",
                 OrderIndex = 0,
             }
         );
@@ -102,7 +100,7 @@ public class DatabaseFixture : IAsyncLifetime
         ctx.Lessons.Add(
             new Lesson
             {
-                Id = LessonId,
+                LessonId = LessonId,
                 CourseId = courseId,
                 Title = "Test Lesson",
                 LessonContent = "{}",

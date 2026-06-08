@@ -48,8 +48,8 @@ public class SeedData
         UserManager<User> userManager
     )
     {
-        var adminEmail = "alex.vesely07@gmail.com";
-        var userName = "Ghostdog";
+        const string adminEmail = "alex.vesely07@gmail.com";
+        const string userName = "Ghostdog";
 
         var existingUser = await userManager.FindByEmailAsync(adminEmail);
         if (existingUser != null)
@@ -91,9 +91,14 @@ public class SeedData
     private static async Task SeedContentAsync(BackendDbContext context, string adminUserId)
     {
         var languageId = await LanguageSeeder.SeedAsync(context);
-        var courseId = await CourseSeeder.SeedAsync(context, languageId, adminUserId);
-        var lessonIds = await LessonSeeder.SeedAsync(context, courseId);
-        await ExerciseSeeder.SeedAsync(context, lessonIds);
+        var courseIds = await CourseSeeder.SeedAsync(context, languageId);
+
+        for (int i = 0; i < courseIds.Count; i++)
+        {
+            var lessonIds = await LessonSeeder.SeedAsync(context, courseIds[i], i);
+            await ExerciseSeeder.SeedAsync(context, lessonIds, i);
+        }
+
         await AchievementSeeder.SeedAsync(context);
     }
 
@@ -108,31 +113,18 @@ public class SeedData
         {
             var roleStore = new RoleStore<IdentityRole, BackendDbContext>(context);
 
-            if (!context.Roles.Any(role => role.Name == currRole))
+            if (context.Roles.Any(role => role.Name == currRole)) 
+                continue;
+            
+            var identityRole = new IdentityRole(currRole)
             {
-                var identityRole = new IdentityRole(currRole)
-                {
-                    NormalizedName = userManager.NormalizeName(currRole),
-                    ConcurrencyStamp = Guid.NewGuid().ToString("D"),
-                };
+                NormalizedName = userManager.NormalizeName(currRole),
+                ConcurrencyStamp = Guid.NewGuid().ToString("D"),
+            };
 
-                await roleStore.CreateAsync(identityRole);
-            }
+            await roleStore.CreateAsync(identityRole);
         }
 
         await context.SaveChangesAsync();
-    }
-}
-
-public class IdentityResultValidator
-{
-    public static void CheckSuccess(IdentityResult result, string description)
-    {
-        if (!result.Succeeded)
-        {
-            string errorMessages = string.Join(", ", result.Errors.Select(e => e.Description));
-
-            throw new Exception($"{description}: {string.Join(", ", result.Errors)}");
-        }
     }
 }

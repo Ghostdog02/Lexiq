@@ -8,14 +8,13 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services.LessonServiceTests;
+namespace Backend.Tests.Integration.Services.LessonServiceTests;
 
 /// <summary>
 /// Tests for lesson CRUD operations: Create, Update, and Delete.
 /// </summary>
-public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
+public class LessonCrudTests(DatabaseFixture fixture) : IClassFixture<DatabaseFixture>, IAsyncLifetime
 {
-    private readonly DatabaseFixture _fixture;
     private BackendDbContext _ctx = null!;
     private LessonService _sut = null!;
 
@@ -23,29 +22,38 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
     private string _secondCourseId = null!;
     private string _languageId = null!;
 
-    public LessonCrudTests(DatabaseFixture fixture) => _fixture = fixture;
-
     public async ValueTask InitializeAsync()
     {
-        _ctx = _fixture.CreateDbContext();
+        _ctx = fixture.CreateDbContext();
 
-        var exerciseService = new ExerciseService(_ctx);
-        _sut = new LessonService(_ctx, exerciseService);
+        var exerciseService = new ExerciseService(_ctx, new Moq.Mock<Backend.Api.Services.IFileUploadsService>().Object);
+        _sut = new LessonService(_ctx, exerciseService, new Backend.Api.Services.Clock.SystemClock());
 
-        var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
-        _languageId = language.Id;
+        // Derive course and language from the fixture lesson — immune to leftover courses from other test classes
+        var fixtureLesson = await _ctx
+            .Lessons.Where(l => l.LessonId == fixture.LessonId)
+            .Select(l => new { l.CourseId, l.Course.LanguageId })
+            .FirstAsync(TestContext.Current.CancellationToken);
+        _courseId = fixtureLesson.CourseId;
+        _languageId = fixtureLesson.LanguageId;
 
-        var course = await _ctx.Courses.FirstAsync(TestContext.Current.CancellationToken);
-        _courseId = course.Id;
+        // Clean up lessons and extra courses from previous test runs
+        await _ctx
+            .Lessons.Where(l => l.LessonId != fixture.LessonId)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
+        await _ctx
+            .Courses.Where(c => c.CourseId != _courseId)
+            .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
 
         _secondCourseId = Guid.NewGuid().ToString();
         _ctx.Courses.Add(
             new Course
             {
-                Id = _secondCourseId,
+                CourseId = _secondCourseId,
                 LanguageId = _languageId,
                 Title = "Second Course",
-                CreatedById = _fixture.SystemUserId,
+                Description = "Second test course for lesson CRUD tests.",
+
                 OrderIndex = 1,
             }
         );
@@ -69,7 +77,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = existingLessonId,
+                LessonId = existingLessonId,
                 CourseId = _courseId,
                 Title = "Existing Lesson",
                 LessonContent = "{}",
@@ -127,33 +135,45 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         {
             new CreateFillInBlankExerciseDto(
                 LessonId: null,
-                Title: "Exercise 1",
-                Instructions: null,
-                EstimatedDurationMinutes: null,
+                Instructions: "Exercise 1",
                 DifficultyLevel: DifficultyLevel.Beginner,
                 Points: 10,
-                OrderIndex: null,
                 Explanation: null,
                 Text: "Fill in: The cat is ___",
-                CorrectAnswer: "meowing",
-                AcceptedAnswers: null,
-                CaseSensitive: false,
-                TrimWhitespace: true
+                Options:
+                [
+                    new CreateExerciseOptionDto(
+                        "meowing",
+                        IsCorrect: true,
+                        Explanation: "Correct answer."
+                    ),
+                    new CreateExerciseOptionDto(
+                        "sleeping",
+                        IsCorrect: false,
+                        Explanation: "Wrong answer."
+                    ),
+                ]
             ),
             new CreateFillInBlankExerciseDto(
                 LessonId: null,
-                Title: "Exercise 2",
-                Instructions: null,
-                EstimatedDurationMinutes: null,
+                Instructions: "Exercise 2",
                 DifficultyLevel: DifficultyLevel.Intermediate,
                 Points: 15,
-                OrderIndex: null,
                 Explanation: null,
                 Text: "Fill in: The dog is ___",
-                CorrectAnswer: "barking",
-                AcceptedAnswers: null,
-                CaseSensitive: false,
-                TrimWhitespace: true
+                Options:
+                [
+                    new CreateExerciseOptionDto(
+                        "barking",
+                        IsCorrect: true,
+                        Explanation: "Correct answer."
+                    ),
+                    new CreateExerciseOptionDto(
+                        "quiet",
+                        IsCorrect: false,
+                        Explanation: "Wrong answer."
+                    ),
+                ]
             ),
         };
 
@@ -175,15 +195,13 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         result.Title.Should().Be("Lesson with Exercises");
 
         var createdExercises = await _ctx
-            .Exercises.Where(e => e.LessonId == result.Id)
-            .OrderBy(e => e.OrderIndex)
+            .Exercises.Where(e => e.LessonId == result.LessonId)
+            .OrderBy(e => e.CreatedAt)
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         createdExercises.Should().HaveCount(2);
-        createdExercises[0].IsLocked.Should().BeFalse("first exercise should be unlocked");
-        createdExercises[1].IsLocked.Should().BeTrue("second exercise should be locked");
-        createdExercises[0].Title.Should().Be("Exercise 1");
-        createdExercises[1].Title.Should().Be("Exercise 2");
+        createdExercises[0].Instructions.Should().Be("Exercise 1");
+        createdExercises[1].Instructions.Should().Be("Exercise 2");
     }
 
     [Fact]
@@ -242,10 +260,9 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Original Title",
-                Description = "Original Description",
                 EstimatedDurationMinutes = 30,
                 OrderIndex = 0,
                 LessonContent = "{}",
@@ -268,7 +285,6 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // Assert
         result.Should().NotBeNull();
         result.Title.Should().Be("Updated Title");
-        result.Description.Should().Be("Updated Description");
         result.EstimatedDurationMinutes.Should().Be(45);
         result.OrderIndex.Should().Be(5);
         result.CourseId.Should().Be(_secondCourseId);
@@ -283,10 +299,9 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Original Title",
-                Description = "Original Description",
                 EstimatedDurationMinutes = 30,
                 OrderIndex = 0,
                 LessonContent = "{}",
@@ -309,7 +324,6 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         // Assert
         result.Should().NotBeNull();
         result.Title.Should().Be("Updated Title");
-        result.Description.Should().Be("Original Description", "should not change");
         result.EstimatedDurationMinutes.Should().Be(30, "should not change");
         result.OrderIndex.Should().Be(0, "should not change");
         result.CourseId.Should().Be(_courseId, "should not change");
@@ -344,7 +358,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "Test",
                 LessonContent = "{}",
@@ -384,7 +398,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         _ctx.Lessons.Add(
             new Lesson
             {
-                Id = lessonId,
+                LessonId = lessonId,
                 CourseId = _courseId,
                 Title = "To Delete",
                 LessonContent = "{}",
@@ -400,7 +414,7 @@ public class LessonCrudTests : IClassFixture<DatabaseFixture>, IAsyncLifetime
         result.Should().BeTrue();
 
         var deleted = await _ctx.Lessons.FindAsync(
-            new object[] { lessonId },
+            [lessonId],
             TestContext.Current.CancellationToken
         );
         deleted.Should().BeNull();

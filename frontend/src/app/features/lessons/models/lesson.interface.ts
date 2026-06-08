@@ -31,15 +31,18 @@ export interface LessonProgressSummary {
   meetsCompletionThreshold: boolean;
 }
 
-export interface ExerciseSubmitResult {
+export interface ExerciseResult {
+  exerciseId: string;
   isCorrect: boolean;
   pointsEarned: number;
-  correctAnswer: string | null;
+  correctOptionId: string | null;
   explanation: string | null;
 }
 
-export interface SubmitAnswerResponse extends ExerciseSubmitResult {
-  lessonProgress: LessonProgressSummary;
+export interface LessonSubmitResult {
+  exercises: ExerciseResult[];
+  summary: LessonProgressSummary;
+  heartsRemaining: number;
 }
 
 // Saved progress loaded from backend (maps exerciseId → progress)
@@ -88,7 +91,7 @@ export interface UpdateLessonApiResponse {
 export interface CreateLessonDto {
   title: string;
   description: string;
-  estimatedDuration: number;
+  estimatedDurationMinutes: number;
   content: string;
   courseId: string;
   exercises: ExerciseFormValue[];
@@ -98,7 +101,6 @@ export interface LessonFormControls {
   title: FormControl<string>;
   description: FormControl<string>;
   estimatedDuration: FormControl<number>;
-  mediaUrl: FormControl<string>;
   content: FormControl<string>;
   courseId: FormControl<string>;
   exercises: FormArray<ExerciseForm>;

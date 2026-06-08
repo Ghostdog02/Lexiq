@@ -18,14 +18,14 @@ public class LanguageService(BackendDbContext context)
     {
         return await _context
             .Languages.Include(l => l.Courses)
-            .FirstOrDefaultAsync(l => l.Id == id);
+            .FirstOrDefaultAsync(l => l.LanguageId == id);
     }
 
     public async Task<Language> CreateLanguageAsync(CreateLanguageDto dto)
     {
         var language = new Language
         {
-            Name = dto.Name,
+            LanguageName = dto.Name,
             FlagIconUrl = dto.FlagIconUrl,
             CreatedAt = DateTime.UtcNow,
         };
@@ -42,7 +42,7 @@ public class LanguageService(BackendDbContext context)
         if (language == null)
             return null;
 
-        language.Name = dto.Name;
+        language.LanguageName = dto.Name;
         language.FlagIconUrl = dto.FlagIconUrl;
 
         await _context.SaveChangesAsync();

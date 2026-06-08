@@ -1,12 +1,13 @@
-using Backend.Api.Models;
 using Backend.Api.Services;
+using Backend.Api.Services.Clock;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Unit;
 
 /// <summary>
 /// Unit tests for FileUploadsService security, validation, and file handling.
@@ -20,18 +21,14 @@ namespace Backend.Tests.Services;
 /// </summary>
 public class FileUploadsServiceTests : IAsyncLifetime
 {
-    private readonly string _testUploadPath;
+    private readonly string _testUploadPath = Path.Combine(
+        Path.GetTempPath(),
+        "lexiq-test-uploads",
+        Guid.NewGuid().ToString()
+    );
     private FileUploadsService _sut = null!;
 
-    public FileUploadsServiceTests()
-    {
-        // Use a temp directory for test uploads
-        _testUploadPath = Path.Combine(
-            Path.GetTempPath(),
-            "lexiq-test-uploads",
-            Guid.NewGuid().ToString()
-        );
-    }
+    // Use a temp directory for test uploads
 
     public async ValueTask InitializeAsync()
     {
@@ -43,7 +40,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
         mockEnv.Setup(e => e.WebRootPath).Returns(_testUploadPath);
         mockEnv.Setup(e => e.ContentRootPath).Returns(_testUploadPath);
 
-        _sut = new FileUploadsService(mockEnv.Object);
+        _sut = new FileUploadsService(mockEnv.Object, NullLogger<FileUploadsService>.Instance, null!, new SystemClock());
 
         await Task.CompletedTask;
     }
@@ -105,7 +102,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
             .BeFalse(
                 because: "SanitizeFilename rejects filenames containing '..' even after Path.GetFileName() to prevent obfuscated path traversal"
             );
-        result.Message.Should().Contain("Invalid filename");
+        result.Message.Should().Contain("Upload failed");
     }
 
     [Fact]
@@ -141,7 +138,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
             .BeFalse(
                 because: "SanitizeFilename rejects filenames containing '\\' even after Path.GetFileName() to prevent path manipulation"
             );
-        result.Message.Should().Contain("Invalid filename");
+        result.Message.Should().Contain("Upload failed");
     }
 
     [Fact]
@@ -546,7 +543,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
             .BeFalse(
                 because: "HttpClient.GetByteArrayAsync will throw on invalid URL, caught by try-catch"
             );
-        result.Message.Should().Contain("Upload failed");
+        result.Message.Should().Contain("Upload from URL failed");
     }
 
     [Fact]
@@ -562,7 +559,7 @@ public class FileUploadsServiceTests : IAsyncLifetime
         result
             .IsSuccess.Should()
             .BeFalse(because: "unreachable URLs throw HttpRequestException");
-        result.Message.Should().Contain("Upload failed");
+        result.Message.Should().Contain("Upload from URL failed");
     }
 
     // ── Physical Path Retrieval Tests ───────────────────────────────────────
@@ -781,5 +778,155 @@ public class FileUploadsServiceTests : IAsyncLifetime
         var filePath = Path.Combine(folderPath, filename);
         var dummyData = new byte[size];
         await File.WriteAllBytesAsync(filePath, dummyData, TestContext.Current.CancellationToken);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Audio extension tests
+    // ──────────────────────────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(".mp3", "audio/mpeg")]
+    [InlineData(".wav", "audio/wav")]
+    [InlineData(".ogg", "audio/ogg")]
+    [InlineData(".m4a", "audio/mp4")]
+    [InlineData(".flac", "audio/flac")]
+    public async Task UploadAudio_ValidExtensions_SavedUnderAudioFolder(string ext, string contentType)
+    {
+        // Arrange
+        var file = CreateMockFile($"test{ext}", 1024, contentType);
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "audio", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue(because: $"{ext} is a valid audio extension");
+        result.Url.Should().StartWith("/api/uploads/audio/");
+        result.Url.Should().EndWith(ext);
+    }
+
+    [Fact]
+    public async Task UploadAudio_ExecutableMasqueradingAsAudio_Rejected()
+    {
+        // Arrange
+        var file = CreateMockFile("malicious.exe", 1024, "application/octet-stream");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "audio", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse(because: ".exe is not a valid audio extension");
+    }
+
+    [Fact]
+    public async Task UploadAudio_Over10MB_Rejected()
+    {
+        // Arrange — 10 MB + 1 byte
+        var oversize = 10L * 1024 * 1024 + 1;
+        var file = CreateMockFile("big.mp3", oversize, "audio/mpeg");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "audio", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse(because: "audio files are capped at 10 MB");
+    }
+
+    [Fact]
+    public async Task UploadAudio_PathTraversalFilename_SanitizedToGuid()
+    {
+        // Arrange
+        var file = CreateMockFile("../../etc/passwd.mp3", 512, "audio/mpeg");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "audio", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeTrue(because: "path traversal in filename is sanitized via GetFileName");
+        result.Url.Should().NotContain("..", because: "stored filename must be a GUID, no traversal");
+    }
+
+    [Fact]
+    public async Task UploadAudio_NullByte_SanitizedOrRejected()
+    {
+        // Arrange — null byte in filename is stripped by Path.GetFileName on Linux
+        var file = CreateMockFile("evil\0file.mp3", 512, "audio/mpeg");
+
+        // Act — should succeed (null byte removed) or fail gracefully
+        var act = async () => await _sut.UploadFileAsync(file.Object, "audio", "http://test");
+
+        // Assert — must not throw; result is either success or failure with a message
+        await act.Should().NotThrowAsync(because: "null byte filenames must not crash the service");
+    }
+
+    [Fact]
+    public async Task UploadAudio_UnicodeFilename_DoesNotCrash()
+    {
+        // Arrange — Bulgarian/Italian characters in filename
+        var file = CreateMockFile("урок_lezione.mp3", 512, "audio/mpeg");
+
+        // Act
+        var act = async () => await _sut.UploadFileAsync(file.Object, "audio", "http://test");
+
+        // Assert
+        await act.Should().NotThrowAsync(because: "Unicode filenames must be handled gracefully");
+    }
+
+    [Fact]
+    public async Task UploadAudio_EmptyFile_Rejected()
+    {
+        // Arrange
+        var file = CreateMockFile("empty.mp3", 0, "audio/mpeg");
+
+        // Act
+        var result = await _sut.UploadFileAsync(file.Object, "audio", "http://test");
+
+        // Assert
+        result.IsSuccess.Should().BeFalse(because: "empty file is rejected");
+    }
+
+    [Fact]
+    public async Task GetFilePhysicalPath_AudioFolder_ResolvesCorrectly()
+    {
+        // Arrange — create a file in the audio folder
+        var filename = $"{Guid.NewGuid()}.mp3";
+        await CreateTestFileAsync("audio", filename, 512);
+
+        // Act
+        var path = _sut.GetFilePhysicalPath(filename, "audio");
+
+        // Assert
+        path.Should().NotBeNull();
+        path.Should().Contain("audio", because: "physical path must be within the audio folder");
+    }
+
+    [Fact]
+    public async Task GetFilePhysicalPath_PathTraversalFilename_ReturnsNull()
+    {
+        // Arrange
+        var traversalFilename = "../escape.mp3";
+
+        // Act
+        var path = _sut.GetFilePhysicalPath(traversalFilename, "audio");
+
+        // Assert
+        path.Should().BeNull(because: "path traversal attempts must return null, not a path outside uploads");
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task UploadAudio_TwoSimultaneous_DistinctGuidNames_NoOverwrite()
+    {
+        // Arrange
+        var file1 = CreateMockFile("sample.mp3", 512, "audio/mpeg");
+        var file2 = CreateMockFile("sample.mp3", 512, "audio/mpeg");
+
+        // Act
+        var r1 = await _sut.UploadFileAsync(file1.Object, "audio", "http://test");
+        var r2 = await _sut.UploadFileAsync(file2.Object, "audio", "http://test");
+
+        // Assert
+        r1.IsSuccess.Should().BeTrue();
+        r2.IsSuccess.Should().BeTrue();
+        r1.Url.Should().NotBe(r2.Url, because: "each upload generates a unique GUID filename");
     }
 }

@@ -1,6 +1,5 @@
 using Backend.Api.Services;
 using Backend.Database;
-using Backend.Database.Entities.Users;
 using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
@@ -12,7 +11,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Integration.Services;
 
 /// <summary>
 /// Integration tests for AvatarService: validation, upsert, retrieval, Google download, batch checks.
@@ -42,7 +41,10 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         await DbSeeder.ClearLeaderboardDataAsync(_ctx, _fixture.SystemUserId);
 
         // Create test user
-        var user = new UserBuilder().WithUserName("avatartest").WithEmail("avatar@test.com").Build();
+        var user = new UserBuilder()
+            .WithUserName("avatartest")
+            .WithEmail("avatar@test.com")
+            .Build();
         _ctx.Users.Add(user);
         _userId = user.Id;
 
@@ -138,9 +140,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         var (isValid, error) = AvatarService.ValidateAvatarFile(file.Object);
 
         // Assert
-        isValid
-            .Should()
-            .BeTrue(because: "1MB is the maximum allowed size, not over the limit");
+        isValid.Should().BeTrue(because: "1MB is the maximum allowed size, not over the limit");
         error.Should().BeNull();
     }
 
@@ -208,12 +208,12 @@ public class AvatarServiceTests(DatabaseFixture fixture)
 
         // Assert - verify in database
         var avatar = await _ctx.UserAvatars.FindAsync(
-            new object[] { _userId },
+            [_userId],
             TestContext.Current.CancellationToken
         );
 
         avatar.Should().NotBeNull(because: "upsert should create a new UserAvatar record");
-        avatar!.UserId.Should().Be(_userId);
+        avatar.UserId.Should().Be(_userId);
         avatar.Data.Should().Equal(imageBytes);
         avatar.ContentType.Should().Be("image/jpeg");
     }
@@ -225,7 +225,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         await DbSeeder.AddAvatarAsync(_ctx, _userId);
 
         var originalAvatar = await _ctx.UserAvatars.FindAsync(
-            new object[] { _userId },
+            [_userId],
             TestContext.Current.CancellationToken
         );
         var originalData = originalAvatar!.Data;
@@ -238,12 +238,12 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         // Assert - verify update
         _ctx.ChangeTracker.Clear();
         var updatedAvatar = await _ctx.UserAvatars.FindAsync(
-            new object[] { _userId },
+            [_userId],
             TestContext.Current.CancellationToken
         );
 
         updatedAvatar.Should().NotBeNull();
-        updatedAvatar!.Data.Should().NotEqual(originalData);
+        updatedAvatar.Data.Should().NotEqual(originalData);
         updatedAvatar.Data.Should().Equal(newImageBytes);
         updatedAvatar
             .ContentType.Should()
@@ -255,10 +255,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
             .ToListAsync(TestContext.Current.CancellationToken);
         allAvatars
             .Should()
-            .HaveCount(
-                1,
-                because: "upsert should update existing record, not create a duplicate"
-            );
+            .HaveCount(1, because: "upsert should update existing record, not create a duplicate");
     }
 
     #endregion
@@ -275,12 +272,9 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         var (data, contentType) = await _sut.GetAvatarAsync(_userId);
 
         // Assert
-        data
-            .Should()
-            .NotBeNull(
-                because: "GetAvatarAsync should return binary data for an existing avatar"
-            );
-        data!.Length.Should().BeGreaterThan(0);
+        data.Should()
+            .NotBeNull(because: "GetAvatarAsync should return binary data for an existing avatar");
+        data.Length.Should().BeGreaterThan(0);
         contentType.Should().Be("image/jpeg");
     }
 
@@ -313,9 +307,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         // Assert
         hasAvatar
             .Should()
-            .BeTrue(
-                because: "HasAvatarAsync should return true when UserAvatar record exists"
-            );
+            .BeTrue(because: "HasAvatarAsync should return true when UserAvatar record exists");
     }
 
     [Fact]
@@ -350,9 +342,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         await DbSeeder.AddAvatarAsync(_ctx, user3.Id);
 
         // Act
-        var usersWithAvatars = await _sut.GetUsersWithAvatarsAsync(
-            [_userId, user2.Id, user3.Id]
-        );
+        var usersWithAvatars = await _sut.GetUsersWithAvatarsAsync([_userId, user2.Id, user3.Id]);
 
         // Assert
         usersWithAvatars
@@ -363,9 +353,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
             );
         usersWithAvatars.Should().Contain(_userId);
         usersWithAvatars.Should().Contain(user3.Id);
-        usersWithAvatars
-            .Should()
-            .NotContain(user2.Id, because: "user2 does not have an avatar");
+        usersWithAvatars.Should().NotContain(user2.Id, because: "user2 does not have an avatar");
     }
 
     [Fact]
@@ -414,8 +402,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         var (data, contentType) = await _sut.DownloadAvatarAsync(invalidUrl);
 
         // Assert
-        data
-            .Should()
+        data.Should()
             .BeNull(
                 because: "DownloadAvatarAsync should handle invalid URLs gracefully without throwing"
             );
@@ -432,8 +419,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
         var (data, contentType) = await _sut.DownloadAvatarAsync(unreachableUrl);
 
         // Assert
-        data
-            .Should()
+        data.Should()
             .BeNull(
                 because: "DownloadAvatarAsync should return null when HTTP request fails instead of throwing"
             );
@@ -447,11 +433,7 @@ public class AvatarServiceTests(DatabaseFixture fixture)
     /// <summary>
     /// Creates a mock IFormFile for validation tests.
     /// </summary>
-    private static Mock<IFormFile> CreateMockFile(
-        string filename,
-        long length,
-        string contentType
-    )
+    private static Mock<IFormFile> CreateMockFile(string filename, long length, string contentType)
     {
         var mock = new Mock<IFormFile>();
         mock.Setup(f => f.FileName).Returns(filename);

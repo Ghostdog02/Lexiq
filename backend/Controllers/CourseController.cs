@@ -40,8 +40,8 @@ public class CourseController(CourseService courseService) : ControllerBase
         if (user == null)
             return Unauthorized();
 
-        var course = await _courseService.CreateCourseAsync(dto, user.Id);
-        return CreatedAtAction(nameof(GetCourse), new { id = course.Id }, course.ToDto());
+        var course = await _courseService.CreateCourseAsync(dto);
+        return CreatedAtAction(nameof(GetCourse), new { id = course.CourseId }, course.ToDto());
     }
 
     [HttpPut("{id}")]

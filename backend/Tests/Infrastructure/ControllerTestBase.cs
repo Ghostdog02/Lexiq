@@ -2,7 +2,8 @@ using System.Text.Json;
 using Backend.Api;
 using Backend.Api.Services;
 using Backend.Database;
-using Backend.Tests.Infrastructure;
+using Backend.Database.Entities.Users;
+using Backend.Tests.Helpers;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -147,7 +148,7 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
     {
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
-        await Helpers.DbSeeder.ClearLeaderboardDataAsync(ctx, Fixture.SystemUserId);
+        await DbSeeder.ClearLeaderboardDataAsync(ctx, Fixture.SystemUserId);
     }
 
     /// <summary>
@@ -161,7 +162,7 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
     )
     {
         var userId = Guid.NewGuid().ToString();
-        var user = new Backend.Database.Entities.Users.User
+        var user = new User
         {
             Id = userId,
             UserName = userName,
@@ -174,6 +175,7 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
             RegistrationDate = DateTime.UtcNow,
             LastLoginDate = DateTime.UtcNow,
             TotalPointsEarned = 0,
+            Hearts = 3,
         };
 
         // Insert user into database using the fixture's context
@@ -186,7 +188,7 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
         if (roles.Length > 0)
         {
             var userManager = scope.ServiceProvider.GetRequiredService<
-                UserManager<Backend.Database.Entities.Users.User>
+                UserManager<User>
             >();
             foreach (var role in roles)
             {

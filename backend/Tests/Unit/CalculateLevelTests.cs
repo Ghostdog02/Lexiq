@@ -2,7 +2,7 @@ using Backend.Api.Services;
 using FluentAssertions;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Unit;
 
 /// <summary>
 /// Pure unit tests for LeaderboardService.CalculateLevel.

@@ -2,14 +2,13 @@ using System.Net;
 using System.Net.Http.Json;
 using Backend.Api.Dtos;
 using Backend.Database;
-using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
-namespace Backend.Tests.EndToEnd;
+namespace Backend.Tests.Integration.E2E;
 
 /// <summary>
 /// HTTP-level E2E tests for leaderboard rankings and streak tracking.
@@ -33,6 +32,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
     private string _student2Id = null!;
 
     private List<string> _exerciseIds = null!;
+    private List<string> _correctOptionIds = null!;
 
     public override async ValueTask InitializeAsync()
     {
@@ -44,6 +44,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
 
         _exerciseIds = new List<string>();
+        _correctOptionIds = new List<string>();
         for (var i = 0; i < 10; i++)  // Create 10 exercises for multi-student tests
         {
             var id = await DbSeeder.CreateFillInBlankExerciseAsync(
@@ -53,6 +54,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
                 isLocked: false
             );
             _exerciseIds.Add(id);
+            _correctOptionIds.Add(await DbSeeder.GetCorrectOptionIdAsync(ctx, id));
         }
 
         // Create two competing students
@@ -94,10 +96,7 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
 
         // Act
         for (var i = 0; i < 3; i++)
-        {
-            var exerciseId = _exerciseIds[i];
-            await SubmitAnswerAsync(_client1, exerciseId, "answer");
-        }
+            await SubmitAnswerAsync(_client1, _exerciseIds[i], _correctOptionIds[i]);
 
         var updatedLeaderboard = await GetLeaderboardAsync(_client1, TimeFrame.AllTime);
         var student1Entry = updatedLeaderboard.Entries.FirstOrDefault(e => e.UserId == _student1Id);
@@ -194,10 +193,10 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
     {
         // Arrange
         for (var i = 0; i < 5; i++)
-            await SubmitAnswerAsync(_client1, _exerciseIds[i], "answer");
+            await SubmitAnswerAsync(_client1, _exerciseIds[i], _correctOptionIds[i]);
 
         for (var i = 0; i < 3; i++)
-            await SubmitAnswerAsync(_client2, _exerciseIds[i + 5], "answer");
+            await SubmitAnswerAsync(_client2, _exerciseIds[i + 5], _correctOptionIds[i + 5]);
 
         // Act
         var leaderboard = await GetLeaderboardAsync(_client1, TimeFrame.AllTime);
@@ -241,11 +240,11 @@ public class LeaderboardAndStreaksTests(DatabaseFixture fixture)
         return leaderboard;
     }
 
-    private static async Task SubmitAnswerAsync(HttpClient client, string exerciseId, string answer)
+    private async Task SubmitAnswerAsync(HttpClient client, string exerciseId, string answer)
     {
         var response = await client.PostAsJsonAsync(
-            $"/api/exercises/{exerciseId}/submit",
-            new SubmitAnswerRequest(answer),
+            $"/api/lessons/{Fixture.LessonId}/submit",
+            new SubmitLessonRequest([new ExerciseAnswerDto(exerciseId, answer)]),
             TestContext.Current.CancellationToken
         );
 

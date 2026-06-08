@@ -1,10 +1,11 @@
-<div class="page-split-view">
+<input #globalAudioInput type="file" accept=".mp3,.wav,.ogg,.m4a,.flac"
+  (change)="onAudioFileSelected($event)" hidden aria-hidden="true">
 
-  <!-- Left Panel: Editor -->
+<div class="editor-page">
   <div class="editor-panel">
+
     <div class="panel-header">
       <div class="title-wrapper">
-        <span class="icon">✏️</span>
         <h1 class="title">Create Lesson</h1>
       </div>
       <p class="subtitle">Design a comprehensive lesson with explanations and exercises.</p>
@@ -12,466 +13,359 @@
 
     <form [formGroup]="lessonForm" (ngSubmit)="onSubmit()" class="editor-form">
 
-      <!-- Lesson Meta -->
+      <!-- ── 01 Lesson Details ─────────────────────────────────────────── -->
       <section class="form-section">
-        <h3><span class="icon">⚙️</span> Lesson Details</h3>
-        <div class="form-group">
-          <label for="courseId">Course</label>
-          <select id="courseId" formControlName="courseId" class="btn small"
-            [class.invalid]="hasError(lessonFormControls.courseId)">
-            <option value="" disabled>Select a Course</option>
-            @for (course of courses; track course.courseId) {
-            <option [value]="course.courseId">{{ course.title }}</option>
+        <h3 class="section-title">
+          <span class="step-num">01</span>
+          Lesson Details
+        </h3>
+        <div class="form-section-card">
+
+          <div class="form-group">
+            <label for="courseId">Course</label>
+            <div class="select-wrapper">
+              <select id="courseId" formControlName="courseId"
+                [class.invalid]="hasError(lessonFormControls.courseId)">
+                <option value="" disabled>Select a course…</option>
+                @for (course of courses; track course.courseId) {
+                  <option [value]="course.courseId">{{ course.title }}</option>
+                }
+              </select>
+              <span class="select-arrow">▾</span>
+            </div>
+            @if (hasError(lessonFormControls.courseId)) {
+              <span class="error-message">{{ getErrorMessage(lessonFormControls.courseId) }}</span>
             }
-          </select>
-          @if (hasError(lessonFormControls.courseId)) {
-          <span class="error-message">{{ getErrorMessage(lessonFormControls.courseId) }}</span>
-          }
-        </div>
-        <div class="form-group">
-          <label for="title">Title</label>
-          <div class="input-with-icon">
-            <span class="icon">📝</span>
-            <input type="text" id="title" formControlName="title" placeholder="e.g. Introduction to Spanish Verbs"
+          </div>
+
+          <div class="form-group">
+            <label for="title">Title</label>
+            <input type="text" id="title" formControlName="title"
+              placeholder="e.g. Introduction to Italian Verbs"
               [class.invalid]="hasError(lessonFormControls.title)">
+            @if (hasError(lessonFormControls.title)) {
+              <span class="error-message">{{ getErrorMessage(lessonFormControls.title) }}</span>
+            }
           </div>
-          @if (hasError(lessonFormControls.title)) {
-          <span class="error-message">{{ getErrorMessage(lessonFormControls.title) }}</span>
-          }
-        </div>
 
-        <div class="form-group">
-          <label for="description">Instructions</label>
-          <div class="input-with-icon">
-            <span class="icon">💬</span>
-            <textarea id="description" rows="2" formControlName="description"
-              placeholder="Short summary for the lesson card..."
-              [class.invalid]="hasError(lessonFormControls.description)"></textarea>
+          <div class="form-row-inline">
+            <div class="form-group">
+              <label for="description">
+                Description
+                <span class="label-optional">optional</span>
+              </label>
+              <textarea id="description" rows="3" formControlName="description"
+                placeholder="Brief summary shown on the lesson card…"
+                [class.invalid]="hasError(lessonFormControls.description)"></textarea>
+              @if (hasError(lessonFormControls.description)) {
+                <span class="error-message">{{ getErrorMessage(lessonFormControls.description) }}</span>
+              }
+            </div>
+
+            <div class="form-group form-group--narrow">
+              <label for="estimatedDuration">Duration</label>
+              <div class="inline-unit-input">
+                <input type="number" id="estimatedDuration" formControlName="estimatedDuration"
+                  min="10" max="120" placeholder="30"
+                  [class.invalid]="hasError(lessonFormControls.estimatedDuration)">
+                <span class="unit-label">min</span>
+              </div>
+              <span class="hint">10 – 120 minutes</span>
+              @if (hasError(lessonFormControls.estimatedDuration)) {
+                <span class="error-message">{{ getErrorMessage(lessonFormControls.estimatedDuration) }}</span>
+              }
+            </div>
           </div>
-          @if (hasError(lessonFormControls.description)) {
-          <span class="error-message">{{ getErrorMessage(lessonFormControls.description) }}</span>
-          }
+
         </div>
       </section>
 
-      <!-- Textbook Content -->
+      <!-- ── 02 Textbook Content ───────────────────────────────────────── -->
       <section class="form-section">
-        <h3><span class="icon">📖</span> Textbook Content</h3>
+        <h3 class="section-title">
+          <span class="step-num">02</span>
+          Textbook Content
+        </h3>
         <p class="section-desc">Explain the concept to the students here.</p>
-
-        <div class="form-group">
-          <div class="textarea-wrapper" [class.invalid]="hasError(lessonFormControls.content)">
-            <app-editor formControlName="content"></app-editor>
+        <div class="form-section-card">
+          <div class="form-group">
+            <div class="textarea-wrapper" [class.invalid]="hasError(lessonFormControls.content)">
+              <app-editor formControlName="content"></app-editor>
+            </div>
+            @if (hasError(lessonFormControls.content)) {
+              <span class="error-message">{{ getErrorMessage(lessonFormControls.content) }}</span>
+            }
+            <p class="hint">Type <code>/</code> to insert a block.</p>
           </div>
-          @if (hasError(lessonFormControls.content)) {
-          <span class="error-message">{{ getErrorMessage(lessonFormControls.content) }}</span>
-          }
-          <p class="hint"><span class="icon">✏️</span> Write '/' to specify a command.</p>
         </div>
       </section>
 
-      <!-- Exercises List -->
+      <!-- ── 03 Exercises ──────────────────────────────────────────────── -->
       <section class="form-section">
         <div class="section-header">
-          <h3><span class="icon">🧩</span> Exercises</h3>
-          <select formControlName="exerciseType" class="btn small" (change)="addExercise($any($event.target).value)">
-            <option value="" disabled>➕ Add Exercise</option>
+          <h3 class="section-title">
+            <span class="step-num">03</span>
+            Exercises
+          </h3>
+          <select formControlName="exerciseType" class="btn small"
+            (change)="addExercise($any($event.target).value)">
+            <option value="" disabled>＋ Add Exercise</option>
             @for (pair of exerciseTypeDictionary; track pair.value) {
-            <option [value]="pair.value">{{ pair.label }}</option>
+              <option [value]="pair.value">{{ pair.label }}</option>
             }
           </select>
         </div>
 
         <div formArrayName="exercises" class="exercises-list">
           @for (exercise of exercises.controls; track $index) {
-          <div [formGroupName]="$index" class="exercise-item slide-in">
+            <div [formGroupName]="$index" class="exercise-item slide-in"
+              [attr.data-type]="exercise.get('exerciseType')?.value">
 
-            <div class="exercise-header">
-              <span class="exercise-num">Exercise #{{ $index + 1 }}</span>
-              <span class="exercise-type-tag" [attr.data-type]="exercise.get('exerciseType')?.value">
-                {{ exercise.get('exerciseType')?.value }}
-              </span>
-              <button type="button" class="btn icon-only delete-btn" (click)="removeExercise($index)">
-                <span class="icon">🗑️</span>
-              </button>
-            </div>
-
-            <div class="form-group">
-              <label>Title</label>
-              <div class="input-with-icon">
-                <span class="icon">📝</span>
-                <input type="text" formControlName="title" placeholder="e.g. Conjugate 'essere'">
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Question / Prompt</label>
-              <div class="input-with-icon">
-                <span class="icon">❓</span>
-                <input type="text" formControlName="question" placeholder="e.g. Translate 'Hello'"
-                  [class.invalid]="hasError(exercise.get('question'))">
-              </div>
-              @if (hasError(exercise.get('question'))) {
-              <span class="error-message">{{ getErrorMessage(exercise.get('question')) }}</span>
-              }
-            </div>
-
-            @switch (exercise.get('exerciseType')?.value) {
-              @case (ExerciseType.MultipleChoice) {
-              <div class="sub-form fade-in">
-                <label>Options</label>
-                <div formArrayName="options" class="options-list">
-                  @for (option of $any(exercise.get('options')).controls; track $index) {
-                  <div [formGroupName]="$index" class="option-row slide-in-right">
-                    <div class="input-with-icon full-width">
-                      <span class="icon">⭕</span>
-                      <input type="text" formControlName="optionText" placeholder="Option {{ $index + 1 }}"
-                        [class.invalid]="hasError(option.get('optionText'))">
-                    </div>
-                    <label class="checkbox-label correct-toggle">
-                      <input type="checkbox" formControlName="isCorrect">
-                      Correct
-                    </label>
-                    <button type="button" class="btn icon-only small delete-btn"
-                      (click)="formService.removeOptionFromMultipleChoice($any(exercise), $index)">
-                      <span class="icon">❌</span>
-                    </button>
-                  </div>
-                  @if (hasError(option.get('optionText'))) {
-                  <span class="error-message">{{ getErrorMessage(option.get('optionText')) }}</span>
-                  }
-                  }
-                </div>
-                <button type="button" class="btn link-btn"
-                  (click)="formService.addOptionToMultipleChoice($any(exercise))">
-                  <span class="icon">➕</span> Add Option
+              <div class="exercise-header">
+                <span class="exercise-num">Exercise #{{ $index + 1 }}</span>
+                <span class="exercise-type-tag" [attr.data-type]="exercise.get('exerciseType')?.value">
+                  {{ exercise.get('exerciseType')?.value }}
+                </span>
+                <button type="button" class="btn icon-only delete-btn" (click)="removeExercise($index)">
+                  🗑️
                 </button>
               </div>
-              }
 
-              @case (ExerciseType.FillInBlank) {
-              <div class="sub-form fade-in">
-                <div class="form-group">
-                  <label>Correct Answer</label>
-                  <div class="input-with-icon">
-                    <span class="icon">🔑</span>
-                    <input type="text" formControlName="correctAnswer" placeholder="The expected answer"
-                      [class.invalid]="hasError(exercise.get('correctAnswer'))">
-                  </div>
-                  @if (hasError(exercise.get('correctAnswer'))) {
-                  <span class="error-message">{{ getErrorMessage(exercise.get('correctAnswer')) }}</span>
-                  }
-                </div>
-                <div class="form-group">
-                  <label>Accepted Answers (comma-separated alternatives)</label>
-                  <div class="input-with-icon">
-                    <span class="icon">✅</span>
-                    <input type="text" formControlName="acceptedAnswers" placeholder="e.g. answer1, answer2">
-                  </div>
-                </div>
-                <div class="form-row">
-                  <label class="checkbox-label">
-                    <input type="checkbox" formControlName="caseSensitive">
-                    Case Sensitive
-                  </label>
-                  <label class="checkbox-label">
-                    <input type="checkbox" formControlName="trimWhitespace">
-                    Trim Whitespace
-                  </label>
-                </div>
-              </div>
-              }
-
-              @case (ExerciseType.Translation) {
-              <div class="sub-form fade-in">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label>Source Language</label>
-                    <div class="input-with-icon">
-                      <span class="icon">🌐</span>
-                      <input type="text" formControlName="sourceLanguageCode" placeholder="e.g. en" maxlength="2"
-                        [class.invalid]="hasError(exercise.get('sourceLanguageCode'))">
-                    </div>
-                    @if (hasError(exercise.get('sourceLanguageCode'))) {
-                    <span class="error-message">{{ getErrorMessage(exercise.get('sourceLanguageCode')) }}</span>
-                    }
-                  </div>
-                  <div class="form-group">
-                    <label>Target Language</label>
-                    <div class="input-with-icon">
-                      <span class="icon">🌐</span>
-                      <input type="text" formControlName="targetLanguageCode" placeholder="e.g. it" maxlength="2"
-                        [class.invalid]="hasError(exercise.get('targetLanguageCode'))">
-                    </div>
-                    @if (hasError(exercise.get('targetLanguageCode'))) {
-                    <span class="error-message">{{ getErrorMessage(exercise.get('targetLanguageCode')) }}</span>
-                    }
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label>Source Text</label>
-                  <div class="input-with-icon">
-                    <span class="icon">📝</span>
-                    <textarea formControlName="sourceText" rows="2" placeholder="Text to translate from"
-                      [class.invalid]="hasError(exercise.get('sourceText'))"></textarea>
-                  </div>
-                  @if (hasError(exercise.get('sourceText'))) {
-                  <span class="error-message">{{ getErrorMessage(exercise.get('sourceText')) }}</span>
-                  }
-                </div>
-                <div class="form-group">
-                  <label>Target Text (Expected Translation)</label>
-                  <div class="input-with-icon">
-                    <span class="icon">🎯</span>
-                    <textarea formControlName="targetText" rows="2" placeholder="Expected translation"
-                      [class.invalid]="hasError(exercise.get('targetText'))"></textarea>
-                  </div>
-                  @if (hasError(exercise.get('targetText'))) {
-                  <span class="error-message">{{ getErrorMessage(exercise.get('targetText')) }}</span>
-                  }
-                </div>
-                <div class="form-group">
-                  <label>Matching Threshold (0.1 - 1.0)</label>
-                  <div class="input-with-icon">
-                    <span class="icon">📊</span>
-                    <input type="number" formControlName="matchingThreshold" min="0.1" max="1" step="0.1"
-                      placeholder="0.8" [class.invalid]="hasError(exercise.get('matchingThreshold'))">
-                  </div>
-                  @if (hasError(exercise.get('matchingThreshold'))) {
-                  <span class="error-message">{{ getErrorMessage(exercise.get('matchingThreshold')) }}</span>
-                  }
-                </div>
-              </div>
-              }
-
-              @case (ExerciseType.Listening) {
-              <div class="sub-form fade-in">
-                <div class="form-group">
-                  <label>Audio URL</label>
-                  <div class="input-with-icon">
-                    <span class="icon">🔊</span>
-                    <input type="url" formControlName="audioUrl" placeholder="https://example.com/audio.mp3"
-                      [class.invalid]="hasError(exercise.get('audioUrl'))">
-                  </div>
-                  @if (hasError(exercise.get('audioUrl'))) {
-                  <span class="error-message">{{ getErrorMessage(exercise.get('audioUrl')) }}</span>
-                  }
-                </div>
-                <div class="form-group">
-                  <label>Correct Answer</label>
-                  <div class="input-with-icon">
-                    <span class="icon">🔑</span>
-                    <input type="text" formControlName="correctAnswer" placeholder="The expected answer"
-                      [class.invalid]="hasError(exercise.get('correctAnswer'))">
-                  </div>
-                  @if (hasError(exercise.get('correctAnswer'))) {
-                  <span class="error-message">{{ getErrorMessage(exercise.get('correctAnswer')) }}</span>
-                  }
-                </div>
-                <div class="form-group">
-                  <label>Accepted Answers (comma-separated alternatives)</label>
-                  <div class="input-with-icon">
-                    <span class="icon">✅</span>
-                    <input type="text" formControlName="acceptedAnswers" placeholder="e.g. answer1, answer2">
-                  </div>
-                </div>
-                <div class="form-row">
-                  <label class="checkbox-label">
-                    <input type="checkbox" formControlName="caseSensitive">
-                    Case Sensitive
-                  </label>
-                  <div class="form-group small">
-                    <label>Max Replays</label>
-                    <input type="number" formControlName="maxReplays" min="1" max="3" placeholder="3"
-                      [class.invalid]="hasError(exercise.get('maxReplays'))">
-                    @if (hasError(exercise.get('maxReplays'))) {
-                    <span class="error-message">{{ getErrorMessage(exercise.get('maxReplays')) }}</span>
-                    }
-                  </div>
-                </div>
-              </div>
-              }
-            }
-            <div class="form-row-inline">
               <div class="form-group">
-                <label>Points (XP)</label>
-                <div class="input-with-icon">
-                  <span class="icon">⭐</span>
+                <label>Instructions / Prompt</label>
+                <input type="text" formControlName="instructions"
+                  placeholder="e.g. Choose the correct translation"
+                  [class.invalid]="hasError(exercise.get('instructions'))">
+                @if (hasError(exercise.get('instructions'))) {
+                  <span class="error-message">{{ getErrorMessage(exercise.get('instructions')) }}</span>
+                }
+              </div>
+
+              @switch (exercise.get('exerciseType')?.value) {
+
+                @case (ExerciseType.MultipleChoice) {
+                  <div class="sub-form fade-in">
+                    <label>Options</label>
+                    <div formArrayName="options" class="options-list">
+                      @for (option of $any(exercise.get('options')).controls; track $index) {
+                        <div [formGroupName]="$index" class="option-row slide-in-right">
+                          <input type="text" formControlName="optionText"
+                            placeholder="Option {{ $index + 1 }}"
+                            [class.invalid]="hasError(option.get('optionText'))">
+                          <label class="checkbox-label correct-toggle">
+                            <input type="checkbox" formControlName="isCorrect">
+                            Correct
+                          </label>
+                          <button type="button" class="btn icon-only small delete-btn"
+                            (click)="formService.removeOption($any(exercise), $index)">❌</button>
+                        </div>
+                        @if (hasError(option.get('optionText'))) {
+                          <span class="error-message">{{ getErrorMessage(option.get('optionText')) }}</span>
+                        }
+                      }
+                    </div>
+                    <button type="button" class="btn link-btn"
+                      (click)="formService.addOption($any(exercise))">
+                      ➕ Add Option
+                    </button>
+                  </div>
+                }
+
+                @case (ExerciseType.FillInBlank) {
+                  <div class="sub-form fade-in">
+                    <div class="form-group">
+                      <label>Sentence Text <span class="label-hint">(use ____ for the blank)</span></label>
+                      <input type="text" formControlName="text"
+                        placeholder="e.g. Mi chiamo ____"
+                        [class.invalid]="hasError(exercise.get('text'))">
+                      @if (hasError(exercise.get('text'))) {
+                        <span class="error-message">{{ getErrorMessage(exercise.get('text')) }}</span>
+                      }
+                    </div>
+                    <label>Options (word tiles)</label>
+                    <div formArrayName="options" class="options-list">
+                      @for (option of $any(exercise.get('options')).controls; track $index) {
+                        <div [formGroupName]="$index" class="option-row slide-in-right">
+                          <input type="text" formControlName="optionText"
+                            placeholder="Option {{ $index + 1 }}"
+                            [class.invalid]="hasError(option.get('optionText'))">
+                          <label class="checkbox-label correct-toggle">
+                            <input type="checkbox" formControlName="isCorrect">
+                            Correct
+                          </label>
+                          <button type="button" class="btn icon-only small delete-btn"
+                            (click)="formService.removeOption($any(exercise), $index)">❌</button>
+                        </div>
+                        @if (hasError(option.get('optionText'))) {
+                          <span class="error-message">{{ getErrorMessage(option.get('optionText')) }}</span>
+                        }
+                      }
+                    </div>
+                    <button type="button" class="btn link-btn"
+                      (click)="formService.addOption($any(exercise))">
+                      ➕ Add Option
+                    </button>
+                  </div>
+                }
+
+                @case (ExerciseType.Listening) {
+                  <div class="sub-form fade-in">
+
+                    <div class="form-group">
+                      <label>Audio</label>
+
+                      @if (!exercise.get('audioUrl')?.value) {
+                        <div class="audio-upload-zone">
+                          <button type="button" class="audio-upload-btn"
+                            (click)="triggerAudioUpload($index)">
+                            ♪ Upload Audio File
+                          </button>
+                        </div>
+                      } @else if (isBlobUrl(exercise.get('audioUrl')?.value)) {
+                        <div class="audio-staged">
+                          <div class="audio-file-chip">
+                            <span class="chip-icon">♪</span>
+                            <span class="chip-name">{{ getAudioFileName(exercise.get('audioUrl')!.value) }}</span>
+                            <span class="chip-size">{{ getAudioFileSize(exercise.get('audioUrl')!.value) }}</span>
+                            <button type="button" class="btn icon-only small delete-btn"
+                              (click)="removeAudio($index)">❌</button>
+                          </div>
+                          <app-audio-player [src]="exercise.get('audioUrl')!.value" />
+                        </div>
+                      } @else {
+                        <div class="audio-staged">
+                          <app-audio-player [src]="exercise.get('audioUrl')!.value" />
+                          <button type="button" class="btn link-btn"
+                            (click)="removeAudio($index)">Replace audio</button>
+                        </div>
+                      }
+
+                      @if (hasError(exercise.get('audioUrl'))) {
+                        <span class="error-message">{{ getErrorMessage(exercise.get('audioUrl')) }}</span>
+                      }
+                    </div>
+
+                    <div class="form-group small">
+                      <label>Max Replays <span class="label-hint">(1 – 10)</span></label>
+                      <input type="number" formControlName="maxReplays" min="1" max="10" placeholder="3"
+                        [class.invalid]="hasError(exercise.get('maxReplays'))">
+                      @if (hasError(exercise.get('maxReplays'))) {
+                        <span class="error-message">{{ getErrorMessage(exercise.get('maxReplays')) }}</span>
+                      }
+                    </div>
+
+                    <label>Options</label>
+                    <div formArrayName="options" class="options-list">
+                      @for (option of $any(exercise.get('options')).controls; track $index) {
+                        <div [formGroupName]="$index" class="option-row slide-in-right">
+                          <input type="text" formControlName="optionText"
+                            placeholder="Option {{ $index + 1 }}"
+                            [class.invalid]="hasError(option.get('optionText'))">
+                          <label class="checkbox-label correct-toggle">
+                            <input type="checkbox" formControlName="isCorrect">
+                            Correct
+                          </label>
+                          <button type="button" class="btn icon-only small delete-btn"
+                            (click)="formService.removeOption($any(exercise), $index)">❌</button>
+                        </div>
+                        @if (hasError(option.get('optionText'))) {
+                          <span class="error-message">{{ getErrorMessage(option.get('optionText')) }}</span>
+                        }
+                      }
+                    </div>
+                    <button type="button" class="btn link-btn"
+                      (click)="formService.addOption($any(exercise))">
+                      ➕ Add Option
+                    </button>
+
+                  </div>
+                }
+
+                @case (ExerciseType.TrueFalse) {
+                  <div class="sub-form fade-in">
+                    <div class="form-group">
+                      <label>Statement</label>
+                      <input type="text" formControlName="statement"
+                        placeholder="e.g. La pizza viene dall'Italia."
+                        [class.invalid]="hasError(exercise.get('statement'))">
+                      @if (hasError(exercise.get('statement'))) {
+                        <span class="error-message">{{ getErrorMessage(exercise.get('statement')) }}</span>
+                      }
+                    </div>
+                    <div class="form-group">
+                      <label>Image URL <span class="label-optional">optional</span></label>
+                      <input type="url" formControlName="imageUrl"
+                        placeholder="https://example.com/image.jpg">
+                    </div>
+                    <p class="hint">True/False options are pre-seeded. Mark which one is correct.</p>
+                    <div formArrayName="options" class="options-list">
+                      @for (option of $any(exercise.get('options')).controls; track $index) {
+                        <div [formGroupName]="$index" class="option-row slide-in-right">
+                          <span class="option-label">{{ option.get('optionText')?.value }}</span>
+                          <label class="checkbox-label correct-toggle">
+                            <input type="checkbox" formControlName="isCorrect">
+                            Correct
+                          </label>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+
+              }
+
+              <div class="form-row-inline">
+                <div class="form-group">
+                  <label>Points (XP)</label>
                   <input type="number" formControlName="points" min="1" max="100" placeholder="10"
                     [class.invalid]="hasError(exercise.get('points'))">
+                  @if (hasError(exercise.get('points'))) {
+                    <span class="error-message">{{ getErrorMessage(exercise.get('points')) }}</span>
+                  }
                 </div>
-                @if (hasError(exercise.get('points'))) {
-                <span class="error-message">{{ getErrorMessage(exercise.get('points')) }}</span>
-                }
               </div>
+
+              <div class="range-container">
+                <label>Difficulty</label>
+                <input type="range" min="1" max="3" step="1"
+                  (input)="onDifficultyChange($event, exercise)">
+                <div class="range-ticks">
+                  <span>Beginner</span>
+                  <span>Intermediate</span>
+                  <span>Advanced</span>
+                </div>
+              </div>
+
               <div class="form-group">
-                <label>Duration (min)</label>
-                <div class="input-with-icon">
-                  <span class="icon">⏱️</span>
-                  <input type="number" formControlName="estimatedDurationMinutes" min="1" max="60" placeholder="5"
-                    [class.invalid]="hasError(exercise.get('estimatedDurationMinutes'))">
-                </div>
-                @if (hasError(exercise.get('estimatedDurationMinutes'))) {
-                <span class="error-message">{{ getErrorMessage(exercise.get('estimatedDurationMinutes')) }}</span>
-                }
-              </div>
-            </div>
-
-            <div class="range-container">
-              <label>Difficulty</label>
-              <input type="range" min="1" max="3" step="1" (input)="onDifficultyChange($event, exercise)">
-              <div class="range-ticks">
-                <span>Beginner</span>
-                <span>Intermediate</span>
-                <span>Advanced</span>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Explanation (shown after answer)</label>
-              <div class="input-with-icon">
-                <span class="icon">💡</span>
+                <label>Explanation <span class="label-optional">optional</span></label>
                 <textarea formControlName="explanation" rows="2"
-                  placeholder="e.g. 'Essere' is an irregular verb meaning 'to be'..."></textarea>
+                  placeholder="e.g. 'Essere' is an irregular verb meaning 'to be'…"></textarea>
               </div>
+
             </div>
-          </div>
           }
 
           @if (exercises.length === 0) {
-          <div class="empty-state">
-            <span class="icon empty-icon">🎯</span>
-            <p>No exercises added yet.</p>
-            <button type="button" class="btn small" (click)="addExercise(ExerciseType.FillInBlank)">Create First
-              Exercise</button>
-          </div>
+            <div class="empty-state">
+              <span class="empty-icon">🎯</span>
+              <p>No exercises added yet.</p>
+              <button type="button" class="btn small"
+                (click)="addExercise(ExerciseType.MultipleChoice)">
+                Create First Exercise
+              </button>
+            </div>
           }
         </div>
       </section>
 
     </form>
 
-    <!-- Actions -->
     <div class="form-actions sticky-footer">
-      <button type="button" class="btn secondary" (click)="onDiscard()">
-        <span class="icon">↩️</span> Discard
-      </button>
+      <button type="button" class="btn secondary" (click)="onDiscard()">Discard</button>
       <button type="button" class="btn primary" [disabled]="lessonForm.invalid" (click)="onSubmit()">
-        <span class="icon">🚀</span> Publish Lesson
+        🚀 Publish Lesson
       </button>
     </div>
+
   </div>
-
-  <!-- Right Panel: Live Preview -->
-  <div class="preview-panel">
-    <div class="preview-header">
-      <h2><span class="icon">👁️</span> Live Preview</h2>
-      <span class="tag">Student View</span>
-    </div>
-
-    <div class="device-mockup">
-      <div class="exercise-card-preview">
-
-        <!-- Preview: Lesson Header -->
-        <div class="card-header">
-          <div class="meta">
-            <!-- <span class="badge difficulty-badge" [attr.data-level]="exerciseControls.difficulty.value">
-              Level {{ lessonFormControls.difficulty.value }}
-            </span> -->
-            <span class="category"><span class="icon">🎓</span> Lesson</span>
-          </div>
-          <h3>{{ lessonFormControls.title.value || 'Untitled Lesson' }}</h3>
-        </div>
-
-        <div class="card-body">
-          <!-- Preview: Textbook Content -->
-          <div class="textbook-preview">
-            @if (!lessonFormControls.content.value) {
-            <p class="placeholder-text">Lesson content will appear here...</p>
-            }
-            <div [innerHTML]="lessonFormControls.content.value ? parseContent(lessonFormControls.content.value) : ''">
-            </div>
-          </div>
-
-          <hr class="divider">
-
-          <!-- Preview: Exercises -->
-          <div class="exercises-preview">
-            <h4>Exercises ({{ exercises.length }})</h4>
-
-            @for (ex of exercises.controls; track $index) {
-            <div class="preview-item slide-in">
-              <span class="badge-num">{{ $index + 1 }}</span>
-              <div class="preview-content">
-                @if (ex.get('title')?.value) {
-                <span class="preview-title">{{ ex.get('title')?.value }}</span>
-                }
-                <strong class="question-preview">{{ ex.get('question')?.value || 'Question...' }}</strong>
-
-                @switch (ex.get('exerciseType')?.value) {
-                @case (ExerciseType.MultipleChoice) {
-                <div class="options-preview">
-                  @for (opt of $any(ex.get('options'))?.controls; track $index) {
-                  <div class="radio-fake" [class.correct]="opt.get('isCorrect')?.value">
-                    <span class="icon">{{ opt.get('isCorrect')?.value ? '✅' : '⭕' }}</span>
-                    {{ opt.get('optionText')?.value || 'Option ' + ($index + 1) }}
-                  </div>
-                  }
-                  @if (!$any(ex.get('options'))?.controls?.length) {
-                  <p class="placeholder-text small">No options added yet</p>
-                  }
-                </div>
-                }
-
-                @case (ExerciseType.FillInBlank) {
-                <div class="answer-preview">
-                  <span class="icon">🔑</span> {{ ex.get('correctAnswer')?.value || '________' }}
-                </div>
-                }
-
-                @case (ExerciseType.Translation) {
-                <div class="translation-preview">
-                  <div class="lang-pair">
-                    <span class="lang">{{ ex.get('sourceLanguageCode')?.value || '??' }}</span>
-                    <span class="icon">➡️</span>
-                    <span class="lang">{{ ex.get('targetLanguageCode')?.value || '??' }}</span>
-                  </div>
-                  <div class="source-text">{{ ex.get('sourceText')?.value || 'Source text...' }}</div>
-                </div>
-                }
-
-                @case (ExerciseType.Listening) {
-                <div class="listening-preview">
-                  <span class="icon">🔊</span> Audio exercise
-                  @if (ex.get('audioUrl')?.value) {
-                  <span class="audio-url">{{ ex.get('audioUrl')?.value }}</span>
-                  }
-                </div>
-                }
-
-                @default {
-                <div class="input-fake">
-                  <span class="icon">✍️</span> Type answer...
-                </div>
-                }
-                }
-              </div>
-            </div>
-            }
-
-            @if (exercises.length === 0) {
-            <p class="placeholder-text small">
-              <span class="icon">🚫</span> No exercises added.
-            </p>
-            }
-          </div>
-        </div>
-
-        <div class="card-footer">
-          <button class="btn ghost">Start Lesson <span class="icon">➡️</span></button>
-        </div>
-      </div>
-    </div>
-  </div>
-
 </div>

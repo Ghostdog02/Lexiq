@@ -10,232 +10,184 @@ export enum ExerciseType {
   MultipleChoice = 'MultipleChoice',
   FillInBlank = 'FillInBlank',
   Listening = 'Listening',
-  Translation = 'Translation'
+  TrueFalse = 'TrueFalse'
 }
 
+export interface ExerciseOption {
+  id: string;
+  optionText: string;
+  isCorrect: boolean;
+  explanation: string;
+}
+
+// Base Exercise = concrete MultipleChoice type (instructions + options list)
 export interface Exercise {
   id: string;
   lessonId: string;
-  title: string;
-  question: string;
-  estimatedDurationMinutes: number;
+  instructions: string;
   difficultyLevel: DifficultyLevel | number;
   points: number;
-  orderIndex: number;
   explanation?: string;
   type: ExerciseType;
-  isLocked: boolean;
+  options: ExerciseOption[];
 }
 
+export interface FillInBlankExercise extends Exercise {
+  type: ExerciseType.FillInBlank;
+  text: string;
+}
+
+export interface ListeningExercise extends Exercise {
+  type: ExerciseType.Listening;
+  audioUrl: string;
+  maxReplays: number;
+}
+
+export interface TrueFalseExercise extends Exercise {
+  type: ExerciseType.TrueFalse;
+  statement: string;
+  imageUrl?: string;
+}
+
+export type AnyExercise = Exercise | FillInBlankExercise | ListeningExercise | TrueFalseExercise;
+
+// ---------------------------------------------------------------------------
+// Form controls
+// ---------------------------------------------------------------------------
+
 export interface ExerciseFormControls {
-  title: FormControl<string>;
-  question: FormControl<string>;
-  estimatedDurationMinutes: FormControl<number>;
+  instructions: FormControl<string>;
   difficultyLevel: FormControl<DifficultyLevel>;
   points: FormControl<number>;
   explanation: FormControl<string>;
   exerciseType: FormControl<ExerciseType>;
 }
 
-export interface QuestionOption {
-  id: string;
-  optionText: string;
-  isCorrect: boolean;
-  orderIndex: number;
-}
-
-export interface QuestionOptionFormControls {
+export interface OptionFormControls {
   optionText: FormControl<string>;
   isCorrect: FormControl<boolean>;
+  explanation: FormControl<string>;
 }
 
-export interface MultipleChoiceExercise extends Exercise {
-  type: ExerciseType.MultipleChoice;
-  options: QuestionOption[];
-}
-
-export interface FillInBlankExercise extends Exercise {
-  type: ExerciseType.FillInBlank;
-  text: string;
-  correctAnswer: string;
-  acceptedAnswers?: string | null;
-  caseSensitive: boolean;
-  trimWhitespace: boolean;
-}
-
-export interface ListeningExercise extends Exercise {
-  type: ExerciseType.Listening;
-  audioUrl: string;
-  correctAnswer: string;
-  acceptedAnswers?: string | null;
-  caseSensitive: boolean;
-  maxReplays: number;
-}
-
-export interface TranslationExercise extends Exercise {
-  type: ExerciseType.Translation;
-  sourceText: string;
-  targetText: string;
-  sourceLanguageCode: string;
-  targetLanguageCode: string;
-  matchingThreshold: number;
-}
-
-export type AnyExercise =
-  | MultipleChoiceExercise
-  | FillInBlankExercise
-  | TranslationExercise
-  | ListeningExercise;
+export type OptionForm = FormGroup<OptionFormControls>;
 
 export interface MultipleChoiceFormControls extends ExerciseFormControls {
   exerciseType: FormControl<ExerciseType.MultipleChoice>;
-  options: FormArray<QuestionOptionForm>;
+  options: FormArray<OptionForm>;
 }
 
 export interface FillInBlankFormControls extends ExerciseFormControls {
   exerciseType: FormControl<ExerciseType.FillInBlank>;
-  correctAnswer: FormControl<string>;
-  acceptedAnswers?: FormControl<string>;
-  caseSensitive: FormControl<boolean>;
-  trimWhitespace: FormControl<boolean>;
-}
-
-export interface TranslationFormControls extends ExerciseFormControls {
-  exerciseType: FormControl<ExerciseType.Translation>;
-  sourceText: FormControl<string>;
-  targetText: FormControl<string>;
-  sourceLanguageCode: FormControl<string>;
-  targetLanguageCode: FormControl<string>;
-  matchingThreshold: FormControl<number>;
+  text: FormControl<string>;
+  options: FormArray<OptionForm>;
 }
 
 export interface ListeningFormControls extends ExerciseFormControls {
   exerciseType: FormControl<ExerciseType.Listening>;
-  correctAnswer: FormControl<string>;
-  acceptedAnswers?: FormControl<string>;
-  caseSensitive: FormControl<boolean>;
-  maxReplays: FormControl<number>;
   audioUrl: FormControl<string>;
+  maxReplays: FormControl<number>;
+  options: FormArray<OptionForm>;
+}
+
+export interface TrueFalseFormControls extends ExerciseFormControls {
+  exerciseType: FormControl<ExerciseType.TrueFalse>;
+  statement: FormControl<string>;
+  imageUrl: FormControl<string>;
+  options: FormArray<OptionForm>;
 }
 
 export type MultipleChoiceForm = FormGroup<MultipleChoiceFormControls>;
 export type FillInBlankForm = FormGroup<FillInBlankFormControls>;
-export type TranslationForm = FormGroup<TranslationFormControls>;
 export type ListeningForm = FormGroup<ListeningFormControls>;
+export type TrueFalseForm = FormGroup<TrueFalseFormControls>;
 export type ExerciseForm = FormGroup<any>;
-export type QuestionOptionForm = FormGroup<QuestionOptionFormControls>;
 
 // ---------------------------------------------------------------------------
 // Form value types — the shape returned by FormGroup.getRawValue()
 // ---------------------------------------------------------------------------
 
 interface BaseExerciseFormValue {
-  title: string;
-  estimatedDurationMinutes: number;
-  question: string;
+  instructions: string;
   difficultyLevel: DifficultyLevel;
   points: number;
   explanation: string;
+  options: { optionText: string; isCorrect: boolean; explanation: string }[];
 }
 
 export interface MultipleChoiceFormValue extends BaseExerciseFormValue {
   exerciseType: ExerciseType.MultipleChoice;
-  options: { optionText: string; isCorrect: boolean }[];
 }
 
 export interface FillInBlankFormValue extends BaseExerciseFormValue {
   exerciseType: ExerciseType.FillInBlank;
-  correctAnswer: string;
-  acceptedAnswers: string;
-  caseSensitive: boolean;
-  trimWhitespace: boolean;
-}
-
-export interface TranslationFormValue extends BaseExerciseFormValue {
-  exerciseType: ExerciseType.Translation;
-  sourceText: string;
-  targetText: string;
-  sourceLanguageCode: string;
-  targetLanguageCode: string;
-  matchingThreshold: number;
+  text: string;
 }
 
 export interface ListeningFormValue extends BaseExerciseFormValue {
   exerciseType: ExerciseType.Listening;
   audioUrl: string;
-  correctAnswer: string;
-  acceptedAnswers: string;
-  caseSensitive: boolean;
   maxReplays: number;
+}
+
+export interface TrueFalseFormValue extends BaseExerciseFormValue {
+  exerciseType: ExerciseType.TrueFalse;
+  statement: string;
+  imageUrl: string;
 }
 
 export type ExerciseFormValue =
   | MultipleChoiceFormValue
   | FillInBlankFormValue
-  | TranslationFormValue
-  | ListeningFormValue;
+  | ListeningFormValue
+  | TrueFalseFormValue;
 
 // ---------------------------------------------------------------------------
 // Backend Create DTOs — the shape the API expects
 // ---------------------------------------------------------------------------
 
 export interface CreateExerciseBase {
-  title: string;
-  estimatedDurationMinutes: number;
   difficultyLevel: DifficultyLevel;
   points: number;
-  orderIndex: number;
+  explanation: string;
+}
+
+export interface CreateOptionDto {
+  optionText: string;
+  isCorrect: boolean;
   explanation: string;
 }
 
 export interface CreateMultipleChoiceDto extends CreateExerciseBase {
-  type: ExerciseType.MultipleChoice;
-  options: { optionText: string; isCorrect: boolean; orderIndex: number }[];
+  type: 'MultipleChoice';
+  instructions: string;
+  options: CreateOptionDto[];
 }
 
 export interface CreateFillInBlankDto extends CreateExerciseBase {
-  type: ExerciseType.FillInBlank;
+  type: 'FillInBlank';
+  instructions: string;
   text: string;
-  correctAnswer: string;
-  acceptedAnswers: string;
-  caseSensitive: boolean;
-  trimWhitespace: boolean;
-}
-
-export interface CreateTranslationDto extends CreateExerciseBase {
-  type: ExerciseType.Translation;
-  sourceText: string;
-  targetText: string;
-  sourceLanguageCode: string;
-  targetLanguageCode: string;
-  matchingThreshold: number;
+  options: CreateOptionDto[];
 }
 
 export interface CreateListeningDto extends CreateExerciseBase {
-  type: ExerciseType.Listening;
+  type: 'Listening';
+  instructions: string;
   audioUrl: string;
-  correctAnswer: string;
-  acceptedAnswers: string;
-  caseSensitive: boolean;
   maxReplays: number;
+  options: CreateOptionDto[];
+}
+
+export interface CreateTrueFalseDto extends CreateExerciseBase {
+  type: 'TrueFalse';
+  instructions: string;
+  statement: string;
+  imageUrl?: string;
+  options: CreateOptionDto[];
 }
 
 export type CreateExerciseDto =
   | CreateMultipleChoiceDto
   | CreateFillInBlankDto
-  | CreateTranslationDto
-  | CreateListeningDto;
-
-// ---------------------------------------------------------------------------
-
-export interface ExerciseAnswerControls {
-  answer: FormControl<string>;
-}
-
-export type ExerciseAnswerForm = FormGroup<ExerciseAnswerControls>;
-
-export interface ExerciseViewerFormControls {
-  exercises: FormArray<ExerciseAnswerForm>;
-}
-
-export type ExerciseViewerForm = FormGroup<ExerciseViewerFormControls>;
+  | CreateListeningDto
+  | CreateTrueFalseDto;

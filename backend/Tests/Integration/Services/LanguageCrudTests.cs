@@ -2,14 +2,13 @@ using Backend.Api.Dtos;
 using Backend.Api.Services;
 using Backend.Database;
 using Backend.Database.Entities;
-using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
-namespace Backend.Tests.Services;
+namespace Backend.Tests.Integration.Services;
 
 /// <summary>
 /// Integration tests for Language CRUD operations covering:
@@ -24,7 +23,6 @@ public class LanguageCrudTests(DatabaseFixture fixture)
     private readonly DatabaseFixture _fixture = fixture;
     private BackendDbContext _ctx = null!;
     private LanguageService _sut = null!;
-    private string _testUserId = null!;
 
     public async ValueTask InitializeAsync()
     {
@@ -32,14 +30,6 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         await DbSeeder.ClearLeaderboardDataAsync(_ctx, _fixture.SystemUserId);
 
         _sut = new LanguageService(_ctx);
-
-        // Create test user for Course.CreatedById FK
-        var user = new UserBuilder()
-            .WithUserName("testadmin")
-            .WithEmail("admin@test.com")
-            .Build();
-        await DbSeeder.AddUserAsync(_ctx, user);
-        _testUserId = user.Id;
     }
 
     public async ValueTask DisposeAsync()
@@ -59,20 +49,19 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         // Act
         var result = await _sut.CreateLanguageAsync(dto);
 
-        var savedLanguage = await _ctx
-            .Languages.FirstOrDefaultAsync(
-                l => l.Id == result.Id,
-                TestContext.Current.CancellationToken
-            );
+        var savedLanguage = await _ctx.Languages.FirstOrDefaultAsync(
+            l => l.LanguageId == result.LanguageId,
+            TestContext.Current.CancellationToken
+        );
 
         // Assert
         result.Should().NotBeNull();
-        result.Name.Should().Be("Spanish");
+        result.LanguageName.Should().Be("Spanish");
         result.FlagIconUrl.Should().Be("https://example.com/es.svg");
-        result.Id.Should().NotBeNullOrEmpty();
+        result.LanguageId.Should().NotBeNullOrEmpty();
 
         savedLanguage.Should().NotBeNull();
-        savedLanguage!.Name.Should().Be("Spanish");
+        savedLanguage.LanguageName.Should().Be("Spanish");
     }
 
     [Fact]
@@ -86,7 +75,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
 
         // Assert
         result.Should().NotBeNull();
-        result.Name.Should().Be("French");
+        result.LanguageName.Should().Be("French");
         result.FlagIconUrl.Should().BeNull();
     }
 
@@ -115,19 +104,17 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         var lang1 = await _sut.CreateLanguageAsync(
             new CreateLanguageDto("Portuguese", "https://example.com/pt.svg")
         );
-        var lang2 = await _sut.CreateLanguageAsync(
-            new CreateLanguageDto("Japanese", null)
-        );
+        var lang2 = await _sut.CreateLanguageAsync(new CreateLanguageDto("Japanese", null));
 
         // Create course for lang1
         var course = new Course
         {
-            Id = Guid.NewGuid().ToString(),
-            LanguageId = lang1.Id,
+            CourseId = Guid.NewGuid().ToString(),
+            LanguageId = lang1.LanguageId,
             Title = "Portuguese 101",
-            Description = null,
+            Description = "Portuguese course",
             OrderIndex = 0,
-            CreatedById = _testUserId,
+
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -141,10 +128,12 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         result.Should().NotBeEmpty();
         result.Should().HaveCountGreaterThanOrEqualTo(2);
 
-        var testLanguages = result.Where(l => new[] { lang1.Id, lang2.Id }.Contains(l.Id)).ToList();
+        var testLanguages = result
+            .Where(l => new[] { lang1.LanguageId, lang2.LanguageId }.Contains(l.LanguageId))
+            .ToList();
         testLanguages.Should().HaveCount(2);
 
-        var lang1Result = testLanguages.First(l => l.Id == lang1.Id);
+        var lang1Result = testLanguages.First(l => l.LanguageId == lang1.LanguageId);
         lang1Result
             .Courses.Should()
             .ContainSingle(because: "GetAllLanguagesAsync includes Courses navigation");
@@ -161,12 +150,12 @@ public class LanguageCrudTests(DatabaseFixture fixture)
 
         var course = new Course
         {
-            Id = Guid.NewGuid().ToString(),
-            LanguageId = language.Id,
+            CourseId = Guid.NewGuid().ToString(),
+            LanguageId = language.LanguageId,
             Title = "Russian Basics",
-            Description = null,
+            Description = "Russian course",
             OrderIndex = 0,
-            CreatedById = _testUserId,
+
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -174,11 +163,11 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _sut.GetLanguageByIdAsync(language.Id);
+        var result = await _sut.GetLanguageByIdAsync(language.LanguageId);
 
         // Assert
         result.Should().NotBeNull();
-        result!.Courses.Should().ContainSingle();
+        result.Courses.Should().ContainSingle();
         result.Courses.First().Title.Should().Be("Russian Basics");
     }
 
@@ -194,9 +183,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         // Assert
         result
             .Should()
-            .BeNull(
-                because: "non-existent language ID returns null (404 at controller layer)"
-            );
+            .BeNull(because: "non-existent language ID returns null (404 at controller layer)");
     }
 
     // ── UpdateLanguageAsync ─────────────────────────────────────────────────
@@ -212,11 +199,11 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         var updateDto = new CreateLanguageDto("Korean (Updated)", "https://example.com/ko-new.svg");
 
         // Act
-        var result = await _sut.UpdateLanguageAsync(language.Id, updateDto);
+        var result = await _sut.UpdateLanguageAsync(language.LanguageId, updateDto);
 
         // Assert
         result.Should().NotBeNull();
-        result!.Name.Should().Be("Korean (Updated)");
+        result.LanguageName.Should().Be("Korean (Updated)");
         result.FlagIconUrl.Should().Be("https://example.com/ko-new.svg");
     }
 
@@ -249,11 +236,13 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         var updateDto = new CreateLanguageDto("Chinese", null);
 
         // Act
-        var result = await _sut.UpdateLanguageAsync(language.Id, updateDto);
+        var result = await _sut.UpdateLanguageAsync(language.LanguageId, updateDto);
 
         // Assert
         result.Should().NotBeNull();
-        result!.FlagIconUrl.Should().BeNull(because: "null in DTO sets field to null (not preserved)");
+        result
+            .FlagIconUrl.Should()
+            .BeNull(because: "null in DTO sets field to null (not preserved)");
     }
 
     // ── DeleteLanguageAsync ─────────────────────────────────────────────────
@@ -265,20 +254,15 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         var language = await _sut.CreateLanguageAsync(new CreateLanguageDto("Arabic", null));
 
         // Act
-        var result = await _sut.DeleteLanguageAsync(language.Id);
+        var result = await _sut.DeleteLanguageAsync(language.LanguageId);
 
-        var stillExists = await _ctx
-            .Languages.AnyAsync(
-                l => l.Id == language.Id,
-                TestContext.Current.CancellationToken
-            );
+        var stillExists = await _ctx.Languages.AnyAsync(
+            l => l.LanguageId == language.LanguageId,
+            TestContext.Current.CancellationToken
+        );
 
         // Assert
-        result
-            .Should()
-            .BeTrue(
-                because: "deleting an existing language succeeds and returns true"
-            );
+        result.Should().BeTrue(because: "deleting an existing language succeeds and returns true");
         stillExists.Should().BeFalse(because: "deleted language no longer exists in database");
     }
 
@@ -308,12 +292,12 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         var courseId = Guid.NewGuid().ToString();
         var course = new Course
         {
-            Id = courseId,
-            LanguageId = language.Id,
+            CourseId = courseId,
+            LanguageId = language.LanguageId,
             Title = "Dutch for Beginners",
-            Description = null,
+            Description = "Dutch course",
             OrderIndex = 0,
-            CreatedById = _testUserId,
+
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };
@@ -321,17 +305,17 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _sut.DeleteLanguageAsync(language.Id);
+        var result = await _sut.DeleteLanguageAsync(language.LanguageId);
 
-        var deletedCourse = await _ctx
-            .Courses.FindAsync(new object[] { courseId }, TestContext.Current.CancellationToken);
+        var deletedCourse = await _ctx.Courses.FindAsync(
+            [courseId],
+            TestContext.Current.CancellationToken
+        );
 
         // Assert
         result.Should().BeTrue();
         deletedCourse
             .Should()
-            .BeNull(
-                because: "courses should cascade delete when their parent language is deleted"
-            );
+            .BeNull(because: "courses should cascade delete when their parent language is deleted");
     }
 }

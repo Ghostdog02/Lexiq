@@ -21,6 +21,19 @@ public class GoogleAuthService(
     private readonly ILogger<GoogleAuthService> _logger = logger;
     private readonly AvatarService _avatarService = avatarService;
 
+    private async Task<string> GetUniqueUsernameAsync(string baseUsername)
+    {
+        if (await _userManager.FindByNameAsync(baseUsername) == null)
+            return baseUsername;
+
+        for (var i = 2; ; i++)
+        {
+            var candidate = $"{baseUsername}{i}";
+            if (await _userManager.FindByNameAsync(candidate) == null)
+                return candidate;
+        }
+    }
+
     public async Task<GoogleJsonWebSignature.Payload?> ValidateGoogleTokenAsync(string idToken)
     {
         try
@@ -55,6 +68,8 @@ public class GoogleAuthService(
             if (user == null)
             {
                 user = _userManager.MapGooglePayloadToUser(payload);
+                user.UserName = await GetUniqueUsernameAsync(user.UserName!);
+                user.NormalizedUserName = _userManager.NormalizeName(user.UserName);
 
                 var result = await _userManager.CreateAsync(user);
                 if (!result.Succeeded)

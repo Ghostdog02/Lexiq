@@ -56,7 +56,6 @@
 
             <div class="lesson-info">
               <h3 class="lesson-title">{{ lesson.title }}</h3>
-              <p class="lesson-description">{{ lesson.description }}</p>
 
               @if (lesson.status !== 'locked' && lesson.totalPossibleXp) {
               <div class="lesson-progress">
@@ -111,6 +110,18 @@
       </article>
 
     </header>
+
+    @if (!isAdmin && !isContentCreator && userIsAuthenticated) {
+    <section class="sidebar-row hearts-row">
+      <article class="stat-card hearts-card">
+        <figure class="stat-icon">❤️</figure>
+        <div class="stat-content">
+          <data [value]="hearts" class="stat-value hearts-value">{{ hearts }}</data>
+          <span class="stat-label">Hearts</span>
+        </div>
+      </article>
+    </section>
+    }
 
     <section class="sidebar-row">
       <button class="jump-button" (click)="scrollToCurrentLesson()" aria-label="Jump to current lesson">

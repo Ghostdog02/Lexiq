@@ -31,7 +31,9 @@ public class UserLanguageService(BackendDbContext context)
         {
             UserId = userId,
             LanguageId = languageId,
-            EnrolledAt = DateTime.UtcNow
+            EnrolledAt = DateTime.UtcNow,
+            User = null!,
+            Language = null!,
         };
 
         _context.UserLanguages.Add(userLanguage);

@@ -1,4 +1,6 @@
 using System.Net;
+using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Middleware;
@@ -29,7 +31,11 @@ public class ErrorHandlingMiddleware(
 
         catch (UnauthorizedAccessException ex)
         {
-            _logger.LogWarning(ex, "Unauthorized access attempt at {Path}", context.Request.Path);
+            _logger.LogWarning(
+                ex,
+                "Unauthorized access attempt at {Path}",
+                SanitizePath(context.Request.Path)
+            );
             await HandleExceptionAsync(
                 context,
                 ex,
@@ -40,8 +46,18 @@ public class ErrorHandlingMiddleware(
 
         catch (KeyNotFoundException ex)
         {
-            _logger.LogInformation(ex, "Resource not found at {Path}", context.Request.Path);
-            await HandleExceptionAsync(context, ex, HttpStatusCode.NotFound, ex.Message);
+            _logger.LogInformation(
+                ex,
+                "Resource not found at {Path}: {Message}",
+                SanitizePath(context.Request.Path),
+                SanitizeForLogging(ex.Message)
+            );
+            await HandleExceptionAsync(
+                context,
+                ex,
+                HttpStatusCode.NotFound,
+                "The requested resource was not found."
+            );
         }
 
         catch (ArgumentNullException ex)
@@ -50,7 +66,7 @@ public class ErrorHandlingMiddleware(
             _logger.LogInformation(
                 ex,
                 "Missing required parameter at {Path}: {ParamName}",
-                context.Request.Path,
+                SanitizePath(context.Request.Path),
                 ex.ParamName
             );
             await HandleExceptionAsync(
@@ -72,10 +88,12 @@ public class ErrorHandlingMiddleware(
             _logger.LogInformation(
                 ex,
                 "Argument validation failed at {Path}: {Message}",
-                context.Request.Path,
-                ex.Message
+                SanitizePath(context.Request.Path),
+                SanitizeForLogging(ex.Message)
             );
-            await HandleExceptionAsync(context, ex, statusCode, ex.Message);
+
+            var sanitizedMessage = SanitizeExceptionMessage(ex.Message);
+            await HandleExceptionAsync(context, ex, statusCode, sanitizedMessage);
         }
 
         catch (InvalidOperationException ex)
@@ -91,15 +109,21 @@ public class ErrorHandlingMiddleware(
             _logger.LogWarning(
                 ex,
                 "Operation failed at {Path}: {Message}",
-                context.Request.Path,
-                ex.Message
+                SanitizePath(context.Request.Path),
+                SanitizeForLogging(ex.Message)
             );
-            await HandleExceptionAsync(context, ex, statusCode, ex.Message);
+
+            var sanitizedMessage = SanitizeExceptionMessage(ex.Message);
+            await HandleExceptionAsync(context, ex, statusCode, sanitizedMessage);
         }
 
         catch (FormatException ex)
         {
-            _logger.LogInformation(ex, "Format error at {Path}", context.Request.Path);
+            _logger.LogInformation(
+                ex,
+                "Format error at {Path}",
+                SanitizePath(context.Request.Path)
+            );
             await HandleExceptionAsync(
                 context,
                 ex,
@@ -110,7 +134,11 @@ public class ErrorHandlingMiddleware(
 
         catch (DbUpdateConcurrencyException ex)
         {
-            _logger.LogWarning(ex, "Concurrency conflict at {Path}", context.Request.Path);
+            _logger.LogWarning(
+                ex,
+                "Concurrency conflict at {Path}",
+                SanitizePath(context.Request.Path)
+            );
             await HandleExceptionAsync(
                 context,
                 ex,
@@ -121,7 +149,12 @@ public class ErrorHandlingMiddleware(
 
         catch (DbUpdateException ex)
         {
-            _logger.LogError(ex, "Database error at {Path}", context.Request.Path);
+            _logger.LogError(
+                ex,
+                "Database error at {Path}: {Message}",
+                SanitizePath(context.Request.Path),
+                SanitizeForLogging(ex.InnerException?.Message ?? ex.Message)
+            );
 
             // Check for specific SQL errors (unique constraint, FK violation, etc.)
             var message =
@@ -135,7 +168,11 @@ public class ErrorHandlingMiddleware(
         
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception at {Path}", context.Request.Path);
+            _logger.LogError(
+                ex,
+                "Unhandled exception at {Path}",
+                SanitizePath(context.Request.Path)
+            );
             await HandleExceptionAsync(
                 context,
                 ex,
@@ -160,10 +197,66 @@ public class ErrorHandlingMiddleware(
             Message = message,
             StatusCode = (int)statusCode,
             // Only include stack trace in development environment
-            Detail = _env.IsDevelopment() ? exception.StackTrace : null,
+            Detail = _env.IsDevelopment() ? SanitizeForLogging(exception.StackTrace) : null,
         };
 
         await context.Response.WriteAsJsonAsync(response);
+    }
+
+    /// <summary>
+    /// Sanitizes request path for logging to prevent log injection attacks.
+    /// Removes control characters, newlines, and limits length.
+    /// </summary>
+    private static string SanitizePath(string? path)
+    {
+        if (string.IsNullOrEmpty(path))
+            return "(empty)";
+
+        const int MaxLength = 200;
+        var sanitized = Regex.Replace(path, @"[\r\n\t\x00-\x1F\x7F]", "");
+        return sanitized.Length > MaxLength ? sanitized[..MaxLength] + "..." : sanitized;
+    }
+
+    /// <summary>
+    /// Sanitizes strings for logging by removing control characters and limiting length.
+    /// Used for exception messages, stack traces, and other potentially untrusted content.
+    /// </summary>
+    private static string? SanitizeForLogging(string? input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return input;
+
+        const int MaxLength = 1000;
+        var sanitized = Regex.Replace(input, @"[\r\n\t\x00-\x1F\x7F]", " ");
+        return sanitized.Length > MaxLength ? sanitized[..MaxLength] + "..." : sanitized;
+    }
+
+    /// <summary>
+    /// Sanitizes exception messages before exposing to clients.
+    /// Removes potentially sensitive information like file paths.
+    /// </summary>
+    private static string SanitizeExceptionMessage(string? message)
+    {
+        if (string.IsNullOrEmpty(message))
+            return "An error occurred";
+
+        // Remove common path patterns (Windows and Unix)
+        var sanitized = Regex.Replace(
+            message,
+            @"(?:(?:[A-Za-z]:\\|/)[^\s:]+)",
+            "[path]",
+            RegexOptions.IgnoreCase
+        );
+
+        // Remove connection strings or anything that looks like a DSN
+        sanitized = Regex.Replace(
+            sanitized,
+            @"(Server|Data Source|Initial Catalog|User ID|Password|Host|Port)=[^;]+",
+            "$1=[redacted]",
+            RegexOptions.IgnoreCase
+        );
+
+        return SanitizeForLogging(sanitized) ?? "An error occurred";
     }
 
     /// <summary>

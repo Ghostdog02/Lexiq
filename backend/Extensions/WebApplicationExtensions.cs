@@ -21,12 +21,13 @@ public static class WebApplicationExtensions
 
     public static WebApplication ConfigureStaticFiles(this WebApplication app)
     {
+        var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+        Directory.CreateDirectory(uploadsPath);
+
         app.UseStaticFiles(
             new StaticFileOptions
             {
-                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
-                    Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads")
-                ),
+                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
                 RequestPath = "/static/uploads",
                 OnPrepareResponse = ctx =>
                 {

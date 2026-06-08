@@ -1,11 +1,11 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
-using Microsoft.AspNetCore.Http;
 using Xunit;
 
-namespace Backend.Tests.Controllers;
+namespace Backend.Tests.Integration.Controllers;
 
 /// <summary>
 /// E2E tests for avatar upload and retrieval via UserController endpoints.
@@ -65,12 +65,11 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
                 because: "valid avatar upload should succeed for authenticated user"
             );
 
-        var responseBody = await response
-            .Content.ReadFromJsonAsync<AvatarUploadResponse>(
-                cancellationToken: TestContext.Current.CancellationToken
-            );
+        var responseBody = await response.Content.ReadFromJsonAsync<AvatarUploadResponse>(
+            cancellationToken: TestContext.Current.CancellationToken
+        );
         responseBody.Should().NotBeNull();
-        responseBody!
+        responseBody
             .AvatarUrl.Should()
             .Be(
                 $"/api/user/{_userId}/avatar",
@@ -119,10 +118,7 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
         // Assert
         response
             .StatusCode.Should()
-            .Be(
-                HttpStatusCode.OK,
-                because: "uploading a new avatar should update existing record"
-            );
+            .Be(HttpStatusCode.OK, because: "uploading a new avatar should update existing record");
 
         // Verify the new avatar replaced the old one
         var getResponse = await _client.GetAsync(
@@ -170,7 +166,7 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
     public async Task PutAvatar_InvalidFileType_Returns400()
     {
         // Arrange - unsupported file type (.bmp)
-        var imageBytes = new byte[] { 0x42, 0x4D };
+        var imageBytes = "BM"u8.ToArray();
         var content = CreateMultipartFormData(imageBytes, "avatar.bmp", "image/bmp");
 
         // Act
@@ -288,12 +284,8 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
             .StatusCode.Should()
             .Be(HttpStatusCode.OK, because: "existing avatar should be retrievable");
         response
-            .Content.Headers.ContentType!
-            .MediaType.Should()
-            .Be(
-                "image/jpeg",
-                because: "content type should match the uploaded avatar's MIME type"
-            );
+            .Content.Headers.ContentType!.MediaType.Should()
+            .Be("image/jpeg", because: "content type should match the uploaded avatar's MIME type");
 
         var retrievedBytes = await response.Content.ReadAsByteArrayAsync(
             TestContext.Current.CancellationToken
@@ -304,16 +296,11 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
 
         // Verify Cache-Control header is set
         response
-            .Headers.CacheControl!
-            .Public.Should()
+            .Headers.CacheControl!.Public.Should()
             .BeTrue(because: "avatars should be publicly cacheable for performance");
         response
-            .Headers.CacheControl!
-            .MaxAge.Should()
-            .Be(
-                TimeSpan.FromDays(1),
-                because: "Cache-Control header should set 24-hour expiry"
-            );
+            .Headers.CacheControl!.MaxAge.Should()
+            .Be(TimeSpan.FromDays(1), because: "Cache-Control header should set 24-hour expiry");
     }
 
     [Fact]
@@ -395,7 +382,7 @@ public class UserAvatarUploadTests(DatabaseFixture fixture)
     {
         var content = new MultipartFormDataContent();
         var fileContent = new ByteArrayContent(fileBytes);
-        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue(
             contentType
         );
 

@@ -1,17 +1,17 @@
-using System.Linq.Expressions;
 using Backend.Api.Dtos;
+using Backend.Api.Services.Clock;
 using Backend.Database;
 using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
-using Backend.Database.Entities.Users;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Api.Services;
 
-public class LessonService(BackendDbContext context, ExerciseService exerciseService)
+public class LessonService(BackendDbContext context, ExerciseService exerciseService, IClock clock)
 {
     private readonly BackendDbContext _context = context;
     private readonly ExerciseService _exerciseService = exerciseService;
+    private readonly IClock _clock = clock;
 
     /// <summary>
     /// Lightweight projection used internally for cross-course navigation queries.
@@ -27,7 +27,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     public async Task<Lesson?> GetNextLessonAsync(string currentLessonId)
     {
         var ctx = await _context
-            .Lessons.Where(l => l.Id == currentLessonId)
+            .Lessons.Where(l => l.LessonId == currentLessonId)
             .Select(l => new LessonCourseContext(
                 l.CourseId,
                 l.OrderIndex,
@@ -53,7 +53,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
                 c.LanguageId == ctx.LanguageId && c.OrderIndex > ctx.CourseOrderIndex
             )
             .OrderBy(c => c.OrderIndex)
-            .Select(c => c.Id)
+            .Select(c => c.CourseId)
             .FirstOrDefaultAsync();
 
         if (nextCourseId == null)
@@ -77,8 +77,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
 
         nextLesson.IsLocked = false;
         await _context.SaveChangesAsync();
-
-        await _exerciseService.UnlockFirstExerciseInLessonAsync(nextLesson.Id);
 
         return UnlockStatus.Unlocked;
     }
@@ -106,7 +104,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
 
     public async Task<List<Lesson>?> GetLessonsByCourseAsync(string courseId)
     {
-        var courseExists = await _context.Courses.AnyAsync(c => c.Id == courseId);
+        var courseExists = await _context.Courses.AnyAsync(c => c.CourseId == courseId);
         if (!courseExists)
             return null;
 
@@ -127,10 +125,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             lesson.IsLocked = false;
             await _context.SaveChangesAsync();
         }
-
-        // Always ensure the first exercise is unlocked — idempotent, safe to call
-        // even when the lesson was already unlocked (repairs corrupt lock states).
-        await _exerciseService.UnlockFirstExerciseInLessonAsync(lessonId);
     }
 
     public async Task<Lesson> CreateLessonAsync(CreateLessonDto dto)
@@ -144,14 +138,13 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
 
         var lesson = new Lesson
         {
-            CourseId = course.Id,
+            CourseId = course.CourseId,
             Title = dto.Title,
-            Description = dto.Description,
-            EstimatedDurationMinutes = dto.EstimatedDurationMinutes,
+            EstimatedDurationMinutes = dto.EstimatedDurationMinutes ?? 30,
             OrderIndex = orderIndex,
             LessonContent = dto.Content,
             IsLocked = true,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = _clock.UtcNow,
         };
 
         _context.Lessons.Add(lesson);
@@ -163,10 +156,9 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
                 var exerciseDto = dto.Exercises[i];
                 var exercise = _exerciseService.MapToEntity(
                     exerciseDto,
-                    lesson.Id,
-                    exerciseDto.OrderIndex ?? i
+                    lesson.LessonId
                 );
-                exercise.IsLocked = i != 0; // First exercise unlocked, rest locked
+                exercise.CreatedAt = _clock.UtcNow.AddSeconds(i); // Maintain order via CreatedAt
                 lesson.Exercises.Add(exercise);
             }
         }
@@ -191,9 +183,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         
         if (dto.Title != null)
             lesson.Title = dto.Title;
-
-        if (dto.Description != null)
-            lesson.Description = dto.Description;
 
         if (dto.EstimatedDurationMinutes.HasValue)
             lesson.EstimatedDurationMinutes = dto.EstimatedDurationMinutes.Value;
@@ -225,8 +214,14 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .Lessons.Include(l => l.Course)
             .ThenInclude(c => c.Language)
             .Include(l => l.Exercises)
-            .ThenInclude(e => (e as MultipleChoiceExercise)!.Options)
-            .FirstOrDefaultAsync(l => l.Id == lessonId);
+            .ThenInclude(e => (e as FillInBlankExercise)!.Options)
+            .Include(l => l.Exercises)
+            .ThenInclude(e => (e as ListeningExercise)!.Options)
+            .Include(l => l.Exercises)
+            .ThenInclude(e => (e as ImageChoiceExercise)!.Options)
+            .Include(l => l.Exercises)
+            .ThenInclude(e => (e as AudioMatchingExercise)!.Pairs)
+            .FirstOrDefaultAsync(l => l.LessonId == lessonId);
     }
 
     private async Task<int> GetNextOrderIndexForCourseAsync(string courseId)
@@ -242,145 +237,11 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
     {
         return await _context
             .Exercises.Where(e => e.LessonId == lessonId)
-            .Include(e => (e as MultipleChoiceExercise)!.Options)
-            .OrderBy(e => e.OrderIndex)
+            .Include(e => (e as FillInBlankExercise)!.Options)
+            .Include(e => (e as ListeningExercise)!.Options)
+            .Include(e => (e as ImageChoiceExercise)!.Options)
+            .Include(e => (e as AudioMatchingExercise)!.Pairs)
             .ToListAsync();
     }
 
-    public async Task<LessonProgressResult> GetFullLessonProgressAsync(
-        string userId,
-        string lessonId
-    )
-    {
-        var data = await QueryExerciseProgressAsync(e => e.LessonId == lessonId, userId);
-
-        var summary = BuildProgressSummary(data);
-
-        var exerciseProgress = data.Where(d => d.Progress != null)
-            .ToDictionary(
-                d => d.ExerciseId,
-                d => new UserExerciseProgressDto(
-                    d.ExerciseId,
-                    d.Progress!.IsCompleted,
-                    d.Progress.PointsEarned,
-                    d.Progress.CompletedAt
-                )
-            );
-
-        return new LessonProgressResult(summary, exerciseProgress);
-    }
-
-    public async Task<Dictionary<string, LessonProgressSummary>> GetProgressForLessonsAsync(
-        string userId,
-        List<string> lessonIds
-    )
-    {
-        var data = await QueryExerciseProgressAsync(e => lessonIds.Contains(e.LessonId), userId);
-
-        return data.GroupBy(d => d.LessonId).ToDictionary(g => g.Key, g => BuildProgressSummary(g));
-    }
-
-    public async Task<List<SubmitAnswerResponse>> GetLessonSubmissionsAsync(
-        string userId,
-        string lessonId
-    )
-    {
-        var exercises = await _context
-            .Exercises.Where(e => e.LessonId == lessonId)
-            .Include(e => (e as MultipleChoiceExercise)!.Options)
-            .OrderBy(e => e.OrderIndex)
-            .ToListAsync();
-
-        var exerciseIds = exercises.Select(e => e.Id).ToList();
-
-        var progressByExercise = await _context
-            .UserExerciseProgress.Where(p =>
-                p.UserId == userId && exerciseIds.Contains(p.ExerciseId)
-            )
-            .ToDictionaryAsync(p => p.ExerciseId);
-
-        var fullProgress = await GetFullLessonProgressAsync(userId, lessonId);
-
-        return exercises
-            .Select(exercise =>
-            {
-                var hasProgress = progressByExercise.TryGetValue(exercise.Id, out var progress);
-
-                return new SubmitAnswerResponse(
-                    IsCorrect: hasProgress && progress!.IsCompleted,
-                    PointsEarned: hasProgress ? progress!.PointsEarned : 0,
-                    CorrectAnswer: hasProgress && !progress!.IsCompleted
-                        ? GetCorrectAnswer(exercise)
-                        : null,
-                    Explanation: exercise.Explanation,
-                    LessonProgress: fullProgress.Summary
-                );
-            })
-            .ToList();
-    }
-
-    private async Task<List<ExerciseProgressRow>> QueryExerciseProgressAsync(
-        Expression<Func<Exercise, bool>> filter,
-        string userId
-    )
-    {
-        return await _context
-            .Exercises.Where(filter)
-            .GroupJoin(
-                _context.UserExerciseProgress.Where(p => p.UserId == userId),
-                exercise => exercise.Id,
-                progress => progress.ExerciseId,
-                (exercise, progressGroup) =>
-                    new ExerciseProgressRow
-                    {
-                        LessonId = exercise.LessonId,
-                        ExerciseId = exercise.Id,
-                        Points = exercise.Points,
-                        Progress = progressGroup.FirstOrDefault(),
-                    }
-            )
-            .ToListAsync();
-    }
-
-    private static LessonProgressSummary BuildProgressSummary(IEnumerable<ExerciseProgressRow> data)
-    {
-        var items = data.ToList();
-
-        if (items.Count == 0)
-            return new LessonProgressSummary(0, 0, 0, 0, 1.0, true);
-
-        var completedCount = items.Count(d => d.Progress?.IsCompleted == true);
-        var earnedXp = items.Sum(d => d.Progress?.PointsEarned ?? 0);
-        var totalPossibleXp = items.Sum(d => d.Points);
-        var completionPct = totalPossibleXp > 0 ? (double)earnedXp / totalPossibleXp : 1.0;
-
-        return new LessonProgressSummary(
-            CompletedExercises: completedCount,
-            TotalExercises: items.Count,
-            EarnedXp: earnedXp,
-            TotalPossibleXp: totalPossibleXp,
-            CompletionPercentage: Math.Round(completionPct, 2),
-            MeetsCompletionThreshold: completionPct >= ExerciseProgressService.DefaultCompletionThreshold
-        );
-    }
-
-    private class ExerciseProgressRow
-    {
-        public required string LessonId { get; init; }
-        public required string ExerciseId { get; init; }
-        public required int Points { get; init; }
-        public UserExerciseProgress? Progress { get; init; }
-    }
-
-    private static string? GetCorrectAnswer(Exercise exercise)
-    {
-        return exercise switch
-        {
-            MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)?.OptionText,
-            FillInBlankExercise fib => fib.CorrectAnswer,
-            TranslationExercise te => te.TargetText,
-            ListeningExercise le => le.CorrectAnswer,
-            _ => null,
-        };
-    }
 }

@@ -73,6 +73,14 @@ public static class DbSeeder
             );
         }
         await ctx.SaveChangesAsync();
+
+        // Sync the materialized XP cache — leaderboard AllTime reads TotalPointsEarned, not SUM
+        var user = await ctx.Users.FindAsync(userId);
+        if (user != null)
+        {
+            user.TotalPointsEarned += days * pointsPerDay;
+            await ctx.SaveChangesAsync();
+        }
     }
 
     public static async Task AddAvatarAsync(BackendDbContext ctx, string userId)
@@ -103,18 +111,29 @@ public static class DbSeeder
         ctx.Exercises.Add(
             new FillInBlankExercise
             {
-                Id = exerciseId,
+                ExerciseId = exerciseId,
                 LessonId = lessonId,
-                Title = $"FillInBlank {orderIndex}",
+                Instructions = $"FillInBlank {orderIndex}",
                 Text = "Fill in the blank: _",
-                CorrectAnswer = "answer",
-                AcceptedAnswers = "ans",
-                CaseSensitive = false,
-                TrimWhitespace = true,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = points,
-                OrderIndex = orderIndex,
-                IsLocked = isLocked,
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        ExerciseId = exerciseId,
+                        OptionText = "answer",
+                        IsCorrect = true,
+                        Explanation = "Correct answer.",
+                    },
+                    new ExerciseOption
+                    {
+                        ExerciseId = exerciseId,
+                        OptionText = "ans",
+                        IsCorrect = true,
+                        Explanation = "Accepted alternative.",
+                    },
+                ],
             }
         );
         await ctx.SaveChangesAsync();
@@ -122,7 +141,7 @@ public static class DbSeeder
     }
 
     /// <summary>
-    /// Creates a MultipleChoice exercise with "answer" as the correct option text.
+    /// Creates a FillInBlank exercise (MultipleChoice type removed - redirects for backward compat).
     /// </summary>
     public static async Task<string> CreateMultipleChoiceExerciseAsync(
         BackendDbContext ctx,
@@ -132,49 +151,7 @@ public static class DbSeeder
         int points = 10
     )
     {
-        var exerciseId = Guid.NewGuid().ToString();
-        ctx.Exercises.Add(
-            new MultipleChoiceExercise
-            {
-                Id = exerciseId,
-                LessonId = lessonId,
-                Title = $"MultipleChoice {orderIndex}",
-                Instructions = "Select the correct answer",
-                DifficultyLevel = DifficultyLevel.Beginner,
-                Points = points,
-                OrderIndex = orderIndex,
-                IsLocked = isLocked,
-                Options = new List<ExerciseOption>
-                {
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = exerciseId,
-                        OptionText = "wrong1",
-                        IsCorrect = false,
-                        OrderIndex = 0,
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = exerciseId,
-                        OptionText = "answer",
-                        IsCorrect = true,
-                        OrderIndex = 1,
-                    },
-                    new()
-                    {
-                        Id = Guid.NewGuid().ToString(),
-                        ExerciseId = exerciseId,
-                        OptionText = "wrong2",
-                        IsCorrect = false,
-                        OrderIndex = 2,
-                    },
-                },
-            }
-        );
-        await ctx.SaveChangesAsync();
-        return exerciseId;
+        return await CreateFillInBlankExerciseAsync(ctx, lessonId, orderIndex, isLocked, points);
     }
 
     /// <summary>
@@ -192,27 +169,39 @@ public static class DbSeeder
         ctx.Exercises.Add(
             new ListeningExercise
             {
-                Id = exerciseId,
+                ExerciseId = exerciseId,
                 LessonId = lessonId,
-                Title = $"Listening {orderIndex}",
+                Instructions = $"Listening {orderIndex}",
                 AudioUrl = $"https://example.com/audio{orderIndex}.mp3",
-                CorrectAnswer = "answer",
-                AcceptedAnswers = "ans",
-                CaseSensitive = false,
                 MaxReplays = 3,
                 DifficultyLevel = DifficultyLevel.Beginner,
                 Points = points,
-                OrderIndex = orderIndex,
-                IsLocked = isLocked,
+                Options =
+                [
+                    new ExerciseOption
+                    {
+                        ExerciseId = exerciseId,
+                        OptionText = "answer",
+                        IsCorrect = true,
+                        Explanation = "Correct answer.",
+                    },
+                    new ExerciseOption
+                    {
+                        ExerciseId = exerciseId,
+                        OptionText = "ans",
+                        IsCorrect = true,
+                        Explanation = "Accepted alternative.",
+                    },
+                ],
             }
         );
-        
+
         await ctx.SaveChangesAsync();
         return exerciseId;
     }
 
     /// <summary>
-    /// Creates a Translation exercise with "answer" as the target text.
+    /// Creates a FillInBlank exercise (Translation type removed - redirects for backward compat).
     /// </summary>
     public static async Task<string> CreateTranslationExerciseAsync(
         BackendDbContext ctx,
@@ -222,44 +211,7 @@ public static class DbSeeder
         int points = 10
     )
     {
-        var exerciseId = Guid.NewGuid().ToString();
-        ctx.Exercises.Add(
-            new TranslationExercise
-            {
-                Id = exerciseId,
-                LessonId = lessonId,
-                Title = $"Translation {orderIndex}",
-                SourceText = "Test",
-                TargetText = "answer",
-                SourceLanguageCode = "en",
-                TargetLanguageCode = "it",
-                MatchingThreshold = 0.85,
-                DifficultyLevel = DifficultyLevel.Beginner,
-                Points = points,
-                OrderIndex = orderIndex,
-                IsLocked = isLocked,
-            }
-        );
-        await ctx.SaveChangesAsync();
-        return exerciseId;
-    }
-
-    /// <summary>
-    /// Resets all exercise lock states to their initial seeded values.
-    /// Only the first exercise (OrderIndex 0) is unlocked; all others are locked.
-    /// Call this after ClearLeaderboardDataAsync to ensure clean test state.
-    /// </summary>
-    public static async Task ResetExerciseLocksAsync(BackendDbContext ctx)
-    {
-        // Unlock only the first exercise (OrderIndex 0)
-        await ctx
-            .Exercises.Where(e => e.OrderIndex == 0)
-            .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsLocked, false));
-
-        // Lock all other exercises
-        await ctx
-            .Exercises.Where(e => e.OrderIndex > 0)
-            .ExecuteUpdateAsync(s => s.SetProperty(e => e.IsLocked, true));
+        return await CreateFillInBlankExerciseAsync(ctx, lessonId, orderIndex, isLocked, points);
     }
 
     /// <summary>
@@ -274,16 +226,176 @@ public static class DbSeeder
     /// 4. Identity junction tables (no DbSet; cleared via raw SQL)
     /// 5. Test users (excluding system user who owns the content hierarchy)
     /// </summary>
+    /// <summary>
+    /// Creates a FillInBlank exercise with caller-supplied IDs for correct and wrong options.
+    /// Useful when tests need to know option IDs before submitting.
+    /// </summary>
+    public static async Task CreateFillInBlankExerciseWithOptionsAsync(
+        BackendDbContext ctx,
+        string lessonId,
+        string exerciseId,
+        string correctOptionId,
+        string wrongOptionId,
+        int orderIndex = 0,
+        int points = 10
+    )
+    {
+        ctx.Exercises.Add(new FillInBlankExercise
+        {
+            ExerciseId = exerciseId,
+            LessonId = lessonId,
+            Instructions = $"FillInBlank {orderIndex}",
+            Text = "Fill in the blank: _",
+            DifficultyLevel = DifficultyLevel.Beginner,
+            Points = points,
+            Options =
+            [
+                new ExerciseOption
+                {
+                    ExerciseOptionId = correctOptionId,
+                    ExerciseId = exerciseId,
+                    OptionText = "correct",
+                    IsCorrect = true,
+                    Explanation = "Correct.",
+                },
+                new ExerciseOption
+                {
+                    ExerciseOptionId = wrongOptionId,
+                    ExerciseId = exerciseId,
+                    OptionText = "wrong",
+                    IsCorrect = false,
+                    Explanation = "Wrong.",
+                },
+            ],
+        });
+        await ctx.SaveChangesAsync();
+    }
+
+    public static async Task<string> GetCorrectOptionIdAsync(BackendDbContext ctx, string exerciseId)
+    {
+        return await ctx.Set<ExerciseOption>()
+            .Where(o => o.ExerciseId == exerciseId && o.IsCorrect)
+            .Select(o => o.ExerciseOptionId)
+            .FirstAsync();
+    }
+
     public static async Task ClearLeaderboardDataAsync(BackendDbContext ctx, string systemUserId)
     {
         await ctx.UserExerciseProgress.ExecuteDeleteAsync();
         await ctx.Exercises.ExecuteDeleteAsync();
         await ctx.UserAvatars.ExecuteDeleteAsync();
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM UserClaims");
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM UserLogins");
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM UserRoles");
-        await ctx.Database.ExecuteSqlRawAsync("DELETE FROM UserTokens");
+        await ctx.UserClaims.ExecuteDeleteAsync();
+        await ctx.UserLogins.ExecuteDeleteAsync();
+        await ctx.UserRoles.ExecuteDeleteAsync();
+        await ctx.UserTokens.ExecuteDeleteAsync();
 
         await ctx.Users.Where(u => u.Id != systemUserId).ExecuteDeleteAsync();
+    }
+
+    /// <summary>
+    /// Seeds users with given XP values and updates TotalPointsEarned.
+    /// Returns the userId → totalXp mapping (same as input).
+    /// </summary>
+    public static async Task SeedLeaderboardRanksAsync(
+        BackendDbContext ctx,
+        IDictionary<string, int> userXpMap
+    )
+    {
+        foreach (var (userId, xp) in userXpMap)
+        {
+            var user = await ctx.Users.FindAsync(userId);
+            if (user == null)
+                continue;
+            user.TotalPointsEarned = xp;
+        }
+        await ctx.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Creates a ListeningExercise with audio URL and two options (first is correct).
+    /// Returns (exerciseId, correctOptionId).
+    /// </summary>
+    public static async Task<(string ExerciseId, string CorrectOptionId)> SeedListeningExerciseAsync(
+        BackendDbContext ctx,
+        string lessonId,
+        string audioUrl,
+        int orderIndex = 0,
+        int points = 10
+    )
+    {
+        var exerciseId = Guid.NewGuid().ToString();
+        var correctOptionId = Guid.NewGuid().ToString();
+        var wrongOptionId = Guid.NewGuid().ToString();
+
+        ctx.Exercises.Add(new ListeningExercise
+        {
+            ExerciseId = exerciseId,
+            LessonId = lessonId,
+            Instructions = $"Listen and answer ({orderIndex})",
+            AudioUrl = audioUrl,
+            MaxReplays = 3,
+            DifficultyLevel = DifficultyLevel.Beginner,
+            Points = points,
+            Options =
+            [
+                new ExerciseOption
+                {
+                    ExerciseOptionId = correctOptionId,
+                    ExerciseId = exerciseId,
+                    OptionText = "correct",
+                    IsCorrect = true,
+                    Explanation = "Correct.",
+                },
+                new ExerciseOption
+                {
+                    ExerciseOptionId = wrongOptionId,
+                    ExerciseId = exerciseId,
+                    OptionText = "wrong",
+                    IsCorrect = false,
+                    Explanation = "Wrong.",
+                },
+            ],
+        });
+
+        await ctx.SaveChangesAsync();
+        return (exerciseId, correctOptionId);
+    }
+
+    public record AudioMatchPairData(string AudioUrl, string ImageUrl, bool IsCorrect, string Explanation);
+
+    /// <summary>
+    /// Creates an AudioMatchingExercise with the given pairs.
+    /// Returns (exerciseId, list of pairIds in insertion order).
+    /// </summary>
+    public static async Task<(string ExerciseId, List<string> PairIds)> SeedAudioMatchingExerciseAsync(
+        BackendDbContext ctx,
+        string lessonId,
+        IReadOnlyList<AudioMatchPairData> pairs,
+        int orderIndex = 0,
+        int points = 10
+    )
+    {
+        var exerciseId = Guid.NewGuid().ToString();
+        var pairEntities = pairs.Select(p => new AudioMatchPair
+        {
+            AudioUrl = p.AudioUrl,
+            ImageUrl = p.ImageUrl,
+            IsCorrect = p.IsCorrect,
+            Explanation = p.Explanation,
+            AudioMatchingExerciseId = exerciseId,
+        }).ToList();
+
+        ctx.Exercises.Add(new AudioMatchingExercise
+        {
+            ExerciseId = exerciseId,
+            LessonId = lessonId,
+            Instructions = $"Match audio ({orderIndex})",
+            DifficultyLevel = DifficultyLevel.Beginner,
+            Points = points,
+            Pairs = pairEntities,
+        });
+
+        await ctx.SaveChangesAsync();
+        return (exerciseId, pairEntities.Select(p => p.AudioMatchPairId).ToList());
     }
 }

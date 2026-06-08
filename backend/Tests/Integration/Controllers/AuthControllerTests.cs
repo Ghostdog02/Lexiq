@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using Backend.Database.Entities.Users;
 using Backend.Tests.Builders;
@@ -8,7 +9,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Moq;
 using Xunit;
 
-namespace Backend.Tests.Controllers;
+namespace Backend.Tests.Integration.Controllers;
 
 /// <summary>
 /// HTTP-level integration tests for AuthController cookie behavior.
@@ -115,12 +116,21 @@ public class AuthControllerTests(DatabaseFixture fixture)
     [Fact]
     public async Task Logout_SetsExpiredAuthTokenCookie()
     {
+        // Arrange — login first to get auth cookie
+        await _client.PostAsJsonAsync(
+            "/api/auth/google-login",
+            new { idToken = "fake-token" },
+            TestContext.Current.CancellationToken
+        );
+
+        // Act — logout with the auth cookie
         var response = await _client.PostAsync(
             "/api/auth/logout",
             null,
             TestContext.Current.CancellationToken
         );
 
+        // Assert — logout response sets expired cookie
         var expires = ParseCookieExpires(GetAuthCookieHeader(response));
         expires.Should().BeBefore(DateTime.UtcNow);
     }
@@ -144,7 +154,7 @@ public class AuthControllerTests(DatabaseFixture fixture)
         return DateTime.Parse(
             expiresPart["expires=".Length..],
             null,
-            System.Globalization.DateTimeStyles.RoundtripKind
+            DateTimeStyles.RoundtripKind
         );
     }
 }

@@ -1,11 +1,8 @@
 using Backend.Api.Dtos;
 using Backend.Api.Mapping;
-using Backend.Api.Middleware;
 using Backend.Api.Services;
 using Backend.Database.Entities.Exercises;
-using Backend.Database.Entities.Users;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Api.Controllers;
@@ -13,15 +10,9 @@ namespace Backend.Api.Controllers;
 [Route("api/[controller]s")]
 [ApiController]
 [Authorize]
-public class ExerciseController(
-    ExerciseService exerciseService,
-    ExerciseProgressService progressService,
-    UserManager<User> userManager
-) : ControllerBase
+public class ExerciseController(ExerciseService exerciseService) : ControllerBase
 {
     private readonly ExerciseService _exerciseService = exerciseService;
-    private readonly ExerciseProgressService _progressService = progressService;
-    private readonly UserManager<User> _userManager = userManager;
 
     [HttpGet("{id}")]
     public async Task<ActionResult<ExerciseDto>> GetExercise(string id)
@@ -29,15 +20,6 @@ public class ExerciseController(
         var exercise = await _exerciseService.GetExerciseByIdAsync(id);
         if (exercise == null)
             return NotFound();
-
-        var user = HttpContext.GetCurrentUser()!;
-        var canBypassLocks = await user.CanBypassLocksAsync(_userManager);
-
-        if (exercise.IsLocked == true && !canBypassLocks)
-            return StatusCode(
-                403,
-                new { message = "Exercise is locked. Complete previous exercises to unlock." }
-            );
 
         return OkPolymorphic<ExerciseDto>(exercise.ToDto());
     }
@@ -49,7 +31,7 @@ public class ExerciseController(
         var exercise = await _exerciseService.CreateExerciseAsync(dto);
         var result = CreatedAtAction(
             nameof(GetExercise),
-            new { id = exercise.Id },
+            new { id = exercise.ExerciseId },
             exercise.ToDto()
         );
         result.DeclaredType = typeof(ExerciseDto);
@@ -85,37 +67,6 @@ public class ExerciseController(
         return NoContent();
     }
 
-    [HttpPost("{exerciseId}/submit")]
-    public async Task<ActionResult<ExerciseSubmitResult>> SubmitAnswer(
-        string exerciseId,
-        SubmitAnswerRequest request
-    )
-    {
-        if (string.IsNullOrWhiteSpace(request.Answer))
-            return BadRequest(new { message = "Answer cannot be empty" });
-
-        var user = HttpContext.GetCurrentUser()!;
-
-        try
-        {
-            ExerciseSubmitResult result = await _progressService.SubmitAnswerAsync(
-                user.Id,
-                exerciseId,
-                request.Answer
-            );
-
-            return Ok(result);
-        }
-        catch (ArgumentException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
-    }
-
     /// <summary>
     /// Gets the correct answer for an exercise (useful for tests and content creators)
     /// </summary>
@@ -135,17 +86,20 @@ public class ExerciseController(
     }
 
     /// <summary>
-    /// Extracts correct answer from exercise based on type (mirrors LessonService.GetCorrectAnswer)
+    /// Extracts correct answer from exercise based on type
     /// </summary>
     private static string? GetCorrectAnswerForExercise(Exercise exercise)
     {
         return exercise switch
         {
-            MultipleChoiceExercise mce => mce.Options.FirstOrDefault(o => o.IsCorrect)
-                ?.OptionText,
-            FillInBlankExercise fib => fib.CorrectAnswer,
-            TranslationExercise te => te.TargetText,
-            ListeningExercise le => le.CorrectAnswer,
+            FillInBlankExercise fib => fib.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ExerciseOptionId,
+            ListeningExercise le => le.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ExerciseOptionId,
+            TrueFalseExercise tf => tf.Options.FirstOrDefault(o => o.IsCorrect)?.ExerciseOptionId,
+            ImageChoiceExercise ice => ice.Options.FirstOrDefault(o => o.IsCorrect)
+                ?.ImageOptionId,
+            AudioMatchingExercise => "See explanation for correct pairings",
             _ => null,
         };
     }

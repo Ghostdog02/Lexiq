@@ -5,13 +5,11 @@ import {
   CreateLessonApiResponse,
   CreateLessonDto,
   Lesson,
+  LessonSubmitResult,
   UpdateLessonApiResponse,
-  SubmitAnswerResponse,
-  CompleteLessonResponse,
-  UserExerciseProgress
 } from '../models/lesson.interface';
 import {
-  CreateExerciseBase,
+  AnyExercise,
   CreateExerciseDto,
   ExerciseFormValue,
   ExerciseType,
@@ -30,7 +28,7 @@ export interface UserXp {
  * All data is fetched from the API — no local caching.
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class LessonService {
   private httpClient = inject(HttpClient);
@@ -41,7 +39,7 @@ export class LessonService {
     );
 
     if (!result) {
-      console.error('❌ Failed to fetch courses from backend.');
+      console.error('Failed to fetch courses from backend.');
       return [];
     }
 
@@ -54,7 +52,7 @@ export class LessonService {
     );
 
     if (!result) {
-      console.error(`❌ Failed to fetch lessons for course ${courseId}.`);
+      console.error(`Failed to fetch lessons for course ${courseId}.`);
       return [];
     }
 
@@ -63,109 +61,147 @@ export class LessonService {
 
   async getLesson(lessonId: string): Promise<Lesson | null> {
     try {
-      const result = await firstValueFrom(
+      return await firstValueFrom(
         this.httpClient.get<Lesson>(`/api/lessons/${lessonId}`)
       );
-      return result;
     } catch (error) {
-      console.error(`❌ Failed to fetch lesson ${lessonId}:`, error);
+      console.error(`Failed to fetch lesson ${lessonId}:`, error);
       return null;
     }
+  }
+
+  /**
+   * Fetch all exercises for a lesson.
+   * Used by exercise-viewer to avoid fetching the full lesson.
+   */
+  async getExercisesByLesson(lessonId: string): Promise<AnyExercise[]> {
+    try {
+      return await firstValueFrom(
+        this.httpClient.get<AnyExercise[]>(
+          `/api/lessons/${lessonId}/exercises`,
+          { withCredentials: true }
+        )
+      );
+    } catch (error) {
+      console.error(`Failed to fetch exercises for lesson ${lessonId}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Submit all exercise answers for a lesson at once.
+   * Returns server-validated results and lesson summary.
+   */
+  async submitLesson(
+    lessonId: string,
+    answers: { exerciseId: string; selectedOptionId: string | null }[]
+  ): Promise<LessonSubmitResult> {
+    return await firstValueFrom(
+      this.httpClient.post<LessonSubmitResult>(
+        `/api/lessons/${lessonId}/submit`,
+        { answers },
+        { withCredentials: true }
+      )
+    );
   }
 
   async createLesson(lesson: CreateLessonDto): Promise<CreateLessonApiResponse> {
     const payload = {
       courseId: lesson.courseId,
       title: lesson.title,
-      description: lesson.description || null,
-      estimatedDurationMinutes: lesson.estimatedDuration || null,
+      description: lesson.description ?? null,
+      estimatedDurationMinutes: lesson.estimatedDurationMinutes ?? null,
       orderIndex: null,
       content: lesson.content,
-      exercises: lesson.exercises.map((ex, i) => this.mapFormToCreateDto(ex, i))
+      exercises: lesson.exercises.map((ex, i) => this.mapFormToCreateDto(ex, i)),
     };
 
     const result = await firstValueFrom(
       this.httpClient.post<CreateLessonApiResponse>('/api/lessons', payload)
     );
 
-    console.log('✅ Lesson created:', result);
+    console.log('Lesson created:', result);
     return result;
   }
 
-  private mapFormToCreateDto(formValue: ExerciseFormValue, index: number): CreateExerciseDto {
-    const base: CreateExerciseBase = {
-      title: formValue.title,
-      estimatedDurationMinutes: formValue.estimatedDurationMinutes,
-      difficultyLevel: formValue.difficultyLevel,
-      points: formValue.points,
-      orderIndex: index,
-      explanation: formValue.explanation,
-    };
+  private mapFormToCreateDto(formValue: ExerciseFormValue, _index: number): CreateExerciseDto {
+    const options = formValue.options.map((opt) => ({
+      optionText: opt.optionText,
+      isCorrect: opt.isCorrect,
+      explanation: opt.explanation,
+    }));
 
     switch (formValue.exerciseType) {
       case ExerciseType.MultipleChoice:
         return {
-          type: ExerciseType.MultipleChoice,
-          ...base,
-          options: formValue.options.map((opt, i) => ({
-            optionText: opt.optionText,
-            isCorrect: opt.isCorrect,
-            orderIndex: i,
-          })),
+          type: 'MultipleChoice',
+          instructions: formValue.instructions,
+          difficultyLevel: formValue.difficultyLevel,
+          points: formValue.points,
+          explanation: formValue.explanation,
+          options,
         };
 
       case ExerciseType.FillInBlank:
         return {
-          type: ExerciseType.FillInBlank,
-          ...base,
-          text: formValue.question,
-          correctAnswer: formValue.correctAnswer,
-          acceptedAnswers: formValue.acceptedAnswers,
-          caseSensitive: formValue.caseSensitive,
-          trimWhitespace: formValue.trimWhitespace,
-        };
-
-      case ExerciseType.Translation:
-        return {
-          type: ExerciseType.Translation,
-          ...base,
-          sourceText: formValue.sourceText,
-          targetText: formValue.targetText,
-          sourceLanguageCode: formValue.sourceLanguageCode,
-          targetLanguageCode: formValue.targetLanguageCode,
-          matchingThreshold: formValue.matchingThreshold,
+          type: 'FillInBlank',
+          instructions: formValue.instructions,
+          difficultyLevel: formValue.difficultyLevel,
+          points: formValue.points,
+          explanation: formValue.explanation,
+          text: formValue.text,
+          options,
         };
 
       case ExerciseType.Listening:
         return {
-          type: ExerciseType.Listening,
-          ...base,
+          type: 'Listening',
+          instructions: formValue.instructions,
+          difficultyLevel: formValue.difficultyLevel,
+          points: formValue.points,
+          explanation: formValue.explanation,
           audioUrl: formValue.audioUrl,
-          correctAnswer: formValue.correctAnswer,
-          acceptedAnswers: formValue.acceptedAnswers,
-          caseSensitive: formValue.caseSensitive,
           maxReplays: formValue.maxReplays,
+          options,
+        };
+
+      case ExerciseType.TrueFalse:
+        return {
+          type: 'TrueFalse',
+          instructions: formValue.instructions,
+          difficultyLevel: formValue.difficultyLevel,
+          points: formValue.points,
+          explanation: formValue.explanation,
+          statement: formValue.statement,
+          imageUrl: formValue.imageUrl || undefined,
+          options,
         };
     }
   }
 
-  async updateLesson(lessonId: string, updates: Lesson): Promise<UpdateLessonApiResponse | null> {
+  async updateLesson(
+    lessonId: string,
+    updates: Lesson
+  ): Promise<UpdateLessonApiResponse | null> {
     try {
       const updateDto = {
         title: updates.title,
         description: updates.description,
         estimatedDurationMinutes: updates.estimatedDurationMinutes,
-        lessonContent: updates.lessonContent
+        lessonContent: updates.lessonContent,
       };
 
       const result = await firstValueFrom(
-        this.httpClient.put<UpdateLessonApiResponse>(`/api/lessons/${lessonId}`, updateDto)
+        this.httpClient.put<UpdateLessonApiResponse>(
+          `/api/lessons/${lessonId}`,
+          updateDto
+        )
       );
 
-      console.log('✅ Lesson updated:', result);
+      console.log('Lesson updated:', result);
       return result;
     } catch (error) {
-      console.error(`❌ Failed to update lesson ${lessonId}:`, error);
+      console.error(`Failed to update lesson ${lessonId}:`, error);
       return null;
     }
   }
@@ -173,82 +209,28 @@ export class LessonService {
   async deleteLesson(lessonId: string): Promise<boolean> {
     try {
       const response = await firstValueFrom(
-        this.httpClient.delete<{isSuccessful: boolean, message: string}>(`/api/lessons/${lessonId}`)
+        this.httpClient.delete<{ isSuccessful: boolean; message: string }>(
+          `/api/lessons/${lessonId}`
+        )
       );
-      console.log('✅ Lesson deleted:', response);
+      console.log('Lesson deleted:', response);
       return true;
     } catch (error) {
-      console.error(`❌ Failed to delete lesson ${lessonId}:`, error);
+      console.error(`Failed to delete lesson ${lessonId}:`, error);
       return false;
     }
   }
 
   /**
-   * Mark a lesson as completed.
-   * @param lessonId The ID of the lesson to complete
-   * @returns Completion status, XP earned, and next lesson info
-   */
-  async completeLesson(lessonId: string): Promise<CompleteLessonResponse> {
-    return await firstValueFrom(
-      this.httpClient.post<CompleteLessonResponse>(
-        `/api/lessons/${lessonId}/complete`,
-        {}
-      )
-    );
-  }
-
-  /**
-   * Get user's saved exercise progress for a lesson.
-   * Used to restore progress state after page refresh.
-   * @param lessonId The ID of the lesson
-   * @returns Array of exercise progress records
-   */
-  async getLessonProgress(lessonId: string): Promise<UserExerciseProgress[]> {
-    try {
-      return await firstValueFrom(
-        this.httpClient.get<UserExerciseProgress[]>(
-          `/api/lessons/${lessonId}/progress`
-        )
-      );
-    } catch (error) {
-      console.error(`❌ Failed to fetch progress for lesson ${lessonId}:`, error);
-      return [];
-    }
-  }
-
-  /**
-   * Get all previous submission results for a lesson's exercises, ordered by exercise OrderIndex.
-   * Used to restore the submissionResults map after page refresh.
-   * @param lessonId The ID of the lesson
-   * @returns Array of SubmitAnswerResponse in exercise order
-   */
-  async getLessonSubmissions(lessonId: string): Promise<SubmitAnswerResponse[]> {
-    try {
-      return await firstValueFrom(
-        this.httpClient.get<SubmitAnswerResponse[]>(
-          `/api/lessons/${lessonId}/submissions`,
-          { withCredentials: true }
-        )
-      );
-    } catch (error) {
-      console.error(`❌ Failed to fetch submissions for lesson ${lessonId}:`, error);
-      return [];
-    }
-  }
-
-  /**
    * Get current authenticated user's total XP and stats.
-   * @returns User XP data including total points, completed exercises, and last activity
    */
   async getCurrentUserXp(): Promise<UserXp | null> {
     try {
       return await firstValueFrom(
-        this.httpClient.get<UserXp>(
-          `/api/user/xp`
-        )
+        this.httpClient.get<UserXp>('/api/user/xp')
       );
     } catch (error) {
-      console.error(`❌ Failed to fetch user XP:`, error);
+      console.error('Failed to fetch user XP:', error);
       return null;
     }
   }

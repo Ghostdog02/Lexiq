@@ -3,30 +3,53 @@ using Backend.Api.Mapping;
 using Backend.Api.Middleware;
 using Backend.Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Backend.Database.Entities.Users;
 
 namespace Backend.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]s")]
 [Authorize]
-public class LessonController(LessonService lessonService, ExerciseProgressService progressService)
-    : ControllerBase
+public class LessonController(
+    LessonService lessonService,
+    LessonProgressService lessonProgressService,
+    HeartsService heartsService,
+    UserManager<User> userManager
+) : ControllerBase
 {
     private readonly LessonService _lessonService = lessonService;
-    private readonly ExerciseProgressService _progressService = progressService;
+    private readonly LessonProgressService _lessonProgressService = lessonProgressService;
+    private readonly HeartsService _heartsService = heartsService;
+    private readonly UserManager<User> _userManager = userManager;
 
     /// <summary>
-    /// Attempts to complete a lesson. Requires meeting the XP threshold (70%).
-    /// If met, unlocks the next lesson automatically.
+    /// Submits all exercise answers for a lesson at once, updates progress, and unlocks the next lesson if threshold is met.
     /// </summary>
-    /// <param name="lessonId">The ID of the lesson to complete</param>
-    [HttpPost("{lessonId}/complete")]
-    public async Task<ActionResult<CompleteLessonResponse>> CompleteLesson(string lessonId)
+    /// <param name="lessonId">The ID of the lesson to submit</param>
+    /// <param name="request">The list of exercise answers</param>
+    [HttpPost("{lessonId}/submit")]
+    public async Task<ActionResult<LessonSubmitResult>> SubmitLesson(string lessonId, SubmitLessonRequest request)
     {
         var currentUser = HttpContext.GetCurrentUser()!;
-        var result = await _progressService.CompleteLessonAsync(currentUser.Id, lessonId);
-        return Ok(result);
+        try
+        {
+            var result = await _lessonProgressService.SubmitLessonAsync(currentUser.Id, lessonId, request.Answers);
+            return Ok(result);
+        }
+        catch (NoHeartsException)
+        {
+            return NoHeartsResult();
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
     }
 
     /// <summary>
@@ -58,19 +81,20 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
             return NotFound(new { message = $"Course '{courseId}' not found" });
 
         var currentUser = HttpContext.GetCurrentUser()!;
-        var lessonIds = lessons.Select(l => l.Id).ToList();
-        var progressMap = await _lessonService.GetProgressForLessonsAsync(
+        var lessonIds = lessons.Select(l => l.LessonId).ToList();
+        var progressMap = await _lessonProgressService.GetProgressForLessonsAsync(
             currentUser.Id,
             lessonIds
         );
 
-        var result = lessons.Select(l => l.ToDto(progressMap.GetValueOrDefault(l.Id))).ToList();
+        var result = lessons.Select(l => l.ToDto(progressMap.GetValueOrDefault(l.LessonId))).ToList();
 
         return Ok(result);
     }
 
     /// <summary>
-    /// Gets a lesson with full details, including user progress
+    /// Gets a lesson with full details, including user progress.
+    /// Returns 403 if user has no hearts (bypass roles exempt).
     /// </summary>
     /// <param name="lessonId">The lesson ID</param>
     [HttpGet("{lessonId}")]
@@ -84,7 +108,15 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
         }
 
         var currentUser = HttpContext.GetCurrentUser()!;
-        var progress = await _lessonService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
+
+        if (!await currentUser.CanBypassLocksAsync(_userManager))
+        {
+            await _heartsService.RefillAndGetHeartsAsync(currentUser);
+            if (currentUser.Hearts <= 0)
+                return NoHeartsResult();
+        }
+
+        var progress = await _lessonProgressService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
 
         return OkPolymorphic<LessonDto>(lesson.ToDto(progress.Summary, progress.ExerciseProgress));
     }
@@ -108,7 +140,7 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
         var lesson = await _lessonService.CreateLessonAsync(dto);
         var result = CreatedAtAction(
             nameof(GetLesson),
-            new { lessonId = lesson.Id },
+            new { lessonId = lesson.LessonId },
             lesson.ToDto()
         );
         result.DeclaredType = typeof(LessonDto);
@@ -160,7 +192,7 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
     )
     {
         var user = HttpContext.GetCurrentUser()!;
-        var fullProgress = await _lessonService.GetFullLessonProgressAsync(user.Id, lessonId);
+        var fullProgress = await _lessonProgressService.GetFullLessonProgressAsync(user.Id, lessonId);
         return Ok(fullProgress.ExerciseProgress.Values.ToList());
     }
 
@@ -174,9 +206,15 @@ public class LessonController(LessonService lessonService, ExerciseProgressServi
     )
     {
         var user = HttpContext.GetCurrentUser()!;
-        var submissions = await _lessonService.GetLessonSubmissionsAsync(user.Id, lessonId);
+        var submissions = await _lessonProgressService.GetLessonSubmissionsAsync(user.Id, lessonId);
         return Ok(submissions);
     }
+
+    private static ObjectResult NoHeartsResult() =>
+        new(new { code = "NoHearts", message = "You need at least one heart to play. Hearts refill every 4 hours." })
+        {
+            StatusCode = 403,
+        };
 
     /// <summary>
     /// Returns 200 OK with DeclaredType set to T, ensuring System.Text.Json serializes

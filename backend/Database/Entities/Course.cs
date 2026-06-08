@@ -1,13 +1,15 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Backend.Database.Entities.Users;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Database.Entities;
 
+[Index(nameof(LanguageId), nameof(OrderIndex))]
 public class Course
 {
     [Key]
-    public string Id { get; set; } = Guid.NewGuid().ToString();
+    public string CourseId { get; set; } = Guid.NewGuid().ToString();
 
     [Required]
     public string LanguageId { get; set; } = string.Empty;
@@ -16,27 +18,22 @@ public class Course
     [MaxLength(100)]
     public required string Title { get; set; }
 
+    [Required]
     [MaxLength(1000)]
-    public string? Description { get; set; }
+    public required string Description { get; set; }
 
     [Range(1, 300)]
-    public int? EstimatedDurationHours { get; set; }
+    public int EstimatedDurationHours { get; set; }
     
     [Required]
     public int OrderIndex { get; set; } // Position within the language (0, 1, 2, ...)
-
-    [Required]
-    public required string CreatedById { get; set; }
-
+    
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     [ForeignKey(nameof(LanguageId))]
     public Language Language { get; set; } = null!;
-
-    [ForeignKey(nameof(CreatedById))]
-    public User CreatedBy { get; set; } = null!;
-
+    
     public List<Lesson> Lessons { get; set; } = [];
 }

@@ -1,18 +1,18 @@
 namespace Backend.Api.Dtos;
 
-public record SubmitAnswerRequest(string Answer);
+public record SubmitAnswerRequest(string SelectedOptionId);
 
 public record ExerciseSubmitResult(
     bool IsCorrect,
     int PointsEarned,
-    string? CorrectAnswer,
+    string? CorrectOptionId,
     string? Explanation
 );
 
 public record SubmitAnswerResponse(
     bool IsCorrect,
     int PointsEarned,
-    string? CorrectAnswer,
+    string? CorrectOptionId,
     string? Explanation,
     LessonProgressSummary LessonProgress
 );
@@ -23,7 +23,7 @@ public record LessonProgressSummary(
     int EarnedXp,
     int TotalPossibleXp,
     double CompletionPercentage,
-    bool MeetsCompletionThreshold
+    bool IsCompleted
 );
 
 public record CompleteLessonResponse(
@@ -48,4 +48,22 @@ public record NextLessonInfo(
 public record LessonProgressResult(
     LessonProgressSummary Summary,
     Dictionary<string, UserExerciseProgressDto> ExerciseProgress
+);
+
+public record SubmitLessonRequest(List<ExerciseAnswerDto> Answers);
+
+public record ExerciseAnswerDto(string ExerciseId, string? SelectedOptionId);
+
+public record LessonSubmitResult(
+    List<ExerciseResultDto> Exercises,
+    LessonProgressSummary Summary,
+    int HeartsRemaining
+);
+
+public record ExerciseResultDto(
+    string ExerciseId,
+    bool IsCorrect,
+    int PointsEarned,
+    string? CorrectOptionId,
+    string? Explanation
 );

@@ -1,18 +1,20 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.Database.Entities.Users;
 
 public class UserAvatar
 {
     [Key]
-    public string UserId { get; set; } = string.Empty;
+    public required string UserId { get; set; }
 
-    public User User { get; set; } = null!;
+    [ForeignKey(nameof(UserId))]
+    public User? User { get; set; }
 
     [Required]
-    public byte[] Data { get; set; } = [];
+    public required byte[] Data { get; set; }
 
     [Required]
     [MaxLength(50)]
-    public string ContentType { get; set; } = "image/jpeg";
+    public required string ContentType { get; set; }
 }
