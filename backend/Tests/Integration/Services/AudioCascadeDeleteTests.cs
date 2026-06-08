@@ -152,7 +152,7 @@ public class AudioCascadeDeleteTests(DatabaseFixture fixture)
 
         // Simulate removing only the first pair directly through EF (exercise stays)
         var pair1 = await _ctx.Set<Backend.Database.Entities.Exercises.AudioMatchPair>()
-            .FindAsync(pairIds[0], TestContext.Current.CancellationToken);
+            .FindAsync([pairIds[0]], TestContext.Current.CancellationToken);
         if (pair1 != null)
         {
             _fileService.DeleteAudioFile(pair1.AudioUrl);

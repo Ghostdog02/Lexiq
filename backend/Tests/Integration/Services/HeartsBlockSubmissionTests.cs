@@ -139,7 +139,7 @@ public class HeartsBlockSubmissionTests(DatabaseFixture fixture)
     {
         // Arrange
         var (userId, exerciseId, correctId, _) = await SeedAsync("refilltest", hearts: 0);
-        var user = await _ctx.Users.FindAsync(userId);
+        var user = await _ctx.Users.FindAsync([userId], TestContext.Current.CancellationToken);
 
         // Advance clock 4h to trigger refill
         _clock.Advance(TimeSpan.FromHours(4));
