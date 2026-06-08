@@ -61,7 +61,6 @@ jobs:
       config-path: .github/workflows/continuous-delivery.yml
     secrets:
       HETZNER_PROD_PRIVATE_SSH_KEY: ${{ secrets.HETZNER_PROD_PRIVATE_SSH_KEY }}
-      HETZNER_PROD_SSH_KEY_PASSPHRASE: ${{ secrets.HETZNER_PROD_SSH_KEY_PASSPHRASE }}
       HETZNER_PROD_HOST: ${{ secrets.HETZNER_PROD_HOST }}
       HETZNER_PROD_USERNAME: ${{ secrets.HETZNER_PROD_USERNAME }}
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
