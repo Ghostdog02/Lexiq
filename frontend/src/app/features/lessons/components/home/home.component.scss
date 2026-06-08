@@ -24,7 +24,7 @@
   box-shadow: 0 10px 30px rgba(0,0,0,0.30);
 
   span {
-    font-size: 1.4em;
+    font-size: 1.5rem;
   }
 }
 
@@ -144,7 +144,7 @@
   .quest-description {
     margin: 0 0 0.6rem;
     color: var(--text-secondary);
-    font-size: 0.94rem;
+    font-size: 1rem;
   }
 
   .quest-progress {
@@ -218,7 +218,7 @@
   }
 
   .unit-description {
-    font-size: 1.12rem;
+    font-size: 1.125rem;
     font-weight: 500;
     color: var(--text-secondary);
     margin: 0;
@@ -440,7 +440,7 @@
   color: var(--color-warning);
   border-radius: var(--radius-pill);
   font-weight: 700;
-  font-size: 0.88rem;
+  font-size: 1rem;
   border: 1px solid rgba(255, 193, 7, 0.3);
   display: inline-flex;
   gap: 0.25rem;
