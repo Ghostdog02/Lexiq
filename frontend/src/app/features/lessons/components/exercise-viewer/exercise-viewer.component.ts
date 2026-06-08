@@ -71,6 +71,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   continueButtonEnabled = false;
   exerciseSwitchState = '';
   outOfHearts = false;
+  nextRefillAt: Date | null = null;
   private isSwitching = false;
 
   // Expose enum to template
@@ -84,7 +85,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
     this.setupKeyboardNavigation();
 
-    const hearts = await this.fetchHearts();
+    const { hearts, nextRefillAt } = await this.fetchHearts();
 
     const lessonId = this.route.snapshot.paramMap.get('id');
     if (!lessonId) {
@@ -94,6 +95,13 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     }
 
     this.lessonId = lessonId;
+
+    if (!this.isAdmin && hearts === 0) {
+      this.nextRefillAt = nextRefillAt;
+      this.outOfHearts = true;
+      this.isLoading = false;
+      return;
+    }
 
     this.isLoading = true;
     try {
@@ -113,17 +121,20 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     this.state.reset();
   }
 
-  private async fetchHearts(): Promise<number> {
+  private async fetchHearts(): Promise<{ hearts: number; nextRefillAt: Date | null }> {
     try {
       const response = await firstValueFrom(
-        this.http.get<{ hearts: number }>('/api/user/hearts', {
+        this.http.get<{ hearts: number; nextRefillAt: string | null }>('/api/user/hearts', {
           withCredentials: true,
         })
       );
-      return response.hearts;
+      return {
+        hearts: response.hearts,
+        nextRefillAt: response.nextRefillAt ? new Date(response.nextRefillAt) : null,
+      };
     } catch (err) {
       console.error('Failed to fetch hearts:', err);
-      return 0;
+      return { hearts: 0, nextRefillAt: null };
     }
   }
 
@@ -289,5 +300,11 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   dismissResults(): void {
     this.router.navigate(['/']);
+  }
+
+  get hoursUntilRefill(): number {
+    if (!this.nextRefillAt) return 4;
+    const ms = this.nextRefillAt.getTime() - Date.now();
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60)));
   }
 }

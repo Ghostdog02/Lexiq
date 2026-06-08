@@ -53,7 +53,12 @@ public class UserController(
             return Unauthorized(new { message = "User is not authorized." });
 
         var hearts = await _heartsService.RefillAndGetHeartsAsync(currentUser);
-        return Ok(new { hearts });
+
+        DateTime? nextRefillAt = hearts < HeartsService.MaxHearts
+            ? currentUser.LastHeartResetAt.AddHours(HeartsService.RefillIntervalHours)
+            : null;
+
+        return Ok(new { hearts, nextRefillAt });
     }
 
     /// <summary>
