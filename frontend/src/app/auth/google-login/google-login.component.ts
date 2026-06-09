@@ -1,5 +1,6 @@
 import { AfterViewInit, Component, inject, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 import { AuthService } from '../auth.service';
 
@@ -7,7 +8,7 @@ declare const google: any;
 
 @Component({
   selector: 'app-google-login',
-  imports: [],
+  imports: [RouterLink],
   standalone: true,
   providers: [],
   templateUrl: './google-login.component.html',
