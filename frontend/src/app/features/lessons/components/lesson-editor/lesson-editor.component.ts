@@ -41,6 +41,7 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
   exerciseTypeDictionary: { label: string; value: ExerciseType }[] = [];
   courses: Course[] = [];
   ExerciseType = ExerciseType;
+  showDiscardConfirm = false;
 
   private pendingAudioIndex = -1;
   private pendingAudioFiles = new Map<string, File>();
@@ -199,9 +200,19 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
 
   onDiscard(): void {
     if (this.lessonForm.dirty) {
-      if (!confirm('Are you sure you want to discard all changes? This cannot be undone.')) return;
+      this.showDiscardConfirm = true;
+      return;
     }
     this.router.navigate(['/']);
+  }
+
+  confirmDiscard(): void {
+    this.showDiscardConfirm = false;
+    this.router.navigate(['/']);
+  }
+
+  cancelDiscard(): void {
+    this.showDiscardConfirm = false;
   }
 
   // ── Private ───────────────────────────────────────────────────────────────
