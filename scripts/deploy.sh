@@ -10,6 +10,7 @@ LOG_FILE="${LOG_DIR}/deploy-$(date +%Y%m%d-%H%M%S).log"
 
 # Exit codes
 readonly EXIT_SUCCESS=0
+readonly EXIT_SECRETS_INVALID=2
 readonly EXIT_DOCKER_PULL_FAILED=3
 readonly EXIT_DOCKER_AUTH_FAILED=3
 readonly EXIT_DOCKER_START_FAILED=4
@@ -163,6 +164,47 @@ authenticate_docker_registry() {
   end_group
 }
 
+validate_secrets() {
+  start_group "Validating Secrets"
+
+  local password_file="$DEPLOY_DIR/secrets/database/password.txt"
+
+  if [ ! -f "$password_file" ]; then
+    log_error "DB password file not found: $password_file"
+    end_group
+    exit $EXIT_SECRETS_INVALID
+  fi
+
+  local password
+  password=$(tr -d '\n' < "$password_file")
+
+  if [ ${#password} -lt 8 ]; then
+    log_error "DB password is too short (${#password} chars, minimum 8)"
+    end_group
+    exit $EXIT_SECRETS_INVALID
+  fi
+
+  local has_upper has_lower has_digit has_symbol categories=0
+  has_upper=$(echo "$password" | grep -c '[A-Z]' || true)
+  has_lower=$(echo "$password" | grep -c '[a-z]' || true)
+  has_digit=$(echo "$password" | grep -c '[0-9]' || true)
+  has_symbol=$(echo "$password" | grep -c '[^A-Za-z0-9]' || true)
+
+  [ "$has_upper" -gt 0 ] && categories=$((categories + 1))
+  [ "$has_lower" -gt 0 ] && categories=$((categories + 1))
+  [ "$has_digit" -gt 0 ] && categories=$((categories + 1))
+  [ "$has_symbol" -gt 0 ] && categories=$((categories + 1))
+
+  if [ "$categories" -lt 3 ]; then
+    log_error "DB password does not meet complexity requirements (needs 3 of: uppercase, lowercase, digit, symbol — found $categories)"
+    end_group
+    exit $EXIT_SECRETS_INVALID
+  fi
+
+  log_success "DB password meets SQL Server policy"
+  end_group
+}
+
 deploy_containers() {
   start_group "Deploying Containers"
 
@@ -208,11 +250,11 @@ main() {
   fi
 
   initialize
-  
-  export TAG="${BRANCH}"
-  
-  install_dependencies
 
+  export TAG="${BRANCH}"
+
+  install_dependencies
+  validate_secrets
   authenticate_docker_registry
   deploy_containers
 

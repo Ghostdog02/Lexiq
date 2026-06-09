@@ -8,11 +8,12 @@ services:
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: lexiq-database
-    ports: 
+    user: root
+    ports:
       - "1433:1433"
     environment:
       ACCEPT_EULA: "Y"
-    secrets: 
+    secrets:
       - db_password
     volumes:
       - db-data:/var/opt/mssql
