@@ -36,6 +36,11 @@ export const routes: Routes = [
         canActivate: [authGuard]
     },
     {
+        path: 'about',
+        loadComponent: () => import('./about/about-page.component').then(m => m.AboutPageComponent),
+        title: "About Lexiq"
+    },
+    {
         path: 'help',
         loadComponent: () => import('./help/help.component').then(m => m.HelpComponent),
         title: "Help"

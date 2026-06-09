@@ -21,6 +21,7 @@ public class UserLessonProgress
     public int TotalPossibleXp { get; set; }
     public double CompletionPercentage { get; set; }
     public bool IsCompleted { get; set; }
+    public bool IsLocked { get; set; } = false;
     public DateTime? CompletedAt { get; set; }
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

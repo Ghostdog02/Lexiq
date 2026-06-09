@@ -51,8 +51,9 @@
 .sidebar-row {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: stretch;
   gap: 1rem;
+  flex: 1;
 }
 
 .hearts-card {
@@ -62,11 +63,13 @@
 }
 
 .hearts-row {
-  justify-content: flex-start;
-
   .stat-card {
-    flex: 0 0 auto;
-    min-width: 10rem;
+    flex: 1;
+  }
+
+  .jump-button {
+    flex: 1;
+    min-width: 0;
   }
 }
 

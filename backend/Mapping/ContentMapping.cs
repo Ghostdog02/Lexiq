@@ -28,7 +28,8 @@ public static class ContentMappingExtensions
     public static LessonDto ToDto(
         this Lesson entity,
         LessonProgressSummary? progress = null,
-        Dictionary<string, UserExerciseProgressDto>? exerciseProgress = null
+        Dictionary<string, UserExerciseProgressDto>? exerciseProgress = null,
+        bool? isLockedOverride = null
     )
     {
         return new LessonDto(
@@ -40,7 +41,7 @@ public static class ContentMappingExtensions
             entity.EstimatedDurationMinutes,
             0, // OrderIndex removed from return DTO
             entity.LessonContent,  // Editor.js JSON content
-            entity.IsLocked,
+            isLockedOverride ?? entity.IsLocked,
             entity.Exercises.Select(e => e.ToDto(exerciseProgress)).ToList(),
             CompletedExercises: progress?.CompletedExercises,
             EarnedXp: progress?.EarnedXp,

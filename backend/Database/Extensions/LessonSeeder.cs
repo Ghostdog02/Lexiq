@@ -34,7 +34,7 @@ public static class LessonSeeder
                 EstimatedDurationMinutes = def.DurationMinutes,
                 OrderIndex = i,
                 LessonContent = def.EditorContent,
-                IsLocked = i != 0, // Only the first lesson is unlocked
+                IsLocked = courseIndex != 0 || i != 0, // Only lesson 0 of course 0 is unlocked initially
                 CreatedAt = DateTime.UtcNow,
             };
 

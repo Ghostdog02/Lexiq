@@ -13,8 +13,9 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   flex-direction: column;
   align-items: center;
   width: 100%;
-  min-height: 100vh;
+  height: calc(100vh - 2rem);
   gap: 1rem;
+  overflow: hidden;
 
   // Constrain progress header width only
   .progress-header {
@@ -24,6 +25,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     align-items: center;
     gap: 1rem;
     max-width: 100%;
+    flex-shrink: 0;
 
     .nav-btn {
       background: var(--glass);
@@ -104,11 +106,12 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
   .exercise-card {
-    flex: 0 1 auto;  // Size based on content, not flex growth
-    min-width: 0;
-    max-width: 68rem;  // Prevent excessive width
+    flex: 1;
+    min-width: 55rem;
+    max-width: 68rem;
     width: 100%;
-    min-height: 38rem;  // Minimum height for consistent layout
+    min-height: 32rem;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;

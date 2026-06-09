@@ -1,9 +1,13 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { firstValueFrom } from 'rxjs';
+import { ToastrService } from 'ngx-toastr';
 import { LessonService } from '../../services/lesson.service';
 import { ContentParserService } from '../../../../shared/services/content-parser.service';
+import { AuthService } from '../../../../auth/auth.service';
 import { Lesson } from '../../models/lesson.interface';
 
 /**
@@ -20,19 +24,24 @@ import { Lesson } from '../../models/lesson.interface';
 export class LessonViewerComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private http = inject(HttpClient);
   private sanitizer = inject(DomSanitizer);
   private lessonService = inject(LessonService);
   private contentParser = inject(ContentParserService);
+  private authService = inject(AuthService);
+  private toastr = inject(ToastrService);
 
   lesson: Lesson | null = null;
   parsedContent: SafeHtml | null = null;
   isLoading = true;
   error: string | null = null;
+  private hearts = 5;
+  private nextRefillAt: Date | null = null;
 
-  ngOnInit() {
+  async ngOnInit() {
     const lessonId = this.route.snapshot.paramMap.get('id');
     if (lessonId) {
-      this.loadLesson(lessonId);
+      await Promise.all([this.loadLesson(lessonId), this.loadHearts()]);
     } else {
       this.error = 'No lesson ID provided';
       this.isLoading = false;
@@ -65,10 +74,32 @@ export class LessonViewerComponent implements OnInit {
     }
   }
 
-  startExercises() {
-    if (this.lesson) {
-      this.router.navigate(['/lesson', this.lesson.lessonId, 'exercises']);
+  private async loadHearts(): Promise<void> {
+    if (this.authService.getIsAdmin() || this.authService.getIsContentCreator() || !this.authService.getIsAuth()) return;
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ hearts: number; nextRefillAt: string | null }>('/api/user/hearts', { withCredentials: true })
+      );
+      this.hearts = response.hearts;
+      this.nextRefillAt = response.nextRefillAt ? new Date(response.nextRefillAt) : null;
+    } catch {
+      // Non-critical — default allows start
     }
+  }
+
+  startExercises() {
+    if (!this.lesson) return;
+
+    if (this.hearts <= 0) {
+      const hours = this.nextRefillAt
+        ? Math.ceil((this.nextRefillAt.getTime() - Date.now()) / 3_600_000)
+        : 4;
+      const timeLabel = hours <= 1 ? '1 hour' : `${hours} hours`;
+      this.toastr.error(`Try again in ${timeLabel}.`, 'Not enough hearts', { toastClass: 'ngx-toastr toast-auth' });
+      return;
+    }
+
+    this.router.navigate(['/lesson', this.lesson.lessonId, 'exercises']);
   }
 
   goBack() {

@@ -108,6 +108,14 @@ public class LessonProgressService(
             .ToList();
     }
 
+    public async Task<HashSet<string>> GetUnlockedLessonIdsAsync(string userId, List<string> lessonIds)
+    {
+        return await _context.UserLessonProgress
+            .Where(ulp => ulp.UserId == userId && lessonIds.Contains(ulp.LessonId) && !ulp.IsLocked)
+            .Select(ulp => ulp.LessonId)
+            .ToHashSetAsync();
+    }
+
     public async Task<LessonSubmitResult> SubmitLessonAsync(
         string userId,
         string lessonId,
@@ -128,7 +136,7 @@ public class LessonProgressService(
         await _context.SaveChangesAsync();
 
         if (isCompleted)
-            await _lessonService.UnlockNextLessonAsync(lessonId);
+            await _lessonService.UnlockNextLessonAsync(lessonId, userId);
 
         return new LessonSubmitResult(exerciseResults, summary, ctx.User.Hearts);
     }
@@ -167,8 +175,14 @@ public class LessonProgressService(
 
         var canBypassLocks = await user.CanBypassLocksAsync(_userManager);
 
-        if (!canBypassLocks && lesson.IsLocked)
-            throw new InvalidOperationException("Lesson is locked");
+        if (!canBypassLocks)
+        {
+            var isGloballyOpen = !lesson.IsLocked;
+            var isUnlockedForUser = await _context.UserLessonProgress
+                .AnyAsync(ulp => ulp.UserId == userId && ulp.LessonId == lesson.LessonId && !ulp.IsLocked);
+            if (!isGloballyOpen && !isUnlockedForUser)
+                throw new InvalidOperationException("Lesson is locked");
+        }
 
         if (!canBypassLocks && user.Hearts <= 0)
             throw new NoHeartsException();
@@ -280,6 +294,7 @@ public class LessonProgressService(
         record.TotalPossibleXp = summary.TotalPossibleXp;
         record.CompletionPercentage = summary.CompletionPercentage;
         record.IsCompleted = summary.IsCompleted;
+        record.IsLocked = false;
         record.CompletedAt = summary.IsCompleted ? record.CompletedAt ?? _clock.UtcNow : null;
         record.UpdatedAt = _clock.UtcNow;
     }

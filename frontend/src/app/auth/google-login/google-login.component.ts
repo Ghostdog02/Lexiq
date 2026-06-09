@@ -1,5 +1,6 @@
 import { AfterViewInit, Component, inject, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { RouterLink } from '@angular/router';
 
 import { AuthService } from '../auth.service';
 
@@ -7,7 +8,7 @@ declare const google: any;
 
 @Component({
   selector: 'app-google-login',
-  imports: [],
+  imports: [RouterLink],
   standalone: true,
   providers: [],
   templateUrl: './google-login.component.html',
@@ -80,7 +81,7 @@ export class GoogleLoginComponent implements AfterViewInit, OnDestroy {
           theme: 'filled_black',
           size: 'large',
           shape: 'pill',
-          width: 320,
+          width: 360,
           type: 'standard',
           text: 'signin_with',
           logo_alignment: 'center'

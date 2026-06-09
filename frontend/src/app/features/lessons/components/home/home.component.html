@@ -120,9 +120,15 @@
           <span class="stat-label">Hearts</span>
         </div>
       </article>
+      <button class="jump-button" (click)="scrollToCurrentLesson()" aria-label="Jump to current lesson">
+        @if (!isUserBelowLesson) {
+          <span aria-hidden="true">↓</span>
+        } @else {
+          <span aria-hidden="true">↑</span>
+        }
+      </button>
     </section>
-    }
-
+    } @else {
     <section class="sidebar-row">
       <button class="jump-button" (click)="scrollToCurrentLesson()" aria-label="Jump to current lesson">
         @if (!isUserBelowLesson) {
@@ -131,12 +137,12 @@
           <span aria-hidden="true">↑</span>
         }
       </button>
-
       @if (isAdmin || isContentCreator) {
       <button class="add-unit-button" (click)="redirectToCreateExercise()" aria-label="Add new unit">
         <span aria-hidden="true">+</span>
       </button>
       }
     </section>
+    }
   </section>
 </main>
