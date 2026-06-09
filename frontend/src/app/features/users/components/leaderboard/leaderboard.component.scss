@@ -103,7 +103,7 @@
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  padding: 0.75rem 1.25rem;
+  padding: 1rem 1.5rem;
   background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
   border-radius: var(--radius);
   border: 1px solid var(--border);
@@ -151,7 +151,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  min-width: 60px;
+  min-width: 70px;
   padding-top: 1.5rem;
 }
 
@@ -159,8 +159,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 58px;
-  height: 58px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   background: rgba(255,255,255,0.05);
   border: 0.1875rem solid var(--border);
@@ -245,8 +245,8 @@
 }
 
 .user-avatar {
-  width: 58px;
-  height: 58px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   border: 0.1875rem solid var(--accent);
   box-shadow: 0 4px 12px rgba(124, 92, 255, 0.3);
@@ -259,7 +259,7 @@
 }
 
 .user-name {
-  font-size: 1.4375rem;
+  font-size: 1.625rem;
   font-weight: 700;
   color: var(--white);
   margin: 0 0 0.25rem 0;
@@ -294,7 +294,7 @@
 }
 
 .stat-icon {
-  font-size: 1.875rem;
+  font-size: 2rem;
   line-height: 1;
 }
 
@@ -305,14 +305,14 @@
 }
 
 .stat-value {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 800;
   color: var(--white);
   line-height: 1.2;
 }
 
 .stat-label {
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
@@ -329,11 +329,11 @@
   }
 
   .stat-icon {
-    font-size: 20px;
+    font-size: 22px;
   }
 
   .stat-value {
-    font-size: 1rem;
+    font-size: 1.125rem;
   }
 }
 

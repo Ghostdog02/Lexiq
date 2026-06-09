@@ -72,6 +72,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   exerciseSwitchState = '';
   outOfHearts = false;
   nextRefillAt: Date | null = null;
+  showExitConfirm = false;
   private isSwitching = false;
 
   // Expose enum to template
@@ -278,7 +279,21 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   }
 
   onBackToContent(): void {
+    const hasProgress = this.state.viewModels.some(vm => vm.isSubmitted);
+    if (hasProgress) {
+      this.showExitConfirm = true;
+      return;
+    }
     this.router.navigate(['/lesson', this.lessonId]);
+  }
+
+  confirmExit(): void {
+    this.showExitConfirm = false;
+    this.router.navigate(['/lesson', this.lessonId]);
+  }
+
+  cancelExit(): void {
+    this.showExitConfirm = false;
   }
 
   async finishLesson(): Promise<void> {

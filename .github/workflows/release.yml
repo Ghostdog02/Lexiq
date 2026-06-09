@@ -52,8 +52,14 @@ jobs:
           docker pull ${{ env.REGISTRY }}/${{ env.REPO_LOWER }}-frontend:${{ env.BRANCH }}
           echo "✅ Frontend image successfully pulled from registry"
 
-  continuous-delivery:
+  test-backend:
     needs: pull-and-test
+    uses: Ghostdog02/Lexiq/.github/workflows/test.yml@master
+    permissions:
+      contents: read
+
+  continuous-delivery:
+    needs: test-backend
     uses: Ghostdog02/Lexiq/.github/workflows/continuous-delivery.yml@master
     permissions:
       packages: read

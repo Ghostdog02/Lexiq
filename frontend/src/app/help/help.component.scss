@@ -236,7 +236,7 @@
   .faq-answer-wrapper {
     display: grid;
     grid-template-rows: 0fr;
-    transition: grid-template-rows 0.3s ease-out, padding-bottom 0.3s ease;
+    transition: grid-template-rows 0.15s ease-out, padding-bottom 0.15s ease;
     padding: 0 1.5rem;
   }
 
@@ -275,9 +275,23 @@
       color: var(--white);
       margin: 0 0 0.5rem 0;
     }
+
     p {
       color: var(--text-secondary);
-      margin: 0;
+      margin: 0 0 0.5rem 0;
+    }
+
+    .support-email {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--accent-light);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: border-color 150ms ease;
+
+      &:hover {
+        border-bottom-color: var(--accent-light);
+      }
     }
   }
 
@@ -289,8 +303,10 @@
     padding: 0.875rem 1.75rem;
     font-weight: 700;
     color: var(--white);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
     transition: transform 200ms ease, box-shadow 200ms ease;
 
     &:hover {
