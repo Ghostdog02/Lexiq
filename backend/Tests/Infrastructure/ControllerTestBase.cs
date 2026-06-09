@@ -2,6 +2,7 @@ using System.Text.Json;
 using Backend.Api;
 using Backend.Api.Services;
 using Backend.Database;
+using Backend.Database.Entities;
 using Backend.Database.Entities.Users;
 using Backend.Tests.Helpers;
 using Microsoft.AspNetCore.Identity;
@@ -182,6 +183,7 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
         using var scope = Factory.Services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<BackendDbContext>();
         ctx.Users.Add(user);
+        ctx.UserLessonProgress.Add(new UserLessonProgress { UserId = userId, LessonId = Fixture.LessonId, IsLocked = false });
         await ctx.SaveChangesAsync();
 
         // Add roles if specified
