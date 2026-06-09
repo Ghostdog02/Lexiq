@@ -61,7 +61,7 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task Admin_CreatesLesson_StudentCanAccessAndSolve()
+    public async Task Admin_CreatesLesson_AdminCanAccessAndSolveAfterUnlock()
     {
         // Arrange
         var courseId = await GetExistingCourseIdAsync();
@@ -110,19 +110,19 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
                 TestContext.Current.CancellationToken
             );
 
-            var studentFetchResponse = await _studentClient.GetAsync(
+            var adminFetchResponse = await _adminClient.GetAsync(
                 $"/api/lessons/{createdLesson.LessonId}",
                 TestContext.Current.CancellationToken
             );
 
-            var studentLesson = await studentFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
+            var adminLesson = await adminFetchResponse.Content.ReadFromJsonAsync<LessonDto>(
                 JsonOptions,
                 TestContext.Current.CancellationToken
             );
 
-            var exercise = studentLesson!.Exercises[0] as FillInBlankExerciseDto;
+            var exercise = adminLesson!.Exercises[0] as FillInBlankExerciseDto;
             var correctOptionId = exercise!.Options.First(o => o.IsCorrect).Id;
-            var submitResponse = await _studentClient.PostAsJsonAsync(
+            var submitResponse = await _adminClient.PostAsJsonAsync(
                 $"/api/lessons/{createdLesson!.LessonId}/submit",
                 new SubmitLessonRequest([new ExerciseAnswerDto(exercise!.Id, correctOptionId)]),
                 TestContext.Current.CancellationToken
@@ -141,10 +141,10 @@ public class AdminContentManagementJourneyTests(DatabaseFixture fixture)
 
             unlockResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
-            studentFetchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-            studentLesson.Should().NotBeNull();
-            studentLesson.IsLocked.Should().BeFalse("admin unlocked it");
-            studentLesson.Exercises.Should().HaveCount(1);
+            adminFetchResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+            adminLesson.Should().NotBeNull();
+            adminLesson.IsLocked.Should().BeFalse(because: "admin unlocked the lesson for themselves via the unlock endpoint");
+            adminLesson.Exercises.Should().HaveCount(1);
 
             submitResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             submitResult.Should().NotBeNull();

@@ -116,6 +116,27 @@ public class LessonProgressService(
             .ToHashSetAsync();
     }
 
+    public async Task EnsureFirstLessonUnlockedAsync(string userId, string courseId)
+    {
+        var firstLesson = await _lessonService.GetFirstLessonInCourseAsync(courseId);
+        if (firstLesson == null)
+            return;
+
+        var exists = await _context.UserLessonProgress
+            .AnyAsync(ulp => ulp.UserId == userId && ulp.LessonId == firstLesson.LessonId && !ulp.IsLocked);
+
+        if (exists)
+            return;
+
+        _context.UserLessonProgress.Add(new UserLessonProgress
+        {
+            UserId = userId,
+            LessonId = firstLesson.LessonId,
+            IsLocked = false,
+        });
+        await _context.SaveChangesAsync();
+    }
+
     public async Task<LessonSubmitResult> SubmitLessonAsync(
         string userId,
         string lessonId,
@@ -177,10 +198,9 @@ public class LessonProgressService(
 
         if (!canBypassLocks)
         {
-            var isGloballyOpen = !lesson.IsLocked;
             var isUnlockedForUser = await _context.UserLessonProgress
                 .AnyAsync(ulp => ulp.UserId == userId && ulp.LessonId == lesson.LessonId && !ulp.IsLocked);
-            if (!isGloballyOpen && !isUnlockedForUser)
+            if (!isUnlockedForUser)
                 throw new InvalidOperationException("Lesson is locked");
         }
 

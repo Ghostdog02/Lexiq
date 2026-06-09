@@ -34,7 +34,7 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
 
 .hero-logo {
   img {
-    width: 14rem;
+    width: 20rem;
     height: auto;
     filter: drop-shadow(0 1.25rem 3rem rgba(139, 110, 255, 0.3));
     animation: float 6s ease-in-out infinite;
@@ -129,10 +129,19 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
+// ─── Page body ─────────────────────────────────────────────────────────────
+
+.page-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  padding: 0 2rem;
+}
+
 // ─── Sections ──────────────────────────────────────────────────────────────
 
 .section {
-  padding: 5rem 2rem;
+  padding: 0;
 }
 
 .section-inner {
@@ -283,58 +292,10 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
-// ─── Team Grid ─────────────────────────────────────────────────────────────
-
-.team-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.25rem;
-}
-
-.team-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 2rem 1.75rem;
-  backdrop-filter: blur(10px);
-  transition: transform 200ms $_ease, box-shadow 200ms $_ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-hover);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 3px;
-  }
-}
-
-.team-role-badge {
-  display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--accent-light);
-  background: rgba(var(--accent-rgb), 0.12);
-  border: 1px solid rgba(var(--accent-rgb), 0.25);
-  border-radius: var(--radius-sm);
-  padding: 0.3rem 0.875rem;
-  margin-bottom: 1rem;
-}
-
-.team-desc {
-  font-size: 0.9375rem;
-  color: var(--text-secondary);
-  line-height: 1.7;
-  margin: 0;
-}
-
 // ─── Footer CTA ────────────────────────────────────────────────────────────
 
 .cta-section {
-  padding: 5rem 2rem 6rem;
+  padding: 0 0 4rem;
   text-align: center;
 }
 
@@ -362,6 +323,80 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 1.0625rem;
   color: var(--text-secondary);
   margin: 0 0 0.5rem;
+}
+
+// ─── Sign-in & Privacy ─────────────────────────────────────────────────────
+
+.privacy-card {
+  max-width: 52rem;
+  margin: 0 auto;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  border-radius: var(--radius);
+  padding: 2rem 2.25rem;
+  backdrop-filter: blur(10px);
+}
+
+.privacy-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.privacy-icon {
+  font-size: 1.375rem;
+  line-height: 1;
+}
+
+.privacy-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--white);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.privacy-body {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  line-height: 1.75;
+  margin: 0 0 1.25rem;
+
+  strong {
+    color: var(--white);
+    font-weight: 600;
+  }
+}
+
+.privacy-links {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.privacy-link {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent-light);
+  text-decoration: none;
+  transition: color 150ms $_ease;
+
+  &:hover {
+    color: var(--white);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+}
+
+.privacy-divider {
+  color: var(--border);
+  font-size: 0.875rem;
+  user-select: none;
 }
 
 // ─── Responsive ────────────────────────────────────────────────────────────
@@ -395,7 +430,7 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .hero-logo img {
-    width: 10rem;
+    width: 12rem;
   }
 
   .hero-cta {
@@ -412,8 +447,9 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
     grid-template-columns: 1fr;
   }
 
-  .section {
-    padding: 3rem 1.25rem;
+  .page-body {
+    gap: 2.5rem;
+    padding: 0 1.25rem;
   }
 
   .section-title {

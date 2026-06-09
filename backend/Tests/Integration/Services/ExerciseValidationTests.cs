@@ -1,6 +1,7 @@
 using Backend.Api.Dtos;
 using Backend.Api.Services;
 using Backend.Database;
+using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
 using Backend.Database.Entities.Users;
 using Backend.Tests.Builders;
@@ -286,15 +287,8 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 
     private async Task UnlockLessonAsync(string lessonId)
     {
-        var lesson = await _ctx.Lessons.FindAsync(
-            [lessonId],
-            TestContext.Current.CancellationToken
-        );
-        if (lesson != null)
-        {
-            lesson.IsLocked = false;
-            await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
-        }
+        _ctx.UserLessonProgress.Add(new UserLessonProgress { UserId = _testUserId, LessonId = lessonId, IsLocked = false });
+        await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task<ExerciseWithOptionsData> CreateAndSaveFillInBlankAsync(

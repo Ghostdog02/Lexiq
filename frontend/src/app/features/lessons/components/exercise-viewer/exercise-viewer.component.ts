@@ -317,9 +317,14 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     this.router.navigate(['/']);
   }
 
-  get hoursUntilRefill(): number {
-    if (!this.nextRefillAt) return 4;
-    const ms = this.nextRefillAt.getTime() - Date.now();
-    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60)));
+  get timeUntilRefill(): string {
+    if (!this.nextRefillAt) return '4h 0m';
+    const ms = Math.max(0, this.nextRefillAt.getTime() - Date.now());
+    const totalMinutes = Math.ceil(ms / (1000 * 60));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (hours === 0) return `${minutes}m`;
+    if (minutes === 0) return `${hours}h`;
+    return `${hours}h ${minutes}m`;
   }
 }

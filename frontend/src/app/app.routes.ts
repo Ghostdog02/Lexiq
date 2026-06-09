@@ -7,8 +7,13 @@ import { contentGuard } from './auth/guards/content.guard';
 export const routes: Routes = [
     {
         path: '',
+        loadComponent: () => import('./about/about-page.component').then(m => m.AboutPageComponent),
+        title: "Home"
+    },
+    {
+        path: 'courses',
         loadComponent: () => import('./features/lessons/components/home/home.component').then(m => m.HomeComponent),
-        title: "Home",
+        title: "Courses",
         canActivate: [authGuard]
     },
     {

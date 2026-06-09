@@ -283,6 +283,7 @@ public static class DbSeeder
     {
         await ctx.UserExerciseProgress.ExecuteDeleteAsync();
         await ctx.Exercises.ExecuteDeleteAsync();
+        await ctx.UserLessonProgress.ExecuteDeleteAsync();
         await ctx.UserAvatars.ExecuteDeleteAsync();
         await ctx.UserClaims.ExecuteDeleteAsync();
         await ctx.UserLogins.ExecuteDeleteAsync();

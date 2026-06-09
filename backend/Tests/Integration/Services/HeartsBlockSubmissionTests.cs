@@ -1,6 +1,7 @@
 using Backend.Api.Dtos;
 using Backend.Api.Services;
 using Backend.Database;
+using Backend.Database.Entities;
 using Backend.Database.Entities.Users;
 using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
@@ -94,6 +95,9 @@ public class HeartsBlockSubmissionTests(DatabaseFixture fixture)
 
         if (role != null)
             await _userManager.AddToRoleAsync(user, role);
+
+        _ctx.UserLessonProgress.Add(new UserLessonProgress { UserId = user.Id, LessonId = _fixture.LessonId, IsLocked = false });
+        await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         return (user.Id, exerciseId, correctId, wrongId);
     }

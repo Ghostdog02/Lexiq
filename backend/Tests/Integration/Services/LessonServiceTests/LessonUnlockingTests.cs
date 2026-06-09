@@ -180,9 +180,15 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
                 Title = "Lesson 2",
                 LessonContent = "{}",
                 OrderIndex = 1,
-                IsLocked = false, // Already unlocked
+                IsLocked = false,
             }
         );
+        _ctx.UserLessonProgress.Add(new UserLessonProgress
+        {
+            UserId = fixture.SystemUserId,
+            LessonId = secondLessonId,
+            IsLocked = false,
+        });
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
@@ -295,15 +301,15 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        await _sut.UnlockLessonAsync(lessonId);
+        await _sut.UnlockLessonAsync(lessonId, fixture.SystemUserId);
 
         // Assert
-        var lesson = await _ctx.Lessons.FindAsync(
-            [lessonId],
+        var progressRow = await _ctx.UserLessonProgress.FirstOrDefaultAsync(
+            ulp => ulp.UserId == fixture.SystemUserId && ulp.LessonId == lessonId,
             TestContext.Current.CancellationToken
         );
-        lesson.Should().NotBeNull();
-        lesson.IsLocked.Should().BeFalse();
+        progressRow.Should().NotBeNull(because: "unlock must create a per-user progress row");
+        progressRow!.IsLocked.Should().BeFalse();
 
         var exercise1 = await _ctx.Exercises.FindAsync(
             [exercise1Id],
@@ -331,22 +337,27 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
                 Title = "Test Lesson",
                 LessonContent = "{}",
                 OrderIndex = 0,
-                IsLocked = false,
+                IsLocked = true,
             }
         );
+        _ctx.UserLessonProgress.Add(new UserLessonProgress
+        {
+            UserId = fixture.SystemUserId,
+            LessonId = lessonId,
+            IsLocked = false,
+        });
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        await _sut.UnlockLessonAsync(lessonId);
-        await _sut.UnlockLessonAsync(lessonId);
+        await _sut.UnlockLessonAsync(lessonId, fixture.SystemUserId);
+        await _sut.UnlockLessonAsync(lessonId, fixture.SystemUserId);
 
         // Assert
-        var lesson = await _ctx.Lessons.FindAsync(
-            [lessonId],
-            TestContext.Current.CancellationToken
-        );
-        lesson.Should().NotBeNull();
-        lesson.IsLocked.Should().BeFalse();
+        var progressRows = await _ctx.UserLessonProgress
+            .Where(ulp => ulp.UserId == fixture.SystemUserId && ulp.LessonId == lessonId)
+            .ToListAsync(TestContext.Current.CancellationToken);
+        progressRows.Should().HaveCount(1, because: "idempotent unlock must not create duplicate rows");
+        progressRows[0].IsLocked.Should().BeFalse();
     }
 
     [Fact]
@@ -356,7 +367,7 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
         var invalidId = Guid.NewGuid().ToString();
 
         // Act
-        var act = async () => await _sut.UnlockLessonAsync(invalidId);
+        var act = async () => await _sut.UnlockLessonAsync(invalidId, fixture.SystemUserId);
 
         // Assert
         await act.Should().NotThrowAsync();
