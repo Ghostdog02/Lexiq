@@ -1,0 +1,426 @@
+@use '../../../styles.scss' as styles;
+
+$_ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+.about-page {
+  @include styles.animated-background;
+  min-height: 100vh;
+  width: 100%;
+  color: var(--white);
+  font-family: var(--font-family);
+  position: relative;
+  overflow-x: hidden;
+}
+
+// ─── Hero ──────────────────────────────────────────────────────────────────
+
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 90vh;
+  padding: 5rem 2rem 4rem;
+  position: relative;
+}
+
+.hero-content {
+  max-width: 48rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.hero-logo {
+  img {
+    width: 14rem;
+    height: auto;
+    filter: drop-shadow(0 1.25rem 3rem rgba(139, 110, 255, 0.3));
+    animation: float 6s ease-in-out infinite;
+  }
+}
+
+.hero-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin: 0;
+  background: linear-gradient(135deg, var(--white) 0%, rgba(255, 255, 255, 0.75) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  line-height: 1.75;
+  margin: 0;
+  max-width: 36rem;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 0.5rem;
+}
+
+// ─── Buttons ───────────────────────────────────────────────────────────────
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.875rem 1.75rem;
+  height: 3.125rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition: background 200ms $_ease, box-shadow 200ms $_ease, transform 200ms $_ease;
+
+  &.primary {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%);
+    color: var(--white);
+    box-shadow: 0 0.5rem 1.5rem rgba(var(--accent-rgb), 0.25);
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0.75rem 2rem rgba(var(--accent-rgb), 0.4);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  &.secondary {
+    background: var(--glass);
+    color: var(--white);
+    border: 1px solid var(--border);
+
+    &:hover {
+      background: var(--glass-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+
+  &.large {
+    height: 3.5rem;
+    padding: 1rem 2.5rem;
+    font-size: 1rem;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+}
+
+// ─── Sections ──────────────────────────────────────────────────────────────
+
+.section {
+  padding: 5rem 2rem;
+}
+
+.section-inner {
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0 0 1.25rem;
+  background: linear-gradient(135deg, var(--white) 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.section-lead {
+  font-size: 1.0625rem;
+  color: var(--text-secondary);
+  line-height: 1.75;
+  max-width: 52rem;
+  margin: 0 0 3rem;
+}
+
+// ─── Features Grid ─────────────────────────────────────────────────────────
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.feature-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem 1.75rem;
+  backdrop-filter: blur(10px);
+  transition: transform 200ms $_ease, box-shadow 200ms $_ease, border-color 200ms $_ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.18), transparent 50%, rgba(var(--accent-rgb), 0.08));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    border-color: rgba(var(--accent-rgb), 0.25);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+}
+
+.feature-icon {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.feature-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--white);
+  margin: 0 0 0.625rem;
+}
+
+.feature-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0;
+}
+
+// ─── Stack Grid ────────────────────────────────────────────────────────────
+
+.stack-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.stack-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  backdrop-filter: blur(10px);
+  transition: transform 200ms $_ease, box-shadow 200ms $_ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+}
+
+.stack-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-light);
+  margin-bottom: 1rem;
+}
+
+.stack-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  li {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    padding-left: 1rem;
+    position: relative;
+
+    &::before {
+      content: '–';
+      position: absolute;
+      left: 0;
+      color: var(--accent-light);
+    }
+  }
+}
+
+// ─── Team Grid ─────────────────────────────────────────────────────────────
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+.team-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem 1.75rem;
+  backdrop-filter: blur(10px);
+  transition: transform 200ms $_ease, box-shadow 200ms $_ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+}
+
+.team-role-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-light);
+  background: rgba(var(--accent-rgb), 0.12);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.3rem 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.team-desc {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0;
+}
+
+// ─── Footer CTA ────────────────────────────────────────────────────────────
+
+.cta-section {
+  padding: 5rem 2rem 6rem;
+  text-align: center;
+}
+
+.cta-inner {
+  max-width: 40rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cta-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+  background: linear-gradient(135deg, var(--white) 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.cta-sub {
+  font-size: 1.0625rem;
+  color: var(--text-secondary);
+  margin: 0 0 0.5rem;
+}
+
+// ─── Responsive ────────────────────────────────────────────────────────────
+
+@media (max-width: 1024px) {
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stack-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .team-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 4rem 1.25rem 3rem;
+    min-height: 80vh;
+  }
+
+  .hero-title {
+    font-size: 2rem;
+  }
+
+  .hero-logo img {
+    width: 10rem;
+  }
+
+  .hero-cta {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .features-grid,
+  .stack-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section {
+    padding: 3rem 1.25rem;
+  }
+
+  .section-title {
+    font-size: 1.625rem;
+  }
+
+  .cta-title {
+    font-size: 1.75rem;
+  }
+}
