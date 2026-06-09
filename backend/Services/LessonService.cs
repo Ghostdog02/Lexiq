@@ -65,17 +65,38 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .FirstOrDefaultAsync();
     }
 
-    public async Task<UnlockStatus> UnlockNextLessonAsync(string currentLessonId)
+    public async Task<UnlockStatus> UnlockNextLessonAsync(string currentLessonId, string userId)
     {
         var nextLesson = await GetNextLessonAsync(currentLessonId);
 
         if (nextLesson == null)
             return UnlockStatus.NoNextLesson;
 
+        // If the next lesson is globally open, no per-user record needed
         if (!nextLesson.IsLocked)
             return UnlockStatus.AlreadyUnlocked;
 
-        nextLesson.IsLocked = false;
+        // Check whether this user already has an unlocked progress row
+        var existing = await _context.UserLessonProgress
+            .FirstOrDefaultAsync(ulp => ulp.UserId == userId && ulp.LessonId == nextLesson.LessonId);
+
+        if (existing != null && !existing.IsLocked)
+            return UnlockStatus.AlreadyUnlocked;
+
+        if (existing != null)
+        {
+            existing.IsLocked = false;
+        }
+        else
+        {
+            _context.UserLessonProgress.Add(new UserLessonProgress
+            {
+                UserId = userId,
+                LessonId = nextLesson.LessonId,
+                IsLocked = false,
+            });
+        }
+
         await _context.SaveChangesAsync();
 
         return UnlockStatus.Unlocked;
