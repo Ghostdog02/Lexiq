@@ -84,6 +84,11 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
     border: 1px solid var(--border);
     backdrop-filter: blur(10px);
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.5rem;
 
     // Inner glow
     &::before {
@@ -102,7 +107,7 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .title {
-    margin: 0 0 0.625rem;
+    margin: 0;
     font-size: 2rem;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -117,11 +122,12 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 1.0625rem;
     color: var(--text-secondary);
     font-weight: 500;
-    margin: 0 0 2rem;
+    margin: 0;
   }
 
   .actions {
-    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: center;
 
     #g_id_onload {
       min-height: 2.75rem;
@@ -132,7 +138,7 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 0.8125rem;
     color: var(--muted);
     margin: 0;
-    padding-top: 0.625rem;
+    padding-top: 0;
     line-height: 1.8;
 
     .link {
