@@ -3,15 +3,18 @@ name: "CodeQL Advanced"
 on:
   push:
     branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
   schedule:
     - cron: '39 19 * * 6'
+
+concurrency:
+  group: codeql-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    timeout-minutes: 30
     permissions:
       security-events: write
       packages: read

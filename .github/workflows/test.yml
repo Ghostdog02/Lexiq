@@ -7,6 +7,7 @@ on:
 jobs:
   test-unit:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
 
@@ -18,6 +19,8 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: backend/**/*.csproj
 
       - name: Restore NuGet packages
         working-directory: ./backend
@@ -43,6 +46,7 @@ jobs:
   test-integration:
     needs: test-unit
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
 
@@ -54,6 +58,8 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: backend/**/*.csproj
 
       - name: Restore NuGet packages
         working-directory: ./backend
@@ -77,8 +83,9 @@ jobs:
           retention-days: 30
 
   test-controllers:
-    needs: test-integration
+    needs: test-unit
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
 
@@ -90,6 +97,8 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: backend/**/*.csproj
 
       - name: Restore NuGet packages
         working-directory: ./backend
@@ -113,8 +122,9 @@ jobs:
           retention-days: 30
 
   test-e2e:
-    needs: test-controllers
+    needs: [test-integration, test-controllers]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
 
@@ -126,6 +136,8 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: backend/**/*.csproj
 
       - name: Restore NuGet packages
         working-directory: ./backend
