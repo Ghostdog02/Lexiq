@@ -5,6 +5,10 @@ on:
     branches:
       - master
 
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -12,6 +16,7 @@ permissions:
 jobs:
   build-frontend:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
 
@@ -33,6 +38,7 @@ jobs:
 
   build-backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
 
@@ -61,6 +67,7 @@ jobs:
   auto-approve-and-merge:
     needs: [run-tests]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     # Only approve PRs from same repository (not forks) and trusted users
     if: |
       github.event.pull_request.head.repo.full_name == github.repository &&
