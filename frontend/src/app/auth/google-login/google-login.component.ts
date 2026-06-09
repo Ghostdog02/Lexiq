@@ -80,7 +80,7 @@ export class GoogleLoginComponent implements AfterViewInit, OnDestroy {
           theme: 'filled_black',
           size: 'large',
           shape: 'pill',
-          width: 320,
+          width: 360,
           type: 'standard',
           text: 'signin_with',
           logo_alignment: 'center'
