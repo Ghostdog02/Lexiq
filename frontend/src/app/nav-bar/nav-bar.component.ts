@@ -15,6 +15,7 @@ export class NavBarComponent implements OnInit {
   private destroyRef = inject(DestroyRef);
   public userIsAuthenticated = false;
   public userIsAdmin = false;
+  public showLogoutConfirm = false;
 
   ngOnInit(): void {
     this.authService
@@ -26,5 +27,18 @@ export class NavBarComponent implements OnInit {
       .getAdminStatusListener()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((isAdmin) => (this.userIsAdmin = isAdmin));
+  }
+
+  requestLogout(): void {
+    this.showLogoutConfirm = true;
+  }
+
+  confirmLogout(): void {
+    this.showLogoutConfirm = false;
+    this.authService.logoutUser();
+  }
+
+  cancelLogout(): void {
+    this.showLogoutConfirm = false;
   }
 }

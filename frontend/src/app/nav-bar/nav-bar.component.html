@@ -25,9 +25,21 @@
         <li><a routerLink="/privacy"><span class="icon">🔒</span> Privacy</a></li>
 
         @if (userIsAuthenticated) {
-          <li><a routerLink="/" (click)="authService.logoutUser()"><span class="icon">🚪</span> Logout</a></li>
+          <li><button class="logout-btn" type="button" (click)="requestLogout()"><span class="icon">🚪</span> Logout</button></li>
         } @else {
           <li><a routerLink="/google-login"><span class="icon">🔑</span> Login</a></li>
         }
     </ul>
 </aside>
+
+@if (showLogoutConfirm) {
+  <div class="confirm-overlay" (click)="cancelLogout()">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()">
+      <p class="confirm-message">Are you sure you want to log out?</p>
+      <div class="confirm-actions">
+        <button class="btn secondary" type="button" (click)="cancelLogout()">No, stay</button>
+        <button class="btn primary" type="button" (click)="confirmLogout()">Yes, log out</button>
+      </div>
+    </div>
+  </div>
+}
