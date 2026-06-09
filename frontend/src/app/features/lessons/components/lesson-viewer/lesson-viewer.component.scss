@@ -23,7 +23,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .lesson-detail-container {
-  padding: 2rem 2rem;
+  padding: 1rem 2rem;
   max-width: 75rem;  // Constrain width for readability
   display: flex;
   flex-direction: column;
@@ -41,7 +41,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .lesson-header {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   position: relative;
   z-index: 10;
   display: flex;
@@ -88,7 +88,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     gap: 1.5rem;
 
     .lesson-title {
-      font-size: 3.4375rem;
+      font-size: 2.5rem;
       font-weight: 800;
       line-height: 1.1;
       letter-spacing: -0.03125rem;
@@ -133,7 +133,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
   display: flex;
   flex-direction: column;
   flex: 1;  // Fill available vertical space
-  gap: 3rem;  // Increased gap for better breathing room
+  gap: 1.5rem;  // Increased gap for better breathing room
   justify-content: space-between;  // Distribute space between content and action
   min-height: 0;  // Allow flex shrinking
 
@@ -159,7 +159,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
 
   .lesson-content {
     flex: 1;  // Expand to fill available space
-    min-height: 30rem;  // Ensure minimum content height
+    min-height: 20rem;  // Ensure minimum content height
     display: flex;
     flex-direction: column;
 
@@ -215,7 +215,7 @@ $_ease: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     align-items: center;  // Center items horizontally
     justify-content: center;  // Center items vertically
     gap: 1rem;
-    padding: 2rem 0;  // Add vertical padding for prominence
+    padding: 1rem 0;  // Add vertical padding for prominence
     background: linear-gradient(180deg, transparent 0%, rgba(var(--accent-rgb), 0.03) 100%);
     border-radius: 1rem;
 
