@@ -7,7 +7,7 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
   height: 100vh;
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 560px;
+  grid-template-columns: 1fr 620px;
   gap: 0;
   color: var(--white);
   align-items: center;
@@ -28,7 +28,7 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: 2.5rem 5rem 2.5rem 0;
+  padding: 2rem 2rem 2rem 0;
   position: relative;
   background: transparent;
   z-index: 3;
@@ -44,7 +44,7 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
 
     img {
       width: 100%;
-      max-width: 22rem;
+      max-width: 30rem;
       height: auto;
       object-fit: contain;
       filter: drop-shadow(0 1.25rem 3.75rem rgba(var(--accent-rgb), 0.28));
@@ -76,7 +76,7 @@ $_ease: cubic-bezier(0.4, 0, 0.2, 1);
 
   .card {
     width: 100%;
-    max-width: 30rem;
+    max-width: 36rem;
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
     border-radius: var(--radius);
     padding: 2.75rem 2.75rem;
