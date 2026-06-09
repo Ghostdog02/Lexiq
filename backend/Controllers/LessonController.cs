@@ -87,14 +87,18 @@ public class LessonController(
             lessonIds
         );
 
-        var result = lessons.Select(l => l.ToDto(progressMap.GetValueOrDefault(l.LessonId))).ToList();
+        var unlockedIds = await _lessonProgressService.GetUnlockedLessonIdsAsync(currentUser.Id, lessonIds);
+        var result = lessons.Select(l =>
+        {
+            var effectiveIsLocked = l.IsLocked && !unlockedIds.Contains(l.LessonId);
+            return l.ToDto(progressMap.GetValueOrDefault(l.LessonId), isLockedOverride: effectiveIsLocked);
+        }).ToList();
 
         return Ok(result);
     }
 
     /// <summary>
     /// Gets a lesson with full details, including user progress.
-    /// Returns 403 if user has no hearts (bypass roles exempt).
     /// </summary>
     /// <param name="lessonId">The lesson ID</param>
     [HttpGet("{lessonId}")]
@@ -110,15 +114,14 @@ public class LessonController(
         var currentUser = HttpContext.GetCurrentUser()!;
 
         if (!await currentUser.CanBypassLocksAsync(_userManager))
-        {
             await _heartsService.RefillAndGetHeartsAsync(currentUser);
-            if (currentUser.Hearts <= 0)
-                return NoHeartsResult();
-        }
 
         var progress = await _lessonProgressService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
 
-        return OkPolymorphic<LessonDto>(lesson.ToDto(progress.Summary, progress.ExerciseProgress));
+        var unlockedIds = await _lessonProgressService.GetUnlockedLessonIdsAsync(currentUser.Id, [lesson.LessonId]);
+        var effectiveIsLocked = lesson.IsLocked && !unlockedIds.Contains(lesson.LessonId);
+
+        return OkPolymorphic<LessonDto>(lesson.ToDto(progress.Summary, progress.ExerciseProgress, isLockedOverride: effectiveIsLocked));
     }
 
     /// <summary>
