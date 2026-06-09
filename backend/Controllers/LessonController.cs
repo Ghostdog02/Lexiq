@@ -134,7 +134,8 @@ public class LessonController(
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UnlockLesson(string lessonId)
     {
-        await _lessonService.UnlockLessonAsync(lessonId);
+        var currentUser = HttpContext.GetCurrentUser()!;
+        await _lessonService.UnlockLessonAsync(lessonId, currentUser.Id);
         return Ok(new { message = "Lesson unlocked successfully" });
     }
 

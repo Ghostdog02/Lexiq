@@ -131,17 +131,30 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .ToListAsync();
     }
 
-    public async Task UnlockLessonAsync(string lessonId)
+    public async Task UnlockLessonAsync(string lessonId, string userId)
     {
-        var lesson = await _context.Lessons.FindAsync(lessonId);
-        if (lesson == null)
+        var lessonExists = await _context.Lessons.AnyAsync(l => l.LessonId == lessonId);
+        if (!lessonExists)
             return;
 
-        if (lesson.IsLocked)
+        var existing = await _context.UserLessonProgress
+            .FirstOrDefaultAsync(ulp => ulp.UserId == userId && ulp.LessonId == lessonId);
+
+        if (existing != null)
         {
-            lesson.IsLocked = false;
-            await _context.SaveChangesAsync();
+            existing.IsLocked = false;
         }
+        else
+        {
+            _context.UserLessonProgress.Add(new UserLessonProgress
+            {
+                UserId = userId,
+                LessonId = lessonId,
+                IsLocked = false,
+            });
+        }
+
+        await _context.SaveChangesAsync();
     }
 
     public async Task<Lesson> CreateLessonAsync(CreateLessonDto dto)
@@ -219,6 +232,10 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         var lesson = await _context.Lessons.FindAsync(lessonId);
         if (lesson == null)
             return false;
+
+        await _context.UserLessonProgress
+            .Where(ulp => ulp.LessonId == lessonId)
+            .ExecuteDeleteAsync();
 
         _context.Lessons.Remove(lesson);
         await _context.SaveChangesAsync();
