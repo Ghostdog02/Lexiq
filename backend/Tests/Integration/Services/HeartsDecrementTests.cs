@@ -1,6 +1,7 @@
 using Backend.Api.Dtos;
 using Backend.Api.Services;
 using Backend.Database;
+using Backend.Database.Entities;
 using Backend.Database.Entities.Users;
 using Backend.Tests.Builders;
 using Backend.Tests.Helpers;
@@ -82,6 +83,9 @@ public class HeartsDecrementTests(DatabaseFixture fixture)
         user.Hearts = hearts;
         await DbSeeder.AddUserAsync(_ctx, user);
 
+        _ctx.UserLessonProgress.Add(new UserLessonProgress { UserId = user.Id, LessonId = _lessonId, IsLocked = false });
+        await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
         return (user, exerciseId, correctOptionId, wrongOptionId);
     }
 
@@ -142,6 +146,9 @@ public class HeartsDecrementTests(DatabaseFixture fixture)
         var user = new UserBuilder().WithUserName("sixwrong").WithEmail("six@test.com").Build();
         user.Hearts = 5;
         await DbSeeder.AddUserAsync(_ctx, user);
+
+        _ctx.UserLessonProgress.Add(new UserLessonProgress { UserId = user.Id, LessonId = _lessonId, IsLocked = false });
+        await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
         var answers = exerciseIds
