@@ -186,3 +186,15 @@
     }
   </div>
 }
+
+@if (showExitConfirm) {
+  <div class="confirm-overlay" (click)="cancelExit()">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()">
+      <p class="confirm-message">Do you want to leave? Your exercise progress will not be saved.</p>
+      <div class="confirm-actions">
+        <button class="btn secondary" type="button" (click)="cancelExit()">No, stay</button>
+        <button class="btn primary" type="button" (click)="confirmExit()">Yes, leave</button>
+      </div>
+    </div>
+  </div>
+}
