@@ -128,11 +128,10 @@ export class AuthService {
       await firstValueFrom(
         this.httpClient.post(AUTH_API_URL + '/logout', null)
       );
-
-      this.clearAuthState();
-      this.router.navigate(['/']);
-    } catch (error: any) {
-      throw new Error(`An error occurred during logout: ${error.message}`);
+    } catch {
+      // Backend call failed — clear local state regardless
     }
+    this.clearAuthState();
+    this.router.navigate(['/google-login']);
   }
 }
