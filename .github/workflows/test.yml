@@ -7,6 +7,7 @@ on:
 jobs:
   test-unit:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
 
@@ -45,6 +46,7 @@ jobs:
   test-integration:
     needs: test-unit
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
 
@@ -83,6 +85,7 @@ jobs:
   test-controllers:
     needs: test-unit
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
 
@@ -121,6 +124,7 @@ jobs:
   test-e2e:
     needs: [test-integration, test-controllers]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
 
