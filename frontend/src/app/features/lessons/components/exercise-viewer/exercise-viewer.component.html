@@ -47,7 +47,7 @@
       </div>
       <p class="out-of-hearts-message">You need hearts to practice.</p>
       <p class="out-of-hearts-refill">
-        Try again in {{ hoursUntilRefill }} {{ hoursUntilRefill === 1 ? 'hour' : 'hours' }}.
+        Try again in {{ timeUntilRefill }}.
       </p>
       <div class="out-of-hearts-actions">
         <button class="btn primary" (click)="dismissResults()" aria-label="Go to home">
