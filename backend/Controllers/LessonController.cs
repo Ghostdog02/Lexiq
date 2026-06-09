@@ -81,6 +81,8 @@ public class LessonController(
             return NotFound(new { message = $"Course '{courseId}' not found" });
 
         var currentUser = HttpContext.GetCurrentUser()!;
+        await _lessonProgressService.EnsureFirstLessonUnlockedAsync(currentUser.Id, courseId);
+
         var lessonIds = lessons.Select(l => l.LessonId).ToList();
         var progressMap = await _lessonProgressService.GetProgressForLessonsAsync(
             currentUser.Id,
@@ -90,7 +92,7 @@ public class LessonController(
         var unlockedIds = await _lessonProgressService.GetUnlockedLessonIdsAsync(currentUser.Id, lessonIds);
         var result = lessons.Select(l =>
         {
-            var effectiveIsLocked = l.IsLocked && !unlockedIds.Contains(l.LessonId);
+            var effectiveIsLocked = !unlockedIds.Contains(l.LessonId);
             return l.ToDto(progressMap.GetValueOrDefault(l.LessonId), isLockedOverride: effectiveIsLocked);
         }).ToList();
 
@@ -119,7 +121,7 @@ public class LessonController(
         var progress = await _lessonProgressService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
 
         var unlockedIds = await _lessonProgressService.GetUnlockedLessonIdsAsync(currentUser.Id, [lesson.LessonId]);
-        var effectiveIsLocked = lesson.IsLocked && !unlockedIds.Contains(lesson.LessonId);
+        var effectiveIsLocked = !unlockedIds.Contains(lesson.LessonId);
 
         return OkPolymorphic<LessonDto>(lesson.ToDto(progress.Summary, progress.ExerciseProgress, isLockedOverride: effectiveIsLocked));
     }
