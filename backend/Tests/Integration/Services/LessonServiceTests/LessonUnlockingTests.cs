@@ -127,17 +127,25 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _sut.UnlockNextLessonAsync(firstLessonId);
+        var result = await _sut.UnlockNextLessonAsync(firstLessonId, fixture.SystemUserId);
 
         // Assert
         result.Should().Be(UnlockStatus.Unlocked);
 
+        // Global Lesson.IsLocked stays true; unlock is stored per-user in UserLessonProgress
         var unlockedLesson = await _ctx.Lessons.FindAsync(
             [secondLessonId],
             TestContext.Current.CancellationToken
         );
         unlockedLesson.Should().NotBeNull();
-        unlockedLesson.IsLocked.Should().BeFalse();
+        unlockedLesson.IsLocked.Should().BeTrue(because: "Lesson.IsLocked is the global default and must not be mutated by per-user unlocks");
+
+        var progressRow = await _ctx.UserLessonProgress.FirstOrDefaultAsync(
+            ulp => ulp.UserId == fixture.SystemUserId && ulp.LessonId == secondLessonId,
+            TestContext.Current.CancellationToken
+        );
+        progressRow.Should().NotBeNull(because: "a UserLessonProgress row must be created to record the per-user unlock");
+        progressRow!.IsLocked.Should().BeFalse(because: "the progress row must mark the lesson as unlocked for this user");
 
         var unlockedExercise = await _ctx.Exercises.FindAsync(
             [exerciseId],
@@ -178,7 +186,7 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _sut.UnlockNextLessonAsync(firstLessonId);
+        var result = await _sut.UnlockNextLessonAsync(firstLessonId, fixture.SystemUserId);
 
         // Assert
         result.Should().Be(UnlockStatus.AlreadyUnlocked);
@@ -202,7 +210,7 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         // Act
-        var result = await _sut.UnlockNextLessonAsync(lastLessonId);
+        var result = await _sut.UnlockNextLessonAsync(lastLessonId, fixture.SystemUserId);
 
         // Assert
         result.Should().Be(UnlockStatus.NoNextLesson);
@@ -215,7 +223,7 @@ public class LessonUnlockingTests(DatabaseFixture fixture) : IClassFixture<Datab
         var invalidId = Guid.NewGuid().ToString();
 
         // Act
-        var result = await _sut.UnlockNextLessonAsync(invalidId);
+        var result = await _sut.UnlockNextLessonAsync(invalidId, fixture.SystemUserId);
 
         // Assert
         result.Should().Be(UnlockStatus.NoNextLesson);
