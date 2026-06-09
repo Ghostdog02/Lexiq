@@ -72,10 +72,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         if (nextLesson == null)
             return UnlockStatus.NoNextLesson;
 
-        // If the next lesson is globally open, no per-user record needed
-        if (!nextLesson.IsLocked)
-            return UnlockStatus.AlreadyUnlocked;
-
         // Check whether this user already has an unlocked progress row
         var existing = await _context.UserLessonProgress
             .FirstOrDefaultAsync(ulp => ulp.UserId == userId && ulp.LessonId == nextLesson.LessonId);
