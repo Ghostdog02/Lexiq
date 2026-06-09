@@ -20,6 +20,10 @@
 
         <li><a routerLink="/help"><span class="icon">❓</span> Help</a></li>
 
+        <li><a routerLink="/terms"><span class="icon">📄</span> Terms</a></li>
+
+        <li><a routerLink="/privacy"><span class="icon">🔒</span> Privacy</a></li>
+
         @if (userIsAuthenticated) {
           <li><a routerLink="/" (click)="authService.logoutUser()"><span class="icon">🚪</span> Logout</a></li>
         } @else {
