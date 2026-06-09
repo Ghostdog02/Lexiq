@@ -68,6 +68,11 @@
     flex: 0 0 auto;
     min-width: 10rem;
   }
+
+  .jump-button {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .stat-card {
