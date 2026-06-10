@@ -1,10 +1,15 @@
 import {
   Component,
+  DestroyRef,
   ElementRef,
   OnInit,
   ViewChild,
   inject,
+  signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { firstValueFrom, interval } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import { Achievement, Language, UserProfile } from '../../models/user.model';
 import { ProfileService } from '../../services/profile.service';
 
@@ -17,6 +22,8 @@ import { ProfileService } from '../../services/profile.service';
 })
 export class ProfileComponent implements OnInit {
   private profileService = inject(ProfileService);
+  private http = inject(HttpClient);
+  private destroyRef = inject(DestroyRef);
 
   @ViewChild('avatarInput') avatarInput!: ElementRef<HTMLInputElement>;
 
@@ -31,13 +38,20 @@ export class ProfileComponent implements OnInit {
   formattedJoinDate = '';
   daysSinceJoined = 0;
 
+  hearts: number | null = null;
+  nextRefillAt: Date | null = null;
+  heartsCountdown = signal('');
+
   isLoading = true;
   isUploadingAvatar = false;
   error: string | null = null;
 
   async ngOnInit(): Promise<void> {
     try {
-      const profile = await this.profileService.getMyProfile();
+      const [profile] = await Promise.all([
+        this.profileService.getMyProfile(),
+        this.loadHearts(),
+      ]);
       this.profile = profile;
       this.enrolledLanguages = [];
 
@@ -93,6 +107,39 @@ export class ProfileComponent implements OnInit {
       this.isUploadingAvatar = false;
       input.value = '';
     }
+  }
+
+  private async loadHearts(): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ hearts: number; nextRefillAt: string | null }>('/api/user/hearts', {
+          withCredentials: true,
+        })
+      );
+      this.hearts = response.hearts;
+      this.nextRefillAt = response.nextRefillAt ? new Date(response.nextRefillAt) : null;
+
+      if (this.hearts < 5) {
+        this.heartsCountdown.set(this.computeHeartCountdown());
+        interval(1_000)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe(() => { this.heartsCountdown.set(this.computeHeartCountdown()); });
+      }
+    } catch {
+      this.hearts = null;
+    }
+  }
+
+  private computeHeartCountdown(): string {
+    if (!this.nextRefillAt) return '';
+    const ms = Math.max(0, this.nextRefillAt.getTime() - Date.now());
+    const totalSeconds = Math.ceil(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours === 0 && minutes === 0) return `${seconds}s`;
+    if (hours === 0) return `${minutes}m ${seconds}s`;
+    return `${hours}h ${minutes}m ${seconds}s`;
   }
 
   private formatDate(dateStr: string): string {
