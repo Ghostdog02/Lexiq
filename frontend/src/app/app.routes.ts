@@ -11,6 +11,11 @@ export const routes: Routes = [
         title: "Home"
     },
     {
+        path: 'home',
+        redirectTo: '',
+        pathMatch: 'full'
+    },
+    {
         path: 'courses',
         loadComponent: () => import('./features/lessons/components/home/home.component').then(m => m.HomeComponent),
         title: "Courses",
