@@ -93,8 +93,8 @@
         <span class="stat-icon" aria-hidden="true">❤️</span>
         <span class="stat-value">{{ hearts !== null ? hearts : '—' }}</span>
         <span class="stat-label">Hearts</span>
-        @if (hearts !== null && hearts < 5 && heartsCountdown) {
-          <span class="hearts-refill-timer" aria-label="Next heart in {{ heartsCountdown }}">+1 in {{ heartsCountdown }}</span>
+        @if (hearts !== null && hearts < 5 && heartsCountdown()) {
+          <span class="hearts-refill-timer" aria-label="Next heart in {{ heartsCountdown() }}">+1 in {{ heartsCountdown() }}</span>
         }
       </div>
     </div>

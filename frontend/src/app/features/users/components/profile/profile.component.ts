@@ -5,6 +5,7 @@ import {
   OnInit,
   ViewChild,
   inject,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom, interval } from 'rxjs';
@@ -39,7 +40,7 @@ export class ProfileComponent implements OnInit {
 
   hearts: number | null = null;
   nextRefillAt: Date | null = null;
-  heartsCountdown = '';
+  heartsCountdown = signal('');
 
   isLoading = true;
   isUploadingAvatar = false;
@@ -119,10 +120,10 @@ export class ProfileComponent implements OnInit {
       this.nextRefillAt = response.nextRefillAt ? new Date(response.nextRefillAt) : null;
 
       if (this.hearts < 5) {
-        this.heartsCountdown = this.computeHeartCountdown();
+        this.heartsCountdown.set(this.computeHeartCountdown());
         interval(1_000)
           .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe(() => { this.heartsCountdown = this.computeHeartCountdown(); });
+          .subscribe(() => { this.heartsCountdown.set(this.computeHeartCountdown()); });
       }
     } catch {
       this.hearts = null;
