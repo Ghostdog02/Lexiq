@@ -9,7 +9,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom, fromEvent, filter } from 'rxjs';
+import { firstValueFrom, fromEvent, filter, interval } from 'rxjs';
 import {
   AnyExercise,
   Exercise,
@@ -72,6 +72,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   exerciseSwitchState = '';
   outOfHearts = false;
   nextRefillAt: Date | null = null;
+  countdownDisplay = '';
   showExitConfirm = false;
   private isSwitching = false;
 
@@ -101,6 +102,10 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
       this.nextRefillAt = nextRefillAt;
       this.outOfHearts = true;
       this.isLoading = false;
+      this.countdownDisplay = this.computeCountdown();
+      interval(1_000)
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => { this.countdownDisplay = this.computeCountdown(); });
       return;
     }
 
@@ -317,14 +322,15 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     this.router.navigate(['/']);
   }
 
-  get timeUntilRefill(): string {
-    if (!this.nextRefillAt) return '4h 0m';
+  private computeCountdown(): string {
+    if (!this.nextRefillAt) return '4h 0m 0s';
     const ms = Math.max(0, this.nextRefillAt.getTime() - Date.now());
-    const totalMinutes = Math.ceil(ms / (1000 * 60));
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    if (hours === 0) return `${minutes}m`;
-    if (minutes === 0) return `${hours}h`;
-    return `${hours}h ${minutes}m`;
+    const totalSeconds = Math.ceil(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    if (hours === 0 && minutes === 0) return `${seconds}s`;
+    if (hours === 0) return `${minutes}m ${seconds}s`;
+    return `${hours}h ${minutes}m ${seconds}s`;
   }
 }
