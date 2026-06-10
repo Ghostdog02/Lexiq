@@ -30,7 +30,8 @@
                 "input": "public"
               },
               "src/assets",
-              "src/manifest.json"
+              "src/manifest.json",
+              "src/robots.txt"
             ],
             "styles": [
               "node_modules/ngx-toastr/toastr.css",
