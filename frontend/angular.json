@@ -31,7 +31,13 @@
               },
               "src/assets",
               "src/manifest.json",
-              "src/robots.txt"
+              "src/robots.txt",
+              "src/sitemap.xml",
+              {
+                "glob": "favicon.ico",
+                "input": "src/assets",
+                "output": "/"
+              }
             ],
             "styles": [
               "node_modules/ngx-toastr/toastr.css",
