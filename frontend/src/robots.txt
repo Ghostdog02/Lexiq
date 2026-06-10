@@ -1,2 +1,29 @@
 User-agent: *
 Allow: /
+Disallow: /api/
+Disallow: /courses
+Disallow: /profile
+Disallow: /lesson/
+
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+Disallow: /courses
+Disallow: /profile
+Disallow: /lesson/
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Content-Signal: search=yes, ai-train=no, ai-input=yes
+
+Sitemap: https://relexiq.com/sitemap.xml
