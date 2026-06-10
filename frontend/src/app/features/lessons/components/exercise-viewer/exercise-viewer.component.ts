@@ -4,6 +4,7 @@ import {
   OnDestroy,
   inject,
   DestroyRef,
+  signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
@@ -72,7 +73,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   exerciseSwitchState = '';
   outOfHearts = false;
   nextRefillAt: Date | null = null;
-  countdownDisplay = '';
+  countdownDisplay = signal('');
   showExitConfirm = false;
   private isSwitching = false;
 
@@ -102,10 +103,10 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
       this.nextRefillAt = nextRefillAt;
       this.outOfHearts = true;
       this.isLoading = false;
-      this.countdownDisplay = this.computeCountdown();
+      this.countdownDisplay.set(this.computeCountdown());
       interval(1_000)
         .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => { this.countdownDisplay = this.computeCountdown(); });
+        .subscribe(() => { this.countdownDisplay.set(this.computeCountdown()); });
       return;
     }
 
