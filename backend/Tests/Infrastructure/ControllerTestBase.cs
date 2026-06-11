@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
@@ -87,6 +88,12 @@ public abstract class ControllerTestBase(DatabaseFixture fixture) : IAsyncLifeti
 
                 // Register JwtService for token generation in tests
                 services.AddSingleton<IJwtService, JwtService>();
+
+                // Replace the real cache with a no-op so every request sees fresh DB data.
+                // Prevents warm-up entries from leaking into tests and removes the need to
+                // manually evict keys after clearing test data.
+                services.RemoveAll<IMemoryCache>();
+                services.AddSingleton<IMemoryCache, NullMemoryCache>();
 
                 ConfigureTestServices(services);
             })
