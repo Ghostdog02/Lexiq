@@ -33,6 +33,22 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           );
           break;
 
+        case 400:
+          toastr.error(
+            error.error?.message ?? 'Invalid request. Please check your input.',
+            'Bad request',
+            TOAST_OPTIONS,
+          );
+          break;
+
+        case 404:
+          toastr.error(
+            error.error?.message ?? 'The requested resource was not found.',
+            'Not found',
+            TOAST_OPTIONS,
+          );
+          break;
+
         case 0:
           toastr.error(
             'Unable to reach the server',
