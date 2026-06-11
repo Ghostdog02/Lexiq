@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -8,7 +8,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './audio-player.component.html',
   styleUrl: './audio-player.component.scss',
 })
-export class AudioPlayerComponent {
+export class AudioPlayerComponent implements OnDestroy {
   @Input({ required: true }) src!: string;
   /** 0 = unlimited */
   @Input() maxReplays: number = 0;
@@ -18,6 +18,7 @@ export class AudioPlayerComponent {
   currentTime = 0;
   duration = 0;
   replayCount = 0;
+  loadError = false;
 
   get scrubValue(): number {
     return (this.currentTime / (this.duration || 1)) * 100;
@@ -31,9 +32,22 @@ export class AudioPlayerComponent {
     return this.maxReplays - this.replayCount;
   }
 
+  ngOnDestroy(): void {
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.audioElement.src = '';
+      this.audioElement.load();
+    }
+  }
+
   onAudioLoaded(audio: HTMLAudioElement): void {
     this.audioElement = audio;
     this.duration = audio.duration;
+  }
+
+  onAudioError(): void {
+    this.loadError = true;
+    this.isPlaying = false;
   }
 
   togglePlayPause(): void {

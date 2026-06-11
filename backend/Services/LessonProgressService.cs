@@ -34,7 +34,15 @@ public class LessonProgressService(
     )
     {
         var data = await QueryExerciseProgressAsync(e => e.LessonId == lessonId, userId);
-        var isCompleted = await GetLessonCompletionAsync(userId, lessonId);
+
+        var lessonState = await _context.UserLessonProgress
+            .Where(ulp => ulp.UserId == userId && ulp.LessonId == lessonId)
+            .Select(ulp => new { ulp.IsCompleted, ulp.IsLocked })
+            .FirstOrDefaultAsync();
+
+        var isCompleted = lessonState?.IsCompleted ?? false;
+        var isLocked = lessonState?.IsLocked ?? true;
+
         var summary = BuildExerciseMetrics(data) with { IsCompleted = isCompleted };
 
         var exerciseProgress = data
@@ -49,21 +57,30 @@ public class LessonProgressService(
                 )
             );
 
-        return new LessonProgressResult(summary, exerciseProgress);
+        return new LessonProgressResult(summary, exerciseProgress, isLocked);
     }
 
-    public async Task<Dictionary<string, LessonProgressSummary>> GetProgressForLessonsAsync(
-        string userId,
-        List<string> lessonIds
-    )
+    public async Task<(Dictionary<string, LessonProgressSummary> Progress, HashSet<string> UnlockedIds)>
+        GetProgressForLessonsAsync(string userId, List<string> lessonIds)
     {
         var data = await QueryExerciseProgressAsync(e => lessonIds.Contains(e.LessonId), userId);
-        var completions = await GetLessonCompletionsAsync(userId, lessonIds);
+        var lessonState = await QueryLessonStateAsync(userId, lessonIds);
 
-        return data.GroupBy(d => d.LessonId).ToDictionary(
+        var progress = data.GroupBy(d => d.LessonId).ToDictionary(
             g => g.Key,
-            g => BuildExerciseMetrics(g) with { IsCompleted = completions.GetValueOrDefault(g.Key) }
+            g =>
+            {
+                var (isCompleted, _) = lessonState.GetValueOrDefault(g.Key);
+                return BuildExerciseMetrics(g) with { IsCompleted = isCompleted };
+            }
         );
+
+        var unlockedIds = lessonState
+            .Where(kvp => !kvp.Value.IsLocked)
+            .Select(kvp => kvp.Key)
+            .ToHashSet();
+
+        return (progress, unlockedIds);
     }
 
     public async Task<List<SubmitAnswerResponse>> GetLessonSubmissionsAsync(
@@ -86,7 +103,22 @@ public class LessonProgressService(
             .UserExerciseProgress.Where(p => p.UserId == userId && exerciseIds.Contains(p.ExerciseId))
             .ToDictionaryAsync(p => p.ExerciseId);
 
-        var fullProgress = await GetFullLessonProgressAsync(userId, lessonId);
+        var isCompleted = await GetLessonCompletionAsync(userId, lessonId);
+
+        // Build summary from already-loaded data — avoids a redundant GroupJoin round trip
+        var completedCount = progressByExercise.Values.Count(p => p.IsCompleted);
+        var earnedXp = progressByExercise.Values.Sum(p => p.PointsEarned);
+        var totalPossibleXp = exercises.Sum(e => e.Points);
+        var completionPct = totalPossibleXp > 0 ? (double)earnedXp / totalPossibleXp : 1.0;
+
+        var lessonSummary = new LessonProgressSummary(
+            CompletedExercises: completedCount,
+            TotalExercises: exercises.Count,
+            EarnedXp: earnedXp,
+            TotalPossibleXp: totalPossibleXp,
+            CompletionPercentage: Math.Round(completionPct, 2),
+            IsCompleted: isCompleted
+        );
 
         return exercises
             .Select(exercise =>
@@ -102,7 +134,7 @@ public class LessonProgressService(
                     Explanation: exercise is TrueFalseExercise tf
                         ? tf.Options.FirstOrDefault(o => o.IsCorrect)?.Explanation
                         : null,
-                    LessonProgress: fullProgress.Summary
+                    LessonProgress: lessonSummary
                 );
             })
             .ToList();
@@ -360,6 +392,18 @@ public class LessonProgressService(
         return await _context.UserLessonProgress
             .Where(ulp => ulp.UserId == userId && lessonIds.Contains(ulp.LessonId))
             .ToDictionaryAsync(ulp => ulp.LessonId, ulp => ulp.IsCompleted);
+    }
+
+    private async Task<Dictionary<string, (bool IsCompleted, bool IsLocked)>> QueryLessonStateAsync(
+        string userId,
+        List<string> lessonIds
+    )
+    {
+        var rows = await _context.UserLessonProgress
+            .Where(ulp => ulp.UserId == userId && lessonIds.Contains(ulp.LessonId))
+            .Select(ulp => new { ulp.LessonId, ulp.IsCompleted, ulp.IsLocked })
+            .ToListAsync();
+        return rows.ToDictionary(r => r.LessonId, r => (r.IsCompleted, r.IsLocked));
     }
 
     // ── Metrics ───────────────────────────────────────────────────────────────

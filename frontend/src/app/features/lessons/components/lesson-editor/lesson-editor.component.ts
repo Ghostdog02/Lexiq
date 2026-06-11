@@ -188,13 +188,12 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
       await this.uploadPendingAudioFiles();
 
       const lessonData = this.buildLessonPayload();
-      const created = await this.lessonService.createLesson(lessonData);
-      console.log('✅ Lesson created:', created);
+      await this.lessonService.createLesson(lessonData);
+      this.toastr.success('Lesson created successfully', 'Success', { toastClass: 'ngx-toastr toast-auth' });
       this.resetForm();
       this.router.navigate(['/']);
-    } catch (error) {
-      console.error('❌ Error creating lesson:', error);
-      this.toastr.error('Failed to upload audio. Please try again.', 'Upload error', { toastClass: 'ngx-toastr toast-auth' });
+    } catch {
+      // HTTP error toasted by interceptor
     }
   }
 

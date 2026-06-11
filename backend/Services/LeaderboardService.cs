@@ -2,15 +2,24 @@ using Backend.Api.Dtos;
 using Backend.Api.Services.Clock;
 using Backend.Database;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Backend.Api.Services;
 
-public class LeaderboardService(BackendDbContext context, AvatarService avatarService, IClock clock)
+public class LeaderboardService(BackendDbContext context, AvatarService avatarService, IClock clock, IMemoryCache cache)
 {
     private readonly BackendDbContext _context = context;
     private readonly AvatarService _avatarService = avatarService;
     private readonly IClock _clock = clock;
+    private readonly IMemoryCache _cache = cache;
     private const int MaxLeaderboardEntries = 50;
+
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(30);
+
+    private record CachedLeaderboard(
+        List<LeaderboardEntryDto> Entries,
+        Dictionary<string, int> PreviousRanks
+    );
 
     /// <summary>
     /// XP thresholds follow: threshold(n) = 100 * n * (n - 1)
@@ -78,22 +87,52 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         string? currentUserId
     )
     {
+        var cached = await _cache.GetOrCreateAsync($"leaderboard:{timeFrame}", async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = CacheTtl;
+            return await BuildCachedLeaderboardAsync(timeFrame);
+        }) ?? new CachedLeaderboard([], []);
+
+        // Increment TimesOnTop outside the cache so it still runs (at most once per day)
+        if (timeFrame == TimeFrame.AllTime && cached.Entries.Count > 0)
+            await IncrementTimesOnTopAsync(cached.Entries[0].UserId);
+
+        var entries = cached.Entries;
+        LeaderboardEntryDto? currentUserEntry = null;
+
+        if (currentUserId != null)
+        {
+            var idx = entries.FindIndex(e => e.UserId == currentUserId);
+            if (idx >= 0)
+            {
+                // Personalize in-memory — no DB needed
+                var personalized = entries[idx] with { IsCurrentUser = true };
+                var updated = new List<LeaderboardEntryDto>(entries) { [idx] = personalized };
+                entries = updated;
+                currentUserEntry = personalized;
+            }
+            else
+            {
+                currentUserEntry = await GetUserEntryAsync(currentUserId, timeFrame, cached.PreviousRanks);
+            }
+        }
+
+        return new LeaderboardResponse(entries, currentUserEntry);
+    }
+
+    private async Task<CachedLeaderboard> BuildCachedLeaderboardAsync(TimeFrame timeFrame)
+    {
         var currentEntries = await GetRankedEntriesAsync(timeFrame);
         var previousEntries = await GetPreviousPeriodEntriesAsync(timeFrame);
 
-        // Batch-check which users have avatars (single query, no binary data loaded)
         var userIds = currentEntries.Select(e => e.UserId).ToList();
         var usersWithAvatars = await _avatarService.GetUsersWithAvatarsAsync(userIds);
 
-        // Build a lookup of previous ranks by userId
         var previousRanks = new Dictionary<string, int>();
         for (var i = 0; i < previousEntries.Count; i++)
             previousRanks[previousEntries[i].UserId] = i + 1;
 
-        // Enrich entries with streaks, levels, avatars, and rank change
         var enrichedEntries = new List<LeaderboardEntryDto>();
-        LeaderboardEntryDto? currentUserEntry = null;
-
         for (var i = 0; i < currentEntries.Count; i++)
         {
             var entry = currentEntries[i];
@@ -103,50 +142,21 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
                 ? $"/api/user/{entry.UserId}/avatar"
                 : null;
 
-            var enriched = await EnrichEntryAsync(
-                entry,
-                currentRank,
-                change,
-                entry.UserId == currentUserId,
-                avatarUrl
-            );
-
+            var enriched = await EnrichEntryAsync(entry, currentRank, change, false, avatarUrl);
             enrichedEntries.Add(enriched);
-
-            if (entry.UserId == currentUserId)
-                currentUserEntry = enriched;
         }
 
-        // If current user wasn't in the top entries, fetch their data separately
-        if (currentUserId != null && currentUserEntry == null)
-        {
-            currentUserEntry = await GetUserEntryAsync(currentUserId, timeFrame, previousRanks);
-        }
-
-        // Increment TimesOnTop for AllTime rank-1 user (once per UTC day)
-        if (timeFrame == TimeFrame.AllTime && currentEntries.Count > 0)
-        {
-            await IncrementTimesOnTopAsync(currentEntries);
-        }
-
-        return new LeaderboardResponse(enrichedEntries, currentUserEntry);
+        return new CachedLeaderboard(enrichedEntries, previousRanks);
     }
+
+    // ── Rank increment ────────────────────────────────────────────────────────
 
     /// <summary>
     /// Increments TimesOnTop for the rank-1 user at most once per UTC day.
-    /// Tie broken by lowest UserId (lexicographic).
     /// </summary>
-    private async Task IncrementTimesOnTopAsync(List<RawLeaderboardEntry> entries)
+    private async Task IncrementTimesOnTopAsync(string rank1UserId)
     {
         var today = DateOnly.FromDateTime(_clock.UtcNow);
-
-        // Determine rank-1: highest XP; tie broken by lowest UserId
-        var topXp = entries[0].TotalXp;
-        var rank1UserId = entries
-            .Where(e => e.TotalXp == topXp)
-            .OrderBy(e => e.UserId)
-            .First()
-            .UserId;
 
         var rank1User = await _context.Users.FindAsync(rank1UserId);
         if (rank1User == null)
@@ -163,6 +173,8 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         rank1User.LastTimesOnTopAt = _clock.UtcNow;
         await _context.SaveChangesAsync();
     }
+
+    // ── Raw ranked entries ────────────────────────────────────────────────────
 
     private async Task<List<RawLeaderboardEntry>> GetRankedEntriesAsync(TimeFrame timeFrame)
     {
@@ -309,6 +321,8 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
             ))
             .ToListAsync();
     }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Computes rank change: positive = moved up, negative = moved down, 0 = no change.

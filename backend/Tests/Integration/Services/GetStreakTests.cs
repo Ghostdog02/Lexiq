@@ -5,6 +5,7 @@ using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -54,7 +55,7 @@ public class GetStreakTests(DatabaseFixture fixture)
             _exerciseIds.Add(id);
         }
 
-        _service = new LeaderboardService(_ctx, CreateAvatarService(_ctx), new Backend.Api.Services.Clock.SystemClock());
+        _service = new LeaderboardService(_ctx, CreateAvatarService(_ctx), new Backend.Api.Services.Clock.SystemClock(), new MemoryCache(new MemoryCacheOptions()));
     }
 
     public async ValueTask DisposeAsync()
@@ -317,7 +318,7 @@ public class GetStreakTests(DatabaseFixture fixture)
     // ──────────────────────────────────────────────────────────────────────
 
     private LeaderboardService BuildServiceWithClock(FakeClock clock) =>
-        new(_ctx, CreateAvatarService(_ctx), clock);
+        new(_ctx, CreateAvatarService(_ctx), clock, new MemoryCache(new MemoryCacheOptions()));
 
     [Fact]
     public async Task SameDayMultipleSolves_CurrentStreakIs1_NotHigher()

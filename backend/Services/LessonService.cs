@@ -4,14 +4,18 @@ using Backend.Database;
 using Backend.Database.Entities;
 using Backend.Database.Entities.Exercises;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Backend.Api.Services;
 
-public class LessonService(BackendDbContext context, ExerciseService exerciseService, IClock clock)
+public class LessonService(BackendDbContext context, ExerciseService exerciseService, IClock clock, IMemoryCache cache)
 {
     private readonly BackendDbContext _context = context;
     private readonly ExerciseService _exerciseService = exerciseService;
     private readonly IClock _clock = clock;
+    private readonly IMemoryCache _cache = cache;
+
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(24);
 
     /// <summary>
     /// Lightweight projection used internally for cross-course navigation queries.
@@ -113,22 +117,33 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
 
     public async Task<Lesson?> GetFirstLessonInCourseAsync(string courseId)
     {
-        return await _context
-            .Lessons.Where(l => l.CourseId == courseId)
-            .OrderBy(l => l.OrderIndex)
-            .FirstOrDefaultAsync();
+        return await _cache.GetOrCreateAsync($"lesson:first:{courseId}", async entry =>
+        {
+            entry.SlidingExpiration = CacheTtl;
+            return await _context.Lessons
+                .Where(l => l.CourseId == courseId)
+                .OrderBy(l => l.OrderIndex)
+                .FirstOrDefaultAsync();
+        });
     }
 
     public async Task<List<Lesson>?> GetLessonsByCourseAsync(string courseId)
     {
-        var courseExists = await _context.Courses.AnyAsync(c => c.CourseId == courseId);
-        if (!courseExists)
-            return null;
+        var cached = await _cache.GetOrCreateAsync($"lessons:course:{courseId}", async entry =>
+        {
+            entry.SlidingExpiration = CacheTtl;
 
-        return await _context
-            .Lessons.Where(l => l.CourseId == courseId)
-            .OrderBy(l => l.OrderIndex)
-            .ToListAsync();
+            var courseExists = await _context.Courses.AnyAsync(c => c.CourseId == courseId);
+            if (!courseExists)
+                return null;
+
+            return await _context.Lessons
+                .Where(l => l.CourseId == courseId)
+                .OrderBy(l => l.OrderIndex)
+                .ToListAsync();
+        });
+
+        return cached;
     }
 
     public async Task UnlockLessonAsync(string lessonId, string userId)
@@ -144,6 +159,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         {
             existing.IsLocked = false;
         }
+      
         else
         {
             _context.UserLessonProgress.Add(new UserLessonProgress
@@ -184,16 +200,15 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             for (var i = 0; i < dto.Exercises.Count; i++)
             {
                 var exerciseDto = dto.Exercises[i];
-                var exercise = _exerciseService.MapToEntity(
-                    exerciseDto,
-                    lesson.LessonId
-                );
+                var exercise = _exerciseService.MapToEntity(exerciseDto, lesson.LessonId);
                 exercise.CreatedAt = _clock.UtcNow.AddSeconds(i); // Maintain order via CreatedAt
                 lesson.Exercises.Add(exercise);
             }
         }
 
         await _context.SaveChangesAsync();
+
+        BustLessonCaches(dto.CourseId);
         return lesson;
     }
 
@@ -203,14 +218,15 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         if (lesson == null)
             return null;
 
+        var oldCourseId = lesson.CourseId;
+
         if (dto.CourseId != null)
         {
-            var course =
-                await _context.Courses.FindAsync(dto.CourseId)
+            _ = await _context.Courses.FindAsync(dto.CourseId)
                 ?? throw new ArgumentException($"Course with ID '{dto.CourseId}' not found.");
             lesson.CourseId = dto.CourseId;
         }
-        
+
         if (dto.Title != null)
             lesson.Title = dto.Title;
 
@@ -221,9 +237,14 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             lesson.OrderIndex = dto.OrderIndex.Value;
 
         if (dto.LessonContent != null)
-            lesson.LessonContent = dto.LessonContent; // Update Editor.js content
+            lesson.LessonContent = dto.LessonContent;
 
         await _context.SaveChangesAsync();
+
+        BustLessonCaches(oldCourseId);
+        if (dto.CourseId != null && dto.CourseId != oldCourseId)
+            BustLessonCaches(dto.CourseId);
+
         return lesson;
     }
 
@@ -233,12 +254,16 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         if (lesson == null)
             return false;
 
+        var courseId = lesson.CourseId;
+
         await _context.UserLessonProgress
             .Where(ulp => ulp.LessonId == lessonId)
             .ExecuteDeleteAsync();
 
         _context.Lessons.Remove(lesson);
         await _context.SaveChangesAsync();
+
+        BustLessonCaches(courseId);
         return true;
     }
 
@@ -258,15 +283,6 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .FirstOrDefaultAsync(l => l.LessonId == lessonId);
     }
 
-    private async Task<int> GetNextOrderIndexForCourseAsync(string courseId)
-    {
-        var maxOrderIndex = await _context
-            .Lessons.Where(l => l.CourseId == courseId)
-            .MaxAsync(l => (int?)l.OrderIndex);
-
-        return (maxOrderIndex ?? -1) + 1;
-    }
-
     public async Task<List<Exercise>> GetExercisesByLessonIdAsync(string lessonId)
     {
         return await _context
@@ -278,4 +294,19 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .ToListAsync();
     }
 
+    private void BustLessonCaches(string courseId)
+    {
+        _cache.Remove($"lessons:course:{courseId}");
+        _cache.Remove($"lesson:first:{courseId}");
+        _cache.Remove($"course:{courseId}");
+    }
+
+    private async Task<int> GetNextOrderIndexForCourseAsync(string courseId)
+    {
+        var maxOrderIndex = await _context
+            .Lessons.Where(l => l.CourseId == courseId)
+            .MaxAsync(l => (int?)l.OrderIndex);
+
+        return (maxOrderIndex ?? -1) + 1;
+    }
 }

@@ -6,6 +6,7 @@ using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Xunit;
 
 namespace Backend.Tests.Integration.Services;
@@ -38,7 +39,7 @@ public class CourseCrudTests(DatabaseFixture fixture) : IClassFixture<DatabaseFi
             .Where(c => c.CourseId != fixtureCourseId)
             .ExecuteDeleteAsync(TestContext.Current.CancellationToken);
 
-        _sut = new CourseService(_ctx);
+        _sut = new CourseService(_ctx, new MemoryCache(new MemoryCacheOptions()));
 
         // Get the fixture's Italian language
         var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);

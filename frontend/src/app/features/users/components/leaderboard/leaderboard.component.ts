@@ -63,8 +63,7 @@ export class LeaderboardComponent implements OnInit {
       const response = await this.leaderboardService.getLeaderboard(this.timeFrame);
       this.leaderboardEntries = response.entries;
       this.currentUserEntry = response.currentUserEntry;
-    } catch (error) {
-      console.error('Failed to load leaderboard:', error);
+    } catch {
       this.leaderboardEntries = [];
       this.currentUserEntry = null;
     } finally {

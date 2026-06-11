@@ -88,8 +88,6 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
     this.setupKeyboardNavigation();
 
-    const { hearts, nextRefillAt } = await this.fetchHearts();
-
     const lessonId = this.route.snapshot.paramMap.get('id');
     if (!lessonId) {
       console.error('No lesson ID in route params');
@@ -98,30 +96,32 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
     }
 
     this.lessonId = lessonId;
-
-    if (!this.isAdmin && hearts === 0) {
-      this.nextRefillAt = nextRefillAt;
-      this.outOfHearts = true;
-      this.isLoading = false;
-      this.countdownDisplay.set(this.computeCountdown());
-      interval(1_000)
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => { this.countdownDisplay.set(this.computeCountdown()); });
-      return;
-    }
-
     this.isLoading = true;
+
     try {
-      this.exercises = await this.lessonService.getExercisesByLesson(lessonId);
+      const [{ hearts, nextRefillAt }, exercises] = await Promise.all([
+        this.fetchHearts(),
+        this.lessonService.getExercisesByLesson(lessonId),
+      ]);
+
+      if (!this.isAdmin && hearts === 0) {
+        this.nextRefillAt = nextRefillAt;
+        this.outOfHearts = true;
+        this.countdownDisplay.set(this.computeCountdown());
+        interval(1_000)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe(() => { this.countdownDisplay.set(this.computeCountdown()); });
+        return;
+      }
+
+      this.exercises = exercises;
+      this.state.initialize(this.exercises, this.isAdmin, hearts);
     } catch (err) {
       console.error('Error loading exercises:', err);
       await this.router.navigate(['/']);
-      return;
     } finally {
       this.isLoading = false;
     }
-
-    this.state.initialize(this.exercises, this.isAdmin, hearts);
   }
 
   ngOnDestroy(): void {

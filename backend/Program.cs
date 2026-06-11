@@ -1,4 +1,6 @@
+using Backend.Api.Dtos;
 using Backend.Api.Extensions;
+using Backend.Api.Services;
 using Backend.Database.Extensions;
 using DotNetEnv;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -29,6 +31,7 @@ public class Program
         ConfigureMiddleware(app);
 
         await InitializeDatabaseAsync(app.Services);
+        await WarmUpCachesAsync(app.Services);
 
         app.Run();
     }
@@ -68,5 +71,29 @@ public class Program
     {
         await serviceProvider.MigrateDbAsync();
         await SeedData.InitializeAsync(serviceProvider);
+    }
+
+    private static async Task WarmUpCachesAsync(IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var sp = scope.ServiceProvider;
+
+        try
+        {
+            await sp.GetRequiredService<CourseService>().GetAllCoursesAsync();
+            await sp.GetRequiredService<LanguageService>().GetAllLanguagesAsync();
+
+            var leaderboard = sp.GetRequiredService<LeaderboardService>();
+            await Task.WhenAll(
+                leaderboard.GetLeaderboardAsync(TimeFrame.AllTime, null),
+                leaderboard.GetLeaderboardAsync(TimeFrame.Monthly, null),
+                leaderboard.GetLeaderboardAsync(TimeFrame.Weekly, null)
+            );
+        }
+        catch (Exception ex)
+        {
+            var logger = sp.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning(ex, "Cache warm-up failed — app will start anyway");
+        }
     }
 }
