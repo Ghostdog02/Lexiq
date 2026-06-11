@@ -9,6 +9,7 @@ namespace Backend.Database.Entities;
 [PrimaryKey(nameof(UserId), nameof(ExerciseId))]
 [Index(nameof(UserId))]
 [Index(nameof(ExerciseId))]
+[Index(nameof(UserId), nameof(IsCompleted), nameof(CompletedAt))]
 public class UserExerciseProgress
 {
     [Required]
