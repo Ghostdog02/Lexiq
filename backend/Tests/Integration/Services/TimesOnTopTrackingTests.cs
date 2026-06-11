@@ -6,7 +6,6 @@ using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -34,7 +33,7 @@ public class TimesOnTopTrackingTests(DatabaseFixture fixture)
         _ctx = _fixture.CreateDbContext();
         await DbSeeder.ClearLeaderboardDataAsync(_ctx, _fixture.SystemUserId);
         _clock = new FakeClock();
-        _sut = new LeaderboardService(_ctx, CreateAvatarService(), _clock, new MemoryCache(new MemoryCacheOptions()));
+        _sut = new LeaderboardService(_ctx, CreateAvatarService(), _clock, new NullMemoryCache());
     }
 
     public async ValueTask DisposeAsync()
@@ -43,13 +42,7 @@ public class TimesOnTopTrackingTests(DatabaseFixture fixture)
         GC.SuppressFinalize(this);
     }
 
-    // Simulates a new day: advances the fake clock and recreates the service
-    // with a fresh cache so stale leaderboard data doesn't persist across day boundaries.
-    private void AdvanceDay(int days = 1)
-    {
-        _clock.Advance(TimeSpan.FromDays(days));
-        _sut = new LeaderboardService(_ctx, CreateAvatarService(), _clock, new MemoryCache(new MemoryCacheOptions()));
-    }
+    private void AdvanceDay(int days = 1) => _clock.Advance(TimeSpan.FromDays(days));
 
     private AvatarService CreateAvatarService()
     {
