@@ -2,27 +2,39 @@ using Backend.Api.Dtos;
 using Backend.Database;
 using Backend.Database.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Backend.Api.Services;
 
-public class CourseService(BackendDbContext context)
+public class CourseService(BackendDbContext context, IMemoryCache cache)
 {
     private readonly BackendDbContext _context = context;
+    private readonly IMemoryCache _cache = cache;
+
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(24);
 
     public async Task<List<Course>> GetAllCoursesAsync()
     {
-        return await _context
-            .Courses.Include(c => c.Language)
-            .OrderBy(c => c.OrderIndex)
-            .ToListAsync();
+        return await _cache.GetOrCreateAsync("courses", async entry =>
+        {
+            entry.SlidingExpiration = CacheTtl;
+            return await _context.Courses
+                .Include(c => c.Language)
+                .OrderBy(c => c.OrderIndex)
+                .ToListAsync();
+        }) ?? [];
     }
 
     public async Task<Course?> GetCourseByIdAsync(string id)
     {
-        return await _context
-            .Courses.Include(c => c.Language)
-            .Include(c => c.Lessons)
-            .FirstOrDefaultAsync(c => c.CourseId == id);
+        return await _cache.GetOrCreateAsync($"course:{id}", async entry =>
+        {
+            entry.SlidingExpiration = CacheTtl;
+            return await _context.Courses
+                .Include(c => c.Language)
+                .Include(c => c.Lessons)
+                .FirstOrDefaultAsync(c => c.CourseId == id);
+        });
     }
 
     public async Task<Course> CreateCourseAsync(CreateCourseDto dto)
@@ -44,6 +56,8 @@ public class CourseService(BackendDbContext context)
 
         _context.Courses.Add(course);
         await _context.SaveChangesAsync();
+
+        _cache.Remove("courses");
         return course;
     }
 
@@ -68,6 +82,9 @@ public class CourseService(BackendDbContext context)
         course.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
+
+        _cache.Remove("courses");
+        _cache.Remove($"course:{id}");
         return course;
     }
 
@@ -79,6 +96,9 @@ public class CourseService(BackendDbContext context)
 
         _context.Courses.Remove(course);
         await _context.SaveChangesAsync();
+
+        _cache.Remove("courses");
+        _cache.Remove($"course:{id}");
         return true;
     }
 }
