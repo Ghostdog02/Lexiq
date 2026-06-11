@@ -159,6 +159,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
         {
             existing.IsLocked = false;
         }
+      
         else
         {
             _context.UserLessonProgress.Add(new UserLessonProgress
