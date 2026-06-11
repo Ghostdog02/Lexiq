@@ -6,6 +6,7 @@ using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
@@ -118,9 +119,9 @@ public class ProfileServiceTests(DatabaseFixture fixture)
         // Wire up services
         var avatarService = CreateAvatarService(_ctx);
         var streakService = new StreakService(_ctx, new Backend.Api.Services.Clock.SystemClock());
-        var achievementService = new AchievementService(_ctx);
+        var memoryCache = new MemoryCache(new MemoryCacheOptions());
 
-        _service = new ProfileService(_ctx, streakService, achievementService, avatarService);
+        _service = new ProfileService(_ctx, streakService, memoryCache);
     }
 
     public async ValueTask DisposeAsync()
