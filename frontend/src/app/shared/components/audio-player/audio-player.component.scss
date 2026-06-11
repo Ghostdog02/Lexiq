@@ -220,6 +220,16 @@ $_waveform-mask: url('/assets/waveform-mask.svg');
   }
 }
 
+.audio-error {
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
 .replays-remaining {
   font-size: 1rem;
   font-weight: 700;

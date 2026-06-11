@@ -3,9 +3,15 @@
   [src]="src"
   (loadedmetadata)="onAudioLoaded(audioEl)"
   (timeupdate)="onTimeUpdate(audioEl)"
-  (ended)="onEnded()">
+  (ended)="onEnded()"
+  (error)="onAudioError()">
 </audio>
 
+@if (loadError) {
+  <div class="audio-error">Audio unavailable</div>
+}
+
+@if (!loadError) {
 <div class="audio-widget" [style.--pct]="scrubValue + '%'">
   <div class="controls-row">
     <div class="wave-section">
@@ -72,3 +78,4 @@
     </div>
   }
 </div>
+}
