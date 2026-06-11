@@ -107,6 +107,7 @@ public static class ServiceCollectionExtensions
             }
         );
 
+        services.AddMemoryCache();
         services.AddOutputCache(options =>
         {
             options.AddPolicy(
