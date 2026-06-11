@@ -103,8 +103,9 @@ export class ProfileComponent implements OnInit {
       await this.profileService.uploadAvatar(file);
       const previewUrl = URL.createObjectURL(file);
       this.profile = { ...this.profile, avatarUrl: previewUrl };
+      this.toastr.success('Avatar updated successfully', 'Profile', { toastClass: 'ngx-toastr toast-auth' });
     } catch {
-      this.toastr.error('Failed to upload avatar. Please try again.', 'Upload error', { toastClass: 'ngx-toastr toast-auth' });
+      // HTTP error toasted by interceptor
     } finally {
       this.isUploadingAvatar = false;
       input.value = '';

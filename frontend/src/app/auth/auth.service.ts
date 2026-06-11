@@ -3,18 +3,14 @@ import { inject, Injectable } from '@angular/core';
 
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { Router } from '@angular/router';
-import { ToastrService } from 'ngx-toastr';
 
 const BACKEND_API_URL = import.meta.env.BACKEND_API_URL || 'http://localhost:8080/api';
 const AUTH_API_URL = (BACKEND_API_URL || '/api') + '/auth';
-
-const TOAST_OPTIONS = { toastClass: 'ngx-toastr toast-auth' };
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private httpClient = inject(HttpClient);
   private router = inject(Router);
-  private toastr = inject(ToastrService);
 
   private authStatusListener = new BehaviorSubject<boolean>(false);
   private adminStatusListener = new BehaviorSubject<boolean>(false);
@@ -124,7 +120,6 @@ export class AuthService {
       this.router.navigateByUrl(safeReturnUrl);
     } catch {
       this.clearAuthState();
-      this.toastr.error('Sign-in failed. Please try again.', 'Login error', TOAST_OPTIONS);
     }
   }
 
