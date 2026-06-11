@@ -84,12 +84,11 @@ public class LessonController(
         await _lessonProgressService.EnsureFirstLessonUnlockedAsync(currentUser.Id, courseId);
 
         var lessonIds = lessons.Select(l => l.LessonId).ToList();
-        var progressMap = await _lessonProgressService.GetProgressForLessonsAsync(
+        var (progressMap, unlockedIds) = await _lessonProgressService.GetProgressForLessonsAsync(
             currentUser.Id,
             lessonIds
         );
 
-        var unlockedIds = await _lessonProgressService.GetUnlockedLessonIdsAsync(currentUser.Id, lessonIds);
         var result = lessons.Select(l =>
         {
             var effectiveIsLocked = !unlockedIds.Contains(l.LessonId);
@@ -120,10 +119,7 @@ public class LessonController(
 
         var progress = await _lessonProgressService.GetFullLessonProgressAsync(currentUser.Id, lessonId);
 
-        var unlockedIds = await _lessonProgressService.GetUnlockedLessonIdsAsync(currentUser.Id, [lesson.LessonId]);
-        var effectiveIsLocked = !unlockedIds.Contains(lesson.LessonId);
-
-        return OkPolymorphic<LessonDto>(lesson.ToDto(progress.Summary, progress.ExerciseProgress, isLockedOverride: effectiveIsLocked));
+        return OkPolymorphic<LessonDto>(lesson.ToDto(progress.Summary, progress.ExerciseProgress, isLockedOverride: progress.IsLocked));
     }
 
     /// <summary>

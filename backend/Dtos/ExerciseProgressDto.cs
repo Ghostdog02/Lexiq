@@ -47,7 +47,8 @@ public record NextLessonInfo(
 
 public record LessonProgressResult(
     LessonProgressSummary Summary,
-    Dictionary<string, UserExerciseProgressDto> ExerciseProgress
+    Dictionary<string, UserExerciseProgressDto> ExerciseProgress,
+    bool IsLocked
 );
 
 public record SubmitLessonRequest(List<ExerciseAnswerDto> Answers);
