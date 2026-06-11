@@ -14,7 +14,7 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
     private readonly IMemoryCache _cache = cache;
     private const int MaxLeaderboardEntries = 50;
 
-    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(30);
 
     private record CachedLeaderboard(
         List<LeaderboardEntryDto> Entries,
