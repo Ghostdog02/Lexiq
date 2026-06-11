@@ -1,6 +1,7 @@
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { LeaderboardEntry, LeaderboardResponse, TimeFrame } from '../../models/leaderboard.interface';
 import { LeaderboardService } from '../../services/leaderboard.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-leaderboard',
@@ -11,6 +12,7 @@ import { LeaderboardService } from '../../services/leaderboard.service';
 })
 export class LeaderboardComponent implements OnInit {
   private leaderboardService = inject(LeaderboardService);
+  private toastr = inject(ToastrService);
 
   TimeFrame = TimeFrame;
   timeFrame: TimeFrame = TimeFrame.AllTime;
@@ -63,8 +65,8 @@ export class LeaderboardComponent implements OnInit {
       const response = await this.leaderboardService.getLeaderboard(this.timeFrame);
       this.leaderboardEntries = response.entries;
       this.currentUserEntry = response.currentUserEntry;
-    } catch (error) {
-      console.error('Failed to load leaderboard:', error);
+    } catch {
+      this.toastr.error('Failed to load leaderboard. Please try again.', 'Error', { toastClass: 'ngx-toastr toast-auth' });
       this.leaderboardEntries = [];
       this.currentUserEntry = null;
     } finally {

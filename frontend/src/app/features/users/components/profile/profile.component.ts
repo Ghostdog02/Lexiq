@@ -12,6 +12,7 @@ import { firstValueFrom, interval } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { Achievement, Language, UserProfile } from '../../models/user.model';
 import { ProfileService } from '../../services/profile.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-profile',
@@ -24,6 +25,7 @@ export class ProfileComponent implements OnInit {
   private profileService = inject(ProfileService);
   private http = inject(HttpClient);
   private destroyRef = inject(DestroyRef);
+  private toastr = inject(ToastrService);
 
   @ViewChild('avatarInput') avatarInput!: ElementRef<HTMLInputElement>;
 
@@ -102,7 +104,7 @@ export class ProfileComponent implements OnInit {
       const previewUrl = URL.createObjectURL(file);
       this.profile = { ...this.profile, avatarUrl: previewUrl };
     } catch {
-      // silently ignore — could surface via toastr if needed
+      this.toastr.error('Failed to upload avatar. Please try again.', 'Upload error', { toastClass: 'ngx-toastr toast-auth' });
     } finally {
       this.isUploadingAvatar = false;
       input.value = '';

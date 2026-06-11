@@ -194,7 +194,7 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
       this.router.navigate(['/']);
     } catch (error) {
       console.error('❌ Error creating lesson:', error);
-      this.toastr.error('Failed to upload audio. Please try again.', 'Upload error', { toastClass: 'ngx-toastr toast-auth' });
+      this.toastr.error('Failed to create lesson. Please try again.', 'Error', { toastClass: 'ngx-toastr toast-auth' });
     }
   }
 
