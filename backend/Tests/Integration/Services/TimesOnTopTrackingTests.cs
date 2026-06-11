@@ -43,6 +43,14 @@ public class TimesOnTopTrackingTests(DatabaseFixture fixture)
         GC.SuppressFinalize(this);
     }
 
+    // Simulates a new day: advances the fake clock and recreates the service
+    // with a fresh cache so stale leaderboard data doesn't persist across day boundaries.
+    private void AdvanceDay(int days = 1)
+    {
+        _clock.Advance(TimeSpan.FromDays(days));
+        _sut = new LeaderboardService(_ctx, CreateAvatarService(), _clock, new MemoryCache(new MemoryCacheOptions()));
+    }
+
     private AvatarService CreateAvatarService()
     {
         var factory = new ServiceCollection()
@@ -116,7 +124,7 @@ public class TimesOnTopTrackingTests(DatabaseFixture fixture)
         await _sut.GetLeaderboardAsync(TimeFrame.AllTime, user.Id);
 
         // Advance to the next day
-        _clock.Advance(TimeSpan.FromDays(1));
+        AdvanceDay();
 
         // Act
         await _sut.GetLeaderboardAsync(TimeFrame.AllTime, user.Id);
@@ -139,7 +147,7 @@ public class TimesOnTopTrackingTests(DatabaseFixture fixture)
         user2.TotalPointsEarned = 2000;
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        _clock.Advance(TimeSpan.FromDays(1));
+        AdvanceDay();
 
         // Act — leaderboard with user2 at rank 1
         await _sut.GetLeaderboardAsync(TimeFrame.AllTime, user2.Id);
@@ -203,12 +211,12 @@ public class TimesOnTopTrackingTests(DatabaseFixture fixture)
         await _sut.GetLeaderboardAsync(TimeFrame.AllTime, user.Id);
 
         // Day 2 — competitor surpasses
-        _clock.Advance(TimeSpan.FromDays(1));
+        AdvanceDay();
         var rival = await AddUserWithXpAsync("rival", 2000);
         await _sut.GetLeaderboardAsync(TimeFrame.AllTime, user.Id);
 
         // Day 3 — user regains rank 1
-        _clock.Advance(TimeSpan.FromDays(1));
+        AdvanceDay();
         rival.TotalPointsEarned = 500;
         await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
         await _sut.GetLeaderboardAsync(TimeFrame.AllTime, user.Id);
@@ -241,7 +249,7 @@ public class TimesOnTopTrackingTests(DatabaseFixture fixture)
             }
             await _ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
             await _sut.GetLeaderboardAsync(TimeFrame.AllTime, null);
-            _clock.Advance(TimeSpan.FromDays(1));
+            AdvanceDay();
         }
 
         await _ctx.Entry(a).ReloadAsync(TestContext.Current.CancellationToken);
