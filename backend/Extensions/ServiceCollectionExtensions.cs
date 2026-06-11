@@ -179,6 +179,7 @@ public static class ServiceCollectionExtensions
             .AddIdentityCore<User>(options =>
             {
                 options.SignIn.RequireConfirmedAccount = true;
+                options.User.AllowedUserNameCharacters = "";
             })
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<BackendDbContext>()
