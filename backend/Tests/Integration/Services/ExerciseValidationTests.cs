@@ -9,6 +9,7 @@ using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -271,7 +272,7 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
 
         var clock = new Backend.Api.Services.Clock.SystemClock();
         var exerciseService = new ExerciseService(ctx, new Moq.Mock<Backend.Api.Services.IFileUploadsService>().Object);
-        var lessonService = new LessonService(ctx, exerciseService, clock);
+        var lessonService = new LessonService(ctx, exerciseService, clock, new MemoryCache(new MemoryCacheOptions()));
         var achievementService = new AchievementService(ctx);
         var heartsService = new HeartsService(ctx, clock);
 

@@ -8,6 +8,7 @@ using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -72,7 +73,7 @@ public class HeartsBlockSubmissionTests(DatabaseFixture fixture)
     {
         return new LessonProgressService(
             ctx,
-            new LessonService(ctx, new ExerciseService(ctx, new Moq.Mock<IFileUploadsService>().Object), _clock),
+            new LessonService(ctx, new ExerciseService(ctx, new Moq.Mock<IFileUploadsService>().Object), _clock, new MemoryCache(new MemoryCacheOptions())),
             _userManager,
             new AchievementService(ctx),
             _clock,

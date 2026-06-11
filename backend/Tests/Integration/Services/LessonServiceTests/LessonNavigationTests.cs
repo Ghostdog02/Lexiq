@@ -4,6 +4,7 @@ using Backend.Database.Entities;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Xunit;
 
 namespace Backend.Tests.Integration.Services.LessonServiceTests;
@@ -26,7 +27,7 @@ public class LessonNavigationTests(DatabaseFixture fixture) : IClassFixture<Data
         _ctx = fixture.CreateDbContext();
 
         var exerciseService = new ExerciseService(_ctx, new Moq.Mock<Backend.Api.Services.IFileUploadsService>().Object);
-        _sut = new LessonService(_ctx, exerciseService, new Backend.Api.Services.Clock.SystemClock());
+        _sut = new LessonService(_ctx, exerciseService, new Backend.Api.Services.Clock.SystemClock(), new MemoryCache(new MemoryCacheOptions()));
 
         // Derive course and language from the fixture lesson — immune to leftover courses from other test classes
         var fixtureLesson = await _ctx

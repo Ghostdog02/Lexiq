@@ -9,6 +9,7 @@ using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -83,7 +84,8 @@ public class LessonHeartsGateTests(DatabaseFixture fixture)
         new LessonService(
             _ctx,
             new ExerciseService(_ctx, new Moq.Mock<IFileUploadsService>().Object),
-            _clock
+            _clock,
+            new MemoryCache(new MemoryCacheOptions())
         ),
         _userManager,
         new AchievementService(_ctx),

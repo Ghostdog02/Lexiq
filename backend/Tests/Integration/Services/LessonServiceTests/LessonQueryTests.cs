@@ -5,6 +5,7 @@ using Backend.Database.Entities.Exercises;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Xunit;
 
 namespace Backend.Tests.Integration.Services.LessonServiceTests;
@@ -26,7 +27,7 @@ public class LessonQueryTests(DatabaseFixture fixture) : IClassFixture<DatabaseF
         _ctx = fixture.CreateDbContext();
 
         var exerciseService = new ExerciseService(_ctx, new Moq.Mock<Backend.Api.Services.IFileUploadsService>().Object);
-        _sut = new LessonService(_ctx, exerciseService, new Backend.Api.Services.Clock.SystemClock());
+        _sut = new LessonService(_ctx, exerciseService, new Backend.Api.Services.Clock.SystemClock(), new MemoryCache(new MemoryCacheOptions()));
 
         var language = await _ctx.Languages.FirstAsync(TestContext.Current.CancellationToken);
         _languageId = language.LanguageId;

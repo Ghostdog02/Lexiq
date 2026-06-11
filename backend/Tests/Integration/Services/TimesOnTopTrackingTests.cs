@@ -6,6 +6,7 @@ using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -33,7 +34,7 @@ public class TimesOnTopTrackingTests(DatabaseFixture fixture)
         _ctx = _fixture.CreateDbContext();
         await DbSeeder.ClearLeaderboardDataAsync(_ctx, _fixture.SystemUserId);
         _clock = new FakeClock();
-        _sut = new LeaderboardService(_ctx, CreateAvatarService(), _clock);
+        _sut = new LeaderboardService(_ctx, CreateAvatarService(), _clock, new MemoryCache(new MemoryCacheOptions()));
     }
 
     public async ValueTask DisposeAsync()

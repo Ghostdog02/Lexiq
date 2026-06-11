@@ -6,6 +6,7 @@ using Backend.Tests.Helpers;
 using Backend.Tests.Infrastructure;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Xunit;
 
 namespace Backend.Tests.Integration.Services;
@@ -29,7 +30,7 @@ public class LanguageCrudTests(DatabaseFixture fixture)
         _ctx = _fixture.CreateDbContext();
         await DbSeeder.ClearLeaderboardDataAsync(_ctx, _fixture.SystemUserId);
 
-        _sut = new LanguageService(_ctx);
+        _sut = new LanguageService(_ctx, new MemoryCache(new MemoryCacheOptions()));
     }
 
     public async ValueTask DisposeAsync()
