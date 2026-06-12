@@ -280,6 +280,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .ThenInclude(e => (e as ImageChoiceExercise)!.Options)
             .Include(l => l.Exercises)
             .ThenInclude(e => (e as AudioMatchingExercise)!.Pairs)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(l => l.LessonId == lessonId);
     }
 
@@ -291,6 +292,7 @@ public class LessonService(BackendDbContext context, ExerciseService exerciseSer
             .Include(e => (e as ListeningExercise)!.Options)
             .Include(e => (e as ImageChoiceExercise)!.Options)
             .Include(e => (e as AudioMatchingExercise)!.Pairs)
+            .AsSplitQuery()
             .ToListAsync();
     }
 
