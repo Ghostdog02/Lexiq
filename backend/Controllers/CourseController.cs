@@ -51,7 +51,7 @@ public class CourseController(
 
         var hearts = await _heartsService.RefillAndGetHeartsAsync(currentUser);
         DateTime? nextHeartRefillAt = hearts < HeartsService.MaxHearts
-            ? currentUser.LastHeartResetAt.AddHours(HeartsService.RefillIntervalHours)
+            ? DateTime.SpecifyKind(currentUser.LastHeartResetAt.AddHours(HeartsService.RefillIntervalHours), DateTimeKind.Utc)
             : null;
 
         var courseDtos = courses.Select(course =>

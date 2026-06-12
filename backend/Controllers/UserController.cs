@@ -55,7 +55,7 @@ public class UserController(
         var hearts = await _heartsService.RefillAndGetHeartsAsync(currentUser);
 
         DateTime? nextRefillAt = hearts < HeartsService.MaxHearts
-            ? currentUser.LastHeartResetAt.AddHours(HeartsService.RefillIntervalHours)
+            ? DateTime.SpecifyKind(currentUser.LastHeartResetAt.AddHours(HeartsService.RefillIntervalHours), DateTimeKind.Utc)
             : null;
 
         return Ok(new { hearts, nextRefillAt });
