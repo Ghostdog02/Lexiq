@@ -5,6 +5,12 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '**/*.md'
+      - '.claude/**'
+      - 'LICENSE'
 
 concurrency:
   group: release-${{ github.ref }}
