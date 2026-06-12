@@ -163,6 +163,42 @@ public static class ContentMappingExtensions
         };
     }
 
+    public static HomeCourseDto ToHomeCourseDto(this Course entity, List<HomeLessonDto> lessons)
+    {
+        return new HomeCourseDto(
+            entity.CourseId,
+            entity.Language?.LanguageName ?? string.Empty,
+            entity.Title,
+            entity.Description,
+            entity.EstimatedDurationHours,
+            entity.OrderIndex,
+            entity.Lessons.Count,
+            lessons
+        );
+    }
+
+    public static HomeLessonDto ToHomeLessonDto(
+        this Lesson entity,
+        string courseName,
+        LessonProgressSummary? progress,
+        bool isLockedOverride
+    )
+    {
+        return new HomeLessonDto(
+            entity.LessonId,
+            entity.CourseId,
+            courseName,
+            entity.Title,
+            entity.EstimatedDurationMinutes,
+            entity.OrderIndex,
+            isLockedOverride,
+            progress?.CompletedExercises,
+            progress?.EarnedXp,
+            progress?.TotalPossibleXp,
+            progress?.IsCompleted
+        );
+    }
+
     public static UserLanguageDto ToDto(this UserLanguage entity)
     {
         return new UserLanguageDto(
