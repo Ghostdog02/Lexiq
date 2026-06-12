@@ -10,9 +10,68 @@ namespace Backend.Api.Controllers;
 [Route("api/[controller]s")]
 [ApiController]
 [Authorize]
-public class CourseController(CourseService courseService) : ControllerBase
+public class CourseController(
+    CourseService courseService,
+    LessonService lessonService,
+    LessonProgressService lessonProgressService,
+    HeartsService heartsService
+) : ControllerBase
 {
     private readonly CourseService _courseService = courseService;
+    private readonly LessonService _lessonService = lessonService;
+    private readonly LessonProgressService _lessonProgressService = lessonProgressService;
+    private readonly HeartsService _heartsService = heartsService;
+
+    [HttpGet("with-progress")]
+    public async Task<ActionResult<CoursesWithProgressDto>> GetCoursesWithProgress()
+    {
+        var currentUser = HttpContext.GetCurrentUser()!;
+        var userId = currentUser.Id;
+
+        var courses = await _courseService.GetAllCoursesAsync();
+
+        var lessonsByCourse = new Dictionary<string, List<Database.Entities.Lesson>>();
+        foreach (var course in courses)
+        {
+            await _lessonProgressService.EnsureFirstLessonUnlockedAsync(userId, course.CourseId);
+            var lessons = await _lessonService.GetLessonsByCourseAsync(course.CourseId);
+            if (lessons != null)
+                lessonsByCourse[course.CourseId] = lessons;
+        }
+
+        var allLessonIds = lessonsByCourse.Values
+            .SelectMany(l => l)
+            .Select(l => l.LessonId)
+            .ToList();
+
+        var (progressMap, unlockedIds) = await _lessonProgressService.GetProgressForLessonsAsync(
+            userId,
+            allLessonIds
+        );
+
+        var hearts = await _heartsService.RefillAndGetHeartsAsync(currentUser);
+        DateTime? nextHeartRefillAt = hearts < HeartsService.MaxHearts
+            ? currentUser.LastHeartResetAt.AddHours(HeartsService.RefillIntervalHours)
+            : null;
+
+        var courseDtos = courses.Select(course =>
+        {
+            var lessons = lessonsByCourse.GetValueOrDefault(course.CourseId) ?? [];
+            var lessonDtos = lessons.Select(l => l.ToHomeLessonDto(
+                course.Title,
+                progressMap.GetValueOrDefault(l.LessonId),
+                !unlockedIds.Contains(l.LessonId)
+            )).ToList();
+            return course.ToHomeCourseDto(lessonDtos);
+        }).ToList();
+
+        return Ok(new CoursesWithProgressDto(
+            Courses: courseDtos,
+            TotalXp: currentUser.TotalPointsEarned,
+            Hearts: hearts,
+            NextHeartRefillAt: nextHeartRefillAt
+        ));
+    }
 
     [HttpGet]
     public async Task<ActionResult<List<CourseDto>>> GetCourses()
