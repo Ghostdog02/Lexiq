@@ -3,6 +3,12 @@ name: "CodeQL Advanced"
 on:
   push:
     branches: [ "master" ]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - '**/*.md'
+      - '.claude/**'
+      - 'LICENSE'
   schedule:
     - cron: '39 19 * * 6'
 
