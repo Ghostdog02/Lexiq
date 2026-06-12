@@ -28,7 +28,7 @@ export interface LessonProgressSummary {
   earnedXp: number;
   totalPossibleXp: number;
   completionPercentage: number;
-  meetsCompletionThreshold: boolean;
+  isCompleted: boolean;
 }
 
 export interface ExerciseResult {
