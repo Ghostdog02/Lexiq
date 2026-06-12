@@ -34,14 +34,3 @@
     </ul>
 </aside>
 
-@if (showLogoutConfirm) {
-  <div class="confirm-overlay" (click)="cancelLogout()">
-    <div class="confirm-dialog" (click)="$event.stopPropagation()">
-      <p class="confirm-message">Are you sure you want to log out?</p>
-      <div class="confirm-actions">
-        <button class="btn secondary" type="button" (click)="cancelLogout()">No, stay</button>
-        <button class="btn primary" type="button" (click)="confirmLogout()">Yes, log out</button>
-      </div>
-    </div>
-  </div>
-}

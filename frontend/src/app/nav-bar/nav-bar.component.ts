@@ -2,6 +2,7 @@ import { Component, DestroyRef, inject, OnInit } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../auth/auth.service';
 import { RouterLink } from '@angular/router';
+import { ConfirmDialogService } from '../shared/components/confirm-dialog/confirm-dialog.service';
 
 @Component({
   selector: 'app-nav-bar',
@@ -12,10 +13,10 @@ import { RouterLink } from '@angular/router';
 })
 export class NavBarComponent implements OnInit {
   public authService = inject(AuthService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   private destroyRef = inject(DestroyRef);
   public userIsAuthenticated = false;
   public userIsAdmin = false;
-  public showLogoutConfirm = false;
 
   ngOnInit(): void {
     this.authService
@@ -30,15 +31,9 @@ export class NavBarComponent implements OnInit {
   }
 
   requestLogout(): void {
-    this.showLogoutConfirm = true;
-  }
-
-  confirmLogout(): void {
-    this.showLogoutConfirm = false;
-    this.authService.logoutUser();
-  }
-
-  cancelLogout(): void {
-    this.showLogoutConfirm = false;
+    this.confirmDialog
+      .confirm({ message: 'Are you sure you want to log out?', confirmLabel: 'Yes, log out' })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(confirmed => { if (confirmed) this.authService.logoutUser(); });
   }
 }

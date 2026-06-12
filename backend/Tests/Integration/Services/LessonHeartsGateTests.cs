@@ -90,7 +90,8 @@ public class LessonHeartsGateTests(DatabaseFixture fixture)
         _userManager,
         new AchievementService(_ctx),
         _clock,
-        _heartsService
+        _heartsService,
+        new NullMemoryCache()
     );
 
     private async Task<User> CreateUserAsync(string username, int hearts, string? role = null)

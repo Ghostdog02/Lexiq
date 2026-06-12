@@ -7,6 +7,7 @@ using Backend.Database.Entities.Exercises;
 using Backend.Database.Entities.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Backend.Api.Services;
 
@@ -16,7 +17,8 @@ public class LessonProgressService(
     UserManager<User> userManager,
     AchievementService achievementService,
     IClock clock,
-    HeartsService heartsService
+    HeartsService heartsService,
+    IMemoryCache cache
 )
 {
     private readonly BackendDbContext _context = context;
@@ -25,6 +27,7 @@ public class LessonProgressService(
     private readonly AchievementService _achievementService = achievementService;
     private readonly IClock _clock = clock;
     private readonly HeartsService _heartsService = heartsService;
+    private readonly IMemoryCache _cache = cache;
 
     // ── Public API ────────────────────────────────────────────────────────────
 
@@ -150,6 +153,10 @@ public class LessonProgressService(
 
     public async Task EnsureFirstLessonUnlockedAsync(string userId, string courseId)
     {
+        var cacheKey = $"firstUnlocked:{userId}:{courseId}";
+        if (_cache.TryGetValue(cacheKey, out _))
+            return;
+
         var firstLesson = await _lessonService.GetFirstLessonInCourseAsync(courseId);
         if (firstLesson == null)
             return;
@@ -157,16 +164,18 @@ public class LessonProgressService(
         var exists = await _context.UserLessonProgress
             .AnyAsync(ulp => ulp.UserId == userId && ulp.LessonId == firstLesson.LessonId && !ulp.IsLocked);
 
-        if (exists)
-            return;
-
-        _context.UserLessonProgress.Add(new UserLessonProgress
+        if (!exists)
         {
-            UserId = userId,
-            LessonId = firstLesson.LessonId,
-            IsLocked = false,
-        });
-        await _context.SaveChangesAsync();
+            _context.UserLessonProgress.Add(new UserLessonProgress
+            {
+                UserId = userId,
+                LessonId = firstLesson.LessonId,
+                IsLocked = false,
+            });
+            await _context.SaveChangesAsync();
+        }
+
+        _cache.Set(cacheKey, true, TimeSpan.FromHours(24));
     }
 
     public async Task<LessonSubmitResult> SubmitLessonAsync(

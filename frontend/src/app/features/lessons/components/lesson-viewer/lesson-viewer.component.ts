@@ -4,6 +4,7 @@ import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
+import { formatCountdown } from '../../../../shared/utils/time.utils';
 import { ToastrService } from 'ngx-toastr';
 import { LessonService } from '../../services/lesson.service';
 import { ContentParserService } from '../../../../shared/services/content-parser.service';
@@ -91,10 +92,7 @@ export class LessonViewerComponent implements OnInit {
     if (!this.lesson) return;
 
     if (this.hearts <= 0) {
-      const hours = this.nextRefillAt
-        ? Math.ceil((this.nextRefillAt.getTime() - Date.now()) / 3_600_000)
-        : 4;
-      const timeLabel = hours <= 1 ? '1 hour' : `${hours} hours`;
+      const timeLabel = this.nextRefillAt ? formatCountdown(this.nextRefillAt) : '4h';
       this.toastr.error(`Try again in ${timeLabel}.`, 'Not enough hearts', { toastClass: 'ngx-toastr toast-auth' });
       return;
     }
@@ -103,6 +101,6 @@ export class LessonViewerComponent implements OnInit {
   }
 
   goBack() {
-    this.router.navigate(['/']);
+    this.router.navigate(['/courses']);
   }
 }

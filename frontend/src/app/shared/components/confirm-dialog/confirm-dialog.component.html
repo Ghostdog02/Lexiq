@@ -1,0 +1,15 @@
+@if (active) {
+  <div class="confirm-overlay" (click)="respond(false)">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()">
+      <p class="confirm-message">{{ active.config.message }}</p>
+      <div class="confirm-actions">
+        <button class="btn secondary" type="button" (click)="respond(false)">
+          {{ active.config.cancelLabel ?? 'No, stay' }}
+        </button>
+        <button class="btn primary" type="button" (click)="respond(true)">
+          {{ active.config.confirmLabel ?? 'Yes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

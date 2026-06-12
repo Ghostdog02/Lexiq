@@ -2,10 +2,9 @@ import {Component, HostListener, inject, OnInit} from '@angular/core';
 import {Router} from '@angular/router';
 import {HttpClient} from '@angular/common/http';
 import {firstValueFrom} from 'rxjs';
-import {LessonService} from '../../services/lesson.service';
 import {AuthService} from '../../../../auth/auth.service';
 import {Lesson, LessonStatus} from '../../models/lesson.interface';
-import {CourseWithLessons} from '../../models/course.interface';
+import {CourseWithLessons, CoursesWithProgressResponse, HomeLesson} from '../../models/course.interface';
 
 @Component({
   selector: 'app-home',
@@ -34,7 +33,6 @@ export class HomeComponent implements OnInit {
   private readonly lessonIcons = ['📚', '✏️', '🎯', '💡', '🔤', '🗣️', '📝', '🎓'];
 
   private router = inject(Router);
-  private lessonService = inject(LessonService);
   private authService = inject(AuthService);
   private http = inject(HttpClient);
 
@@ -43,26 +41,6 @@ export class HomeComponent implements OnInit {
     this.isContentCreator = this.authService.getIsContentCreator();
     this.userIsAuthenticated = this.authService.getIsAuth();
     await this.loadCoursesFromApi();
-    await Promise.all([this.loadUserXp(), this.loadHearts()]);
-  }
-
-  private async loadUserXp(): Promise<void> {
-    const xpData = await this.lessonService.getCurrentUserXp();
-    if (xpData) {
-      this.totalXp = xpData.totalXp;
-    }
-  }
-
-  private async loadHearts(): Promise<void> {
-    if (this.isAdmin || this.isContentCreator || !this.userIsAuthenticated) return;
-    try {
-      const response = await firstValueFrom(
-        this.http.get<{ hearts: number }>('/api/user/hearts', { withCredentials: true })
-      );
-      this.hearts = response.hearts;
-    } catch {
-      // Non-critical — sidebar badge stays 0
-    }
   }
 
   @HostListener('window:scroll')
@@ -84,30 +62,32 @@ export class HomeComponent implements OnInit {
     this.error = null;
 
     try {
-      const coursesFromApi = await this.lessonService.getCourses();
-
-      this.courses = await Promise.all(
-          coursesFromApi.map(async (course, index) => {
-            const lessonsFromApi = await this.lessonService.getLessonsByCourse(course.courseId);
-
-            // Derive status from progress fields for each lesson
-            const lessonsWithStatus = lessonsFromApi.map((lesson, lessonIndex) => ({
-              ...lesson,
-              status: this.deriveLessonStatus(lesson),
-              icon: this.lessonIcons[lessonIndex % this.lessonIcons.length]
-            }));
-
-            return {
-              ...course,
-              color: this.courseColors[index % this.courseColors.length],
-              lessons: lessonsWithStatus
-            };
-          })
+      const data = await firstValueFrom(
+        this.http.get<CoursesWithProgressResponse>('/api/courses/with-progress')
       );
 
-      // Set current lesson to first non-locked lesson
-      this.setCurrentLesson();
+      this.totalXp = data.totalXp;
+      this.hearts = data.hearts;
 
+      this.courses = data.courses.map((course, index) => ({
+        courseId: course.courseId,
+        title: course.title,
+        languageName: course.languageName,
+        description: course.description,
+        estimatedDurationHours: course.estimatedDurationHours ?? 0,
+        orderIndex: course.orderIndex,
+        lessonCount: course.lessonCount,
+        color: this.courseColors[index % this.courseColors.length],
+        lessons: course.lessons.map((lesson, lessonIndex) => ({
+          ...lesson,
+          lessonContent: '',
+          exercises: [],
+          status: this.deriveLessonStatus(lesson),
+          icon: this.lessonIcons[lessonIndex % this.lessonIcons.length],
+        })),
+      }));
+
+      this.setCurrentLesson();
     } catch (err) {
       console.error('❌ Error loading courses:', err);
       this.error = 'Failed to load courses. Please try again.';
@@ -148,7 +128,7 @@ export class HomeComponent implements OnInit {
     this.router.navigate(["/create-lesson"])
   }
 
-  private deriveLessonStatus(lesson: Lesson): LessonStatus {
+  private deriveLessonStatus(lesson: HomeLesson): LessonStatus {
     if (lesson.isLocked) return 'locked';
     if (lesson.isCompleted) return 'completed';
     if ((lesson.completedExercises ?? 0) > 0) return 'in-progress';

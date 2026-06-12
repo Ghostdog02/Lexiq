@@ -48,10 +48,46 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
             .OrderByDescending(d => d)
             .ToListAsync();
 
+        return ComputeStreak(activeDates, DateOnly.FromDateTime(_clock.UtcNow));
+    }
+
+    private async Task<Dictionary<string, (int CurrentStreak, int LongestStreak)>> GetStreaksForUsersAsync(
+        List<string> userIds
+    )
+    {
+        var rawDates = await _context.UserExerciseProgress
+            .Where(p => userIds.Contains(p.UserId) && p.IsCompleted && p.CompletedAt.HasValue)
+            .Select(p => new { p.UserId, p.CompletedAt })
+            .ToListAsync();
+
+        var today = DateOnly.FromDateTime(_clock.UtcNow);
+
+        var datesByUser = rawDates
+            .GroupBy(x => x.UserId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => DateOnly.FromDateTime(x.CompletedAt!.Value))
+                      .Distinct()
+                      .OrderByDescending(d => d)
+                      .ToList()
+            );
+
+        return userIds.ToDictionary(
+            userId => userId,
+            userId => datesByUser.TryGetValue(userId, out var dates)
+                ? ComputeStreak(dates, today)
+                : (0, 0)
+        );
+    }
+
+    private static (int CurrentStreak, int LongestStreak) ComputeStreak(
+        List<DateOnly> activeDates,
+        DateOnly today
+    )
+    {
         if (activeDates.Count == 0)
             return (0, 0);
 
-        var today = DateOnly.FromDateTime(_clock.UtcNow);
         var currentStreak = 0;
         var longestStreak = 0;
         var streak = 1;
@@ -74,7 +110,6 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
             }
         }
 
-        // Handle the last streak in the list
         if (isCurrentStreak && currentStreak == 0)
             currentStreak = streak;
         longestStreak = Math.Max(longestStreak, streak);
@@ -126,7 +161,14 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         var previousEntries = await GetPreviousPeriodEntriesAsync(timeFrame);
 
         var userIds = currentEntries.Select(e => e.UserId).ToList();
+
+        // Three queries instead of 2×N
         var usersWithAvatars = await _avatarService.GetUsersWithAvatarsAsync(userIds);
+        var timesOnTopMap = await _context.Users
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.TimesOnTop })
+            .ToDictionaryAsync(u => u.Id, u => u.TimesOnTop);
+        var streakMap = await GetStreaksForUsersAsync(userIds);
 
         var previousRanks = new Dictionary<string, int>();
         for (var i = 0; i < previousEntries.Count; i++)
@@ -137,13 +179,24 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         {
             var entry = currentEntries[i];
             var currentRank = i + 1;
-            var change = ComputeRankChange(entry.UserId, currentRank, previousRanks);
+            var (currentStreak, longestStreak) = streakMap.GetValueOrDefault(entry.UserId);
             var avatarUrl = usersWithAvatars.Contains(entry.UserId)
                 ? $"/api/user/{entry.UserId}/avatar"
                 : null;
 
-            var enriched = await EnrichEntryAsync(entry, currentRank, change, false, avatarUrl);
-            enrichedEntries.Add(enriched);
+            enrichedEntries.Add(new LeaderboardEntryDto(
+                Rank: currentRank,
+                UserId: entry.UserId,
+                UserName: entry.UserName,
+                Avatar: avatarUrl,
+                TotalXp: entry.TotalXp,
+                CurrentStreak: currentStreak,
+                LongestStreak: longestStreak,
+                Level: CalculateLevel(entry.TotalXp),
+                Change: ComputeRankChange(entry.UserId, currentRank, previousRanks),
+                IsCurrentUser: false,
+                TimesOnTop: timesOnTopMap.GetValueOrDefault(entry.UserId)
+            ));
         }
 
         return new CachedLeaderboard(enrichedEntries, previousRanks);
@@ -157,6 +210,10 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
     private async Task IncrementTimesOnTopAsync(string rank1UserId)
     {
         var today = DateOnly.FromDateTime(_clock.UtcNow);
+        var cacheKey = $"timesOnTop:checked:{rank1UserId}:{today:yyyyMMdd}";
+
+        if (_cache.TryGetValue(cacheKey, out _))
+            return;
 
         var rank1User = await _context.Users.FindAsync(rank1UserId);
         if (rank1User == null)
@@ -166,12 +223,14 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
             ? DateOnly.FromDateTime(rank1User.LastTimesOnTopAt.Value)
             : DateOnly.MinValue;
 
-        if (lastAt >= today)
-            return;
+        if (lastAt < today)
+        {
+            rank1User.TimesOnTop++;
+            rank1User.LastTimesOnTopAt = _clock.UtcNow;
+            await _context.SaveChangesAsync();
+        }
 
-        rank1User.TimesOnTop++;
-        rank1User.LastTimesOnTopAt = _clock.UtcNow;
-        await _context.SaveChangesAsync();
+        _cache.Set(cacheKey, true, TimeSpan.FromHours(25));
     }
 
     // ── Raw ranked entries ────────────────────────────────────────────────────
@@ -340,35 +399,6 @@ public class LeaderboardService(BackendDbContext context, AvatarService avatarSe
         return previousRank - currentRank; // positive = moved up
     }
 
-    private async Task<LeaderboardEntryDto> EnrichEntryAsync(
-        RawLeaderboardEntry entry,
-        int rank,
-        int change,
-        bool isCurrentUser,
-        string? avatarUrl
-    )
-    {
-        var (currentStreak, longestStreak) = await GetStreakAsync(entry.UserId);
-        var level = CalculateLevel(entry.TotalXp);
-        var timesOnTop = await _context.Users
-            .Where(u => u.Id == entry.UserId)
-            .Select(u => u.TimesOnTop)
-            .FirstOrDefaultAsync();
-
-        return new LeaderboardEntryDto(
-            Rank: rank,
-            UserId: entry.UserId,
-            UserName: entry.UserName,
-            Avatar: avatarUrl,
-            TotalXp: entry.TotalXp,
-            CurrentStreak: currentStreak,
-            LongestStreak: longestStreak,
-            Level: level,
-            Change: change,
-            IsCurrentUser: isCurrentUser,
-            TimesOnTop: timesOnTop
-        );
-    }
 
     private async Task<LeaderboardEntryDto?> GetUserEntryAsync(
         string userId,

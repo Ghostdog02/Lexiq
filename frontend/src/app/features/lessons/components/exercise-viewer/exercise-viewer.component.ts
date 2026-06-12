@@ -11,6 +11,8 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom, fromEvent, filter, interval } from 'rxjs';
+import { ConfirmDialogService } from '../../../../shared/components/confirm-dialog/confirm-dialog.service';
+import { formatCountdown } from '../../../../shared/utils/time.utils';
 import {
   AnyExercise,
   Exercise,
@@ -56,6 +58,7 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private destroyRef = inject(DestroyRef);
   private http = inject(HttpClient);
+  private confirmDialog = inject(ConfirmDialogService);
 
   readonly state = inject(ExerciseViewerStateService);
 
@@ -74,7 +77,6 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   outOfHearts = false;
   nextRefillAt: Date | null = null;
   countdownDisplay = signal('');
-  showExitConfirm = false;
   private isSwitching = false;
 
   // Expose enum to template
@@ -286,20 +288,14 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
 
   onBackToContent(): void {
     const hasProgress = this.state.viewModels.some(vm => vm.isSubmitted);
-    if (hasProgress) {
-      this.showExitConfirm = true;
+    if (!hasProgress) {
+      this.router.navigate(['/lesson', this.lessonId]);
       return;
     }
-    this.router.navigate(['/lesson', this.lessonId]);
-  }
-
-  confirmExit(): void {
-    this.showExitConfirm = false;
-    this.router.navigate(['/lesson', this.lessonId]);
-  }
-
-  cancelExit(): void {
-    this.showExitConfirm = false;
+    this.confirmDialog
+      .confirm({ message: 'Do you want to leave? Your exercise progress will not be saved.', confirmLabel: 'Yes, leave' })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(confirmed => { if (confirmed) this.router.navigate(['/lesson', this.lessonId]); });
   }
 
   async finishLesson(): Promise<void> {
@@ -320,18 +316,14 @@ export class ExerciseViewerComponent implements OnInit, OnDestroy {
   }
 
   dismissResults(): void {
-    this.router.navigate(['/']);
+    this.router.navigate(['/courses']);
+  }
+
+  tryAgain(): void {
+    this.router.navigate(['/lesson', this.lessonId, 'exercises']);
   }
 
   private computeCountdown(): string {
-    if (!this.nextRefillAt) return '4h 0m 0s';
-    const ms = Math.max(0, this.nextRefillAt.getTime() - Date.now());
-    const totalSeconds = Math.ceil(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    if (hours === 0 && minutes === 0) return `${seconds}s`;
-    if (hours === 0) return `${minutes}m ${seconds}s`;
-    return `${hours}h ${minutes}m ${seconds}s`;
+    return this.nextRefillAt ? formatCountdown(this.nextRefillAt) : '4h 0m 0s';
   }
 }

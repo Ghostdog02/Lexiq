@@ -282,7 +282,8 @@ public class ExerciseValidationTests(DatabaseFixture fixture)
             userManager,
             achievementService,
             clock,
-            heartsService
+            heartsService,
+            new NullMemoryCache()
         );
     }
 

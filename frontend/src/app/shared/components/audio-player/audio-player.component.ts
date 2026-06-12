@@ -56,6 +56,8 @@ export class AudioPlayerComponent implements OnDestroy {
       this.audioElement.pause();
       this.isPlaying = false;
     } else {
+      if (this.replaysExhausted) return;
+      if (this.maxReplays > 0) this.replayCount++;
       this.audioElement.play();
       this.isPlaying = true;
     }
@@ -75,12 +77,6 @@ export class AudioPlayerComponent implements OnDestroy {
     this.audioElement.currentTime = 0;
     this.audioElement.play();
     this.isPlaying = true;
-  }
-
-  onScrub(event: Event): void {
-    if (!this.audioElement) return;
-    const input = event.target as HTMLInputElement;
-    this.audioElement.currentTime = (Number(input.value) / 100) * this.duration;
   }
 
   formatTime(seconds: number): string {

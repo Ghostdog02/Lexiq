@@ -6,35 +6,57 @@
 } @else if (lessonSubmitResult) {
   <!-- Post-submit results summary -->
   <div class="exercises-view fade-in">
-    <div class="results-card card">
-      <div class="results-header">
-        @if (lessonSubmitResult.summary.meetsCompletionThreshold) {
-          <span class="results-icon success">&#x2713;</span>
-          <h2 class="results-title">Lesson Complete!</h2>
+    <div class="results-card card" [class.is-success]="lessonSubmitResult.summary.isCompleted">
+
+      <div class="results-icon-ring">
+        @if (lessonSubmitResult.summary.isCompleted) {
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <path d="M8 18L15 25L28 11" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         } @else {
-          <span class="results-icon warning">&#x21;</span>
+          <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+            <path d="M18 10v10M18 26h.01" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        }
+      </div>
+
+      <div class="results-text">
+        @if (lessonSubmitResult.summary.isCompleted) {
+          <h2 class="results-title">Lesson Complete!</h2>
+          <p class="results-subtitle">Keep on keeping on!</p>
+        } @else {
           <h2 class="results-title">Keep Practicing</h2>
+          <p class="results-subtitle">Don't worry — try again!</p>
         }
       </div>
 
       <div class="results-stats">
         <div class="stat-item">
-          <span class="stat-value">{{ lessonSubmitResult.summary.earnedXp }}</span>
+          <span class="stat-value xp">+{{ lessonSubmitResult.summary.earnedXp }}</span>
           <span class="stat-label">XP Earned</span>
         </div>
+        <div class="stat-sep"></div>
         <div class="stat-item">
-          <span class="stat-value">{{ lessonSubmitResult.summary.completedExercises }} / {{ lessonSubmitResult.summary.totalExercises }}</span>
+          <span class="stat-value">{{ lessonSubmitResult.summary.completedExercises }}/{{ lessonSubmitResult.summary.totalExercises }}</span>
           <span class="stat-label">Correct</span>
         </div>
+        <div class="stat-sep"></div>
         <div class="stat-item">
-          <span class="stat-value">{{ lessonSubmitResult.heartsRemaining }}</span>
+          <span class="stat-value hearts">&#x2764;&#xFE0F; {{ lessonSubmitResult.heartsRemaining }}</span>
           <span class="stat-label">Hearts Left</span>
         </div>
       </div>
 
-      <button class="btn primary" (click)="dismissResults()" aria-label="Return to home">
-        Continue
-      </button>
+      <div class="results-actions">
+        @if (!lessonSubmitResult.summary.isCompleted) {
+          <button class="btn secondary" (click)="tryAgain()" aria-label="Try again">
+            Try Again
+          </button>
+        }
+        <button class="btn primary" (click)="dismissResults()" aria-label="Back to courses">
+          Back to Courses
+        </button>
+      </div>
     </div>
   </div>
 } @else if (outOfHearts) {
@@ -175,14 +197,3 @@
   </div>
 }
 
-@if (showExitConfirm) {
-  <div class="confirm-overlay" (click)="cancelExit()">
-    <div class="confirm-dialog" (click)="$event.stopPropagation()">
-      <p class="confirm-message">Do you want to leave? Your exercise progress will not be saved.</p>
-      <div class="confirm-actions">
-        <button class="btn secondary" type="button" (click)="cancelExit()">No, stay</button>
-        <button class="btn primary" type="button" (click)="confirmExit()">Yes, leave</button>
-      </div>
-    </div>
-  </div>
-}
