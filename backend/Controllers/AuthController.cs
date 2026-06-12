@@ -55,7 +55,7 @@ public class AuthController(
     [HttpGet("auth-status")]
     public IActionResult GetAuthStatus()
     {
-        var isAuthenticated = HttpContext.User.Identity?.IsAuthenticated ?? false;
+        var isAuthenticated = HttpContext.GetCurrentUser() != null;
 
         return Ok(
             new AuthStatusResponseDto(
