@@ -15,7 +15,7 @@ RUN mkdir -p wwwroot/uploads/files
 RUN dotnet restore ./Backend.Api.csproj
 
 COPY . .
-RUN dotnet publish "Backend.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "Backend.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false /p:EnableSourceLink=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS final
 WORKDIR /app
