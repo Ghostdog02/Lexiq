@@ -62,7 +62,8 @@ public class HeartsDecrementTests(DatabaseFixture fixture)
             userManager,
             new AchievementService(ctx),
             clock,
-            heartsService
+            heartsService,
+            new NullMemoryCache()
         );
     }
 

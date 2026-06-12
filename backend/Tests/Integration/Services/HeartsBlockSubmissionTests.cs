@@ -77,7 +77,8 @@ public class HeartsBlockSubmissionTests(DatabaseFixture fixture)
             _userManager,
             new AchievementService(ctx),
             _clock,
-            _heartsService
+            _heartsService,
+            new NullMemoryCache()
         );
     }
 
