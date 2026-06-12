@@ -11,6 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom, interval } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { Achievement, Language, UserProfile } from '../../models/user.model';
+import { formatCountdown } from '../../../../shared/utils/time.utils';
 import { ProfileService } from '../../services/profile.service';
 import { ToastrService } from 'ngx-toastr';
 
@@ -134,15 +135,7 @@ export class ProfileComponent implements OnInit {
   }
 
   private computeHeartCountdown(): string {
-    if (!this.nextRefillAt) return '';
-    const ms = Math.max(0, this.nextRefillAt.getTime() - Date.now());
-    const totalSeconds = Math.ceil(ms / 1000);
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    if (hours === 0 && minutes === 0) return `${seconds}s`;
-    if (hours === 0) return `${minutes}m ${seconds}s`;
-    return `${hours}h ${minutes}m ${seconds}s`;
+    return this.nextRefillAt ? formatCountdown(this.nextRefillAt) : '';
   }
 
   private formatDate(dateStr: string): string {
