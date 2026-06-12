@@ -42,8 +42,7 @@ export class HomeComponent implements OnInit {
     this.isAdmin = this.authService.getIsAdmin();
     this.isContentCreator = this.authService.getIsContentCreator();
     this.userIsAuthenticated = this.authService.getIsAuth();
-    await this.loadCoursesFromApi();
-    await Promise.all([this.loadUserXp(), this.loadHearts()]);
+    await Promise.all([this.loadCoursesFromApi(), this.loadUserXp(), this.loadHearts()]);
   }
 
   private async loadUserXp(): Promise<void> {
