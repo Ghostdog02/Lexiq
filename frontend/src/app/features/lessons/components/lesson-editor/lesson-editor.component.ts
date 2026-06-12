@@ -17,6 +17,7 @@ import { AudioPlayerComponent } from '../../../../shared/components/audio-player
 import { Course } from '../../models/course.interface';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { ConfirmDialogService } from '../../../../shared/components/confirm-dialog/confirm-dialog.service';
 import { ToastrService } from 'ngx-toastr';
 
 @Component({
@@ -36,12 +37,12 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly httpClient = inject(HttpClient);
   private readonly toastr = inject(ToastrService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
 
   lessonForm!: LessonForm;
   exerciseTypeDictionary: { label: string; value: ExerciseType }[] = [];
   courses: Course[] = [];
   ExerciseType = ExerciseType;
-  showDiscardConfirm = false;
 
   private pendingAudioIndex = -1;
   private pendingAudioFiles = new Map<string, File>();
@@ -198,20 +199,14 @@ export class LessonEditorComponent implements OnInit, OnDestroy {
   }
 
   onDiscard(): void {
-    if (this.lessonForm.dirty) {
-      this.showDiscardConfirm = true;
+    if (!this.lessonForm.dirty) {
+      this.router.navigate(['/']);
       return;
     }
-    this.router.navigate(['/']);
-  }
-
-  confirmDiscard(): void {
-    this.showDiscardConfirm = false;
-    this.router.navigate(['/']);
-  }
-
-  cancelDiscard(): void {
-    this.showDiscardConfirm = false;
+    this.confirmDialog
+      .confirm({ message: 'Do you want to leave lesson creation? All unsaved changes will be lost.', confirmLabel: 'Yes, leave' })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(confirmed => { if (confirmed) this.router.navigate(['/']); });
   }
 
   // ── Private ───────────────────────────────────────────────────────────────

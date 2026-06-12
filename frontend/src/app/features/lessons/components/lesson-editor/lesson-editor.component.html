@@ -352,14 +352,3 @@
   </div>
 </div>
 
-@if (showDiscardConfirm) {
-  <div class="confirm-overlay" (click)="cancelDiscard()">
-    <div class="confirm-dialog" (click)="$event.stopPropagation()">
-      <p class="confirm-message">Do you want to leave lesson creation? All unsaved changes will be lost.</p>
-      <div class="confirm-actions">
-        <button class="btn secondary" type="button" (click)="cancelDiscard()">No, stay</button>
-        <button class="btn primary" type="button" (click)="confirmDiscard()">Yes, leave</button>
-      </div>
-    </div>
-  </div>
-}
